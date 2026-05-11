@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Getting Started — Causl</title>
+  <meta name="description" content="The Getting Started section of the Causl documentation — installation, motivation, core concepts, and a five-minute path from npm install to your first commit." />
+  <link rel="icon" href="../../causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../topbar.css" />
+  <link rel="stylesheet" href="../../site.css" />
+  <style>
+    /* Page-specific overrides only — match the existing site's typographic scale. */
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: rgba(232, 238, 247, 0.85); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: rgba(11, 16, 32, 0.85); }
+
+    /* Section-landing TOC list — paired heading + blurb per entry. */
+    .toc-list { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: 1.4rem; }
+    .toc-list li { padding: 1rem 1.2rem; border: 1px solid rgba(169, 181, 201, 0.18); border-radius: 8px; background: rgba(26, 34, 56, 0.35); transition: border-color 0.15s, transform 0.15s; }
+    :root[data-theme="light"] .toc-list li { background: rgba(11, 16, 32, 0.03); }
+    .toc-list li:hover { border-color: rgba(39, 211, 195, 0.45); transform: translateY(-1px); }
+    .toc-list li a { font-weight: 600; font-size: 1.05rem; color: var(--causal-cyan); text-decoration: none; }
+    .toc-list li a:hover { text-decoration: underline; }
+    .toc-list li p { margin: 0.4rem 0 0; font-size: 0.94rem; color: rgba(232, 238, 247, 0.82); }
+    :root[data-theme="light"] .toc-list li p { color: rgba(11, 16, 32, 0.76); }
+    .toc-list li .toc-meta { display: block; margin-top: 0.4rem; font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: rgba(232, 238, 247, 0.55); }
+    :root[data-theme="light"] .toc-list li .toc-meta { color: rgba(11, 16, 32, 0.55); }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../" class="topbar-brand" aria-label="Causl home">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88.28 100" aria-hidden="true">
+          <circle cx="78.28" cy="21.72" r="10" fill="#27D3C3" />
+          <circle cx="50"    cy="10"    r="10" fill="#27D3C3" />
+          <circle cx="21.72" cy="21.72" r="10" fill="#27D3C3" />
+          <circle cx="10"    cy="50"    r="10" fill="#27D3C3" />
+          <circle cx="21.72" cy="78.28" r="10" fill="#27D3C3" />
+          <circle cx="50"    cy="90"    r="10" fill="#27D3C3" />
+          <circle cx="78.28" cy="78.28" r="10" fill="#FF646E" />
+        </svg>
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation">/ˈkɔː.zəl/ — like "causal"</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button" class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <h1>Getting Started with Causl</h1>
+
+    <p>
+      Causl is a state-management engine for the tangled middle of an
+      application — the part where one input feeds three derivations,
+      one of those derivations is read by a fetch handler, the fetch
+      handler writes back two more inputs, and any of them can change
+      in the same user gesture. It is built around a single idea:
+      <em>every mutation is a transaction</em>, and every read is a
+      pure function of the graph at one point in time. Glitch-freedom
+      is not a scheduling trick — it is a theorem about the public
+      API surface.
+    </p>
+
+    <p>
+      If you have used Redux, Jotai, MobX, or a spreadsheet engine, a
+      lot of causl will feel familiar. The differences show up at the
+      boundaries: transactions are the only mutation entry point;
+      derivations are recomputed in topological order in one pass per
+      commit; subscribers fire exactly once per commit that actually
+      changed their projection; and the engine ships a static checker
+      and a bounded model checker that catch the race conditions the
+      type system cannot express. The five pages in this section walk
+      you from "what is this" to "your first running app" in the
+      order most readers want them.
+    </p>
+
+    <p>
+      If you are <strong>impatient</strong>, skip to the
+      <a href="./quick-start.html">5-Minute Quick Start</a> — it
+      installs the engine, writes a graph in fifteen lines, and runs
+      it. If you are <strong>evaluating</strong>, start with
+      <a href="./why-causl.html">Why Causl</a>, which is honest about
+      where causl is the wrong tool. If you are <strong>building
+      something real</strong>, work through the pages top to bottom;
+      they introduce one concept at a time, and each one builds on
+      the previous.
+    </p>
+
+    <p>
+      The whole section assumes TypeScript, Node 20+, and a recent
+      package manager (npm 10+, pnpm 9+, or yarn 4+). The engine
+      itself has zero runtime dependencies; the React bindings depend
+      only on <code>react</code>. Every code example on every page is
+      typechecked against the current published API surface and
+      lifted from the same fixture set the integration tests run, so
+      copy-paste should compile.
+    </p>
+
+    <blockquote>
+      <strong>A note on the eight commitments.</strong> Throughout
+      the documentation you will see references to causl's "eight
+      commitments" — atomic transactions, transactions-as-only-mutation,
+      glitch-free reads, explicit observability, bounded retention,
+      typed dispatch, exported IR, and reproducible builds. Each one
+      shows up as a concrete API constraint, and the
+      <a href="../../">home page</a> spells them out in plain
+      English.
+    </blockquote>
+
+    <h2>In this section</h2>
+
+    <ul class="toc-list">
+      <li>
+        <a href="./introduction.html">Introduction</a>
+        <p>
+          What problem causl solves, the shape of its public API, and
+          the mental model — graph, inputs, derivations, commits,
+          subscribers — that everything else builds on. Start here if
+          the name is new to you.
+        </p>
+        <span class="toc-meta">~600 words · 4 min read</span>
+      </li>
+      <li>
+        <a href="./why-causl.html">Why Causl</a>
+        <p>
+          Motivation. Where causl is the right tool (tangled
+          dependency graphs, audit trails, glitch-free reads across
+          many derivations) and where it is not (event streams, ad-hoc
+          local component state, very small UIs). Comparisons against
+          Redux, Jotai, MobX, and signal libraries.
+        </p>
+        <span class="toc-meta">~900 words · 6 min read</span>
+      </li>
+      <li>
+        <a href="./installation.html">Installation</a>
+        <p>
+          Installing <code>@causl/core</code> and the optional
+          packages — <code>@causl/react</code>,
+          <code>@causl/sync</code>, <code>@causl/persistence</code>,
+          <code>@causl/checker</code>. TypeScript configuration, ESM
+          notes, and the version compatibility matrix.
+        </p>
+        <span class="toc-meta">~500 words · 3 min read</span>
+      </li>
+      <li>
+        <a href="./quick-start.html">5-Minute Quick Start</a>
+        <p>
+          The impatient developer's path. <code>npm install</code>,
+          fifteen lines of code, run it, see the output. If you only
+          read one page in this section, read this one.
+        </p>
+        <span class="toc-meta">~700 words · 5 min read</span>
+      </li>
+      <li>
+        <a href="./first-app.html">Your First App</a>
+        <p>
+          A longer worked example with React: a small dashboard with
+          two inputs, three derivations, and a subscriber. Builds
+          step-by-step, explains each new concept as it appears, and
+          ends with a working app you can extend.
+        </p>
+        <span class="toc-meta">~1500 words · 12 min read</span>
+      </li>
+      <li>
+        <a href="./core-concepts.html">Core Concepts</a>
+        <p>
+          The vocabulary you need before reading the rest of the
+          documentation: <em>Behavior</em>, <em>GraphTime</em>,
+          <em>Commit</em>, <em>derivation</em>, <em>intent</em>,
+          <em>explanation</em>, <em>retention cap</em>. One short
+          section per term, with a working code example for each.
+        </p>
+        <span class="toc-meta">~1200 words · 9 min read</span>
+      </li>
+    </ul>
+
+    <h2>Where to go next</h2>
+
+    <p>
+      Once you have walked through this section, the
+      <a href="../tutorial/">Tutorial</a> picks up with a complete
+      application from scratch, and the
+      <a href="../usage/">Usage Guide</a> covers patterns you will
+      reach for in production: structured commit intents, statechart
+      composition with <code>@causl/sync</code>, persistence
+      adapters, devtools, and the static checker. The
+      <a href="../api/">API reference</a> is generated from the
+      source and is the right page to keep open in another tab while
+      you work.
+    </p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../topbar.js" defer></script>
+</body>
+</html>

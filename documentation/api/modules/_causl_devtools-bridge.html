@@ -1,0 +1,448 @@
+<!DOCTYPE html><html class="default" lang="en" data-base=".."><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>@causl/devtools-bridge | Causl API Reference - v0.0.0</title><meta name="description" content="Documentation for Causl API Reference"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><link rel="stylesheet" href="../assets/custom.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search"><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"><a href="../../">Home</a><a href="../">Documentation</a><a href="https://github.com/iasbuilt/causl">GitHub</a></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="../index.html" class="title">Causl API Reference - v0.0.0</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><ul class="tsd-breadcrumb"><li><a href="../index.html">Causl API Reference</a></li><li><a href="_causl_devtools-bridge.html">@causl/devtools-bridge</a></li></ul><h1>Module @causl/devtools-bridge</h1></div><section class="tsd-panel tsd-typography"><a id="causl" class="tsd-anchor"></a><h1 class="tsd-anchor-link">Causl<a href="#causl" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h1><blockquote>
+<p>Transactional state for tangled dependency graphs.</p>
+</blockquote>
+<hr>
+<a id="quickstart" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Quickstart<a href="#quickstart" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The example in <a href="../media/SPEC.md#10-the-smallest-worked-example-i-will-support">SPEC §10</a> is the gate for &quot;the engine is real&quot; — two inputs, one derived value, one diamond derivation, one subscriber, two commits, three observed propagations. Everything else in the engine is downstream of getting this right.</p>
+<pre><code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createCausl</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/core&#39;</span><br/><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()</span><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">a</span><span class="hl-1"> = </span><span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-3">&#39;a&#39;</span><span class="hl-1">, </span><span class="hl-7">1</span><span class="hl-1">)</span><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">b</span><span class="hl-1"> = </span><span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-3">&#39;b&#39;</span><span class="hl-1">, </span><span class="hl-7">2</span><span class="hl-1">)</span><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">sum</span><span class="hl-1"> = </span><span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">derived</span><span class="hl-1">(</span><span class="hl-3">&#39;sum&#39;</span><span class="hl-1">, (</span><span class="hl-5">get</span><span class="hl-1">) </span><span class="hl-2">=&gt;</span><span class="hl-1"> </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-5">a</span><span class="hl-1">) + </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-5">b</span><span class="hl-1">))</span><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">sumPlusOne</span><span class="hl-1"> = </span><span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">derived</span><span class="hl-1">(</span><span class="hl-3">&#39;sumPlusOne&#39;</span><span class="hl-1">, (</span><span class="hl-5">get</span><span class="hl-1">) </span><span class="hl-2">=&gt;</span><span class="hl-1"> </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-5">sum</span><span class="hl-1">) + </span><span class="hl-7">1</span><span class="hl-1">)</span><br/><br/><span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">subscribe</span><span class="hl-1">(</span><span class="hl-5">sumPlusOne</span><span class="hl-1">, (</span><span class="hl-5">v</span><span class="hl-1">) </span><span class="hl-2">=&gt;</span><span class="hl-1"> </span><span class="hl-5">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-5">v</span><span class="hl-1">))</span><br/><span class="hl-6">// 4</span><br/><br/><span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">commit</span><span class="hl-1">(</span><span class="hl-3">&#39;bump-a&#39;</span><span class="hl-1">, </span><span class="hl-5">tx</span><span class="hl-1"> </span><span class="hl-2">=&gt;</span><span class="hl-1"> </span><span class="hl-5">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-5">a</span><span class="hl-1">, </span><span class="hl-7">10</span><span class="hl-1">))</span><br/><span class="hl-6">// 13</span><br/><br/><span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">commit</span><span class="hl-1">(</span><span class="hl-3">&#39;bump-both&#39;</span><span class="hl-1">, </span><span class="hl-5">tx</span><span class="hl-1"> </span><span class="hl-2">=&gt;</span><span class="hl-1"> { </span><span class="hl-5">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-5">a</span><span class="hl-1">, </span><span class="hl-7">100</span><span class="hl-1">); </span><span class="hl-5">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-5">b</span><span class="hl-1">, </span><span class="hl-7">200</span><span class="hl-1">) })</span><br/><span class="hl-6">// 301  — exactly one notification, not two</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The four invariants — atomic commit, dependency tracking, dynamic-dep cleanup, glitch-free diamond — fall out of this example. It is pinned as an acceptance test at <a href="../media/spec-10-worked-example.test.ts"><code>packages/core/test/spec-10-worked-example.test.ts</code></a>.</p>
+<hr>
+<a id="why-does-this-need-to-exist" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Why does this need to exist?<a href="#why-does-this-need-to-exist" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The TypeScript / React ecosystem already has Redux, MobX, Jotai, Recoil, Zustand, Valtio, TanStack Query, XState, and a long tail of hooks-shaped variants. Each one is well engineered for the slice it owns. None of them — <strong>none</strong> — solves the problem causl is built for.</p>
+<p>The problem is this: an application whose state is not a tree of values but a <strong>live graph of facts whose derivations cascade</strong>, where:</p>
+<ul>
+<li>A single user action invalidates dozens or hundreds of dependent values.</li>
+<li>Some dependencies change <em>which</em> inputs they depend on as state changes (dynamic dependencies).</li>
+<li>Async fetches can return after the dependency they were fetching against has already moved.</li>
+<li>Wrong update ordering produces visible-but-inconsistent intermediate UI states (glitches).</li>
+<li>The user is editing one part of the model while three other parts are recomputing from external feeds, server pushes, and other users' edits.</li>
+<li>A bug that corrupts dependent state is not a render bug — it's data corruption that ships to disk and to other users.</li>
+</ul>
+<p>Real systems that look like this: spreadsheets, CMMS, capital-planning tools, BIM-style asset graphs, configuration editors, scheduling/Gantt systems, scenario planning, dashboard composers, and large operational consoles. The author of this library has shipped several. Every one of them ran into the same wall.</p>
+<p>If you have ever written this and watched it fire in the wrong order:</p>
+<pre><code class="ts"><span class="hl-0">useEffect</span><span class="hl-1">(() </span><span class="hl-2">=&gt;</span><span class="hl-1"> { </span><span class="hl-0">setHighlights</span><span class="hl-1">(</span><span class="hl-0">deriveFromSelection</span><span class="hl-1">(</span><span class="hl-5">selection</span><span class="hl-1">, </span><span class="hl-5">plan</span><span class="hl-1">)); }, [</span><span class="hl-5">selection</span><span class="hl-1">, </span><span class="hl-5">plan</span><span class="hl-1">])</span><br/><span class="hl-0">useEffect</span><span class="hl-1">(() </span><span class="hl-2">=&gt;</span><span class="hl-1"> { </span><span class="hl-0">setActiveAttachments</span><span class="hl-1">(</span><span class="hl-0">forSelection</span><span class="hl-1">(</span><span class="hl-5">selection</span><span class="hl-1">)); }, [</span><span class="hl-5">selection</span><span class="hl-1">])</span><br/><span class="hl-0">useEffect</span><span class="hl-1">(() </span><span class="hl-2">=&gt;</span><span class="hl-1"> { </span><span class="hl-0">setPlanPings</span><span class="hl-1">(</span><span class="hl-0">forHighlights</span><span class="hl-1">(</span><span class="hl-5">highlights</span><span class="hl-1">)); }, [</span><span class="hl-5">highlights</span><span class="hl-1">])</span>
+</code><button type="button">Copy</button></pre>
+
+<p>— or written this and wondered if the result is still relevant:</p>
+<pre><code class="ts"><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">fetched</span><span class="hl-1"> = </span><span class="hl-8">await</span><span class="hl-1"> </span><span class="hl-0">fetchAssetStatus</span><span class="hl-1">(</span><span class="hl-5">activeAssetId</span><span class="hl-1">)</span><br/><span class="hl-0">setStatus</span><span class="hl-1">(</span><span class="hl-5">fetched</span><span class="hl-1">) </span><span class="hl-6">// is activeAssetId still the same as when we started?</span>
+</code><button type="button">Copy</button></pre>
+
+<p>— or watched a 100-row tabular UI re-render the entire grid because a single cell's formula changed — you have hit the wall this library is for.</p>
+<p>The existing libraries each handle a <em>piece</em>. Redux gives you transactional commits but no dependency tracking. MobX gives you dependency tracking but no transactional commits and no semantic glitch-freedom guarantee. TanStack Query gives you async safety but only for HTTP state. XState gives you statecharts but not a dependency engine. Jotai gives you fine-grained atoms but no story for cross-atom transactions or stale-async protection.</p>
+<p>Causl is the library you reach for when <em>more than one of those concerns is true at the same time</em>. It is not a replacement for the others; it is a different shape of tool.</p>
+<hr>
+<a id="what-causl-does-differently" class="tsd-anchor"></a><h2 class="tsd-anchor-link">What causl does differently<a href="#what-causl-does-differently" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Eight commitments shape the library:</p>
+<ol>
+<li><strong>A denotational semantic foundation.</strong> A derived value's meaning is a mathematical function of its inputs at a given commit time: <code>Behavior a = GraphTime → a</code>. Glitch-freedom is then a <em>theorem</em>, not a scheduler trick. Most JS reactive libraries cannot define what their own values mean precisely enough to disagree with another implementation.</li>
+<li><strong>Transactions as the only mutation boundary.</strong> All writes happen inside <code>graph.commit(intent, tx =&gt; …)</code>. Outside, the graph is read-only. There is no concurrent-write API to misuse.</li>
+<li><strong>Automatic dependency tracking with deterministic dynamic-dep cleanup.</strong> A derivation that today reads <code>assetA</code> and tomorrow reads <code>assetB</code> no longer fires on <code>assetA</code> writes — proven by property-based tests, not promised by docs.</li>
+<li><strong>One composite statechart for every lifecycle in the system.</strong> Resource fetch, conflict status, transaction phases, and interaction modes share one chart with shared event vocabulary. No more parallel string enums sprinkled across object fields.</li>
+<li><strong>Strict layering</strong> between the user's information model, the editor's controller state (selection, drag-in-progress), and the engine's substrate. They live in separate identifier namespaces and separate packages.</li>
+<li><strong>Discriminated-union state</strong> everywhere optional fields would otherwise hide state machines. Impossible states cannot be represented; the type checker is the first reviewer.</li>
+<li><strong>MVU-shaped application surface.</strong> A typed <code>Msg</code> union dispatched through <code>update : Msg → Model → Commit</code>. Transactions are the engine room; messages are the front door.</li>
+<li><strong>Pre-runtime race detection in CI/CD.</strong> Two Rust-backed CI tools, both shipping today: <code>causl-check</code> is the static IR linter — twelve passes against the <code>CauslModel</code> IR (cycle, monotonic, glitch-propagation, subscribe-without-dispose, use-after-dispose, cross-graph-read, commit-from-subscribe, plus structural gates). <code>causl-enumerate</code> is the SPEC §16.4 bounded state-space enumerator — BFS over the §16.4.1 type surface (10-field <code>State</code>, 8-arm <code>Action</code>, phased <code>transition_phased</code> with per-step <code>events: Vec&lt;Event&gt;</code> and <code>phases: Vec&lt;PhaseStep&gt;</code>) with <code>Oracle::check(s, prev, a)</code> plugged into Tier-1/2/3 <code>Bound</code> presets. The Apalache differential runner (<code>tools/enumerator/diff/</code>) cross-checks the enumerator's verdicts against TLA+ counterexamples on the EPIC-7 corpus.</li>
+</ol>
+<p>The public surface anchored by these commitments — the <code>Graph</code> interface — is the canonical seven-method API (<code>createCausl</code>, <code>graph.input</code>, <code>graph.derived</code>, <code>graph.commit</code>, <code>graph.read</code>, <code>graph.subscribe</code>, <code>graph.explain</code>) plus the in-flight extensions that have earned a slot by naming an unavoidable engine concept: <code>subscribeCommits</code> (a narrow per-fire notification capability for adapters that don't need the full log), <code>exportModel</code> (the bridge to the Rust race-detection toolchain — feeds both <code>causl-check</code> static IR linting and <code>causl-enumerate</code> bounded state-space enumeration), <code>simulate</code> (the §5 dry-run API — predict a commit's effect without advancing time, appending to the log, or firing subscribers; observer-invisible by construction), <code>snapshot</code>/<code>hydrate</code> (single-call SSR transfer that emits a <code>Commit</code> with <code>intent: 'hydrate'</code> so consumers wake), <code>readAt</code>/<code>snapshotAt</code> (time-travel devtools and replay-determinism testing, returning a <code>Retained | Evicted</code> discriminated union per the bounded retention contract), <code>commitLog</code> (realising the &quot;transaction log is a <code>Behavior [Commit]</code>&quot; promise as a subscribable derived node), and the <code>now</code> getter. Memory hygiene for long-lived processes is the <code>commitHistoryCap</code> knob (default 1000; pass <code>0</code> or <code>1</code> for zero retention) — there is no runtime flush, because firing <code>commitLog</code> subscribers outside a commit boundary would violate §5. Every addition is justified one-by-one against the rule &quot;name the unavoidable concept the engine cannot express without it, or take the cost of growing every README and every consumer's mental model.&quot; The bar for a fifteenth surface item is the same as the bar for the first eleven.</p>
+<hr>
+<a id="how-causl-compares" class="tsd-anchor"></a><h2 class="tsd-anchor-link">How causl compares<a href="#how-causl-compares" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>This table is honest about where the existing libraries are <em>strictly better</em> (✓), where they cover the concern in some form (~), and where the concern is missing (✗). The Causl column uses ✓ for what currently ships on <code>main</code> and <code>*</code> for in-flight or planned future work — see Status below.</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th style="text-align:center">Redux + RTK</th>
+<th style="text-align:center">MobX</th>
+<th style="text-align:center">Jotai</th>
+<th style="text-align:center">Recoil</th>
+<th style="text-align:center">Zustand</th>
+<th style="text-align:center">Valtio</th>
+<th style="text-align:center">TanStack Query</th>
+<th style="text-align:center">XState</th>
+<th style="text-align:center">Causl</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Transactional commits (atomic write boundary)</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Automatic dependency tracking on reads</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Dynamic dependency cleanup proven correct</td>
+<td style="text-align:center">n/a</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">n/a</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">n/a</td>
+<td style="text-align:center">n/a</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Glitch-free diamond as a <em>guarantee</em> (not best-effort)</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Denotational semantic specification</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Composite statechart for <em>all</em> lifecycles</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Stale-async protection by version, not by abort-only</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Conflict records as first-class queryable state</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Discriminated-union state (&quot;impossible states&quot;)</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Strict model / controller / engine layering</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>MVU-shaped typed Msg dispatch</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Pre-runtime race detection in CI/CD (static IR linter + bounded enumerator + Apalache differential)</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Live derivation editing in devtools</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Spreadsheet-grade dependency cascades (formulas, ranges)</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Excellent at: small global state</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">n/a</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+</tr>
+<tr>
+<td>Excellent at: server cache / fetch dedupe</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+</tr>
+<tr>
+<td>Excellent at: hierarchical UI state machines</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">~</td>
+</tr>
+<tr>
+<td>Bundle size (smaller is better)</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reading the table:</strong></p>
+<ul>
+<li><strong>Redux + RTK</strong> is excellent for transactional commits and time-travel debugging. It has no automatic dependency tracking; you write selectors by hand and remember to memoize them. Stale async is partly addressed by RTK Query for HTTP cache only.</li>
+<li><strong>MobX</strong> is excellent for ergonomic reactive objects. Glitch-free is best-effort; semantic glitch-freedom isn't a stated property. Mutations are not bounded by atomic transactions, so multi-write cascades have observable intermediate states.</li>
+<li><strong>Jotai</strong> and <strong>Recoil</strong> are excellent for fine-grained atomic state. They lack a transaction boundary, lack a model-checker, and conflict/stale-async stories are application-level concerns.</li>
+<li><strong>Zustand</strong> and <strong>Valtio</strong> prioritize ergonomics and small bundle size. Neither addresses dependency cascades, conflicts, or async safety as first-class concerns.</li>
+<li><strong>TanStack Query</strong> is the gold standard for server-state cache. It is not a general state engine; for client-side dependency graphs, you still need one of the others alongside it. Causl's <code>@causl/sync</code> is <em>complementary</em>, not a replacement.</li>
+<li><strong>XState</strong> is the closest peer in spirit. It nails statecharts. It is not a dependency-graph engine; cell formulas, range dependencies, and value-derived-from-other-values are not its model. Causl treats the statechart as the <em>lifecycle layer</em> and adds the dependency engine on top.</li>
+</ul>
+<p>The concerns where causl is currently <code>~</code> rather than <code>✓</code> (small global state, server cache, hierarchical UI state machines) are honest: for those problems alone, a smaller, more focused library is the right answer. Causl is for the case where you need <em>several</em> of those concerns at once and you are tired of stitching libraries together.</p>
+<hr>
+<a id="when-to-use-causl" class="tsd-anchor"></a><h2 class="tsd-anchor-link">When to use causl<a href="#when-to-use-causl" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Reach for this library when <strong>two or more</strong> of these are true:</p>
+<ul>
+<li>Your state is a graph of facts where one user action cascades through dozens of derived values.</li>
+<li>Your derived values change <em>what they depend on</em> as the user navigates.</li>
+<li>You have async fetches whose results may be stale by the time they return.</li>
+<li>You need an audit trail of every state change with a typed intent.</li>
+<li>You need conflict records that survive the transaction that created them — not exceptions, <em>data</em>.</li>
+<li>You have spreadsheet-like cells with formula references, or asset hierarchies with reference-based dependencies.</li>
+<li>You want to catch race conditions in CI before they reach production.</li>
+<li>A bug in your state propagation is data corruption, not a UI glitch.</li>
+</ul>
+<a id="when-not-to-use-causl" class="tsd-anchor"></a><h2 class="tsd-anchor-link">When <strong>not</strong> to use causl<a href="#when-not-to-use-causl" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Reach for something else when:</p>
+<ul>
+<li>Your state is a flat object with maybe twenty fields and no cross-field derivations. Use Zustand or Jotai.</li>
+<li>Your state is mostly cached HTTP responses. Use TanStack Query (or Apollo / Relay if GraphQL).</li>
+<li>Your problem is &quot;one giant form with validation.&quot; Use React Hook Form.</li>
+<li>Your problem is &quot;a wizard with five steps and a back button.&quot; Use XState directly.</li>
+<li>You want a library you can adopt incrementally without thinking about your model layer. Causl asks you to commit to a layered approach (information model vs editor controllers vs engine substrate). That is a feature for the problems above and overhead for the problems below.</li>
+</ul>
+<p>The honest summary: causl is over-engineered for simple apps and the only way to ship the complex ones without losing your mind. Pick the right tool.</p>
+<hr>
+<a id="what-causl-is-not" class="tsd-anchor"></a><h2 class="tsd-anchor-link">What causl is <em>not</em><a href="#what-causl-is-not" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>I want this in writing too, because the spec used to promise too much:</p>
+<ul>
+<li><strong>Not a spreadsheet engine.</strong> <code>@causl/formula</code> is a small package that demonstrates spreadsheet patterns on top of the core. It does not ship VLOOKUP.</li>
+<li><strong>Not a CRDT.</strong> Multi-user merge semantics belong in a layer above this one.</li>
+<li><strong>Not a database, message bus, workflow engine, or rules engine.</strong></li>
+<li><strong>Not a competitor to Redux/MobX/etc.</strong> for problems they already handle well.</li>
+<li><strong>Not yet at 1.0.</strong> Phases 1–4 ship on <code>main</code>; APIs are stable but not version-locked. The hosted playground at <code>causl.org</code> is a <strong>future goal</strong>* — see &quot;Try it live&quot; below. See Status below.</li>
+</ul>
+<hr>
+<a id="status" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Status<a href="#status" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The full specification lives in <a href="../media/SPEC.md">the repo-root specification</a>. Phased epics and sub-tasks live as GitHub issues. <strong>Phases 1–4 have shipped on <code>main</code>.</strong> Phase 1 (semantic core), Phase 2 (React surface + spreadsheet demo), and Phase 3 (resources, conflicts, devtools inspection primitives) landed first; Phase 4 (the CI race-detection toolchain) wrapped via the Phase-8 SPEC compliance audit (umbrella #564 closed). Both Rust binaries — <code>causl-check</code> (static IR linter) and <code>causl-enumerate</code> (bounded state-space enumerator) — run in CI against the spreadsheet and async demos. See <code>.github/workflows/ci.yml</code> and <code>.github/workflows/apalache-diff.yml</code>.</p>
+<p>What that means concretely:</p>
+<ul>
+<li>The semantic core (atomicity, glitch-freedom, dynamic-deps, replay determinism, cycle detection) is held by 1000-trial property suites — <code>packages/core/test/properties/</code>.</li>
+<li>The React surface (<code>useCausl</code>, <code>useDispatch</code>, <code>useCauslFamily</code>, Suspense + SSR) ships and is tested under StrictMode mount/unmount cycles.</li>
+<li>The spreadsheet demo (<code>packages/bench/scenarios/spreadsheet/</code>) runs through the static linter on every CI build; failures block merge.</li>
+<li>The bounded enumerator's full SPEC §16.4.1 type surface is implemented — 10-field <code>State</code> backed by <code>im::*</code> collections, 8-arm <code>Action</code> with every variant wired through <code>transition()</code> and <code>transition_phased()</code>, <code>Oracle::check(s, prev, a) -&gt; Vec&lt;RaceClass&gt;</code> as the canonical surface, <code>Trace.steps: im::Vector&lt;Step&gt;</code> for cheap structural-shared clones, <code>Step.phases</code> and <code>Step.events</code> populated from the per-action phase walker, the <code>enumerate_with_script(model, bound, script, oracles)</code> SPEC entry point, and 43 enumerator test binaries' worth of regression coverage.</li>
+<li>The Apalache differential runner (<code>tools/enumerator/diff/</code>) cross-checks BFS verdicts against the EPIC-7 TLA+ corpus; <code>docs/apalache-diff-report.md</code> is regenerated on every CI run.</li>
+<li>BFS memory ceilings are configurable via <code>CAUSL_BFS_FRONTIER_CAP</code> / <code>CAUSL_BFS_TRACES_CAP</code> / <code>CAUSL_BFS_RACES_CAP</code> env vars; the wave-32 conservative defaults stay until adopter empirical data supports retuning (#646).</li>
+</ul>
+<p>Pre-1.0 caveats remain — public APIs may evolve before a tagged release; published-package tooling is a separate epic. The closing section of the specification enumerates the eight team commitments the repo is held against — semantic foundation lands first; the composite statechart is drawn before conflict and resource code is written; the model/controller/engine layering is enforced at the package boundary; every discriminated union carries an exhaustiveness check; the race-class catalogue is kept current; the worked example is the gate for &quot;the engine is real&quot;; no enum tags ship whose transitions are unspecified; and the Rust race-detection toolchain (<code>causl-check</code> + <code>causl-enumerate</code>) ships as a required CI gate. <a href="http://CONTRIBUTING.md">CONTRIBUTING.md</a> documents how each commitment is enforced.</p>
+<hr>
+<a id="packages" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Packages<a href="#packages" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Package</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>packages/core/</code></td>
+<td><code>@causl/core</code></td>
+<td>Engine — Behaviors, derivations, transactions, snapshot/hydrate, retention, explain</td>
+</tr>
+<tr>
+<td><code>packages/react/</code></td>
+<td><code>@causl/react</code></td>
+<td>React bindings — <code>useCausl</code>, <code>useDispatch</code>, <code>useCauslFamily</code>, MVU runner, SSR</td>
+</tr>
+<tr>
+<td><code>packages/formula/</code></td>
+<td><code>@causl/formula</code></td>
+<td>Spreadsheet patterns <em>on top of</em> the core — formulas, ranges, cycles</td>
+</tr>
+<tr>
+<td><code>packages/sync/</code></td>
+<td><code>@causl/sync</code></td>
+<td>Async resources + conflict registry as composed statecharts</td>
+</tr>
+<tr>
+<td><code>packages/devtools/</code></td>
+<td><code>@causl/devtools</code></td>
+<td>Inspection primitives (explain materialisation, liveDerivation, snapshot, statechart)</td>
+</tr>
+<tr>
+<td><code>packages/devtools-bridge/</code></td>
+<td><code>@causl/devtools-bridge</code></td>
+<td>Redux DevTools Extension protocol bridge (zero-cost when absent)</td>
+</tr>
+<tr>
+<td><code>packages/persistence/</code></td>
+<td><code>@causl/persistence</code></td>
+<td>Persisted-input adapter with structured <code>PersistenceError</code> reporting</td>
+</tr>
+<tr>
+<td><code>packages/checker/</code></td>
+<td><code>@causl/checker</code></td>
+<td>npm wrapper for <code>causl-check</code> (Rust-backed static IR linter — twelve passes against the IR)</td>
+</tr>
+<tr>
+<td><code>packages/bench/</code></td>
+<td><code>@causl/bench</code></td>
+<td>Benchmarks — Jotai / RTK / MobX comparisons across the canonical scenario taxonomy</td>
+</tr>
+<tr>
+<td><code>packages/migration-check/</code></td>
+<td><code>@causl/migration-check</code></td>
+<td>Migration drift detector — flags unmigrated Jotai/MobX/Redux patterns in adopters</td>
+</tr>
+</tbody>
+</table>
+<p><code>tools/checker/</code> and <code>tools/enumerator/</code> house the two Rust crates — both CI tools, not runtimes:</p>
+<ul>
+<li><strong><code>tools/checker/</code></strong> ships <code>causl-check</code>, the static IR linter (twelve passes: cycle, monotonic, glitch-propagation, subscribe-without-dispose, use-after-dispose, cross-graph-read, commit-from-subscribe, plus structural gates). Per-site <code>// @causl-allow:RuleId — reason: ...</code> magic-comment suppressions are wired through the <code>--source &lt;path&gt;</code> CLI flag; <code>--replay &lt;report&gt;</code> is the SPEC §16A.2 verdict-determinism gate.</li>
+<li><strong><code>tools/enumerator/</code></strong> ships <code>causl-enumerate</code>, the SPEC §16.4 bounded state-space enumerator. Tier-1 / tier-2 / tier-3 <code>Bound</code> presets cap exploration; the Node worker-pool RPC (<code>worker.mjs</code>) sandboxes compute bodies against <code>Date.now</code>/<code>Math.random</code>/<code>crypto.randomUUID</code>/<code>performance.now</code> with a 1% double-check sampler. The companion <code>tools/enumerator/diff/</code> ships the Apalache differential runner against the EPIC-7 TLA+ corpus.</li>
+</ul>
+<p><code>tools/drift/</code> houses the drift telemetry helpers. Internal-only <code>packages/core/testing/</code> (published as <code>@causl/core-testing-internal</code>) provides shared property-test seam helpers.</p>
+<p>See each package's <code>README.md</code> for build and run instructions where they exist.</p>
+<hr>
+<a id="development-setup" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Development setup<a href="#development-setup" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="prerequisites" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Prerequisites<a href="#prerequisites" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Version</th>
+<th>How to install</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node.js</td>
+<td>24.x (LTS Krypton)</td>
+<td>Use <a href="https://github.com/nvm-sh/nvm"><code>nvm</code></a> — <code>nvm install</code> reads <code>.nvmrc</code></td>
+</tr>
+<tr>
+<td>pnpm</td>
+<td>10.x</td>
+<td><code>corepack enable</code> (Node ships Corepack), or <code>npm i -g pnpm@10</code></td>
+</tr>
+<tr>
+<td>Rust</td>
+<td>stable</td>
+<td><a href="https://rustup.rs"><code>rustup</code></a> — only required to work on <code>tools/checker/</code></td>
+</tr>
+</tbody>
+</table>
+<p>The repository pins Node via <code>.nvmrc</code> and pnpm via <code>packageManager</code> in the root <code>package.json</code>. With <code>nvm</code> and Corepack on, switching into the directory and running <code>pnpm install</code> is enough.</p>
+<pre><code class="sh"><span class="hl-6"># one-time setup</span><br/><span class="hl-0">nvm</span><span class="hl-1"> </span><span class="hl-3">install</span><span class="hl-1">        </span><span class="hl-6"># installs Node 24 from .nvmrc</span><br/><span class="hl-0">nvm</span><span class="hl-1"> </span><span class="hl-3">use</span><span class="hl-1">            </span><span class="hl-6"># activates it for this shell</span><br/><span class="hl-0">corepack</span><span class="hl-1"> </span><span class="hl-3">enable</span><span class="hl-1">    </span><span class="hl-6"># makes the pinned pnpm available</span><br/><br/><span class="hl-6"># install workspace dependencies</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">install</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="common-commands" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Common commands<a href="#common-commands" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="sh"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">validate</span><span class="hl-1">       </span><span class="hl-6"># typecheck + build + test (run before committing)</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">typecheck</span><span class="hl-1">      </span><span class="hl-6"># tsc --noEmit across packages</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">build</span><span class="hl-1">          </span><span class="hl-6"># tsup builds for every package</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">test</span><span class="hl-1">           </span><span class="hl-6"># vitest in watch mode</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">test:run</span><span class="hl-1">       </span><span class="hl-6"># vitest --run (single pass)</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">lint</span><span class="hl-1">           </span><span class="hl-6"># eslint across packages</span>
+</code><button type="button">Copy</button></pre>
+
+<p>A Husky pre-commit hook runs <code>pnpm typecheck</code> and <code>pnpm test:run</code> against staged code; it picks up the same toolchain the CI workflows use.</p>
+<hr>
+<a id="try-it-live" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Try it live<a href="#try-it-live" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p><em><strong>Future goal.</strong></em> The hosted playground is gated on the Cloudflare Pages deploy landing (the project owner needs to provision the account and secrets — see <code>.github/workflows/deploy-pages.yml</code>). Once it lands, three URLs go live:</p>
+<ul>
+<li><strong><code>https://causl.org/playground</code></strong> — the Quickstart example above, in a Monaco editor wired to a live <code>@causl/core</code> graph. Edit <code>derived</code>, watch the value update.</li>
+<li><strong><code>https://causl.org/spreadsheet</code></strong> — the Phase 3 100-cell diamond demo. Type into column A; columns B/C/D and <code>E1</code> recompute through the engine. Same fixture as the dropped-frame Playwright gate in CI.</li>
+<li><strong><code>https://causl.org/docs/spec</code></strong> — anchor-stable rendering of <code>SPEC.md</code> plus <code>docs/semantics.md</code>, <code>docs/lifecycle.md</code> (with Mermaid for the §6 composite statechart), <code>docs/checker-coverage.md</code>, and <code>docs/migration/RULE_CATALOGUE.md</code>.</li>
+</ul>
+<p>The site source lives in <a href="./docs-site"><code>docs-site/</code></a> and is buildable today — run it locally with <code>pnpm dev:docs</code>; build with <code>pnpm deploy:docs</code>. Only the public hosting is the future goal.</p>
+<hr>
+<a id="license" class="tsd-anchor"></a><h2 class="tsd-anchor-link">License<a href="#license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>TBD.</p>
+</section><details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Interfaces"><h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg> Interfaces</h2></summary><dl class="tsd-member-summaries"><dt class="tsd-member-summary"><a id="connectoptions" class="tsd-anchor"></a><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Interface"><use href="../assets/icons.svg#icon-256"></use></svg><a href="../interfaces/_causl_devtools-bridge.ConnectOptions.html">ConnectOptions</a><a href="#connectoptions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd></dl></details><details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Type Aliases"><h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg> Type Aliases</h2></summary><dl class="tsd-member-summaries"><dt class="tsd-member-summary"><a id="bridgegraph" class="tsd-anchor"></a><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Type Alias"><use href="../assets/icons.svg#icon-2097152"></use></svg><a href="../types/_causl_devtools-bridge.BridgeGraph.html">BridgeGraph</a><a href="#bridgegraph" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd><dt class="tsd-member-summary"><a id="devtoolsmessage" class="tsd-anchor"></a><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Type Alias"><use href="../assets/icons.svg#icon-2097152"></use></svg><a href="../types/_causl_devtools-bridge.DevtoolsMessage.html">DevtoolsMessage</a><a href="#devtoolsmessage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd><dt class="tsd-member-summary"><a id="dispatchevent" class="tsd-anchor"></a><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Type Alias"><use href="../assets/icons.svg#icon-2097152"></use></svg><a href="../types/_causl_devtools-bridge.DispatchEvent.html">DispatchEvent</a><a href="#dispatchevent" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd><dt class="tsd-member-summary"><a id="monitormessagekind" class="tsd-anchor"></a><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Type Alias"><use href="../assets/icons.svg#icon-2097152"></use></svg><a href="../types/_causl_devtools-bridge.MonitorMessageKind.html">MonitorMessageKind</a><a href="#monitormessagekind" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd></dl></details><details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Variables"><h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg> Variables</h2></summary><dl class="tsd-member-summaries"><dt class="tsd-member-summary"><a id="version" class="tsd-anchor"></a><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Variable"><use href="../assets/icons.svg#icon-32"></use></svg><a href="../variables/_causl_devtools-bridge.VERSION.html">VERSION</a><a href="#version" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd></dl></details><details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Functions"><h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg> Functions</h2></summary><dl class="tsd-member-summaries"><dt class="tsd-member-summary"><a id="connectdevtools" class="tsd-anchor"></a><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Function"><use href="../assets/icons.svg#icon-64"></use></svg><a href="../functions/_causl_devtools-bridge.connectDevtools.html">connectDevtools</a><a href="#connectdevtools" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd><dt class="tsd-member-summary"><a id="isextensionavailable" class="tsd-anchor"></a><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Function"><use href="../assets/icons.svg#icon-64"></use></svg><a href="../functions/_causl_devtools-bridge.isExtensionAvailable.html">isExtensionAvailable</a><a href="#isextensionavailable" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd></dl></details></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#causl"><span>Causl</span></a><ul><li><a href="#quickstart"><span>Quickstart</span></a></li><li><a href="#why-does-this-need-to-exist"><span>Why does this need to exist?</span></a></li><li><a href="#what-causl-does-differently"><span>What causl does differently</span></a></li><li><a href="#how-causl-compares"><span>How causl compares</span></a></li><li><a href="#when-to-use-causl"><span>When to use causl</span></a></li><li><a href="#when-not-to-use-causl"><span>When not to use causl</span></a></li><li><a href="#what-causl-is-not"><span>What causl is not</span></a></li><li><a href="#status"><span>Status</span></a></li><li><a href="#packages"><span>Packages</span></a></li><li><a href="#development-setup"><span>Development setup</span></a></li><li><ul><li><a href="#prerequisites"><span>Prerequisites</span></a></li><li><a href="#common-commands"><span>Common commands</span></a></li></ul></li><li><a href="#try-it-live"><span>Try it live</span></a></li><li><a href="#license"><span>License</span></a></li></ul><details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Interfaces"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Interfaces</summary><div><a href="#connectoptions" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Interface"><use href="../assets/icons.svg#icon-256"></use></svg><span>Connect<wbr/>Options</span></a></div></details><details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Type Aliases"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Type Aliases</summary><div><a href="#bridgegraph" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Type Alias"><use href="../assets/icons.svg#icon-2097152"></use></svg><span>Bridge<wbr/>Graph</span></a><a href="#devtoolsmessage" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Type Alias"><use href="../assets/icons.svg#icon-2097152"></use></svg><span>Devtools<wbr/>Message</span></a><a href="#dispatchevent" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Type Alias"><use href="../assets/icons.svg#icon-2097152"></use></svg><span>Dispatch<wbr/>Event</span></a><a href="#monitormessagekind" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Type Alias"><use href="../assets/icons.svg#icon-2097152"></use></svg><span>Monitor<wbr/>Message<wbr/>Kind</span></a></div></details><details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Variables"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Variables</summary><div><a href="#version" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Variable"><use href="../assets/icons.svg#icon-32"></use></svg><span>VERSION</span></a></div></details><details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Functions"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Functions</summary><div><a href="#connectdevtools" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Function"><use href="../assets/icons.svg#icon-64"></use></svg><span>connect<wbr/>Devtools</span></a><a href="#isextensionavailable" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Function"><use href="../assets/icons.svg#icon-64"></use></svg><span>is<wbr/>Extension<wbr/>Available</span></a></div></details></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../../" class="tsd-nav-link">Home</a><a href="../" class="tsd-nav-link">Documentation</a><a href="https://github.com/iasbuilt/causl" class="tsd-nav-link">GitHub</a></nav><nav class="tsd-navigation"><a href="../index.html">Causl API Reference - v0.0.0</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
