@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Installation — Causl</title>
+  <meta name="description" content="Install the @causl/* packages with npm, pnpm, or yarn. Covers @causl/core, @causl/react, @causl/sync, @causl/persistence, @causl/checker, @causl/formula, @causl/devtools, and the optional WasmBackend entry point." />
+  <link rel="icon" href="../../causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../topbar.css" />
+  <link rel="stylesheet" href="../../site.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.92rem; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; vertical-align: top; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: rgba(232, 238, 247, 0.85); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: rgba(11, 16, 32, 0.85); }
+    .docs-content .pkg-name { font-family: var(--mono); color: var(--causal-cyan); }
+    .docs-content nav.page-nav { margin: 1.4rem 0; padding: 1rem 1.2rem; border: 1px solid rgba(169, 181, 201, 0.18); border-radius: 6px; background: rgba(26, 34, 56, 0.35); }
+    :root[data-theme="light"] .docs-content nav.page-nav { background: rgba(11, 16, 32, 0.04); }
+    .docs-content nav.page-nav h4 { margin: 0 0 0.5rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--causal-cyan); font-family: var(--mono); }
+    .docs-content nav.page-nav ul { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 1.4rem; font-size: 0.9rem; }
+    .docs-content nav.page-nav li { break-inside: avoid; padding: 0.15rem 0; }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../" class="topbar-brand" aria-label="Causl home">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88.28 100" aria-hidden="true">
+          <circle cx="78.28" cy="21.72" r="10" fill="#27D3C3" />
+          <circle cx="50"    cy="10"    r="10" fill="#27D3C3" />
+          <circle cx="21.72" cy="21.72" r="10" fill="#27D3C3" />
+          <circle cx="10"    cy="50"    r="10" fill="#27D3C3" />
+          <circle cx="21.72" cy="78.28" r="10" fill="#27D3C3" />
+          <circle cx="50"    cy="90"    r="10" fill="#27D3C3" />
+          <circle cx="78.28" cy="78.28" r="10" fill="#FF646E" />
+        </svg>
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation">/ˈkɔː.zəl/ — like "causal"</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button" class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <h1>Installation</h1>
+    <p>
+      Causl is published as a family of small packages under the <code>@causl/*</code> scope.
+      You install only the pieces your application uses: the core engine alone is enough for
+      a Node script or a non-React UI, and every other package — React bindings, async resource
+      lifecycles, persistence, static checking, statecharts — is additive. This page covers
+      install commands for all three major package managers, peer dependency requirements,
+      TypeScript setup, the optional WebAssembly backend, and the per-package bundle budget.
+    </p>
+
+    <nav class="page-nav" aria-label="On this page">
+      <h4>On this page</h4>
+      <ul>
+        <li><a href="#supported-environments">Supported environments</a></li>
+        <li><a href="#core">@causl/core</a></li>
+        <li><a href="#react">@causl/react</a></li>
+        <li><a href="#sync">@causl/sync</a></li>
+        <li><a href="#persistence">@causl/persistence</a></li>
+        <li><a href="#checker">@causl/checker</a></li>
+        <li><a href="#formula">@causl/formula</a></li>
+        <li><a href="#devtools">@causl/devtools</a></li>
+        <li><a href="#wasm">WasmBackend (optional)</a></li>
+        <li><a href="#typescript">TypeScript setup</a></li>
+        <li><a href="#bundle-sizes">Bundle sizes</a></li>
+        <li><a href="#next-steps">Next steps</a></li>
+      </ul>
+    </nav>
+
+    <h2 id="supported-environments">Supported environments</h2>
+    <p>
+      Causl ships ESM-only modules targeting modern runtimes. The minimum supported versions are:
+    </p>
+    <ul>
+      <li><strong>Node.js 22.0+</strong> for server-side, SSR, and tooling use.</li>
+      <li><strong>Any browser with ES2022 support</strong> — Chromium 102+, Firefox 102+, Safari 16+.</li>
+      <li><strong>TypeScript 5.4+</strong>. The packages ship hand-written <code>.d.ts</code> declarations alongside the JavaScript.</li>
+      <li><strong>React 18.3+ or React 19</strong> for <code>@causl/react</code> (peer dependency).</li>
+    </ul>
+    <p>
+      Older Node and browser versions are not tested. There is no CommonJS build; if you need
+      to require <code>@causl/core</code> from a CJS module, use the dynamic <code>import()</code>
+      form or a small wrapper.
+    </p>
+
+    <h2 id="core">@causl/core</h2>
+    <p>
+      <code>@causl/core</code> is the semantic kernel — the dependency graph, the
+      transactional commit, the deterministic recompute pipeline. Every other package depends
+      on it. Start here; install nothing else until you need it.
+    </p>
+    <pre><code># npm
+npm install @causl/core
+
+# pnpm
+pnpm add @causl/core
+
+# yarn
+yarn add @causl/core</code></pre>
+    <p>That gives you the canonical primitives:</p>
+    <pre><code>import { createCausl, input, derived } from '@causl/core';
+
+const graph = createCausl();
+const count = input(graph, 0);
+const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+
+graph.commit(() =&gt; {
+  graph.set(count, 5);
+});
+
+console.log(graph.read(doubled));  // 10</code></pre>
+    <p>
+      <code>@causl/core</code> has zero runtime dependencies. The only declared peer dependency
+      is <code>fast-check</code>, and it is marked optional — it is pulled in only by the
+      <code>@causl/core/testing</code> subpath that exposes property-test helpers. You will
+      never need to install it for production use.
+    </p>
+
+    <h2 id="react">@causl/react</h2>
+    <p>
+      <code>@causl/react</code> wires a causl graph into React's render lifecycle through
+      <code>useSyncExternalStore</code>. The headline hook is <code>useCauslNode</code>, with
+      <code>useCauslShallow</code>, <code>useCauslFamily</code>, <code>useCauslSuspense</code>,
+      and a <code>&lt;Hydrate&gt;</code> SSR boundary alongside it.
+    </p>
+    <pre><code># npm
+npm install @causl/core @causl/react react
+
+# pnpm
+pnpm add @causl/core @causl/react react
+
+# yarn
+yarn add @causl/core @causl/react react</code></pre>
+    <p>
+      React is a peer dependency at <code>^18.3.0 || ^19.0.0</code>; install it alongside if it
+      is not already in your dependency graph. <code>@causl/react</code> also pulls
+      <code>@causl/sync</code> transitively so you can use <code>useCauslSuspense</code> against
+      async resources without installing the sync package by hand.
+    </p>
+    <pre><code>import { createCausl, input, derived } from '@causl/core';
+import { useCauslNode } from '@causl/react';
+
+const graph = createCausl();
+const count = input(graph, 0);
+const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+
+export function Counter() {
+  const value = useCauslNode(graph, doubled);
+  return &lt;output&gt;{value}&lt;/output&gt;;
+}</code></pre>
+
+    <h2 id="sync">@causl/sync</h2>
+    <p>
+      <code>@causl/sync</code> is the async resource lifecycle: fetchers, mutations,
+      suspendable reads, and the race-row guarantees (S-1 stale-write, S-2 stale-read) that
+      keep concurrent network calls from corrupting derived state. Install it when you have
+      data that lives outside the graph — HTTP, IndexedDB, WebSocket, etc.
+    </p>
+    <pre><code># npm
+npm install @causl/core @causl/sync
+
+# pnpm
+pnpm add @causl/core @causl/sync
+
+# yarn
+yarn add @causl/core @causl/sync</code></pre>
+    <p>
+      <code>@causl/sync</code> declares <code>@causl/core</code> as a runtime dependency, so
+      package managers will resolve a matching version automatically. If you also use
+      <code>@causl/react</code>, it already brings <code>@causl/sync</code> in transitively.
+    </p>
+
+    <h2 id="persistence">@causl/persistence</h2>
+    <p>
+      <code>@causl/persistence</code> ships the storage adapters (<code>localStorage</code>,
+      <code>sessionStorage</code>, IndexedDB, custom <code>StorageAdapter</code>) that pair
+      with <code>graph.dehydrate()</code> / <code>graph.hydrate()</code> in core. The
+      <em>protocol</em> ships in core; the <em>concrete adapters</em> live here so
+      cores stays small.
+    </p>
+    <pre><code># npm
+npm install @causl/core @causl/persistence
+
+# pnpm
+pnpm add @causl/core @causl/persistence
+
+# yarn
+yarn add @causl/core @causl/persistence</code></pre>
+
+    <h2 id="checker">@causl/checker</h2>
+    <p>
+      <code>@causl/checker</code> is the static analyser: a CLI plus library entry point that
+      walks your causl graph definitions and surfaces race rows (R-1 through R-8), cycle
+      hazards, missing capability scopes, and unreachable derivations. It is a build-time
+      tool — install it as a dev dependency.
+    </p>
+    <pre><code># npm
+npm install --save-dev @causl/checker
+
+# pnpm
+pnpm add -D @causl/checker
+
+# yarn
+yarn add --dev @causl/checker</code></pre>
+    <p>
+      The checker ships precompiled native binaries (<code>@causl/checker-darwin-arm64</code>,
+      <code>-linux-x64</code>, <code>-win32-x64</code>, etc.) selected by the optional-deps
+      mechanism — you do not install platform binaries directly. Run it with
+      <code>npx causl-check</code> or wire it into a <code>lint:graph</code> npm script.
+    </p>
+
+    <h2 id="formula">@causl/formula</h2>
+    <p>
+      <code>@causl/formula</code> is the statechart compiler — Harel-style state machines that
+      compose into causl derivations. Install it when your application has explicit modal
+      behaviour (loading / loaded / error machines, multi-step forms, document edit states)
+      that you want expressed as charts rather than re-encoded as ad-hoc boolean derivations.
+    </p>
+    <pre><code># npm
+npm install @causl/core @causl/formula
+
+# pnpm
+pnpm add @causl/core @causl/formula
+
+# yarn
+yarn add @causl/core @causl/formula</code></pre>
+
+    <h2 id="devtools">@causl/devtools</h2>
+    <p>
+      <code>@causl/devtools</code> is the optional Historian and Editor surface — time-travel,
+      live derived inspection, batched <code>replaceMany</code> edits during development.
+      It pairs with the browser extension and is a dev-only dependency.
+    </p>
+    <pre><code># npm
+npm install --save-dev @causl/devtools
+
+# pnpm
+pnpm add -D @causl/devtools
+
+# yarn
+yarn add --dev @causl/devtools</code></pre>
+    <p>
+      The wiring itself is in <code>@causl/core</code> behind a one-line opt-in:
+      <code>createCausl({ devtools: true })</code> dead-code-eliminates in production builds.
+      You only install <code>@causl/devtools</code> if you want the standalone REPL utilities
+      outside the browser extension.
+    </p>
+
+    <h2 id="wasm">WasmBackend (optional)</h2>
+    <p>
+      Causl ships an opt-in WebAssembly backend entry point at <code>@causl/core/wasm</code>.
+      It is bundled with <code>@causl/core</code> — no extra <code>npm install</code> step —
+      and is loaded only if you call <code>loadWasmBackend()</code>.
+    </p>
+    <pre><code>import { createCausl } from '@causl/core';
+import { loadWasmBackend, WasmBackendUnavailableError } from '@causl/core/wasm';
+
+async function makeGraph() {
+  try {
+    const backend = await loadWasmBackend();
+    return createCausl({ backend });
+  } catch (err) {
+    if (err instanceof WasmBackendUnavailableError) {
+      // CSP rejected wasm-unsafe-eval, embedded runtime, etc.
+      return createCausl();  // TS engine fallback
+    }
+    throw err;
+  }
+}</code></pre>
+
+    <blockquote>
+      <strong>Current state.</strong> As of <code>v0.9.0</code> the WASM backend is a
+      <strong>TS-engine wrapper (Phase 1)</strong> — the public surface, the structured
+      <code>WasmBackendUnavailableError</code> fallback chain, and the three-tier host
+      compatibility matrix are all in place, but the underlying engine inside the WASM
+      artefact is the TypeScript engine compiled through the bridge. The full Rust port
+      is tracked as <strong>epic #1133</strong>, deferred to post-0.9.0 behind a GO/NO-GO
+      review per SPEC §17.6. Adopters who turn on the WASM backend today get the contract;
+      they get the throughput improvement once #1133 lands. Cross-link:
+      <code>packages/core/wasm/README.md</code> and <code>docs/wasm-adoption-guide.md</code>
+      for the host-tier matrix, the bridge auto-detection, and the H1 reference-identity
+      hazard that bites at the Rust-swap boundary (SPEC §15.1 amendment, PR #1129).
+    </blockquote>
+
+    <p>
+      The three host tiers (<code>wasmgc-builtins</code>, <code>wasmgc-classic</code>,
+      <code>serde-json</code>) are selected at module-load time by <code>detectBridge()</code>.
+      You do not pin a tier in your <code>package.json</code> — the artefacts are lazily
+      fetched, and only the tier your host actually supports is downloaded. If
+      <code>WebAssembly</code> instantiation fails outright (CSP without
+      <code>'wasm-unsafe-eval'</code>, embedded runtimes, etc.), the loader throws
+      <code>WasmBackendUnavailableError</code> with a structured <code>code</code> field and
+      you fall back to the TS engine at the construction seam.
+    </p>
+
+    <h2 id="typescript">TypeScript setup</h2>
+    <p>
+      All <code>@causl/*</code> packages ship <code>.d.ts</code> files. The minimum
+      <code>tsconfig.json</code> for an application consuming causl looks like this:
+    </p>
+    <pre><code>{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  }
+}</code></pre>
+    <p>
+      <strong>Module resolution.</strong> Causl is ESM-only and uses package <code>exports</code>
+      subpaths (<code>@causl/core/wasm</code>, <code>@causl/core/testing</code>, etc.). You need
+      <code>"moduleResolution": "Bundler"</code> (or <code>"NodeNext"</code>) so TypeScript
+      reads the <code>exports</code> map. Older <code>"moduleResolution": "Node"</code> will
+      silently miss the subpath types.
+    </p>
+    <p>
+      <strong>Strict mode.</strong> Causl's branded types (<code>NodeId&lt;T&gt;</code>,
+      <code>GraphTime</code>) only catch the errors they are designed to catch under
+      <code>strict: true</code>. A non-strict <code>tsconfig</code> erases the brand and a
+      node from graph A passed to graph B will fail at runtime instead of at
+      <code>tsc</code>. The team treats <code>strict: true</code> as a precondition; do not
+      try to use causl without it.
+    </p>
+    <p>
+      <strong>JSX.</strong> If you use <code>@causl/react</code>, set
+      <code>"jsx": "react-jsx"</code> (or <code>"react-jsxdev"</code> in dev). The classic
+      <code>"react"</code> setting still works but is no longer recommended.
+    </p>
+
+    <h2 id="bundle-sizes">Bundle sizes</h2>
+    <p>
+      Causl publishes a <code>size-limit</code> CI gate on every published surface so the
+      bundle budget is enforceable, not aspirational. The ceilings, per SPEC §14.2 and §17.6,
+      are:
+    </p>
+    <table>
+      <thead>
+        <tr><th>Bundle</th><th>Ceiling (Brotli)</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>@causl/core</code> (full import)</td>
+          <td>20 KB</td>
+          <td>Working target ~18 KB. Includes source-mapped error chains, devtools opt-in
+            wiring (DCE'd in production), runtime IR validation in <code>hydrate()</code>,
+            branded <code>NodeId&lt;T&gt;</code> / <code>GraphTime</code>, and the
+            <code>dehydrate()</code> / <code>hydrate()</code> SSR pair.</td>
+        </tr>
+        <tr>
+          <td><code>@causl/core</code> (<code>createCausl</code>-only)</td>
+          <td>15 KB</td>
+          <td>The minimum import surface. Adopters who only register inputs and read
+            derivations sit near this floor.</td>
+        </tr>
+        <tr>
+          <td><code>@causl/react</code></td>
+          <td>8 KB</td>
+          <td>Absorbs the four §8.2 extension hooks plus the dev-mode "Update did not commit"
+            warnings (DCE'd in production).</td>
+        </tr>
+        <tr>
+          <td><code>@causl/devtools-bridge</code> (absent-extension path)</td>
+          <td>5 KB</td>
+          <td>The bridge logic that the <code>devtools: true</code> opt-in in core now imports.
+            The present-extension path is larger.</td>
+        </tr>
+        <tr>
+          <td><code>@causl/core/wasm</code> entry stub</td>
+          <td>3 KB</td>
+          <td>Loader skeleton (<code>loadWasmBackend</code>, <code>detectBridge</code>,
+            <code>WasmBackendUnavailableError</code>, <code>BridgeFeatures</code>). Adopters
+            who never import this entry pay zero bytes for it.</td>
+        </tr>
+        <tr>
+          <td>WASM Tier 1 (<code>wasmgc-builtins</code>)</td>
+          <td>60 KB Brotli ceiling</td>
+          <td>Currently ~45 KB Brotli. Lazily fetched only on hosts that support
+            <code>wasm:js-string</code> direct imports.</td>
+        </tr>
+        <tr>
+          <td>WASM Tier 2 (<code>wasmgc-classic</code>)</td>
+          <td>60 KB Brotli ceiling</td>
+          <td>Currently ~50 KB Brotli. Lazily fetched on Safari 18.2+ and WasmGC hosts without
+            the JS-string import binding.</td>
+        </tr>
+        <tr>
+          <td>WASM Tier 3 (<code>serde-json</code>)</td>
+          <td>80 KB Brotli ceiling (target)</td>
+          <td>Universal-compat fallback. Lazily fetched only on hosts that hit Tier 3. See
+            SPEC §17.6 for the current raw-byte divergence tracked in #1150.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The CI gate <code>size — bundle-size gate (#147)</code> fails any PR that crosses these
+      ceilings. The team holds the line on the budget: every kilobyte over 4.5 KB shipped to
+      <code>@causl/core</code> required written team consensus per SPEC §14.2.
+    </p>
+
+    <h2 id="next-steps">Next steps</h2>
+    <p>
+      With the packages installed, the natural next step is the
+      <a href="../tutorial/">Tutorial</a> — a walkthrough that builds a small graph, wires it
+      into a React component, and adds an async fetch with <code>@causl/sync</code>. From
+      there:
+    </p>
+    <ul>
+      <li><a href="../usage/">Usage Guide</a> — task-oriented recipes for commits, subscriptions, persistence, SSR, and time travel.</li>
+      <li><a href="../api/">API Reference</a> — the typedoc-generated reference for every <code>@causl/*</code> package.</li>
+      <li><a href="../best-practices/">Best Practices</a> — race rows, capability scoping, and the H1 reference-identity hazard adopters trip on first.</li>
+      <li><a href="../faq/">FAQ</a> — when causl is the right tool, and where it is not.</li>
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../topbar.js" defer></script>
+</body>
+</html>

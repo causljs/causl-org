@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FAQ &mdash; General &mdash; Causl</title>
+  <meta name="description" content="General FAQ for causl — what makes it different, when to use it, license, browser/Node support, TypeScript, SSR, async, and the 1.0 release timeline." />
+  <link rel="icon" href="../../causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../topbar.css" />
+  <link rel="stylesheet" href="../../site.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: rgba(232, 238, 247, 0.85); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: rgba(11, 16, 32, 0.85); }
+    .docs-content .qa-meta { font-family: var(--mono); font-size: 0.82rem; color: rgba(232, 238, 247, 0.6); margin-bottom: 1.2rem; }
+    :root[data-theme="light"] .docs-content .qa-meta { color: rgba(11, 16, 32, 0.55); }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../" class="topbar-brand" aria-label="Causl home">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88.28 100" aria-hidden="true">
+          <circle cx="78.28" cy="21.72" r="10" fill="#27D3C3" />
+          <circle cx="50"    cy="10"    r="10" fill="#27D3C3" />
+          <circle cx="21.72" cy="21.72" r="10" fill="#27D3C3" />
+          <circle cx="10"    cy="50"    r="10" fill="#27D3C3" />
+          <circle cx="21.72" cy="78.28" r="10" fill="#27D3C3" />
+          <circle cx="50"    cy="90"    r="10" fill="#27D3C3" />
+          <circle cx="78.28" cy="78.28" r="10" fill="#FF646E" />
+        </svg>
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation">/ˈkɔː.zəl/ &mdash; like "causal"</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button" class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <p class="qa-meta">
+      <a href="./">FAQ</a> &rsaquo; General
+    </p>
+
+    <h1>FAQ &mdash; General</h1>
+
+    <p>
+      This page answers the questions we get from people who are
+      evaluating causl for the first time: what it is, what makes it
+      different from the libraries they already know, when it's the
+      right tool, and what to expect about compatibility, language
+      support, and the road to 1.0. Each answer expands beneath the
+      question; cross-links point at the SPEC, the API reference, or
+      the relevant topic guide for the full story.
+    </p>
+
+    <h2>About causl</h2>
+
+    <h3 id="what-is-causl">What is causl?</h3>
+
+    <p>
+      Causl is a transactional state-management engine for JavaScript
+      and TypeScript. You declare a graph of <em>inputs</em> (mutable
+      cells) and <em>derived nodes</em> (pure functions of other
+      nodes), and the engine guarantees that every observable read
+      across the graph corresponds to a single, atomic commit. Writes
+      go through <code>graph.commit(fn)</code>; if any precondition
+      fails, the whole transaction rolls back and no subscriber is
+      ever shown a partial update.
+    </p>
+
+    <pre><code>import { createCausl, input, derived } from '@causl/core';
+
+const graph = createCausl();
+const count = input(graph, 0);
+const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+
+graph.commit(() =&gt; {
+  graph.set(count, 5);
+});
+
+console.log(graph.read(doubled));  // 10
+</code></pre>
+
+    <p>
+      The engine is described in full in
+      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md">SPEC.md</a>,
+      and the public surface for each <code>@causl/*</code> package is
+      documented in the
+      <a href="../api/">generated API reference</a>.
+    </p>
+
+    <h3 id="what-makes-it-different">What makes causl different from Redux, Jotai, or MobX?</h3>
+
+    <p>
+      The short version: causl treats the dependency graph as a
+      first-class object and runs every batch of writes as a true
+      transaction. The longer version splits across three axes &mdash;
+      the consistency model, the failure model, and what you can prove
+      statically.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Concern</th>
+          <th>Redux</th>
+          <th>Jotai</th>
+          <th>MobX</th>
+          <th>causl</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Atomic batched writes</td>
+          <td>Per-action only</td>
+          <td>No</td>
+          <td>Per-action only</td>
+          <td>Yes &mdash; <code>commit()</code> is all-or-nothing</td>
+        </tr>
+        <tr>
+          <td>Glitch-free derivations</td>
+          <td>Manual via selectors</td>
+          <td>Best-effort</td>
+          <td>Best-effort</td>
+          <td>Theorem &mdash; Phase D Kahn topo</td>
+        </tr>
+        <tr>
+          <td>Static race detection</td>
+          <td>No</td>
+          <td>No</td>
+          <td>No</td>
+          <td><code>causl-check</code> &mdash; twelve passes</td>
+        </tr>
+        <tr>
+          <td>Bounded model checker</td>
+          <td>No</td>
+          <td>No</td>
+          <td>No</td>
+          <td><code>causl-enumerate</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      Concretely, every commit goes through the
+      <strong>Phase A&ndash;H pipeline</strong> (SPEC &sect;5.1): a
+      precondition check, the input-write phase, the input-layer fast
+      path, a Kahn topological recompute, frozen Commit assembly,
+      commit-history append, subscriber dispatch, and transient
+      disposal. Subscribers never observe a mid-commit state &mdash; that
+      property is enforced by the engine, not by convention. See the
+      <a href="https://github.com/iasbuilt/causl/blob/main/README.md">README</a>
+      for the comparison written out at length.
+    </p>
+
+    <blockquote>
+      <strong>Detailed explanation.</strong> Most JS state libraries
+      can give you batching, and most can give you derivations, but
+      <em>which value of a derived node is consistent with which value
+      of an input</em> is only well-defined inside a causl commit.
+      Outside a commit, reads observe the last fully-committed graph
+      time &mdash; the engine never lets the application observe an
+      intermediate state. This is what makes glitch-freedom a theorem
+      and not a scheduler trick; see
+      <a href="https://github.com/iasbuilt/causl/blob/main/docs/semantics.md">docs/semantics.md</a>
+      for the denotational walkthrough.
+    </blockquote>
+
+    <h3 id="when-to-choose-causl">When should I choose causl over a simpler library?</h3>
+
+    <p>
+      Causl is the right tool when at least one of these is true for
+      your application:
+    </p>
+
+    <ul>
+      <li>
+        <strong>Tangled dependency graphs.</strong> You have many
+        derived values that depend on each other, and the wrong
+        recompute order produces visibly wrong results &mdash; spreadsheets,
+        formula engines, planners, BI dashboards, simulators.
+      </li>
+      <li>
+        <strong>Atomic writes.</strong> A user action mutates more
+        than one cell, and any observer that sees only some of the
+        writes is a bug &mdash; multi-row edits, optimistic mutations
+        with rollback, undo / redo stacks.
+      </li>
+      <li>
+        <strong>Race-class auditability.</strong> You need to be able
+        to argue at code-review time that no derivation can ever
+        observe a torn read or a stale fetch &mdash; regulated UIs,
+        instrument panels, financial dashboards.
+      </li>
+    </ul>
+
+    <p>
+      If your state model is "one global object, a handful of
+      selectors, no concurrent fetches" then Redux Toolkit, Zustand,
+      or plain <code>useState</code> are likely the right answer. The
+      <a href="https://github.com/iasbuilt/causl">project home</a>
+      lists the cases where causl is <em>not</em> the right tool;
+      we'd rather you pick something simpler when it fits.
+    </p>
+
+    <h3 id="license">What's the license? Can I use it commercially?</h3>
+
+    <p>
+      Causl is MIT-licensed. Every package under <code>@causl/*</code>,
+      the two Rust tools under <code>tools/</code>, the documentation
+      site, and the benchmark harness are all MIT. There are no
+      patent grants, dual-license carve-outs, or contributor
+      agreements beyond the standard DCO sign-off. You can use causl
+      in commercial, closed-source, or open-source projects without
+      asking us. See
+      <a href="https://github.com/iasbuilt/causl/blob/main/LICENSE">LICENSE</a>
+      and the per-package <code>package.json</code> for the exact
+      text.
+    </p>
+
+    <h2>Compatibility</h2>
+
+    <h3 id="browser-support">Which browsers does causl support?</h3>
+
+    <p>
+      The npm packages target <strong>ES2022</strong> and ship as ESM.
+      That means modern evergreen browsers &mdash; current Chrome, Edge,
+      Firefox, and Safari &mdash; work out of the box. There is no
+      polyfill bundle; if you need to support older environments, run
+      causl through your existing transpile pipeline (Vite, esbuild,
+      Rollup, Webpack, Next.js, Remix &mdash; all tested in CI). The engine
+      has no runtime dependency on a specific DOM API, so anywhere your
+      bundler can produce ES2022 output, causl will run.
+    </p>
+
+    <p>
+      The optional <strong>WasmBackend</strong> requires the
+      <code>WebAssembly</code> global, which has been available in
+      every shipping browser since 2017. The WASM module is gated
+      behind <code>loadWasmBackend()</code> &mdash; you only pay the
+      download and instantiation cost if you opt in. Note that the
+      WASM backend is currently a TypeScript-engine wrapper (Phase-1);
+      the full Rust port is tracked by epic #1133 and is deferred
+      behind GO/NO-GO criteria as part of the 1.0 plan (see
+      <a href="#one-point-oh">the 1.0 timeline question</a> below).
+    </p>
+
+    <h3 id="node-support">Which Node versions are supported?</h3>
+
+    <p>
+      The supported matrix is <strong>Node 20.x (LTS)</strong> and
+      <strong>Node 22.x (current LTS)</strong>. CI runs every test
+      suite on both. Earlier versions may work for trivial usage but
+      are not gated; ESM-only consumers in particular should be on
+      Node 20+ to avoid loader corner cases. Deno and Bun are not
+      tested in CI but the engine is dependency-free at runtime, so
+      it generally works there too.
+    </p>
+
+    <h3 id="typescript-support">Do I have to use TypeScript?</h3>
+
+    <p>
+      No &mdash; causl is published with <code>.d.ts</code> declarations
+      alongside the JavaScript, so plain-JS consumers get full
+      autocompletion and inline docs in any editor that consumes type
+      declarations (VS Code, WebStorm, Neovim with the TypeScript LSP).
+      That said, the engine was designed type-first: input cells,
+      derived nodes, and commits carry their value types through the
+      graph, and that's where most of the day-to-day ergonomics come
+      from.
+    </p>
+
+    <pre><code>// TypeScript narrows the value type all the way through.
+const name = input(graph, 'Ada');        // input&lt;string&gt;
+const upper = derived(graph, (g) =&gt;
+  g.read(name).toUpperCase()             // typed as string
+);
+</code></pre>
+
+    <p>
+      The minimum supported TypeScript version is <strong>5.4</strong>.
+      Older versions may compile against the type declarations but the
+      stricter inference signatures used in <code>@causl/sync</code>
+      and <code>@causl/persistence</code> require 5.4 or newer.
+    </p>
+
+    <h3 id="ssr-support">Does causl work with server-side rendering?</h3>
+
+    <p>
+      Yes. The engine has no implicit globals &mdash; every graph is a
+      first-class value returned by <code>createCausl()</code> &mdash; so
+      it works in any server environment that runs JavaScript: Node,
+      Workers, Deno, Bun, edge runtimes. For React SSR, the
+      <code>@causl/react</code> bindings expose a snapshot/hydrate
+      flow that lets the server build a graph, serialise its frozen
+      Commit, and rehydrate it on the client.
+    </p>
+
+    <pre><code>// Server
+import { createCausl, snapshot } from '@causl/core';
+const graph = createCausl();
+// ... populate inputs from request data ...
+const payload = snapshot(graph);
+return { props: { causl: payload } };
+
+// Client
+import { hydrate } from '@causl/core';
+const graph = hydrate(payload);
+</code></pre>
+
+    <p>
+      Snapshot/hydrate is covered in detail under
+      <a href="../api/modules/_causl_core.html"><code>@causl/core</code></a>
+      and SPEC &sect;14. Per-package SSR notes for React, Next.js, and
+      Remix integrations live in the
+      <a href="../usage/">Usage Guide</a>.
+    </p>
+
+    <h3 id="async-support">Does causl handle async data and fetches?</h3>
+
+    <p>
+      Yes, but through a dedicated package &mdash;
+      <a href="../api/modules/_causl_sync.html"><code>@causl/sync</code></a> &mdash;
+      because async resources have their own consistency model. The
+      engine itself is synchronous and transactional by design; the
+      moment you let a derivation suspend mid-commit you lose
+      atomicity. Instead, <code>@causl/sync</code> wraps fetches in a
+      composite statechart (launch, version-stamp, abort, settle) and
+      lifts the outcome back into the graph as an input write.
+    </p>
+
+    <pre><code>import { createCausl, input } from '@causl/core';
+import { resource } from '@causl/sync';
+
+const graph = createCausl();
+const userId = input(graph, 'ada');
+
+const user = resource(graph, {
+  key: (g) =&gt; g.read(userId),
+  fetch: async (id, signal) =&gt; {
+    const res = await fetch(`/api/users/${id}`, { signal });
+    return res.json();
+  },
+});
+</code></pre>
+
+    <p>
+      Cancellation, version-stamping (so a slow response from a stale
+      key never lands), and conflict resolution are all governed by
+      the statechart in
+      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.async.md">SPEC.async.md</a>.
+      The race classes S-1 and S-2 in &sect;16 are the ones that motivate
+      the version-stamp; if you are wiring up your own async layer,
+      read those two rows first.
+    </p>
+
+    <blockquote>
+      <strong>Detailed explanation.</strong> The contract is that
+      <code>@causl/sync</code> never blocks a commit. When a fetch
+      settles, the resolver enqueues a follow-up commit that writes
+      the result to a dedicated input. The graph stays
+      transactional; the fetch lifecycle stays explicit.
+    </blockquote>
+
+    <h2>Releases and roadmap</h2>
+
+    <h3 id="one-point-oh">When does causl reach 1.0?</h3>
+
+    <p>
+      The current published version is <strong>0.9.0</strong>. The
+      0.x series is feature-complete for the eight commitments that
+      define the engine; what remains for 1.0 is a stability
+      guarantee. The release will happen when <strong>one of two</strong>
+      conditions holds:
+    </p>
+
+    <ol>
+      <li>
+        <strong>Epic #1133 lands.</strong> The Rust engine port
+        completes its GO/NO-GO review and the
+        <code>WasmBackend</code> graduates from the current Phase-1
+        TypeScript-wrapper into the native Rust core. That gives 1.0
+        a single normative reference implementation across both
+        backends and unblocks the long-term performance roadmap.
+      </li>
+      <li>
+        <strong>Or:</strong> the maintainers explicitly declare API
+        stability without waiting for the Rust port. That happens if
+        the public surface across <code>@causl/core</code>,
+        <code>@causl/react</code>, <code>@causl/sync</code>, and
+        <code>@causl/persistence</code> goes through a full minor-release
+        cycle (currently scheduled for 0.10 and 0.11) without a
+        breaking change, and the SPEC corpus passes the bounded model
+        checker at Tier-3 bounds on the next two scheduled runs.
+      </li>
+    </ol>
+
+    <p>
+      In practice that means 1.0 is gated on engineering signal, not
+      on a calendar date. The 0.9 series is API-frozen except for
+      strictly additive changes; if you adopt 0.9 today, the upgrade
+      to 1.0 is expected to be either a no-op or a single codemod.
+      The
+      <a href="https://github.com/iasbuilt/causl/blob/main/CHANGELOG.md">CHANGELOG</a>
+      tracks every wave shipped on <code>main</code> and is the source
+      of truth for "what changed since I last upgraded".
+    </p>
+
+    <h3 id="bug-fix-policy">How are bugs and behavior changes handled?</h3>
+
+    <p>
+      Every behavior is normative in SPEC.md. If the engine diverges
+      from the SPEC, that's the bug &mdash; we change the engine, not the
+      SPEC. If the SPEC itself needs to change, the PR that proposes
+      the change is required to update the prose, the type surface,
+      the conformance tests, the static checker, and the bounded model
+      checker in lockstep. The amendment process is documented in
+      <a href="https://github.com/iasbuilt/causl/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.
+    </p>
+
+    <p>
+      One commonly-cited example: <code>graph.read()</code> reference
+      identity is <strong>not</strong> contractually guaranteed
+      (SPEC &sect;15.1, amended via PR #1129). If you cache or compare
+      derived results by reference, see the H1 hazard note in the
+      <a href="../best-practices/">Best Practices</a> guide.
+    </p>
+
+    <h3 id="getting-help">Where do I ask follow-up questions?</h3>
+
+    <p>
+      For usage questions, the
+      <a href="https://github.com/iasbuilt/causl/discussions">GitHub
+      Discussions</a> board. For bugs, the
+      <a href="https://github.com/iasbuilt/causl/issues">issue tracker</a>
+      &mdash; please include a minimal reproduction and the output of
+      <code>graph.explain()</code> from
+      <code>@causl/devtools</code> if the issue involves a derivation
+      or a commit. For real-time questions, join the community chat
+      linked from the
+      <a href="../../">project home</a>.
+    </p>
+
+    <h2>Next steps</h2>
+
+    <ul>
+      <li><a href="../getting-started/">Getting Started</a> &mdash; install causl and write your first commit.</li>
+      <li><a href="../tutorial/">Tutorial</a> &mdash; build a working app step-by-step.</li>
+      <li><a href="../usage/">Usage Guide</a> &mdash; one chapter per topic, in narrative form.</li>
+      <li><a href="../api/">API reference</a> &mdash; generated from the source on every build.</li>
+      <li><a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md">SPEC.md</a> &mdash; the canonical specification.</li>
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>&copy; 2026 Causl contributors &middot; MIT License &middot; State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../topbar.js" defer></script>
+</body>
+</html>
