@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Causl — Transactional state for tangled dependency graphs</title>
+  <meta name="description" content="Causl is a state engine for applications whose model is a live graph of facts whose derivations cascade. Atomic commits, automatic dependency tracking, glitch-free diamonds, and pre-runtime race detection." />
+  <link rel="icon" href="causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="topbar.css" />
+  <link rel="stylesheet" href="site.css" />
+  <style>
+    /* Page-specific rules. */
+    .hero {
+      padding-top: 1rem;
+      padding-bottom: 4rem;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 3rem;
+      align-items: center;
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 2rem; }
+    }
+
+    .hero p.lede {
+      font-size: 1.15rem;
+      color: rgba(232, 238, 247, 0.86);
+      max-width: 580px;
+      margin: 1.2rem 0 1.8rem;
+    }
+
+    :root[data-theme="light"] .hero p.lede { color: rgba(11, 16, 32, 0.78); }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 1.6rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: rgba(232, 238, 247, 0.62);
+    }
+
+    :root[data-theme="light"] .hero-meta { color: rgba(11, 16, 32, 0.6); }
+
+    .hero-meta strong {
+      display: block;
+      color: var(--causal-cyan);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.15rem;
+    }
+
+    .commitment-list {
+      counter-reset: commitment;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.1rem;
+    }
+
+    @media (max-width: 800px) { .commitment-list { grid-template-columns: 1fr; } }
+
+    .commitment {
+      counter-increment: commitment;
+      position: relative;
+      padding: 1.4rem 1.5rem 1.4rem 3.6rem;
+      background: linear-gradient(180deg,
+        rgba(26, 34, 56, 0.7), rgba(12, 18, 34, 0.78));
+      border: 1px solid rgba(169, 181, 201, 0.14);
+      border-radius: var(--radius-lg);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    :root[data-theme="light"] .commitment {
+      background: #FFFFFF;
+      border-color: rgba(11, 16, 32, 0.08);
+      box-shadow: 0 8px 24px rgba(11, 16, 32, 0.06);
+    }
+
+    .commitment::before {
+      content: counter(commitment, decimal-leading-zero);
+      position: absolute;
+      left: 1.2rem;
+      top: 1.35rem;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--causal-cyan);
+      letter-spacing: 0.04em;
+    }
+
+    .commitment h3 { margin: 0 0 0.4rem; font-size: 1.1rem; }
+    .commitment p { margin: 0; font-size: 0.95rem; }
+
+    .package-row {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 1.2rem;
+      padding: 1rem 0;
+      border-top: 1px solid rgba(169, 181, 201, 0.12);
+      align-items: baseline;
+    }
+
+    .package-row:first-child { border-top: none; }
+
+    @media (max-width: 700px) {
+      .package-row { grid-template-columns: 1fr; gap: 0.3rem; }
+    }
+
+    .package-row .pkg-name {
+      font-family: var(--mono);
+      font-size: 0.92rem;
+      color: var(--causal-cyan);
+      font-weight: 700;
+    }
+
+    .package-row .pkg-desc {
+      color: rgba(232, 238, 247, 0.82);
+      font-size: 0.95rem;
+    }
+
+    :root[data-theme="light"] .package-row .pkg-desc { color: rgba(11, 16, 32, 0.78); }
+
+    .when-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.4rem;
+    }
+    @media (max-width: 800px) { .when-cols { grid-template-columns: 1fr; } }
+
+    .when-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .when-list li {
+      padding: 0.55rem 0 0.55rem 1.6rem;
+      border-bottom: 1px dashed rgba(169, 181, 201, 0.14);
+      position: relative;
+      font-size: 0.95rem;
+      color: rgba(232, 238, 247, 0.86);
+    }
+
+    :root[data-theme="light"] .when-list li { color: rgba(11, 16, 32, 0.78); }
+
+    .when-list li:last-child { border-bottom: none; }
+
+    .when-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 1.05rem;
+      width: 0.8rem;
+      height: 0.18rem;
+      background: var(--causal-cyan);
+      border-radius: 2px;
+    }
+
+    .when-list.no-list li::before { background: var(--conflict-coral); }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+    @media (max-width: 800px) { .status-grid { grid-template-columns: 1fr; } }
+
+    .status-card .mono-label { color: var(--success-mint); }
+    .status-card.future .mono-label { color: var(--commit-amber); }
+
+    /* CTA strip at the bottom of the homepage. */
+    .cta-strip {
+      margin-top: 3.5rem;
+      padding: 2.5rem 2rem;
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(135deg, rgba(39, 211, 195, 0.12),
+                        rgba(79, 124, 255, 0.12) 70%, transparent),
+        linear-gradient(180deg, rgba(26, 34, 56, 0.78),
+                        rgba(11, 16, 32, 0.86));
+      border: 1px solid rgba(39, 211, 195, 0.22);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .cta-strip h2 { margin: 0 0 0.25rem; }
+    .cta-strip p { margin: 0; max-width: 560px; }
+  </style>
+</head>
+<body>
+  <!-- ============================================================
+       Topbar — collapses from a tall hero to a sticky bar on scroll.
+       ============================================================ -->
+  <header id="topbar" class="topbar is-hero">
+    <div class="topbar-content">
+      <a href="/" class="topbar-brand" aria-label="Causl home">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88.28 100" aria-hidden="true">
+          <circle cx="78.28" cy="21.72" r="10" fill="#27D3C3" />
+          <circle cx="50"    cy="10"    r="10" fill="#27D3C3" />
+          <circle cx="21.72" cy="21.72" r="10" fill="#27D3C3" />
+          <circle cx="10"    cy="50"    r="10" fill="#27D3C3" />
+          <circle cx="21.72" cy="78.28" r="10" fill="#27D3C3" />
+          <circle cx="50"    cy="90"    r="10" fill="#27D3C3" />
+          <circle cx="78.28" cy="78.28" r="10" fill="#FF646E" />
+        </svg>
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+
+      <div class="pronunciation">/ˈkɔː.zəl/ — like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+
+    <button id="topbarBurger" class="topbar-burger"
+            aria-label="Open navigation menu" aria-expanded="false"
+            aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true"
+         aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/" class="is-current">Home</a>
+        <a href="/documentation/">Documentation</a>
+        <a href="/benchmarks/">Benchmarks</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ============================================================
+       Hero
+       ============================================================ -->
+  <section class="hero page">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow">
+          <span class="dot"></span>
+          Phases 1–4 shipped on main
+        </span>
+        <h1 style="margin-top: 1rem;">
+          Commit once.<br />
+          Observe coherence.
+        </h1>
+        <p class="lede">
+          Causl is a state engine for applications whose model is a live
+          graph of facts whose derivations cascade. Atomic commits,
+          automatic dependency tracking, dynamic-dep cleanup,
+          glitch-free diamonds, and pre-runtime race detection — held by
+          property tests and a bounded model checker, not by promises.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="#quickstart">Quickstart</a>
+          <a class="button ghost" href="/documentation/">Documentation</a>
+          <a class="button ghost" href="https://github.com/iasbuilt/causl"
+             rel="noopener">View on GitHub</a>
+        </div>
+        <div class="hero-meta">
+          <div><strong>Engine</strong>@causl/core · TypeScript</div>
+          <div><strong>Race detection</strong>causl-check · causl-enumerate</div>
+          <div><strong>License</strong>MIT</div>
+        </div>
+      </div>
+
+      <div>
+<pre class="codeblock"><code><span class="tok-kw">import</span> { <span class="tok-fn">createCausl</span> } <span class="tok-kw">from</span> <span class="tok-str">'@causl/core'</span>
+
+<span class="tok-kw">const</span> graph = <span class="tok-fn">createCausl</span>()
+<span class="tok-kw">const</span> a   = graph.<span class="tok-fn">input</span>(<span class="tok-str">'a'</span>, <span class="tok-num">1</span>)
+<span class="tok-kw">const</span> b   = graph.<span class="tok-fn">input</span>(<span class="tok-str">'b'</span>, <span class="tok-num">2</span>)
+<span class="tok-kw">const</span> sum = graph.<span class="tok-fn">derived</span>(<span class="tok-str">'sum'</span>, (get) =&gt; <span class="tok-fn">get</span>(a) + <span class="tok-fn">get</span>(b))
+<span class="tok-kw">const</span> sum1 = graph.<span class="tok-fn">derived</span>(<span class="tok-str">'sum+1'</span>, (get) =&gt; <span class="tok-fn">get</span>(sum) + <span class="tok-num">1</span>)
+
+graph.<span class="tok-fn">subscribe</span>(sum1, (v) =&gt; <span class="tok-fn">log</span>(v))
+<span class="tok-com">// 4</span>
+
+graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-a'</span>, tx =&gt; tx.<span class="tok-fn">set</span>(a, <span class="tok-num">10</span>))
+<span class="tok-com">// 13</span>
+
+graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span>, tx =&gt; {
+  tx.<span class="tok-fn">set</span>(a, <span class="tok-num">100</span>); tx.<span class="tok-fn">set</span>(b, <span class="tok-num">200</span>)
+})
+<span class="tok-com">// 301 — exactly one notification, not two</span>
+</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Why (lifted in spirit from README "Why does this need to exist?")
+       ============================================================ -->
+  <section class="page section" id="why">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">Why this exists</div>
+        <h2>State that is not a tree of values.</h2>
+      </div>
+      <p class="lead">
+        Spreadsheets, CMMS, BIM-style asset graphs, capital planning
+        tools, scheduling systems, scenario planners, configuration
+        editors, large operational consoles — applications whose state
+        is a live graph of facts whose derivations cascade.
+      </p>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="mono-label">Cascade</div>
+        <h3>One action invalidates dozens.</h3>
+        <p>
+          A single user edit fans out through derived values, and some
+          dependencies change <em>which</em> inputs they read as the user
+          navigates. Static selector graphs can’t express this; manual
+          memoisation drifts as the model grows.
+        </p>
+      </div>
+      <div class="card">
+        <div class="mono-label">Async drift</div>
+        <h3>Stale results outlive their context.</h3>
+        <p>
+          A fetch returns after the dependency it was launched against
+          has already moved. AbortController is part of the answer; the
+          rest is treating freshness as a typed property of the result,
+          not an ad-hoc <code>if</code> in the resolver.
+        </p>
+      </div>
+      <div class="card">
+        <div class="mono-label">Glitch</div>
+        <h3>Wrong order is data corruption.</h3>
+        <p>
+          Re-renders that fire in the wrong order produce
+          visible-but-inconsistent intermediate frames. When that state
+          is also persisted, the bug is not a render bug — it’s
+          corruption that ships to disk and to other users.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Eight commitments (verbatim from README, structurally numbered)
+       ============================================================ -->
+  <section class="page section" id="commitments">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">What causl does differently</div>
+        <h2>Eight commitments shape the library.</h2>
+      </div>
+      <p class="lead">
+        Each commitment names an unavoidable engine concept; together
+        they bound what the public API is allowed to grow into.
+      </p>
+    </div>
+
+    <ol class="commitment-list" style="list-style: none; padding: 0; margin: 0;">
+      <li class="commitment">
+        <h3>Denotational semantic foundation.</h3>
+        <p>
+          A derived value’s meaning is a function of its inputs at a
+          given commit time: <code>Behavior a = GraphTime → a</code>.
+          Glitch-freedom is then a theorem, not a scheduler trick.
+        </p>
+      </li>
+      <li class="commitment">
+        <h3>Transactions as the only mutation boundary.</h3>
+        <p>
+          All writes happen inside <code>graph.commit(intent, tx → …)</code>.
+          Outside, the graph is read-only. There is no concurrent-write
+          API to misuse.
+        </p>
+      </li>
+      <li class="commitment">
+        <h3>Dependency tracking with deterministic cleanup.</h3>
+        <p>
+          A derivation that today reads <code>assetA</code> and tomorrow
+          reads <code>assetB</code> no longer fires on
+          <code>assetA</code> writes — proven by property tests, not
+          promised by docs.
+        </p>
+      </li>
+      <li class="commitment">
+        <h3>One composite statechart for every lifecycle.</h3>
+        <p>
+          Resource fetch, conflict status, transaction phases, and
+          interaction modes share one chart with shared event vocabulary.
+          No more parallel string enums sprinkled across object fields.
+        </p>
+      </li>
+      <li class="commitment">
+        <h3>Strict layering.</h3>
+        <p>
+          The user’s information model, the editor’s controller state,
+          and the engine’s substrate live in separate identifier
+          namespaces and separate packages — enforced at the package
+          boundary, not in the docs.
+        </p>
+      </li>
+      <li class="commitment">
+        <h3>Discriminated-union state everywhere.</h3>
+        <p>
+          Optional fields that hide state machines are forbidden.
+          Impossible states cannot be represented; the type checker is
+          the first reviewer.
+        </p>
+      </li>
+      <li class="commitment">
+        <h3>MVU-shaped application surface.</h3>
+        <p>
+          A typed <code>Msg</code> union dispatched through
+          <code>update : Msg → Model → Commit</code>. Transactions are
+          the engine room; messages are the front door.
+        </p>
+      </li>
+      <li class="commitment">
+        <h3>Pre-runtime race detection in CI/CD.</h3>
+        <p>
+          Two Rust-backed CI tools ship today: <code>causl-check</code>
+          (twelve-pass static IR linter) and
+          <code>causl-enumerate</code> (SPEC §16.4 bounded model
+          checker, with an Apalache differential runner against the
+          EPIC-7 TLA+ corpus).
+        </p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============================================================
+       Comparison
+       ============================================================ -->
+  <section class="page section" id="compare">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">How it compares</div>
+        <h2>Where causl is the right tool — and where it isn’t.</h2>
+      </div>
+      <p class="lead">
+        Honest about where existing libraries are <em>strictly better</em>
+        (<span class="glyph-yes">✓</span>), where they cover the concern in some
+        form (<span class="glyph-partial">~</span>), and where the concern is missing
+        (<span class="glyph-no">✗</span>). The Causl column uses
+        <span class="glyph-yes">✓</span> for what currently ships and
+        <span class="glyph-fut">∗</span> for in-flight or planned future work.
+      </p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th>Concern</th>
+            <th>Redux + RTK</th>
+            <th>MobX</th>
+            <th>Jotai</th>
+            <th>Recoil</th>
+            <th>Zustand</th>
+            <th>Valtio</th>
+            <th>TanStack Query</th>
+            <th>XState</th>
+            <th class="col-causl">Causl</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Transactional commits (atomic write boundary)</td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Automatic dependency tracking on reads</td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Dynamic-dep cleanup proven correct</td>
+            <td><span class="glyph-na">n/a</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-na">n/a</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-na">n/a</span></td>
+            <td><span class="glyph-na">n/a</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Glitch-free diamond as a guarantee</td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Denotational semantic specification</td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Composite statechart for all lifecycles</td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Stale-async protection by version</td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Conflict records as queryable state</td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Discriminated-union state (impossible states)</td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Strict model / controller / engine layering</td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>MVU-shaped typed Msg dispatch</td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Pre-runtime race detection in CI/CD</td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Live derivation editing in devtools</td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Spreadsheet-grade dependency cascades</td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td class="col-causl"><span class="glyph-yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Excellent at: small global state</td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-na">n/a</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td class="col-causl"><span class="glyph-partial">~</span></td>
+          </tr>
+          <tr>
+            <td>Excellent at: server cache / fetch dedupe</td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-partial">~</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td class="col-causl"><span class="glyph-partial">~</span></td>
+          </tr>
+          <tr>
+            <td>Excellent at: hierarchical UI state machines</td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-no">✗</span></td>
+            <td><span class="glyph-yes">✓</span></td>
+            <td class="col-causl"><span class="glyph-partial">~</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top: 1rem; color: rgba(232,238,247,0.7); font-size: 0.9rem;">
+      Legend:
+      <span class="glyph-yes">✓</span> strictly handles ·
+      <span class="glyph-partial">~</span> covers in some form ·
+      <span class="glyph-no">✗</span> does not address ·
+      <span class="glyph-fut">∗</span> future goal ·
+      <span class="glyph-na">n/a</span> not in scope.
+      For the full reading-the-table notes, see the
+      <a href="https://github.com/iasbuilt/causl#how-causl-compares" rel="noopener">README</a>.
+    </p>
+  </section>
+
+  <!-- ============================================================
+       When to use it
+       ============================================================ -->
+  <section class="page section" id="when">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">When to reach for causl</div>
+        <h2>Built for the cases that have stopped being solvable as a stack of libraries.</h2>
+      </div>
+      <p class="lead">
+        Causl is over-engineered for simple apps and the only way to ship
+        the complex ones without losing your mind. Pick the right tool.
+      </p>
+    </div>
+
+    <div class="when-cols">
+      <div>
+        <h3 style="color: var(--success-mint); margin-bottom: 0.6rem;">
+          Reach for causl when two or more are true
+        </h3>
+        <ul class="when-list">
+          <li>State is a graph; one action cascades through dozens of derived values.</li>
+          <li>Derivations change <em>what</em> they depend on as the user navigates.</li>
+          <li>Async fetches may be stale by the time they return.</li>
+          <li>You need an audit trail of every state change with a typed intent.</li>
+          <li>Conflicts must survive the transaction that created them — as data.</li>
+          <li>Spreadsheet-style cells with formula references, or asset hierarchies with reference-based dependencies.</li>
+          <li>You want race conditions caught in CI before they reach production.</li>
+          <li>A bug in propagation is data corruption, not a UI glitch.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color: var(--conflict-coral); margin-bottom: 0.6rem;">
+          Reach for something else when
+        </h3>
+        <ul class="when-list no-list">
+          <li>State is a flat object with twenty fields and no cross-field derivations — Zustand or Jotai.</li>
+          <li>State is mostly cached HTTP — TanStack Query (or Apollo / Relay).</li>
+          <li>The problem is one big form with validation — React Hook Form.</li>
+          <li>The problem is a wizard with five steps and a back button — XState directly.</li>
+          <li>You want a library you can adopt incrementally without thinking about the model layer. Causl asks you to commit to layered architecture (information model vs. editor controllers vs. engine substrate).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Packages
+       ============================================================ -->
+  <section class="page section" id="packages">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">Packages</div>
+        <h2>The monorepo at a glance.</h2>
+      </div>
+      <p class="lead">
+        Each package owns one concern. Adopters install only the pieces
+        they need; the engine has no React dependency.
+      </p>
+    </div>
+
+    <div class="card" style="padding: 0.4rem 1.5rem;">
+      <div class="package-row">
+        <div class="pkg-name">@causl/core</div>
+        <div class="pkg-desc">Engine — Behaviors, derivations, transactions, snapshot/hydrate, retention, explain.</div>
+      </div>
+      <div class="package-row">
+        <div class="pkg-name">@causl/react</div>
+        <div class="pkg-desc">React bindings — <code>useCausl</code>, <code>useDispatch</code>, <code>useCauslFamily</code>, MVU runner, SSR.</div>
+      </div>
+      <div class="package-row">
+        <div class="pkg-name">@causl/formula</div>
+        <div class="pkg-desc">Spreadsheet patterns on top of the core — formulas, ranges, cycles.</div>
+      </div>
+      <div class="package-row">
+        <div class="pkg-name">@causl/sync</div>
+        <div class="pkg-desc">Async resources + conflict registry as composed statecharts.</div>
+      </div>
+      <div class="package-row">
+        <div class="pkg-name">@causl/devtools</div>
+        <div class="pkg-desc">Inspection primitives — explain materialisation, liveDerivation, snapshot, statechart.</div>
+      </div>
+      <div class="package-row">
+        <div class="pkg-name">@causl/devtools-bridge</div>
+        <div class="pkg-desc">Redux DevTools Extension protocol bridge (zero-cost when absent).</div>
+      </div>
+      <div class="package-row">
+        <div class="pkg-name">@causl/persistence</div>
+        <div class="pkg-desc">Persisted-input adapter with structured <code>PersistenceError</code> reporting.</div>
+      </div>
+      <div class="package-row">
+        <div class="pkg-name">@causl/checker</div>
+        <div class="pkg-desc">npm wrapper for <code>causl-check</code> — the Rust-backed static IR linter (twelve passes).</div>
+      </div>
+      <div class="package-row">
+        <div class="pkg-name">@causl/bench</div>
+        <div class="pkg-desc">Benchmarks — Jotai / RTK / MobX comparisons across the canonical scenario taxonomy.</div>
+      </div>
+      <div class="package-row">
+        <div class="pkg-name">@causl/migration-check</div>
+        <div class="pkg-desc">Migration drift detector — flags unmigrated Jotai/MobX/Redux patterns in adopters.</div>
+      </div>
+    </div>
+
+    <p style="margin-top: 1.4rem; color: rgba(232,238,247,0.7); font-size: 0.9rem;">
+      Two Rust crates ship under <code>tools/</code> as CI gates, not runtimes:
+      <strong style="color: var(--causal-cyan);">causl-check</strong> (static IR linter)
+      and <strong style="color: var(--causal-cyan);">causl-enumerate</strong>
+      (SPEC §16.4 bounded model checker, with an Apalache differential
+      runner against the EPIC-7 TLA+ corpus).
+    </p>
+  </section>
+
+  <!-- ============================================================
+       Status
+       ============================================================ -->
+  <section class="page section" id="status">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">Status</div>
+        <h2>Phases 1–4 ship on <code>main</code>. Pre-1.0.</h2>
+      </div>
+      <p class="lead">
+        Phase-8 SPEC compliance audit (umbrella #564) closed; the
+        bounded enumerator’s full §16.4.1 type surface is implemented.
+        APIs are stable but not version-locked until 1.0.
+      </p>
+    </div>
+
+    <div class="status-grid">
+      <div class="card status-card">
+        <div class="mono-label">Shipped</div>
+        <h3>Semantic core</h3>
+        <p>Atomicity, glitch-freedom, dynamic-deps, replay determinism, cycle detection — held by 1000-trial property suites in <code>packages/core/test/properties/</code>.</p>
+      </div>
+      <div class="card status-card">
+        <div class="mono-label">Shipped</div>
+        <h3>React surface</h3>
+        <p><code>useCausl</code>, <code>useDispatch</code>, <code>useCauslFamily</code>, Suspense + SSR — tested under StrictMode mount/unmount cycles.</p>
+      </div>
+      <div class="card status-card">
+        <div class="mono-label">Shipped</div>
+        <h3>Race detection toolchain</h3>
+        <p><code>causl-check</code> + <code>causl-enumerate</code> run in CI against the spreadsheet and async demos. <code>docs/apalache-diff-report.md</code> regenerates on every CI run.</p>
+      </div>
+      <div class="card status-card">
+        <div class="mono-label">Shipped</div>
+        <h3>Bounded enumerator</h3>
+        <p>Full SPEC §16.4.1 surface — 10-field <code>State</code>, 8-arm <code>Action</code>, <code>transition_phased</code> with per-step <code>events</code> + <code>phases</code>, <code>Oracle::check</code>, Tier-1/2/3 <code>Bound</code> presets, <code>enumerate_with_script</code> entry point. 43 enumerator test binaries.</p>
+      </div>
+      <div class="card status-card">
+        <div class="mono-label">Shipped</div>
+        <h3>BFS memory ceilings</h3>
+        <p>Configurable via <code>CAUSL_BFS_FRONTIER_CAP</code> / <code>CAUSL_BFS_TRACES_CAP</code> / <code>CAUSL_BFS_RACES_CAP</code> env vars (#646). Conservative defaults stay until adopter empirical data supports retuning.</p>
+      </div>
+      <div class="card status-card">
+        <div class="mono-label">Shipped</div>
+        <h3>Hosted playground &amp; spreadsheet</h3>
+        <p>The <a href="/playground/">Monaco playground</a> and <a href="/spreadsheet/">100-cell spreadsheet demo</a> ship as static HTML pages under <code>causl-org/</code>. Both load <code>@causl/core</code>, <code>@causl/formula</code>, and <code>@causl/devtools</code> live from esm.sh — no build step required.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Quickstart
+       ============================================================ -->
+  <section class="page section" id="quickstart">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">Quickstart</div>
+        <h2>The smallest worked example.</h2>
+      </div>
+      <p class="lead">
+        SPEC §10 — two inputs, one derived value, one diamond
+        derivation, one subscriber, two commits, three observed
+        propagations. Pinned as an acceptance test in
+        <code>packages/core/test/spec-10-worked-example.test.ts</code>.
+      </p>
+    </div>
+
+    <div class="grid-2">
+      <div>
+<pre class="codeblock"><code><span class="tok-com"># prerequisites: Node 24.x + pnpm 10</span>
+<span class="tok-fn">pnpm</span> add @causl/core
+<span class="tok-fn">pnpm</span> add @causl/react   <span class="tok-com"># React bindings (optional)</span>
+</code></pre>
+        <p style="margin-top: 1rem;">
+          The repository pins Node via <code>.nvmrc</code> and pnpm via
+          <code>packageManager</code> in the root <code>package.json</code>.
+          Run <code>pnpm validate</code> before committing — it runs
+          typecheck + build + test, the same toolchain CI runs.
+        </p>
+      </div>
+      <div>
+<pre class="codeblock"><code><span class="tok-kw">import</span> { <span class="tok-fn">createCausl</span> } <span class="tok-kw">from</span> <span class="tok-str">'@causl/core'</span>
+
+<span class="tok-kw">const</span> graph = <span class="tok-fn">createCausl</span>()
+<span class="tok-kw">const</span> a = graph.<span class="tok-fn">input</span>(<span class="tok-str">'a'</span>, <span class="tok-num">1</span>)
+<span class="tok-kw">const</span> b = graph.<span class="tok-fn">input</span>(<span class="tok-str">'b'</span>, <span class="tok-num">2</span>)
+<span class="tok-kw">const</span> sum = graph.<span class="tok-fn">derived</span>(
+  <span class="tok-str">'sum'</span>,
+  (get) =&gt; <span class="tok-fn">get</span>(a) + <span class="tok-fn">get</span>(b)
+)
+
+graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span>, tx =&gt; {
+  tx.<span class="tok-fn">set</span>(a, <span class="tok-num">100</span>)
+  tx.<span class="tok-fn">set</span>(b, <span class="tok-num">200</span>)
+})
+<span class="tok-com">// Subscribers fire exactly once.</span>
+</code></pre>
+      </div>
+    </div>
+
+    <div class="cta-strip">
+      <div>
+        <h2>Ready to read deeper?</h2>
+        <p>
+          The <a href="/documentation/">documentation</a> bundles the
+          rendered SPEC, per-package API references generated from the
+          source, and the changelog. The
+          <a href="https://github.com/iasbuilt/causl" rel="noopener">repository</a>
+          carries the eight-commitment audit trail.
+        </p>
+      </div>
+      <div>
+        <a class="button primary" href="/documentation/">Browse docs</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Footer
+       ============================================================ -->
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/documentation/">Documentation</a>
+        <a href="/benchmarks/">Benchmarks</a>
+        <a href="/playground/">Playground</a>
+        <a href="/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <a href="/pages/brand/">Brand</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="topbar.js" defer></script>
+</body>
+</html>
