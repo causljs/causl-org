@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Part 8: A Real-World Application — Causl</title>
+  <meta name="description" content="Combine derived nodes, lifecycle statecharts, persistence, and React into a small but realistic offline-capable notes application that exercises everything from Parts 1 through 7." />
+  <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../../css/site.css" />
+  <link rel="stylesheet" href="../../../../css/syntax.css" />
+  <style>
+    /* Page-specific overrides only — match the existing site's typographic scale. */
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: var(--text-on-base-muted); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: var(--text-on-base-muted); }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../../" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation"><span lang="en-fonipa">/ˈkɔː.zəl/</span> — like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/" class="is-current" aria-current="page">Tutorial</a>
+        <a href="/pages/documentation/usage/">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <h1>Part 8: A Real-World Application</h1>
+
+    <p>
+      Parts 1 through 7 introduced the pieces one at a time: a graph, inputs,
+      derived nodes, commits, subscribers, a lifecycle statechart for async
+      resources, and a React binding. This part wires the whole assembly into
+      a single small-but-realistic application — an offline-capable notes
+      editor that persists locally, syncs to a server, and surfaces conflicts
+      in the UI. By the end you will have a complete mental picture of how
+      the five layers compose and where the seams sit.
+    </p>
+
+    <p>
+      The application is intentionally small. The goal is not to ship a notes
+      product; it is to put every concept from the prior parts on screen at
+      once and see which file each one lives in. Real applications add
+      validation, drag-and-drop, search, history, and a dozen other concerns,
+      but they extend this skeleton rather than replace it.
+    </p>
+
+    <h2>What we are building</h2>
+
+    <p>
+      A notes app with the following behaviour:
+    </p>
+
+    <ul>
+      <li>Each note has an <code>id</code>, a <code>title</code>, a <code>body</code>, and an <code>updatedAt</code> timestamp.</li>
+      <li>Notes are stored in a single input — a record keyed by note id.</li>
+      <li>A derived <em>sorted index</em> renders the sidebar in <code>updatedAt</code> order without re-sorting on every render.</li>
+      <li>A derived <em>word count</em> tracks the active note's body live.</li>
+      <li>The local input is persisted to <code>localStorage</code> via <code>persistedInput</code> so the page survives a refresh.</li>
+      <li>A <code>resource</code> from <code>@causl/sync</code> models a pull from the server through the Idle &rarr; Loading &rarr; Loaded / Errored / Stale statechart.</li>
+      <li>A <code>ConflictRegistry</code> from <code>@causl/sync</code> surfaces server-vs-local divergence as first-class state.</li>
+      <li>The UI is React, driven by a typed <code>Msg</code> union and an MVU <code>update</code> runner.</li>
+    </ul>
+
+    <h2>1. The graph and its inputs</h2>
+
+    <p>
+      Begin with the graph itself and the small set of inputs that the
+      application owns. The "information model" — the user's mental world of
+      notes — and the "editor controller" — the selection, the dirty flag,
+      the open modal — share the same graph but live in their own id
+      namespaces. The split mirrors the <a href="../../api/">API reference</a>
+      and the SPEC §13 boundary discipline.
+    </p>
+
+    <pre class="language-tsx"><code class="language-tsx">// graph.ts
+import { createCausl, type InputNode, type Graph } from '@causl/core'
+import { persistedInput, localStorageAdapter } from '@causl/persistence'
+
+export interface Note {
+  readonly id: string
+  readonly title: string
+  readonly body: string
+  readonly updatedAt: number
+}
+
+export type NoteMap = Readonly&lt;Record&lt;string, Note&gt;&gt;
+
+export interface AppNodes {
+  readonly notes: InputNode&lt;NoteMap&gt;
+  readonly selectedId: InputNode&lt;string | null&gt;
+  readonly draftDirty: InputNode&lt;boolean&gt;
+}
+
+export function buildGraph(): { graph: Graph; nodes: AppNodes } {
+  const graph = createCausl({ name: 'notes-app' })
+  const storage = localStorageAdapter('notes-app')
+
+  // Information-model inputs — persisted across reloads.
+  const notes = persistedInput&lt;NoteMap&gt;(graph, 'notes', {}, {
+    key: 'notes-app:notes',
+    storage,
+    version: 1,
+  })
+
+  // Editor-controller inputs — also persisted so the user lands on
+  // the same note after a refresh, but in a separate key.
+  const selectedId = persistedInput&lt;string | null&gt;(graph, 'selectedId', null, {
+    key: 'notes-app:selectedId',
+    storage,
+    version: 1,
+  })
+
+  // Pure ephemeral state — not persisted. A draft-dirty bit reset on
+  // every cold start is fine and desirable.
+  const draftDirty = graph.input&lt;boolean&gt;('draftDirty', false)
+
+  return { graph, nodes: { notes, selectedId, draftDirty } }
+}
+</code></pre>
+
+    <blockquote>
+      <strong>Detailed explanation: why <code>persistedInput</code> is restricted to inputs.</strong>
+      A derived node at time <em>t</em> is by definition a pure function of
+      its inputs at the same <code>GraphTime</code>. Persisting one would
+      mean writing a cache that goes stale the instant any upstream formula
+      or input changes. <code>persistedInput</code> refuses derived handles
+      at the type level so that the on-disk envelope is always recomputable
+      and never authoritative-but-wrong. See
+      <a href="../../api/">@causl/persistence</a>.
+    </blockquote>
+
+    <h2>2. Derived projections for the UI</h2>
+
+    <p>
+      The sidebar wants notes in recency order. The footer wants the active
+      note's word count. The active-note pane wants the selected note's
+      content. Each of these is a pure function of the inputs, so each is a
+      <code>derived</code> node — registered once, recomputed automatically,
+      and not stored on disk.
+    </p>
+
+    <pre class="language-tsx"><code class="language-tsx">// projections.ts
+import type { Graph, DerivedNode } from '@causl/core'
+import type { AppNodes, Note } from './graph.js'
+
+export interface AppProjections {
+  readonly sortedNotes: DerivedNode&lt;readonly Note[]&gt;
+  readonly activeNote: DerivedNode&lt;Note | null&gt;
+  readonly wordCount: DerivedNode&lt;number&gt;
+  readonly noteCount: DerivedNode&lt;number&gt;
+}
+
+export function buildProjections(graph: Graph, nodes: AppNodes): AppProjections {
+  const sortedNotes = graph.derived&lt;readonly Note[]&gt;('sortedNotes', (g) =&gt; {
+    const map = g.read(nodes.notes)
+    return Object.values(map).slice().sort((a, b) =&gt; b.updatedAt - a.updatedAt)
+  })
+
+  const activeNote = graph.derived&lt;Note | null&gt;('activeNote', (g) =&gt; {
+    const id = g.read(nodes.selectedId)
+    if (id === null) return null
+    const note = g.read(nodes.notes)[id]
+    return note ?? null
+  })
+
+  const wordCount = graph.derived&lt;number&gt;('wordCount', (g) =&gt; {
+    const note = g.read(activeNote)
+    if (!note) return 0
+    return note.body.trim().split(/\s+/).filter(Boolean).length
+  })
+
+  const noteCount = graph.derived&lt;number&gt;('noteCount', (g) =&gt; {
+    return Object.keys(g.read(nodes.notes)).length
+  })
+
+  return { sortedNotes, activeNote, wordCount, noteCount }
+}
+</code></pre>
+
+    <p>
+      Notice that <code>wordCount</code> reads <code>activeNote</code>, not
+      the raw inputs. The engine's Phase-D Kahn schedule recomputes each
+      derived node at most once per commit and only when one of its
+      dependencies has changed, so chaining derived nodes does not pay an
+      extra cost — it is the same recompute either way and the chained form
+      is easier to read.
+    </p>
+
+    <h2>3. Messages and the MVU runner</h2>
+
+    <p>
+      Every user action becomes a typed <code>Msg</code>. The runner is the
+      single seam where a message turns into a commit, which means the
+      entire write surface of the app is the union below. Adding a feature
+      means adding a variant; the type system then forces a matching
+      handler.
+    </p>
+
+    <pre class="language-typescript"><code class="language-typescript">// messages.ts
+import { defineMsgs, payload, type MsgOf } from '@causl/react'
+
+export const msg = defineMsgs({
+  'note/create': null,
+  'note/select': payload&lt;{ id: string }&gt;(),
+  'note/edit-title': payload&lt;{ title: string }&gt;(),
+  'note/edit-body': payload&lt;{ body: string }&gt;(),
+  'note/delete': payload&lt;{ id: string }&gt;(),
+  'sync/pull': null,
+  'sync/resolve-conflict': payload&lt;{ id: string; pick: 'local' | 'remote' }&gt;(),
+})
+
+export type AppMsg = MsgOf&lt;typeof msg&gt;
+</code></pre>
+
+    <pre class="language-tsx"><code class="language-tsx">// update.ts
+import { createUpdate } from '@causl/react'
+import type { Graph } from '@causl/core'
+import type { AppMsg } from './messages.js'
+import type { AppNodes, Note, NoteMap } from './graph.js'
+
+export function buildUpdate(nodes: AppNodes) {
+  return createUpdate&lt;AppMsg&gt;({
+    'note/create': (_m, g) =&gt; {
+      g.commit('note/create', (tx) =&gt; {
+        const id = crypto.randomUUID()
+        const fresh: Note = { id, title: 'Untitled', body: '', updatedAt: Date.now() }
+        const prev = g.read(nodes.notes)
+        const next: NoteMap = { ...prev, [id]: fresh }
+        tx.set(nodes.notes, next)
+        tx.set(nodes.selectedId, id)
+      })
+    },
+    'note/select': (m, g) =&gt; {
+      g.commit('note/select', (tx) =&gt; tx.set(nodes.selectedId, m.id))
+    },
+    'note/edit-title': (m, g) =&gt; {
+      g.commit('note/edit-title', (tx) =&gt; {
+        const id = g.read(nodes.selectedId)
+        if (id === null) return
+        const prev = g.read(nodes.notes)
+        const target = prev[id]
+        if (!target) return
+        tx.set(nodes.notes, {
+          ...prev,
+          [id]: { ...target, title: m.title, updatedAt: Date.now() },
+        })
+        tx.set(nodes.draftDirty, true)
+      })
+    },
+    'note/edit-body': (m, g) =&gt; {
+      g.commit('note/edit-body', (tx) =&gt; {
+        const id = g.read(nodes.selectedId)
+        if (id === null) return
+        const prev = g.read(nodes.notes)
+        const target = prev[id]
+        if (!target) return
+        tx.set(nodes.notes, {
+          ...prev,
+          [id]: { ...target, body: m.body, updatedAt: Date.now() },
+        })
+        tx.set(nodes.draftDirty, true)
+      })
+    },
+    'note/delete': (m, g) =&gt; {
+      g.commit('note/delete', (tx) =&gt; {
+        const prev = g.read(nodes.notes)
+        const { [m.id]: _gone, ...rest } = prev
+        tx.set(nodes.notes, rest)
+        if (g.read(nodes.selectedId) === m.id) {
+          tx.set(nodes.selectedId, null)
+        }
+      })
+    },
+    'sync/pull': (_m, g) =&gt; { /* wired in the next section */ },
+    'sync/resolve-conflict': (_m, g) =&gt; { /* wired in the next section */ },
+  })
+}
+</code></pre>
+
+    <p>
+      Two things to note. First, every handler ends in exactly one
+      <code>graph.commit(...)</code>. That is the contract: one message,
+      one commit, one new <code>GraphTime</code>, one Phase-G subscriber
+      dispatch. Second, the handlers read the <em>current</em> inputs
+      inside the commit closure, which is how immutable record updates
+      remain correct under concurrent dispatch — each commit sees the
+      previous frozen snapshot, computes the next, and atomically swaps.
+    </p>
+
+    <h2>4. The sync resource and the conflict registry</h2>
+
+    <p>
+      The notes are local first, but the server is the eventual source of
+      truth. We model the pull through <code>@causl/sync</code>'s
+      <code>resource</code>, which is the ResourceFleet sub-statechart:
+      Idle &rarr; Loading &rarr; (Loaded | Errored) with an optional Stale
+      transition. The state is observable from the graph like any other
+      node, so the UI can show a spinner or an error banner just by
+      reading it.
+    </p>
+
+    <pre class="language-typescript"><code class="language-typescript">// sync.ts
+import type { Graph } from '@causl/core'
+import { resource, createConflictRegistry } from '@causl/sync'
+import type { AppNodes, Note, NoteMap } from './graph.js'
+
+export interface ServerNote extends Note {
+  readonly serverVersion: number
+}
+
+export function buildSync(graph: Graph, nodes: AppNodes) {
+  const pullResource = resource&lt;readonly ServerNote[]&gt;(graph, {
+    id: 'sync/pull',
+    initial: [],
+    fetch: async () =&gt; {
+      const res = await fetch('/api/notes')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return (await res.json()) as readonly ServerNote[]
+    },
+  })
+
+  // The conflict registry overlays divergence onto the notes input.
+  // Each open conflict is a derived view that records the local value,
+  // the remote value, and the resolution state.
+  const conflicts = createConflictRegistry&lt;string, { local: Note; remote: ServerNote }&gt;(graph, {
+    id: 'conflicts/notes',
+    detect: (g) =&gt; {
+      const local = g.read(nodes.notes)
+      const remote = g.read(pullResource.value)
+      const out: Record&lt;string, { local: Note; remote: ServerNote }&gt; = {}
+      for (const r of remote) {
+        const l = local[r.id]
+        if (l && l.updatedAt !== r.updatedAt) out[r.id] = { local: l, remote: r }
+      }
+      return out
+    },
+  })
+
+  return { pullResource, conflicts }
+}
+</code></pre>
+
+    <p>
+      Now we can wire the two sync messages in <code>update.ts</code>:
+    </p>
+
+    <pre class="language-typescript"><code class="language-typescript">// update.ts (excerpt — replacing the two stubs)
+'sync/pull': (_m, g) =&gt; {
+  // resource.refresh() is itself a commit; no extra g.commit() needed.
+  void sync.pullResource.refresh()
+},
+'sync/resolve-conflict': (m, g) =&gt; {
+  g.commit('sync/resolve-conflict', (tx) =&gt; {
+    const conflict = g.read(sync.conflicts.byKey)[m.id]
+    if (!conflict) return
+    const next: Note = m.pick === 'local' ? conflict.local : conflict.remote
+    const prev = g.read(nodes.notes)
+    tx.set(nodes.notes, { ...prev, [m.id]: next })
+  })
+  sync.conflicts.resolve(m.id)
+},
+</code></pre>
+
+    <blockquote>
+      <strong>Detailed explanation: why conflicts live in the graph.</strong>
+      A common shortcut is to stash conflicts in a <code>useState</code>
+      next to the React component that shows them. That works until a
+      second component needs to know, or the conflict survives a
+      navigation, or the conflict count must roll up into a sidebar badge.
+      Placing conflicts in the graph means every part of the UI sees the
+      same set, sorted by the same rules, and the resolution is one
+      message dispatch away from anywhere. The cost is one
+      <code>createConflictRegistry</code> call. See SPEC §10 for the
+      ConflictRegistry orthogonal region in the composite lifecycle.
+    </blockquote>
+
+    <h2>5. Mounting it all in React</h2>
+
+    <p>
+      The provider takes the graph and the update runner. Each component
+      reads only what it needs through <code>useCauslNode</code> or
+      <code>useCausl(selector)</code>, and dispatches through the typed
+      hook. There is no global store object outside the graph; there is no
+      reducer outside the runner.
+    </p>
+
+    <pre class="language-tsx"><code class="language-tsx">// App.tsx
+import { CauslProvider, useCausl, useCauslNode, useDispatch } from '@causl/react'
+import { buildGraph } from './graph.js'
+import { buildProjections } from './projections.js'
+import { buildSync } from './sync.js'
+import { buildUpdate } from './update.js'
+import { msg, type AppMsg } from './messages.js'
+
+const { graph, nodes } = buildGraph()
+const projections = buildProjections(graph, nodes)
+const sync = buildSync(graph, nodes)
+const update = buildUpdate(nodes /*, sync, projections — wire as needed */)
+
+export function App() {
+  return (
+    &lt;CauslProvider graph={graph} update={update}&gt;
+      &lt;Layout /&gt;
+    &lt;/CauslProvider&gt;
+  )
+}
+
+function Layout() {
+  return (
+    &lt;div className="layout"&gt;
+      &lt;Sidebar /&gt;
+      &lt;Editor /&gt;
+      &lt;StatusBar /&gt;
+    &lt;/div&gt;
+  )
+}
+
+function Sidebar() {
+  const list = useCauslNode(projections.sortedNotes)
+  const selectedId = useCauslNode(nodes.selectedId)
+  const dispatch = useDispatch&lt;AppMsg&gt;()
+  return (
+    &lt;aside&gt;
+      &lt;button onClick={() =&gt; dispatch(msg['note/create']())}&gt;New note&lt;/button&gt;
+      &lt;ul&gt;
+        {list.map((n) =&gt; (
+          &lt;li
+            key={n.id}
+            aria-current={n.id === selectedId}
+            onClick={() =&gt; dispatch(msg['note/select']({ id: n.id }))}
+          &gt;
+            {n.title || 'Untitled'}
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/aside&gt;
+  )
+}
+
+function Editor() {
+  const note = useCauslNode(projections.activeNote)
+  const dispatch = useDispatch&lt;AppMsg&gt;()
+  if (!note) return &lt;main&gt;Select or create a note.&lt;/main&gt;
+  return (
+    &lt;main&gt;
+      &lt;input
+        value={note.title}
+        onChange={(e) =&gt; dispatch(msg['note/edit-title']({ title: e.target.value }))}
+      /&gt;
+      &lt;textarea
+        value={note.body}
+        onChange={(e) =&gt; dispatch(msg['note/edit-body']({ body: e.target.value }))}
+      /&gt;
+      &lt;button onClick={() =&gt; dispatch(msg['note/delete']({ id: note.id }))}&gt;Delete&lt;/button&gt;
+    &lt;/main&gt;
+  )
+}
+
+function StatusBar() {
+  // useCausl selector is the right choice here: one re-render per
+  // status change, not three.
+  const { wordCount, noteCount, syncState, conflictCount } = useCausl((g) =&gt; ({
+    wordCount: g.read(projections.wordCount),
+    noteCount: g.read(projections.noteCount),
+    syncState: g.read(sync.pullResource.state).kind,
+    conflictCount: Object.keys(g.read(sync.conflicts.byKey)).length,
+  }))
+  const dispatch = useDispatch&lt;AppMsg&gt;()
+  return (
+    &lt;footer&gt;
+      &lt;span&gt;{noteCount} notes · {wordCount} words&lt;/span&gt;
+      &lt;span&gt;Sync: {syncState}&lt;/span&gt;
+      {conflictCount &gt; 0 && &lt;span&gt;{conflictCount} conflicts&lt;/span&gt;}
+      &lt;button onClick={() =&gt; dispatch(msg['sync/pull']())}&gt;Pull&lt;/button&gt;
+    &lt;/footer&gt;
+  )
+}
+</code></pre>
+
+    <p>
+      Three different React hooks appear here, each for a reason worth
+      naming. <code>useCauslNode</code> binds one component to one node:
+      <code>Sidebar</code>'s list only re-renders when
+      <code>sortedNotes</code> changes, <code>Editor</code> only when
+      <code>activeNote</code> changes. <code>useCausl(selector)</code> is
+      for multi-node projections; the selector's return is diffed with
+      <code>Object.is</code> so a status-bar render is one event per real
+      change, not four. <code>useDispatch</code> returns a stable function
+      so child components do not churn dependency arrays.
+    </p>
+
+    <h2>6. What persistence buys you</h2>
+
+    <p>
+      Refresh the tab. The <code>notes</code> input rehydrates from
+      <code>localStorage</code> before the first React render, the
+      <code>selectedId</code> input rehydrates too, and the derived
+      projections recompute deterministically from those inputs. Nothing
+      in <code>derived</code> is read from disk — <code>sortedNotes</code>
+      is recomputed from <code>notes</code> on first read, exactly as it
+      would be on a cold render, and the result is identical because the
+      inputs are. The <code>draftDirty</code> flag, deliberately not
+      persisted, comes up <code>false</code>: cold start always means
+      "nothing pending."
+    </p>
+
+    <p>
+      Schema evolution is the one place application code has to think
+      about persistence. The day a <code>tags</code> field is added to a
+      <code>Note</code>, bump <code>version</code> from <code>1</code> to
+      <code>2</code> and supply a <code>migrate</code> callback that maps
+      old envelopes forward. Without a <code>migrate</code>, the
+      persistence layer emits a typed <code>PersistenceError</code> of
+      kind <code>migrate-missing</code> and falls back to
+      <code>initial</code> — loud, audible, and never silently
+      destructive.
+    </p>
+
+    <h2>7. Where causl is — and isn't — the right tool</h2>
+
+    <p>
+      The application above plays to causl's strengths: a moderate number
+      of inputs, several derived views with overlapping dependencies,
+      transactional intent ("a click is one event"), and a need for
+      conflicts and sync state to be first-class observable values.
+      Causl's commit-time recompute and Phase-G subscribe pipeline keep
+      every consumer in lockstep, and the type system pushes
+      "impossible states" to the edges.
+    </p>
+
+    <p>
+      A few honest limits worth naming before you grow the app:
+    </p>
+
+    <ul>
+      <li>
+        <strong>Reference identity is not contractual.</strong>
+        <code>graph.read(node)</code> may return an equal-by-content but
+        not <code>===</code> value across commits. If a downstream
+        consumer keys a memo on referential identity, wrap the value in
+        <code>useMemo</code> with a content key. SPEC §15.1 names this as
+        the H1 hazard.
+      </li>
+      <li>
+        <strong>Very large inputs are awkward.</strong> Storing 100k
+        notes in one <code>NoteMap</code> input means every write copies
+        the whole record. Split into per-note inputs via the family
+        pattern (see <code>useCauslFamily</code>) once the working set
+        crosses a few thousand entries.
+      </li>
+      <li>
+        <strong>Causl is not a CRDT.</strong> The conflict registry
+        surfaces divergence and lets you resolve it; it does not merge
+        text three-way for you. Bring an OT or CRDT library if your
+        sync model needs mid-typing convergence.
+      </li>
+      <li>
+        <strong>WASM backend is preview.</strong>
+        <code>loadWasmBackend()</code> currently returns a TypeScript
+        wrapper around the JS engine; the full Rust port is deferred to
+        post-0.9.0 behind explicit GO/NO-GO criteria. Write to the
+        public API and you will get the speed-up when it lands.
+      </li>
+    </ul>
+
+    <h2>8. Recap of the five pieces</h2>
+
+    <table>
+      <thead><tr><th>Layer</th><th>Lives in</th><th>What it does here</th></tr></thead>
+      <tbody>
+        <tr><td>Inputs</td><td><code>graph.ts</code></td><td><code>notes</code>, <code>selectedId</code>, <code>draftDirty</code> — the only mutable state</td></tr>
+        <tr><td>Derived</td><td><code>projections.ts</code></td><td><code>sortedNotes</code>, <code>activeNote</code>, <code>wordCount</code>, <code>noteCount</code> — pure functions of inputs</td></tr>
+        <tr><td>Lifecycle statechart</td><td><code>sync.ts</code></td><td><code>resource</code> for the pull, <code>ConflictRegistry</code> for divergence</td></tr>
+        <tr><td>Persistence</td><td><code>graph.ts</code></td><td><code>persistedInput</code> binds two inputs to <code>localStorage</code></td></tr>
+        <tr><td>React</td><td><code>App.tsx</code>, <code>messages.ts</code>, <code>update.ts</code></td><td>Provider, typed dispatch, three hook shapes</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      Every concept from Parts 1 through 7 has a corresponding file in
+      this layout. From here, growing the app means growing one of the
+      columns above — adding a derived projection, adding a message
+      variant, adding a persisted input — rather than threading
+      cross-cutting state through the React tree.
+    </p>
+
+    <h2>Next steps</h2>
+
+    <ul>
+      <li><a href="../../usage/">Usage Guide</a> — patterns for selectors, families, and SSR hydration.</li>
+      <li><a href="../../best-practices/">Best Practices</a> — naming conventions, lint rules, and the static checker.</li>
+      <li><a href="../../api/">API Reference</a> — the canonical signatures for every symbol used in this tutorial.</li>
+      <li><a href="../../faq/">FAQ</a> — answers to "do I need a commit for that?" and other common questions.</li>
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../../">Home</a>
+        <a href="../../">Documentation</a>
+        <a href="../../../benchmarks/">Benchmarks</a>
+        <a href="../../../playground/">Playground</a>
+        <a href="../../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../../../js/topbar.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
+</body>
+</html>

@@ -8,6 +8,7 @@
   <link rel="icon" href="../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../css/topbar.css" />
   <link rel="stylesheet" href="../../css/site.css" />
+  <link rel="stylesheet" href="../../css/syntax.css" />
   <style>
     /* Page-specific rules. */
     .doc-intro {
@@ -21,12 +22,12 @@
 
     .doc-intro p.lede {
       font-size: 1.1rem;
-      color: rgba(232, 238, 247, 0.86);
+      color: var(--text-on-base-muted);
       max-width: 680px;
       margin: 1rem 0 0;
     }
 
-    :root[data-theme="light"] .doc-intro p.lede { color: rgba(11, 16, 32, 0.86); }
+    :root[data-theme="light"] .doc-intro p.lede { color: var(--text-on-base-muted); }
 
     /* Doc cards — link the whole card, show a chevron on hover. */
     .doc-card {
@@ -47,10 +48,10 @@
 
     .doc-card h3 {
       margin: 0;
-      color: var(--mist);
+      color: var(--text-on-base);
     }
 
-    :root[data-theme="light"] .doc-card h3 { color: #0B1020; }
+    :root[data-theme="light"] .doc-card h3 { color: var(--text-on-base); }
 
     .doc-card p {
       margin: 0;
@@ -61,7 +62,7 @@
       margin-top: 0.4rem;
       font-family: var(--mono);
       font-size: 0.82rem;
-      color: var(--causal-cyan);
+      color: var(--surface-emphasis);
       letter-spacing: 0.02em;
     }
 
@@ -79,19 +80,19 @@
     .api-card .pkg-name {
       font-family: var(--mono);
       font-size: 0.95rem;
-      color: var(--causal-cyan);
+      color: var(--surface-emphasis);
       font-weight: 700;
       margin-bottom: 0.35rem;
       letter-spacing: 0.01em;
     }
 
     .api-card .pkg-role {
-      color: rgba(232, 238, 247, 0.86);
+      color: var(--text-on-base-muted);
       font-size: 0.92rem;
       margin: 0 0 0.7rem;
     }
 
-    :root[data-theme="light"] .api-card .pkg-role { color: rgba(11, 16, 32, 0.86); }
+    :root[data-theme="light"] .api-card .pkg-role { color: var(--text-on-base-muted); }
 
     .api-grid {
       display: grid;
@@ -103,14 +104,17 @@
     @media (max-width: 600px) { .api-grid { grid-template-columns: 1fr; } }
 
     .api-preamble {
-      color: rgba(232, 238, 247, 0.86);
+      color: var(--text-on-base-muted);
       font-size: 0.95rem;
       margin: 0 0 1.4rem;
     }
 
-    :root[data-theme="light"] .api-preamble { color: rgba(11, 16, 32, 0.86); }
+    :root[data-theme="light"] .api-preamble { color: var(--text-on-base-muted); }
 
-    /* CTA strip at the bottom. */
+    /* CTA strip at the bottom.
+     * Uses --surface-elevated (theme-aware) base so light mode gets an
+     * actual light surface; the light-mode override below softens the
+     * accent tint to maintain contrast with auto-flipped text. */
     .cta-strip {
       margin-top: 3.5rem;
       padding: 2.5rem 2rem;
@@ -118,14 +122,21 @@
       background:
         linear-gradient(135deg, rgba(39, 211, 195, 0.12),
                         rgba(79, 124, 255, 0.12) 70%, transparent),
-        linear-gradient(180deg, rgba(26, 34, 56, 0.78),
-                        rgba(11, 16, 32, 0.86));
+        var(--surface-elevated);
+      color: var(--text-on-elevated);
       border: 1px solid rgba(39, 211, 195, 0.22);
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
       gap: 1.5rem;
+    }
+    :root[data-theme="light"] .cta-strip {
+      background:
+        linear-gradient(135deg, rgba(11, 149, 176, 0.08),
+                        rgba(124, 77, 255, 0.08) 70%, transparent),
+        var(--surface-elevated);
+      border-color: rgba(11, 149, 176, 0.28);
     }
 
     .cta-strip h2 { margin: 0 0 0.25rem; }
@@ -167,7 +178,6 @@
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="/pages/brand/">Brand</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
         <hr class="menu-divider" />
         <button id="themeToggle" type="button"
@@ -598,11 +608,21 @@
         <a href="/pages/documentation/">Documentation</a>
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
-        <a href="/pages/brand/">Brand</a>
       </div>
     </div>
   </footer>
 
   <script src="../../js/topbar.js" defer></script>
+  <script src="../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-json.min.js" defer></script>
 </body>
 </html>

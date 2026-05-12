@@ -4,10 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Spreadsheet Demo — Causl</title>
-  <meta name="description" content="Causl spreadsheet demo — 100-cell diamond dependency graph with live formula editing, commit log, and whyUpdated introspection. Ported from the Vue docs-site (#666)." />
+  <meta name="description" content="Causl spreadsheet demo — 100-cell diamond dependency graph with live formula editing, commit log, and whyUpdated introspection." />
   <link rel="icon" href="../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../css/topbar.css" />
   <link rel="stylesheet" href="../../css/site.css" />
+  <link rel="stylesheet" href="../../css/syntax.css" />
   <style>
     .hero {
       padding-top: 2rem;
@@ -16,11 +17,11 @@
     .hero h1 { margin-top: 1rem; }
     .hero p.lede {
       font-size: 1.05rem;
-      color: rgba(232, 238, 247, 0.86);
+      color: var(--text-on-base-muted);
       max-width: 720px;
       margin: 1rem 0 1.4rem;
     }
-    :root[data-theme="light"] .hero p.lede { color: rgba(11, 16, 32, 0.86); }
+    :root[data-theme="light"] .hero p.lede { color: var(--text-on-base-muted); }
 
     #spreadsheet-root {
       max-width: var(--max-page);
@@ -58,10 +59,15 @@
       color: rgba(169, 181, 201, 0.7);
       font-weight: 600;
     }
+    /* Light-mode pair for table header — AA-on-light text. */
+    :root[data-theme="light"] table.sheet th {
+      background: var(--surface-elevated);
+      color: var(--text-on-elevated-muted);
+    }
     table.sheet td.input-cell input[type="number"] {
       width: 56px;
       background: transparent;
-      color: var(--mist);
+      color: var(--text-on-base);
       border: none;
       text-align: right;
       font: inherit;
@@ -71,13 +77,17 @@
       background: rgba(255, 247, 194, 0.18);
       transition: background 600ms ease;
     }
+    /* Light-mode pair — soft amber tint visible on white. */
+    :root[data-theme="light"] table.sheet td.changed {
+      background: rgba(181, 117, 0, 0.16);
+    }
 
     /* Section headings within the demo */
     .demo-section { margin-bottom: 1.6rem; }
     .demo-section h3 {
       font-size: 1rem;
       margin: 0 0 0.7rem;
-      color: var(--causal-cyan);
+      color: var(--surface-emphasis);
     }
 
     /* Formula editor */
@@ -94,7 +104,7 @@
     .formula-editor select,
     .formula-editor textarea {
       background: var(--surface);
-      color: var(--mist);
+      color: var(--text-on-base);
       border: 1px solid rgba(169, 181, 201, 0.18);
       border-radius: var(--radius-sm);
       padding: 6px 10px;
@@ -105,7 +115,7 @@
       align-self: flex-start;
       padding: 5px 14px;
       background: var(--causal-cyan);
-      color: #0B1020;
+      color: var(--text-on-base);
       border: none;
       border-radius: 6px;
       cursor: pointer;
@@ -179,7 +189,6 @@
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/" class="is-current" aria-current="page">Spreadsheet</a>
-        <a href="/pages/brand/">Brand</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
         <hr class="menu-divider" />
         <button id="themeToggle" type="button"
@@ -222,16 +231,15 @@
         <a href="../playground/">Playground</a>
         <a href="../spreadsheet/">Spreadsheet</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
-        <a href="../brand/">Brand</a>
       </div>
     </div>
   </footer>
 
   <script src="../../js/topbar.js" defer></script>
 
-  <!-- #1257: importmap aliases the bare specifiers to the vendored
-       ESM builds under /vendor/@causl/*. Falls back to esm.sh at
-       runtime if any vendored import fails. -->
+  <!-- Importmap aliases the bare specifiers to the vendored ESM
+       builds under /vendor/@causl/*. Falls back to esm.sh at runtime
+       if any vendored import fails. -->
   <script type="importmap">
   {
     "imports": {
@@ -512,29 +520,62 @@
 
         // Subscribe: on any commit, push fresh derived values + log to React state.
         const log = commitLog(graph, { capacity: 50 })
-        graph.subscribeCommits(() => {
-          setDerivedValues(readAllDerived())
-          const entries = graph.read(log)
-          if (entries.length === 0) {
-            setLogText('(no commits yet)')
-            setWhyText('(no commits yet)')
-            return
-          }
-          setLogText(
-            entries.slice(0, 20).map(
-              (c, i) => `#${entries.length - i}  t=${c.time}  intent="${c.intent}"  changed=[${c.changedNodes.join(', ')}]`
-            ).join('\n')
-          )
-          // whyText depends on selectedCell; we use the closure-captured
-          // selectedCell snapshot here. The select handler updates it
-          // explicitly when the user changes cells.
-          setWhyText(prev => {
+
+        // Render commitLog + whyUpdated panels immediately at mount.
+        // subscribeCommits only fires on REAL commits, not at subscription
+        // time, so without this immediate render the panels show the
+        // placeholder text forever. The renderer is also reused inside
+        // the subscribeCommits callback so commits keep refreshing both
+        // panels, and inside handleCellSelect so the why-panel updates
+        // when the user picks a different cell without committing.
+        const renderLogAndWhy = () => {
+          try {
+            const entries = graph.read(log)
+            if (entries.length === 0) {
+              setLogText('(no commits yet)')
+            } else {
+              setLogText(
+                entries.slice(0, 20).map(
+                  (c, i) => `#${entries.length - i}  t=${c.time}  intent="${c.intent}"  changed=[${c.changedNodes.join(', ')}]`
+                ).join('\n')
+              )
+            }
             const cellName = demoRef.current?.selectedCell ?? 'E1'
             const cell = liveCells.get(cellName)
-            if (!cell) return prev
-            const w = graph.read(whyUpdated(graph, cell.handle.node))
-            return `${cellName}: ${renderWhy(w)}`
+            if (cell) {
+              const w = graph.read(whyUpdated(graph, cell.handle.node))
+              setWhyText(`${cellName}: ${renderWhy(w)}`)
+            }
+          } catch (err) {
+            setLogText(`(devtools error: ${err.message})`)
+            setWhyText(`(devtools error: ${err.message})`)
+            console.error('[spreadsheet] devtools setup failed:', err)
+          }
+        }
+
+        try {
+          const firstCell = [...liveCells.values()][0]
+          console.log('[spreadsheet] devtools wired:', {
+            logNode: log,
+            sampleWhy: firstCell
+              ? whyUpdated(graph, firstCell.handle.node)
+              : null,
           })
+        } catch (err) {
+          console.error('[spreadsheet] devtools wiring log failed:', err)
+        }
+
+        renderLogAndWhy() // immediate render at mount
+
+        graph.subscribeCommits(() => {
+          setDerivedValues(readAllDerived())
+          try {
+            const entries = graph.read(log)
+            console.log('[spreadsheet] commit observed, entries:', entries.length)
+          } catch (err) {
+            console.error('[spreadsheet] commit observer read failed:', err)
+          }
+          renderLogAndWhy()
         })
 
         // Store imperative handles in a ref so event handlers can reach them.
@@ -551,6 +592,7 @@
           log,
           selectedCell: 'E1',
           valueOr,
+          renderLogAndWhy,
         }
 
         // Expose window.demo for console experimentation, matching the Vue version.
@@ -610,12 +652,10 @@
           demo.selectedCell = name
           const cell = demo.liveCells.get(name)
           if (cell) setFormulaText(cell.formula)
-          // Re-render why for the newly selected cell.
-          const entries = demo.graph.read(demo.log)
-          if (entries.length > 0 && cell) {
-            const w = demo.graph.read(demo.whyUpdated(demo.graph, cell.handle.node))
-            setWhyText(`${name}: ${demo.renderWhy(w)}`)
-          }
+          // Re-render both panels immediately on cell change, so the
+          // "Why did this update?" panel reflects the newly selected cell
+          // without waiting for a commit.
+          demo.renderLogAndWhy?.()
         }
       }, [])
 
@@ -733,5 +773,16 @@
     const root = createRoot(document.getElementById('spreadsheet-root'))
     root.render(React.createElement(SpreadsheetApp))
   </script>
+  <script src="../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-json.min.js" defer></script>
 </body>
 </html>

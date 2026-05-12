@@ -8,6 +8,7 @@
   <link rel="icon" href="../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../css/site.css" />
+  <link rel="stylesheet" href="../../../css/syntax.css" />
   <style>
     .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
     .docs-content h1 { margin-top: 2.5rem; }
@@ -18,14 +19,14 @@
     .docs-content code { font-family: var(--mono); font-size: 0.92em; }
     .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
     .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
-    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: rgba(232, 238, 247, 0.86); background: rgba(39, 211, 195, 0.06); }
-    :root[data-theme="light"] .docs-content blockquote { color: rgba(11, 16, 32, 0.86); }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: var(--text-on-base-muted); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: var(--text-on-base-muted); }
     .toc-list { list-style: none; padding-left: 0; }
     .toc-list > li { margin: 0.9rem 0; padding-left: 0; }
-    .toc-list .toc-num { font-family: var(--mono); color: var(--causal-cyan); font-size: 0.82rem; letter-spacing: 0.05em; margin-right: 0.5rem; }
+    .toc-list .toc-num { font-family: var(--mono); color: var(--surface-emphasis); font-size: 0.82rem; letter-spacing: 0.05em; margin-right: 0.5rem; }
     .toc-list .toc-title { font-weight: 600; }
-    .toc-list .toc-desc { display: block; margin-top: 0.2rem; font-size: 0.93rem; color: rgba(232, 238, 247, 0.86); }
-    :root[data-theme="light"] .toc-list .toc-desc { color: rgba(11, 16, 32, 0.86); }
+    .toc-list .toc-desc { display: block; margin-top: 0.2rem; font-size: 0.93rem; color: var(--text-on-base-muted); }
+    :root[data-theme="light"] .toc-list .toc-desc { color: var(--text-on-base-muted); }
     .toc-list a { text-decoration: none; }
     .toc-list a:hover .toc-title { text-decoration: underline; }
     .placeholder { color: rgba(169, 181, 201, 0.55); font-weight: 500; }
@@ -57,7 +58,6 @@
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="/pages/brand/">Brand</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
         <hr class="menu-divider" />
         <button id="themeToggle" type="button"
@@ -125,7 +125,7 @@
 
     <ol class="toc-list">
       <li>
-        <a href="part-1-setup.html">
+        <a href="part-1-setup/">
           <span class="toc-num">Part 1</span><span class="toc-title">Setting Up Your Project</span>
           <span class="toc-desc">
             Scaffold a Vite project, install <code>@causl/core</code>, lay out the
@@ -135,8 +135,8 @@
         </a>
       </li>
       <li>
-        <a href="part-2-graph-design.html">
-          <span class="toc-num">Part 2</span><span class="toc-title">Modeling State as a Graph</span>
+        <a href="part-2-first-graph/">
+          <span class="toc-num">Part 2</span><span class="toc-title">Building Your First Graph</span>
           <span class="toc-desc">
             <span class="placeholder">Coming soon.</span> Turn the incident-tracker domain
             into a set of inputs, derivations, and identifiers. Cover the
@@ -146,7 +146,7 @@
         </a>
       </li>
       <li>
-        <a href="part-3-derived-nodes.html">
+        <a href="part-3-derived-nodes/">
           <span class="toc-num">Part 3</span><span class="toc-title">Derived Nodes and Dependency Tracking</span>
           <span class="toc-desc">
             <span class="placeholder">Coming soon.</span> How <code>graph.derived()</code>
@@ -157,8 +157,8 @@
         </a>
       </li>
       <li>
-        <a href="part-4-transactions.html">
-          <span class="toc-num">Part 4</span><span class="toc-title">Transactions and Atomicity</span>
+        <a href="part-4-statecharts/">
+          <span class="toc-num">Part 4</span><span class="toc-title">Statecharts</span>
           <span class="toc-desc">
             <span class="placeholder">Coming soon.</span> <code>graph.commit()</code>,
             atomic-or-nothing semantics, <code>simulate()</code> for dry runs, and the
@@ -168,8 +168,8 @@
         </a>
       </li>
       <li>
-        <a href="part-5-react-basics.html">
-          <span class="toc-num">Part 5</span><span class="toc-title">Rendering with React</span>
+        <a href="part-5-react/">
+          <span class="toc-num">Part 5</span><span class="toc-title">React Integration</span>
           <span class="toc-desc">
             <span class="placeholder">Coming soon.</span> <code>@causl/react</code>,
             <code>useCauslNode</code>, the <code>CauslProvider</code> pattern, and how
@@ -178,8 +178,8 @@
         </a>
       </li>
       <li>
-        <a href="part-6-async-data.html">
-          <span class="toc-num">Part 6</span><span class="toc-title">Loading Async Data</span>
+        <a href="part-6-persistence/">
+          <span class="toc-num">Part 6</span><span class="toc-title">Saving &amp; Loading</span>
           <span class="toc-desc">
             <span class="placeholder">Coming soon.</span> <code>@causl/sync</code> for
             async resource lifecycles — <code>idle</code> → <code>loading</code> →
@@ -188,8 +188,8 @@
         </a>
       </li>
       <li>
-        <a href="part-7-persistence.html">
-          <span class="toc-num">Part 7</span><span class="toc-title">Persistence and Hydration</span>
+        <a href="part-7-testing/">
+          <span class="toc-num">Part 7</span><span class="toc-title">Testing Causl Code</span>
           <span class="toc-desc">
             <span class="placeholder">Coming soon.</span> <code>graph.snapshot()</code> /
             <code>graph.hydrate()</code>, <code>@causl/persistence</code> adapters, and the
@@ -198,8 +198,8 @@
         </a>
       </li>
       <li>
-        <a href="part-8-static-checking.html">
-          <span class="toc-num">Part 8</span><span class="toc-title">Static Checking with @causl/checker</span>
+        <a href="part-8-real-world/">
+          <span class="toc-num">Part 8</span><span class="toc-title">A Real-World Application</span>
           <span class="toc-desc">
             <span class="placeholder">Coming soon.</span> Run the bounded model checker
             against your <code>exportModel()</code> IR, surface race-class violations
@@ -230,7 +230,7 @@
     </blockquote>
 
     <p>
-      Ready? <a href="part-1-setup.html"><strong>Continue to Part 1: Setting Up Your Project →</strong></a>
+      Ready? <a href="part-1-setup/"><strong>Continue to Part 1: Setting Up Your Project →</strong></a>
     </p>
   </main>
 
@@ -248,5 +248,16 @@
     </div>
   </footer>
   <script src="../../../js/topbar.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-json.min.js" defer></script>
 </body>
 </html>

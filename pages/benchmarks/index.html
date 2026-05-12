@@ -7,7 +7,7 @@
   <title>Causl — Benchmarks</title>
   <meta name="description" content="Live benchmarks dashboard — per-cell history (median + p95) for @causl/core vs Jotai, Redux Toolkit, and MobX across the canonical scenario taxonomy in packages/bench/." />
 
-  <!-- Lighthouse polish (#769):
+  <!-- Lighthouse polish:
        - icon as SVG: scales without raster cost, no separate favicon.ico fetch.
        - preload the dashboard's data file so fetch() doesn't add a round-trip
          on the critical path. ./history.json may 404 on the static-site mirror;
@@ -21,6 +21,7 @@
   <link rel="preload" href="./history.sample.json" as="fetch" type="application/json" crossorigin="anonymous" />
   <link rel="stylesheet" href="../../css/topbar.css" />
   <link rel="stylesheet" href="../../css/site.css" />
+  <link rel="stylesheet" href="../../css/syntax.css" />
   <link rel="stylesheet" href="./dashboard.css" />
   <style>
     /* Page-specific layout — keeps the dashboard inside the same
@@ -34,12 +35,12 @@
 
     .hero p.lede {
       font-size: 1.05rem;
-      color: rgba(232, 238, 247, 0.86);
+      color: var(--text-on-base-muted);
       max-width: 720px;
       margin: 1rem 0 1.4rem;
     }
 
-    :root[data-theme="light"] .hero p.lede { color: rgba(11, 16, 32, 0.92); }
+    :root[data-theme="light"] .hero p.lede { color: var(--text-on-base); }
 
     .hero-actions {
       display: flex;
@@ -83,7 +84,6 @@
         <a href="/pages/benchmarks/" class="is-current" aria-current="page">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="/pages/brand/">Brand</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
         <hr class="menu-divider" />
         <button id="themeToggle" type="button"
@@ -113,9 +113,6 @@
       <a class="button primary"
          href="https://github.com/iasbuilt/causl/tree/main/packages/bench"
          rel="noopener">View packages/bench</a>
-      <a class="button ghost"
-         href="https://github.com/iasbuilt/causl/issues/707"
-         rel="noopener">Tracking issue #707</a>
     </div>
   </section>
 
@@ -130,10 +127,10 @@
       </div>
       <p class="lead">
         The page first tries <code>./history.json</code>; if the
-        nightly publish hasn't landed yet (issue #709) it falls
-        back to <code>./history.sample.json</code>, a checked-in
-        multi-run stub so the dashboard is never empty. The “source”
-        cell in the meta strip below tells you which one is showing.
+        nightly publish hasn't landed yet it falls back to
+        <code>./history.sample.json</code>, a checked-in multi-run
+        stub so the dashboard is never empty. The “source” cell in the
+        meta strip below tells you which one is showing.
       </p>
     </div>
 
@@ -142,25 +139,21 @@
       <p>
         Each cell carries a <code>profile</code> link that points at
         <code>./profiles/latest/&lt;library-scenario-scale&gt;/</code>.
-        Those directories are populated by <a href="https://github.com/iasbuilt/causl/issues/709" rel="noopener">#709</a>'s
-        nightly <code>perf-snapshot</code> workflow, which is
-        currently parked in
-        <code>.github/workflows-disabled/perf-snapshot.yml</code>
-        until GitHub Actions is re-enabled (tracked in
-        <a href="https://github.com/iasbuilt/causl/issues/725" rel="noopener">#725</a>).
+        Those directories are populated by the nightly
+        <code>perf-snapshot</code> workflow, which is currently parked
+        in <code>.github/workflows-disabled/perf-snapshot.yml</code>
+        until GitHub Actions is re-enabled.
         The links remain useful as discoverable placeholders so the
         dashboard surface doesn't change shape when CI is restored.
       </p>
     </div>
 
     <details class="status-callout" aria-label="Charting library decision">
-      <summary><strong>Charting library — vanilla SVG (decision log, #769)</strong></summary>
+      <summary><strong>Charting library — vanilla SVG (decision log)</strong></summary>
       <p>
-        Issue <a href="https://github.com/iasbuilt/causl/issues/769" rel="noopener">#769</a>
-        evaluated D3 (~70 KB minified) and Plotly (~3.5 MB minified)
-        as upgrades over the inline-SVG MVP shipped in
-        <a href="https://github.com/iasbuilt/causl/pull/771" rel="noopener">PR #771</a>.
-        We stayed on vanilla SVG and brought the visible upgrades —
+        D3 (~70 KB minified) and Plotly (~3.5 MB minified) were both
+        evaluated as upgrades over the inline-SVG MVP. We stayed on
+        vanilla SVG and brought the visible upgrades —
         cubic-Hermite (Catmull-Rom α=0.5) line smoothing, D3-style
         "nice" axis ticks at 1/2/5 × 10<sup>k</sup>, per-point hover
         tooltips covering every run — directly into <code>dashboard.js</code>.
@@ -235,8 +228,8 @@
         <div class="mono-label">Memory ceiling</div>
         <h3>Bounded enumerator under load.</h3>
         <p>
-          The BFS frontier / traces / races caps from #646 are
-          swept across cap settings, plotting
+          The BFS frontier / traces / races caps are swept across
+          cap settings, plotting
           <code>states_visited</code> versus wall-clock so adopters
           can pick a cap without guessing.
         </p>
@@ -258,12 +251,22 @@
         <a href="../playground/">Playground</a>
         <a href="../spreadsheet/">Spreadsheet</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
-        <a href="../brand/">Brand</a>
       </div>
     </div>
   </footer>
 
   <script src="../../js/topbar.js" defer></script>
   <script src="./dashboard.js" defer></script>
+  <script src="../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-json.min.js" defer></script>
 </body>
 </html>

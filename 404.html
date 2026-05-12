@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>404 — Stale read · Causl</title>
+  <meta name="description" content="The requested page isn't in the current snapshot." />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/topbar.css" />
+  <link rel="stylesheet" href="css/site.css" />
+  <link rel="stylesheet" href="css/syntax.css" />
+  <style>
+    /* ============================================================
+       404 — "Stale read."
+       One hero block, one accent point, one motion. All colours come
+       from the pair tokens defined in site.css so light/dark themes
+       both work without hard-coded values. No new components
+       introduced.
+       ============================================================ */
+
+    .error-hero {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 18vh 1.2rem 6vh;
+    }
+
+    .error-numeral {
+      font-size: clamp(7rem, 14vw, 13rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--text-on-base);
+      margin: 0 0 0.5rem;
+    }
+
+    /* The single accent point — the middle "0" of 404 picks up the
+       brand cyan via --surface-emphasis (which dims appropriately on
+       the light theme). */
+    .error-numeral .accent { color: var(--surface-emphasis); }
+
+    .error-trace {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--text-on-base-subtle);
+      letter-spacing: 0.04em;
+      margin: 0 0 1rem;
+      overflow-wrap: anywhere;
+      /* Type-in animation — 600ms, one-shot, respects reduced motion. */
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      animation: trace-type 600ms steps(40, end) both;
+    }
+
+    @keyframes trace-type {
+      from { clip-path: inset(0 100% 0 0); }
+      to   { clip-path: inset(0 0 0 0); }
+    }
+
+    .error-rule {
+      height: 1px;
+      background: var(--border-on-base);
+      border: 0;
+      margin: 0 0 1.5rem;
+      max-width: 18ch;
+    }
+
+    .error-headline {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-on-base);
+      margin: 0 0 1rem;
+    }
+
+    .error-body {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      max-width: 44ch;
+      color: var(--text-on-base-muted);
+      margin: 0 0 2rem;
+    }
+
+    .error-cta-row {
+      display: flex;
+      gap: 1.2rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .error-cta-secondary {
+      color: var(--text-on-base);
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+
+    .error-cta-secondary:hover {
+      text-decoration: underline;
+      text-decoration-color: var(--surface-emphasis);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .error-trace { animation: none !important; clip-path: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ============================================================
+       Topbar — copied verbatim from index.html, with the .is-hero
+       class removed (this is an inner page) and .is-current /
+       aria-current dropped from every nav item (no nav target on
+       a 404).
+       ============================================================ -->
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="/" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+    </div>
+
+    <button id="topbarBurger" class="topbar-burger"
+            aria-label="Open navigation menu" aria-expanded="false"
+            aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true"
+         aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/">Tutorial</a>
+        <a href="/pages/documentation/usage/">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="error-hero">
+      <h1 class="error-numeral" aria-label="HTTP status four oh four">4<span class="accent">0</span>4</h1>
+      <p class="error-trace">GET <span id="trace-path">/</span> → snapshot@HEAD : not in graph</p>
+      <hr class="error-rule" />
+      <h2 class="error-headline">Stale read.</h2>
+      <p class="error-body">
+        The route was never written, was rolled back, or moved in a
+        later transaction. The rat keeps a ledger; we’re consulting
+        it. The rest of the building is structurally sound.
+      </p>
+      <div class="error-cta-row">
+        <a class="button primary" href="/">Back to the root commit &rarr;</a>
+        <a class="error-cta-secondary" href="/pages/documentation/">Or browse the documentation</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================================================
+       Footer — copied verbatim from index.html.
+       ============================================================ -->
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/topbar.js" defer></script>
+  <script>
+    /* Echo the requested path into the mono trace line. Stays as "/"
+       if JS is disabled or the element is missing. */
+    (function () {
+      var pathEl = document.getElementById('trace-path');
+      if (pathEl) {
+        var p = (location.pathname || '/').slice(0, 80);
+        pathEl.textContent = p;
+      }
+    })();
+  </script>
+  <script src="vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="vendor/prismjs/prism-json.min.js" defer></script>
+</body>
+</html>

@@ -4,10 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Playground — Causl</title>
-  <meta name="description" content="Interactive Causl playground — run @causl/core snippets in your browser with Monaco editor. Ported from the Vue docs-site (#666)." />
+  <meta name="description" content="Interactive Causl playground — run @causl/core snippets in your browser with Monaco editor." />
   <link rel="icon" href="../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../css/topbar.css" />
   <link rel="stylesheet" href="../../css/site.css" />
+  <link rel="stylesheet" href="../../css/syntax.css" />
   <style>
     .hero {
       padding-top: 2rem;
@@ -16,11 +17,11 @@
     .hero h1 { margin-top: 1rem; }
     .hero p.lede {
       font-size: 1.05rem;
-      color: rgba(232, 238, 247, 0.86);
+      color: var(--text-on-base-muted);
       max-width: 720px;
       margin: 1rem 0 1.4rem;
     }
-    :root[data-theme="light"] .hero p.lede { color: rgba(11, 16, 32, 0.86); }
+    :root[data-theme="light"] .hero p.lede { color: var(--text-on-base-muted); }
 
     #playground-root {
       max-width: var(--max-page);
@@ -40,7 +41,7 @@
       border-radius: 6px;
       border: 1px solid rgba(169, 181, 201, 0.22);
       background: rgba(26, 34, 56, 0.7);
-      color: var(--mist);
+      color: var(--text-on-base);
       cursor: pointer;
       font-size: 0.92rem;
       font-family: var(--sans);
@@ -52,8 +53,8 @@
     }
     .toolbar button.primary {
       background: var(--causal-cyan);
-      border-color: var(--causal-cyan);
-      color: #0B1020;
+      border-color: var(--surface-emphasis);
+      color: var(--text-on-base);
       font-weight: 600;
     }
     .toolbar button.primary:hover:not(:disabled) {
@@ -63,6 +64,16 @@
     .toolbar button:disabled {
       opacity: 0.45;
       cursor: not-allowed;
+    }
+    /* Light-mode pairs for toolbar buttons (auto-flipping
+     * --text-on-base + theme-aware --surface-elevated keeps contrast). */
+    :root[data-theme="light"] .toolbar button {
+      background: var(--surface-elevated);
+      border-color: rgba(11, 16, 32, 0.18);
+    }
+    :root[data-theme="light"] .toolbar button:hover:not(:disabled) {
+      background: rgba(11, 149, 176, 0.10);
+      border-color: rgba(11, 149, 176, 0.40);
     }
 
     .status-text {
@@ -100,7 +111,13 @@
       white-space: pre-wrap;
       min-height: 88px;
       margin: 0;
-      color: var(--mist);
+      color: var(--text-on-base);
+    }
+    /* Light-mode pair — use elevated surface so auto-flipped
+     * --text-on-base (dark) stays AA against a near-white bg. */
+    :root[data-theme="light"] #output-pre {
+      background: var(--surface-elevated);
+      border-color: rgba(11, 16, 32, 0.14);
     }
 
     #error-line {
@@ -145,7 +162,6 @@
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/" class="is-current" aria-current="page">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="/pages/brand/">Brand</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
         <hr class="menu-divider" />
         <button id="themeToggle" type="button"
@@ -187,14 +203,13 @@
         <a href="../playground/">Playground</a>
         <a href="../spreadsheet/">Spreadsheet</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
-        <a href="../brand/">Brand</a>
       </div>
     </div>
   </footer>
 
   <script src="../../js/topbar.js" defer></script>
 
-  <!-- #1257: importmap aliases bare `@causl/core` specifiers to the
+  <!-- Importmap aliases bare `@causl/core` specifiers to the
        vendored ESM build under /vendor/@causl/core/. This avoids the
        transitive-deps failure mode on esm.sh (where some transitive
        deps 502 intermittently and break the playground for everyone).
@@ -395,5 +410,16 @@ graph.commit('bump-both', tx => { tx.set(a, 100); tx.set(b, 200) })
     const root = createRoot(document.getElementById('playground-root'))
     root.render(React.createElement(PlaygroundApp))
   </script>
+  <script src="../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-json.min.js" defer></script>
 </body>
 </html>

@@ -58,6 +58,40 @@
           Consolas, monospace;
   --sans: Inter, ui-sans-serif, system-ui, -apple-system,
           BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* -- Contrast-pair tokens (mirror css/site.css §8.1, #1268). --
+     Same defaults; light theme overrides come further down. */
+  --surface-base:        var(--causl-void);
+  --surface-elevated:    var(--causl-slate);
+  --surface-overlay:     var(--causl-ink);
+  --surface-emphasis:    var(--causl-async-cyan);
+  --surface-emphasis-2:  var(--causl-mutation-violet);
+  --surface-success:     var(--causl-commit-green);
+  --surface-warning:     var(--causl-conflict-amber);
+  --surface-danger:      var(--causl-rollback-red);
+  --surface-info:        var(--causl-async-cyan);
+  --surface-muted:       var(--causl-graphite);
+
+  --text-on-base:             var(--causl-mist);
+  --text-on-base-muted:       rgba(215, 230, 234, 0.86);
+  --text-on-base-subtle:      rgba(215, 230, 234, 0.70);
+  --text-on-elevated:         var(--causl-mist);
+  --text-on-elevated-muted:   rgba(215, 230, 234, 0.86);
+  --text-on-elevated-subtle:  rgba(215, 230, 234, 0.72);
+  --text-on-overlay:          var(--causl-mist);
+  --text-on-overlay-muted:    rgba(215, 230, 234, 0.86);
+  --text-on-emphasis:         var(--causl-void);
+  --text-on-emphasis-2:       var(--causl-mist);
+  --text-on-success:          var(--causl-void);
+  --text-on-warning:          var(--causl-void);
+  --text-on-danger:           var(--causl-mist);
+  --text-on-info:             var(--causl-void);
+  --text-on-muted:            var(--causl-mist);
+
+  --border-on-base:           rgba(143, 162, 170, 0.15);
+  --border-on-elevated:       rgba(143, 162, 170, 0.25);
+  --border-on-overlay:        rgba(143, 162, 170, 0.18);
+  --border-emphasis:          var(--causl-async-cyan);
 }
 
 /* -- Dark theme palette overrides -------------------------------- */
@@ -110,6 +144,39 @@
   --color-active-menu-item:     rgba(11, 149, 176, 0.18);
   --color-focus-outline:        #0B95B0;
   --color-hover-outline:        #070A0F;
+
+  /* -- Contrast-pair tokens — light overrides (#1268). -- */
+  --surface-base:        #FFFFFF;
+  --surface-elevated:    #F4F6F9;
+  --surface-overlay:     #FFFFFF;
+  --surface-emphasis:    #0B95B0;
+  --surface-emphasis-2:  #5B30C9;
+  --surface-success:     #4A9300;
+  --surface-warning:     #B57500;
+  --surface-danger:      #C32A38;
+  --surface-info:        #0B95B0;
+  --surface-muted:       #DDE1E6;
+
+  --text-on-base:             rgba(11, 16, 32, 0.92);
+  --text-on-base-muted:       rgba(11, 16, 32, 0.82);
+  --text-on-base-subtle:      rgba(11, 16, 32, 0.70);
+  --text-on-elevated:         rgba(11, 16, 32, 0.92);
+  --text-on-elevated-muted:   rgba(11, 16, 32, 0.82);
+  --text-on-elevated-subtle:  rgba(11, 16, 32, 0.70);
+  --text-on-overlay:          rgba(11, 16, 32, 0.92);
+  --text-on-overlay-muted:    rgba(11, 16, 32, 0.82);
+  --text-on-emphasis:         #FFFFFF;
+  --text-on-emphasis-2:       #FFFFFF;
+  --text-on-success:          #FFFFFF;
+  --text-on-warning:          #FFFFFF;
+  --text-on-danger:           #FFFFFF;
+  --text-on-info:             #FFFFFF;
+  --text-on-muted:            rgba(11, 16, 32, 0.92);
+
+  --border-on-base:           rgba(11, 16, 32, 0.12);
+  --border-on-elevated:       rgba(11, 16, 32, 0.18);
+  --border-on-overlay:        rgba(11, 16, 32, 0.12);
+  --border-emphasis:          #0B95B0;
 }
 
 /* -- Body background + typography -------------------------------- */
@@ -118,9 +185,10 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Body — paired with --surface-base. */
 body {
   font-family: var(--sans);
-  color: var(--causl-mist);
+  color: var(--text-on-base);
   background:
     radial-gradient(circle at 18% 8%, rgba(17, 217, 255, 0.14),
                     transparent 32rem),
@@ -134,7 +202,7 @@ body {
 }
 
 :root[data-theme="light"] body {
-  color: #070A0F;
+  color: var(--text-on-base);
   background:
     radial-gradient(circle at 18% 8%, rgba(11, 149, 176, 0.10),
                     transparent 32rem),
@@ -173,23 +241,24 @@ code, kbd, samp, pre,
   border-bottom-color: rgba(11, 149, 176, 0.4);
 }
 
+/* Page toolbar — paired with --surface-overlay (deep terminal bar). */
 .tsd-page-toolbar a.title {
-  color: var(--causl-mist);
+  color: var(--text-on-overlay);
   font-weight: 700;
   letter-spacing: -0.01em;
 }
 
 :root[data-theme="light"] .tsd-page-toolbar a.title {
-  color: #070A0F;
+  color: var(--text-on-overlay);
 }
 
 .tsd-navigation a.tsd-page-toolbar-link,
 .tsd-page-toolbar .tsd-toolbar-contents a {
-  color: var(--causl-mist);
+  color: var(--text-on-overlay);
 }
 
 .tsd-page-toolbar .tsd-toolbar-contents a:hover {
-  color: var(--causl-async-cyan);
+  color: var(--surface-emphasis);
 }
 
 /* -- Links + accents ------------------------------------------- */
@@ -228,42 +297,46 @@ a:hover {
   border-color: rgba(143, 162, 170, 0.14);
 }
 
+/* Navigation — paired with --surface-base (sidebar overlays the page). */
 .tsd-navigation a,
 .tsd-navigation summary {
-  color: var(--causl-mist);
+  color: var(--text-on-base);
 }
 
 :root[data-theme="light"] .tsd-navigation a,
 :root[data-theme="light"] .tsd-navigation summary {
-  color: #070A0F;
+  color: var(--text-on-base);
 }
 
 .tsd-navigation a:hover {
   background: rgba(17, 217, 255, 0.08);
-  color: var(--causl-async-cyan);
+  color: var(--surface-emphasis);
 }
 
 .tsd-navigation a.current,
 .tsd-navigation .current > a {
   background: rgba(17, 217, 255, 0.12);
-  color: var(--causl-async-cyan);
-  border-left: 2px solid var(--causl-async-cyan);
+  color: var(--surface-emphasis);
+  border-left: 2px solid var(--border-emphasis);
 }
 
 /* -- Panels / cards -------------------------------------------- */
 
+/* TSD panel — paired with --surface-elevated (card-like content shell). */
 .tsd-panel {
   background: linear-gradient(180deg,
     rgba(16, 24, 34, 0.62), rgba(11, 17, 24, 0.7));
-  border: 1px solid rgba(143, 162, 170, 0.14);
+  border: 1px solid var(--border-on-elevated);
   border-radius: 14px;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+  color: var(--text-on-elevated);
 }
 
 :root[data-theme="light"] .tsd-panel {
-  background: #FFFFFF;
-  border-color: rgba(11, 16, 32, 0.08);
+  background: var(--surface-overlay);
+  border-color: var(--border-on-elevated);
   box-shadow: 0 8px 24px rgba(11, 16, 32, 0.04);
+  color: var(--text-on-elevated);
 }
 
 .tsd-panel-group .tsd-panel {
@@ -273,17 +346,21 @@ a:hover {
 .tsd-panel h2,
 .tsd-panel h3,
 .tsd-panel h4 {
-  color: var(--causl-mist);
+  color: var(--text-on-elevated);
 }
 
 :root[data-theme="light"] .tsd-panel h2,
 :root[data-theme="light"] .tsd-panel h3,
 :root[data-theme="light"] .tsd-panel h4 {
-  color: #070A0F;
+  color: var(--text-on-elevated);
 }
 
 /* -- Signatures + code blocks ---------------------------------- */
 
+/* Signature + code blocks — paired with deep terminal surface. In
+   light theme we keep the dark code-block aesthetic intentionally,
+   so this stays paired with --text-on-overlay against a hard-coded
+   dark gradient. */
 .tsd-signature,
 .tsd-signatures .tsd-signature {
   background: linear-gradient(180deg,
@@ -291,13 +368,13 @@ a:hover {
   border: 1px solid rgba(17, 217, 255, 0.18);
   border-radius: 10px;
   padding: 0.8rem 1rem;
-  color: var(--causl-mist);
+  color: var(--text-on-overlay);
 }
 
 :root[data-theme="light"] .tsd-signature,
 :root[data-theme="light"] .tsd-signatures .tsd-signature {
   background: linear-gradient(180deg, #0B1118, #070A0F);
-  color: var(--causl-mist);
+  color: #D7E6EA;  /* mist locked — dark code surface in light theme */
   border-color: rgba(17, 217, 255, 0.32);
 }
 
@@ -307,13 +384,13 @@ pre,
     rgba(11, 17, 24, 0.92), rgba(7, 10, 15, 0.92)) !important;
   border: 1px solid rgba(17, 217, 255, 0.18);
   border-radius: 10px;
-  color: var(--causl-mist);
+  color: var(--text-on-overlay);
 }
 
 :root[data-theme="light"] pre,
 :root[data-theme="light"] .tsd-typography pre {
   background: linear-gradient(180deg, #0B1118, #070A0F) !important;
-  color: var(--causl-mist);
+  color: #D7E6EA;  /* mist locked — code stays on dark in light theme */
   border-color: rgba(17, 217, 255, 0.32);
 }
 
@@ -321,7 +398,7 @@ code,
 .tsd-typography code {
   background: rgba(17, 217, 255, 0.08);
   border: 1px solid rgba(17, 217, 255, 0.2);
-  color: var(--causl-mist);
+  color: var(--text-on-base);
   padding: 0.05em 0.4em;
   border-radius: 5px;
   font-size: 0.86em;
@@ -329,7 +406,7 @@ code,
 
 :root[data-theme="light"] code,
 :root[data-theme="light"] .tsd-typography code {
-  color: #070A0F;
+  color: var(--text-on-base);
   background: rgba(11, 149, 176, 0.12);
   border-color: rgba(11, 149, 176, 0.32);
 }
@@ -379,19 +456,20 @@ pre code,
 
 /* -- Search input ---------------------------------------------- */
 
+/* Search input — paired with --surface-elevated. */
 #tsd-search input,
 #tsd-search .field input {
   background: rgba(11, 17, 24, 0.6);
   border: 1px solid rgba(17, 217, 255, 0.2);
-  color: var(--causl-mist);
+  color: var(--text-on-elevated);
   border-radius: 8px;
 }
 
 :root[data-theme="light"] #tsd-search input,
 :root[data-theme="light"] #tsd-search .field input {
-  background: #FFFFFF;
-  color: #070A0F;
-  border-color: rgba(11, 16, 32, 0.16);
+  background: var(--surface-overlay);
+  color: var(--text-on-overlay);
+  border-color: var(--border-on-overlay);
 }
 
 #tsd-search .results {
@@ -421,7 +499,7 @@ pre code,
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(215, 230, 234, 0.82);
+  color: var(--text-on-elevated-muted);
   padding: 0.7rem 0.85rem;
 }
 
@@ -431,11 +509,11 @@ pre code,
 }
 
 :root[data-theme="light"] .tsd-typography th {
-  background: #F0F2F5;
-  color: rgba(11, 16, 32, 0.82);
+  background: var(--surface-elevated);
+  color: var(--text-on-elevated-muted);
   border-bottom-color: rgba(11, 149, 176, 0.32);
 }
 
 :root[data-theme="light"] .tsd-typography td {
-  border-bottom-color: rgba(11, 16, 32, 0.08);
+  border-bottom-color: var(--border-on-elevated);
 }
