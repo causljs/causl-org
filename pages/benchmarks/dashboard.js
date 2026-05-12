@@ -1,0 +1,1100 @@
+/* ============================================================
+   causl.org/benchmarks — full dashboard renderer (#707, #769,
+   restructured by #1247).
+
+   Pure-vanilla JS, no dependencies. Reads a JSON file matching
+   the shape of `packages/bench/report/benchmark_history.json`
+   (HistoryEntry[] from packages/bench/src/report.ts) and renders
+   ONE inline-SVG chart per (scenario × scale) section, with each
+   of the four frameworks stacked as a separate line on the same
+   axes for direct visual comparison.
+
+   Each chart shows:
+     - median (ms)  → solid library-coloured line per framework,
+       smoothed with a Catmull-Rom-style cubic interpolation, plus
+       dots at every datapoint
+     - p95   (ms)   → translucent library-coloured band per
+       framework (median ↔ p95) with the same smoothing applied
+     - per-line verdict badges in the inline legend strip:
+       pass / regressed / improved / noisy — verdict computed per
+       framework by comparing the latest entry to the second-to-
+       latest and by the CoV proxy on the latest entry
+     - hover tooltips: a thin invisible SVG <rect> covers each
+       datapoint (per series) and exposes a tooltip with the run's
+       date, version, median, p95 so the user can hover any run on
+       any series, not just the latest, and read its values
+     - profile-artifact links per framework in the legend chips
+       (placeholder until #709's nightly publish lands)
+
+   --------------------------------------------------------------
+   Why one chart per section, not one per (library × scenario × scale)?
+
+   #1247 reframed the dashboard from a "cell grid" (one card per
+   framework series) to a "section grid" (one card per scenario+
+   scale, all four framework series stacked). The cell grid made
+   it hard to spot e.g. "causl is 5x faster than redux-toolkit at
+   scale 10k on linear-chain" because the four panels lived next
+   to each other on different y-axes. Stacking the series on one
+   chart with a shared y-axis solves that immediately.
+
+   The original per-cell verdict logic is preserved per-series —
+   each framework gets its own verdict, surfaced as a coloured
+   chip in the section's legend strip. The per-cell border tint
+   that used to advertise verdict has been retired (a single
+   section can have mixed verdicts across its series, so it no
+   longer makes sense to tint the whole card by one verdict).
+
+   D3 / Plotly decision (#769) still stands — STAY ON VANILLA SVG:
+
+     1. Lighthouse Performance budget. Lazy-loading any extra
+        third-party JS is non-zero TBT (Total Blocking Time) and
+        non-zero LCP-after-hydration. A static page whose entire
+        purpose is to render N small charts is exactly the case
+        where shipping a charting framework would be net-negative
+        on Lighthouse.
+     2. The features the issue wanted (cubic smoothing, "nice"
+        axis ticks, hover tooltips, multi-series rendering) are
+        80–120 lines of vanilla code each, not a 70 KB dependency.
+     3. No build step on causl.org/. The site is a flat directory
+        served as static files. Adding a bundler just to import
+        d3-shape + d3-scale + d3-axis would be a much larger
+        architectural change than the issue scopes.
+     4. Plotly is not a serious option — 3.5 MB minified for a
+        per-section chart is two orders of magnitude over budget.
+   --------------------------------------------------------------
+
+   Filters at the top let the user toggle which libraries +
+   scenarios + scales appear. The library filter now hides
+   individual series within a section (rather than hiding whole
+   cards). The default view is the headline "causl + best
+   competitor at the 10k scale": only causl + mobx at scale 10000,
+   the cells the regression-gate watches most closely. Toggling
+   re-renders the grid in place.
+
+   The script first attempts ./history.json; if that 404s it falls
+   back to ./history.sample.json (a checked-in sample so the page
+   is never blank). The fallback is announced in the meta strip.
+   ============================================================ */
+
+(() => {
+  'use strict'
+
+  const HISTORY_URL = './history.json'
+  const SAMPLE_URL = './history.sample.json'
+
+  /** Canonical library order — mirrors packages/bench/src/chart.ts. */
+  const LIBRARY_ORDER = ['causl', 'jotai', 'redux-toolkit', 'mobx']
+
+  /** Library colours — competitor identity colours, NOT state
+   *  semantics. The brand palette in css/site.css reserves Async
+   *  Cyan / Commit Green / Conflict Amber / Rollback Red for
+   *  state meaning (link / success / warning / error). If we
+   *  paint a competitor with rollback-red, every chart silently
+   *  broadcasts "competitor = failure" — that confuses the
+   *  graph's literal message (which is a per-cell ratio of
+   *  wall-times, not a verdict on the library). Per #1259 review
+   *  T2.2, competitor swatches are pulled from the brand's
+   *  *secondary* identity colours (Copper Wire / Mutation Violet
+   *  / Trace Ash) so the state-semantic colours stay free for
+   *  the verdict pill, the regression badge, and the legend dots.
+   *  Causl keeps Async Cyan since the brand owns the chip.
+   *
+   *  Contrast against the dashboard surface (≈ #11182A): all four
+   *  pass WCAG 4.5:1 by inspection on `#070A0F` (the spec floor).
+   */
+  const LIBRARY_COLOR = {
+    causl: '#11D9FF',          // Async Cyan — brand owner.
+    jotai: '#C8743D',          // Copper Wire — neutral identity.
+    'redux-toolkit': '#7C4DFF', // Mutation Violet — neutral identity.
+    mobx: '#8FA2AA',           // Trace Ash — neutral identity.
+  }
+
+  /** Default-view filter: the headline "causl vs best competitor"
+   *  cells at the 10k scale per the issue spec. Users can toggle
+   *  any other library/scenario/scale via the filter UI. */
+  const DEFAULT_LIBRARIES = new Set(['causl', 'mobx'])
+  const DEFAULT_SCALES = new Set([10000])
+
+  /** Verdict thresholds — match the spec in #707. */
+  const REGRESSION_PCT = 0.10 // > 10% slower
+  const IMPROVED_PCT = 0.10 // > 10% faster
+  const PASS_PCT = 0.05 // within 5%
+  /** True CoV is samples-stdev / mean. We only have median + p95, so
+   *  use `(p95 - median) / median` as a (much wider) dispersion proxy.
+   *  For a roughly normal distribution `(p95 - μ) / μ ≈ 1.645 × CoV`,
+   *  so a 5% true CoV would correspond to ≈ 8% on this proxy. To
+   *  keep the badge from firing on every slightly-noisy cell, we
+   *  set the noisy gate at 50% (proxy) — which roughly maps to a
+   *  true CoV in the 30%+ range, the band where the cell really
+   *  isn't trustable. The spec's 5%-CoV criterion can't be applied
+   *  literally without per-iteration sample arrays in HistorySample. */
+  const NOISY_PROXY = 0.50
+
+  /** Verdict palette — high-contrast against the card background. */
+  const VERDICT_COLOR = {
+    pass: '#5EE6A8', // success-mint
+    regressed: '#FF646E', // conflict-coral
+    improved: '#4F7CFF', // signal-blue
+    noisy: '#FFB347', // commit-amber
+    unknown: '#A9B5C9', // fog
+  }
+
+  /** ----------------------------------------------------------------
+   *  Filter state — managed as a single mutable object that the
+   *  filter UI mutates and the renderer reads. Re-renders are
+   *  triggered by `applyFilters()`.
+   *  ---------------------------------------------------------------- */
+  const filterState = {
+    libraries: null, // Set<string> — populated on first render
+    scenarios: null, // Set<string>
+    scales: null, // Set<number>
+  }
+
+  /** ----------------------------------------------------------------
+   *  Pure helpers
+   *  ---------------------------------------------------------------- */
+
+  /** Format a number for tick labels — never depends on locale. */
+  function formatNumber(n) {
+    if (!Number.isFinite(n)) return 'n/a'
+    if (Math.abs(n) >= 100) return Math.round(n).toString()
+    return Number.parseFloat(n.toFixed(2)).toString()
+  }
+
+  /** Tooltip-friendly ISO date → "May 06". */
+  function formatShortDate(iso) {
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return iso
+    const month = d.toLocaleString('en-US', { month: 'short' })
+    return `${month} ${d.getUTCDate().toString().padStart(2, '0')}`
+  }
+
+  /** Escape any text we splat into innerHTML — defence-in-depth even
+   *  though the upstream JSON is checked-in / authored. */
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
+
+  /** Group a HistoryEntry[] into a Map keyed by `scenario|scale`,
+   *  each value a section descriptor:
+   *    {
+   *      scenario, scale,
+   *      runs:    [ { capturedAt, version }, … ]   // run order
+   *      series:  Map<library, Array<{capturedAt, version, medianMs, p95Ms}>>
+   *    }
+   *
+   *  `runs` is the union of capturedAt timestamps across every
+   *  series so the x-axis can be shared. Per-series points are
+   *  stored in run order; if a particular run didn't include a
+   *  sample for some framework, that framework's series simply
+   *  has fewer points (and the missing slot is left empty — the
+   *  chart renderer interpolates a gap by skipping non-finite
+   *  values, same as it did in the per-cell version).
+   *
+   *  In practice the bench harness emits a HistorySample for every
+   *  library on every run, so all four series stay aligned. The
+   *  union-of-timestamps approach handles the edge case where a
+   *  library was added/removed mid-history without breaking the
+   *  shared-axis assumption. */
+  function groupSections(history) {
+    const sections = new Map()
+    // Track unique runs per section so the x-axis can be shared.
+    const runSetBySection = new Map()
+    for (const entry of history) {
+      for (const sample of entry.samples) {
+        const key = `${sample.scenario}|${sample.scale}`
+        let section = sections.get(key)
+        if (!section) {
+          section = {
+            scenario: sample.scenario,
+            scale: sample.scale,
+            runs: [],
+            series: new Map(),
+          }
+          sections.set(key, section)
+          runSetBySection.set(key, new Set())
+        }
+        const runSet = runSetBySection.get(key)
+        if (!runSet.has(entry.capturedAt)) {
+          runSet.add(entry.capturedAt)
+          section.runs.push({
+            capturedAt: entry.capturedAt,
+            version: entry.version,
+          })
+        }
+        let series = section.series.get(sample.library)
+        if (!series) {
+          series = []
+          section.series.set(sample.library, series)
+        }
+        series.push({
+          capturedAt: entry.capturedAt,
+          version: entry.version,
+          medianMs: sample.medianMs,
+          p95Ms: sample.p95Ms,
+        })
+      }
+    }
+    // Sort runs ascending by capturedAt so the x-axis reads
+    // left-to-right; sort each series the same way so points line
+    // up with the runs array by index.
+    const byTime = (a, b) =>
+      new Date(a.capturedAt).getTime() - new Date(b.capturedAt).getTime()
+    for (const section of sections.values()) {
+      section.runs.sort(byTime)
+      for (const series of section.series.values()) series.sort(byTime)
+    }
+    return sections
+  }
+
+  /** Sort sections by scenario alpha, then scale ascending. */
+  function sortSections(sections) {
+    const arr = Array.from(sections.values())
+    arr.sort((a, b) => {
+      if (a.scenario !== b.scenario) return a.scenario < b.scenario ? -1 : 1
+      return a.scale - b.scale
+    })
+    return arr
+  }
+
+  /** ----------------------------------------------------------------
+   *  Verdict computation (per series)
+   *
+   *  We don't have per-iteration samples in HistoryEntry — each
+   *  HistorySample is a pre-aggregated (medianMs, p95Ms). The CoV
+   *  check therefore uses the gap between p95 and the median as a
+   *  proxy for sample dispersion: `(p95 - median) / median`. This
+   *  is a coarse approximation that runs strictly bigger than the
+   *  true CoV (a p95-spread is wider than one stdev), so it errs
+   *  on the side of marking borderline cells noisy — the right
+   *  failure mode for a regression dashboard.
+   *  ---------------------------------------------------------------- */
+  function computeVerdict(points) {
+    if (!points || points.length === 0) return { kind: 'unknown', detail: 'no data' }
+
+    const last = points[points.length - 1]
+    if (!Number.isFinite(last.medianMs)) {
+      return { kind: 'unknown', detail: 'last median is non-finite' }
+    }
+
+    // Noisy check fires regardless of trend — a high-variance latest
+    // run isn't trustable as either pass or regression.
+    if (Number.isFinite(last.p95Ms) && last.medianMs > 0) {
+      const proxy = (last.p95Ms - last.medianMs) / last.medianMs
+      if (proxy > NOISY_PROXY) {
+        return {
+          kind: 'noisy',
+          detail: `p95 ${formatNumber(last.p95Ms)} ms is ${formatNumber(proxy * 100)}% above median (latest run)`,
+        }
+      }
+    }
+
+    if (points.length < 2) {
+      return { kind: 'unknown', detail: 'only one run — no trend yet' }
+    }
+
+    const prev = points[points.length - 2]
+    if (!Number.isFinite(prev.medianMs) || prev.medianMs <= 0) {
+      return { kind: 'unknown', detail: 'previous median is non-finite' }
+    }
+
+    const delta = (last.medianMs - prev.medianMs) / prev.medianMs
+    const detail = `${delta >= 0 ? '+' : ''}${formatNumber(delta * 100)}% vs prior run (${formatNumber(prev.medianMs)} → ${formatNumber(last.medianMs)} ms)`
+
+    if (delta > REGRESSION_PCT) return { kind: 'regressed', detail }
+    if (delta < -IMPROVED_PCT) return { kind: 'improved', detail }
+    if (Math.abs(delta) <= PASS_PCT) return { kind: 'pass', detail }
+    // 5%–10% drift: not a regression but not strictly within-pass —
+    // we still call it pass because the spec only carves "regressed"
+    // and "improved" out at the 10% line.
+    return { kind: 'pass', detail }
+  }
+
+  /** Build the placeholder profile-artifact URL for a (library,
+   *  scenario, scale) tuple. The path scheme matches the
+   *  `profiles/${lib}-${scn}-${n}/` layout the perf-snapshot
+   *  workflow uploads (currently disabled — see
+   *  `.github/workflows-disabled/perf-snapshot.yml`). The `latest/`
+   *  segment is the symlink the publish step will point at the
+   *  most recent date+sha directory once CI is restored. */
+  function profileUrlFor(library, scenario, scale) {
+    const slug = `${library}-${scenario}-${scale}`
+    return `./profiles/latest/${slug}/`
+  }
+
+  /** ----------------------------------------------------------------
+   *  Cubic-Hermite interpolation (D3-equivalent smoothing).
+   *
+   *  d3-shape's `curveCatmullRom` is ~30 lines of math; we inline
+   *  the same algorithm so we don't need d3-shape. Given a series
+   *  of (x,y) points we emit an SVG path with cubic Bézier segments
+   *  whose tangents come from the Catmull-Rom formula at α=0.5
+   *  (centripetal — handles non-uniformly-spaced x values without
+   *  overshoot). For < 2 points we just render a moveTo.
+   *  ---------------------------------------------------------------- */
+  function catmullRomPath(points) {
+    if (points.length === 0) return ''
+    if (points.length === 1) {
+      const [p] = points
+      return `M ${p[0].toFixed(2)} ${p[1].toFixed(2)}`
+    }
+    const cmds = [`M ${points[0][0].toFixed(2)} ${points[0][1].toFixed(2)}`]
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const p0 = points[i - 1] ?? points[i]
+      const p1 = points[i]
+      const p2 = points[i + 1]
+      const p3 = points[i + 2] ?? p2
+      // Catmull-Rom → Bézier tangent magnitudes (α = 0.5, centripetal).
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6
+      const c1y = p1[1] + (p2[1] - p0[1]) / 6
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6
+      const c2y = p2[1] - (p3[1] - p1[1]) / 6
+      cmds.push(
+        `C ${c1x.toFixed(2)} ${c1y.toFixed(2)} ` +
+          `${c2x.toFixed(2)} ${c2y.toFixed(2)} ` +
+          `${p2[0].toFixed(2)} ${p2[1].toFixed(2)}`,
+      )
+    }
+    return cmds.join(' ')
+  }
+
+  /** ----------------------------------------------------------------
+   *  "Nice" axis ticks (D3-equivalent d3-scale.ticks).
+   *
+   *  Given a domain [min, max] and a target tick count, return ≤
+   *  `count + 1` "round" tick values whose step is in {1, 2, 5} ×
+   *  10^k. Mirrors d3-scale.ticks so visiting the chart "feels" the
+   *  same as a D3 chart, without the dependency.
+   *  ---------------------------------------------------------------- */
+  function niceTicks(min, max, count) {
+    if (!Number.isFinite(min) || !Number.isFinite(max) || count <= 0) return []
+    if (min === max) return [min]
+    const span = max - min
+    const step0 = span / count
+    const power = Math.floor(Math.log10(step0))
+    const base = Math.pow(10, power)
+    const ratio = step0 / base
+    let step
+    if (ratio >= 5) step = 10 * base
+    else if (ratio >= 2) step = 5 * base
+    else if (ratio >= 1) step = 2 * base
+    else step = base
+    const start = Math.ceil(min / step) * step
+    const ticks = []
+    // Guard against fp drift — limit to count+2 ticks max.
+    for (let i = 0; i < count + 2; i += 1) {
+      const v = start + i * step
+      if (v > max + step * 1e-9) break
+      // Round to kill fp dust like 0.30000000000000004.
+      const rounded = Math.round(v * 1e6) / 1e6
+      ticks.push(rounded)
+    }
+    return ticks
+  }
+
+  /** ----------------------------------------------------------------
+   *  Section chart (SVG) — one chart, N stacked framework series.
+   *
+   *  Mirrors the conventions in packages/bench/src/chart.ts:
+   *    - viewBox + xmlns for clean inline embedding
+   *    - <path> with cubic-Hermite smoothing for each median series
+   *    - <path> with same smoothing for each p95 band envelope
+   *    - "nice" axis ticks (1/2/5 × 10^k) on the y-axis (shared)
+   *    - per-point invisible hit-rect with <title> for full hover
+   *      coverage (every run is hoverable, not just the latest) —
+   *      drawn per-series so hover messages name the library
+   *
+   *  Series share x-axis (run index ↔ section.runs index) and
+   *  y-axis (ms). The y-domain is computed across all visible
+   *  series + their p95 envelopes so every line fits in the
+   *  drawable area.
+   *  ---------------------------------------------------------------- */
+  function renderSectionChart(section, visibleLibraries) {
+    const W = 640
+    const H = 220
+    const PAD_L = 50
+    const PAD_R = 16
+    const PAD_T = 14
+    const PAD_B = 34
+
+    const runs = section.runs
+    if (runs.length === 0) {
+      return (
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" ` +
+        `role="img" aria-label="no data for ${escapeHtml(section.scenario)} at scale ${section.scale}">` +
+        `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" font-size="12" fill="#A9B5C9">no data</text>` +
+        `</svg>`
+      )
+    }
+
+    // Build a quick index from capturedAt → run index for series
+    // lookups (per-series points use their own capturedAt to map
+    // back to the section's shared run timeline).
+    const runIndex = new Map()
+    runs.forEach((r, i) => runIndex.set(r.capturedAt, i))
+
+    // Restrict to visible libraries (in canonical order so colours
+    // and legend ordering are stable across renders).
+    const libsToPlot = LIBRARY_ORDER
+      .filter((l) => section.series.has(l) && visibleLibraries.has(l))
+      .concat(
+        // Any unknown libraries (defensive — for fixtures that ship
+        // a non-canonical library name) come after the known order.
+        Array.from(section.series.keys())
+          .filter((l) => !LIBRARY_ORDER.includes(l) && visibleLibraries.has(l))
+          .sort(),
+      )
+
+    if (libsToPlot.length === 0) {
+      return (
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" ` +
+        `role="img" aria-label="no libraries enabled for ${escapeHtml(section.scenario)} at scale ${section.scale}">` +
+        `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" font-size="12" fill="#A9B5C9">no libraries enabled</text>` +
+        `</svg>`
+      )
+    }
+
+    // Y-domain: include every visible series' median AND p95 so the
+    // bands fit without clipping.
+    let yMin = Number.POSITIVE_INFINITY
+    let yMax = Number.NEGATIVE_INFINITY
+    for (const lib of libsToPlot) {
+      for (const p of section.series.get(lib)) {
+        if (Number.isFinite(p.medianMs)) {
+          yMin = Math.min(yMin, p.medianMs)
+          yMax = Math.max(yMax, p.medianMs)
+        }
+        if (Number.isFinite(p.p95Ms)) {
+          yMin = Math.min(yMin, p.p95Ms)
+          yMax = Math.max(yMax, p.p95Ms)
+        }
+      }
+    }
+    if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) {
+      yMin = 0
+      yMax = 1
+    }
+    if (yMin === yMax) {
+      const eps = Math.max(yMax * 0.05, 0.001)
+      yMin -= eps
+      yMax += eps
+    }
+
+    const innerW = W - PAD_L - PAD_R
+    const innerH = H - PAD_T - PAD_B
+
+    const xAt = (i) => {
+      if (runs.length === 1) return PAD_L + innerW / 2
+      return PAD_L + (innerW * i) / (runs.length - 1)
+    }
+    const yAt = (v) => {
+      if (!Number.isFinite(v)) return PAD_T + innerH
+      const t = (v - yMin) / (yMax - yMin)
+      return PAD_T + innerH * (1 - t)
+    }
+
+    // Y-axis ticks — drawn first so series lines sit on top.
+    let yTickValues = niceTicks(yMin, yMax, 4)
+    if (yTickValues.length < 2) yTickValues = [yMin, yMax]
+    const tick = (v) => {
+      const y = yAt(v)
+      const label = formatNumber(v)
+      return (
+        `<g class="tick">` +
+        `<line x1="${PAD_L}" y1="${y.toFixed(2)}" ` +
+        `x2="${W - PAD_R}" y2="${y.toFixed(2)}" ` +
+        `stroke="rgba(169,181,201,0.16)" stroke-width="1" />` +
+        `<text x="${(PAD_L - 6).toFixed(2)}" y="${(y + 3).toFixed(2)}" ` +
+        `text-anchor="end" font-size="10" fill="#A9B5C9">${label}</text>` +
+        `</g>`
+      )
+    }
+    const yTicks = yTickValues.map(tick).join('')
+
+    // Per-series bands + lines + dots. Order matters: bands first
+    // (so lines draw on top of all bands and aren't visually
+    // covered by a later band), then median lines, then dots.
+    let allBands = ''
+    let allLines = ''
+    let allDots = ''
+    let allHitRects = ''
+    for (const lib of libsToPlot) {
+      const color = LIBRARY_COLOR[lib] ?? '#A9B5C9'
+      const series = section.series.get(lib)
+      // Convert series points → (xAt(runIndex), yAt(value)) tuples.
+      // Points whose run isn't in the section's runs map (defensive)
+      // or whose values are non-finite are dropped from path data.
+      const medianRaw = []
+      const upperRaw = []
+      const lowerRaw = []
+      for (const p of series) {
+        const idx = runIndex.get(p.capturedAt)
+        if (idx === undefined) continue
+        const x = xAt(idx)
+        if (Number.isFinite(p.medianMs)) {
+          medianRaw.push([x, yAt(p.medianMs)])
+        }
+        if (Number.isFinite(p.medianMs) && Number.isFinite(p.p95Ms)) {
+          upperRaw.push([x, yAt(p.p95Ms)])
+          lowerRaw.push([x, yAt(p.medianMs)])
+        }
+      }
+
+      if (upperRaw.length >= 2) {
+        const upPath = catmullRomPath(upperRaw)
+        const downPts = lowerRaw.slice().reverse()
+        const downCmds = downPts
+          .map((p) => `L ${p[0].toFixed(2)} ${p[1].toFixed(2)}`)
+          .join(' ')
+        allBands +=
+          `<path d="${upPath} ${downCmds} Z" fill="${color}" ` +
+          `fill-opacity="0.14" stroke="none" data-library="${escapeHtml(lib)}" />`
+      }
+
+      if (medianRaw.length > 0) {
+        allLines +=
+          `<path d="${catmullRomPath(medianRaw)}" fill="none" ` +
+          `stroke="${color}" stroke-width="1.8" stroke-linecap="round" ` +
+          `stroke-linejoin="round" data-library="${escapeHtml(lib)}" />`
+      }
+
+      // Dots per datapoint with embedded tooltip.
+      for (const p of series) {
+        const idx = runIndex.get(p.capturedAt)
+        if (idx === undefined || !Number.isFinite(p.medianMs)) continue
+        const tooltip =
+          `${escapeHtml(lib)} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
+          `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms`
+        allDots +=
+          `<circle cx="${xAt(idx).toFixed(2)}" cy="${yAt(p.medianMs).toFixed(2)}" ` +
+          `r="2.8" fill="${color}" stroke="rgba(11,16,32,0.6)" stroke-width="1" ` +
+          `data-library="${escapeHtml(lib)}">` +
+          `<title>${tooltip}</title>` +
+          `</circle>`
+      }
+
+      // Per-series invisible hit rects — narrow vertical strips
+      // centred on each datapoint x. They overlap across series
+      // (one rect per (lib, run)); SVG hit-testing prefers the
+      // topmost element so the last-drawn library "wins" hover for
+      // a given x, but each library contributes its own tooltip
+      // because the rects are stacked at different y-bands
+      // (median ± a small radius). We keep them full-height so the
+      // user can hover any column and read at least one library's
+      // values — for fine-grained per-series tooltips the dot
+      // tooltips above remain authoritative.
+      if (runs.length >= 2) {
+        const colW = innerW / (runs.length - 1)
+        for (const p of series) {
+          const idx = runIndex.get(p.capturedAt)
+          if (idx === undefined) continue
+          const cx = xAt(idx)
+          const x0 = Math.max(PAD_L, cx - colW / 2)
+          const x1 = Math.min(W - PAD_R, cx + colW / 2)
+          // Stack rects by library so each one has a narrow
+          // vertical slice it owns — that way every series'
+          // tooltip is reachable somewhere in the column. We give
+          // each library a 1/N-of-innerH band, ordered top-down by
+          // canonical library order.
+          const libIdx = libsToPlot.indexOf(lib)
+          const bandH = innerH / libsToPlot.length
+          const y0 = PAD_T + libIdx * bandH
+          const tooltip =
+            `${escapeHtml(lib)} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
+            `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms`
+          allHitRects +=
+            `<rect x="${x0.toFixed(2)}" y="${y0.toFixed(2)}" ` +
+            `width="${(x1 - x0).toFixed(2)}" height="${bandH.toFixed(2)}" ` +
+            `fill="transparent" pointer-events="all" data-library="${escapeHtml(lib)}">` +
+            `<title>${tooltip}</title>` +
+            `</rect>`
+        }
+      }
+    }
+
+    // X-axis baseline + first/middle/last labels — shared across
+    // every series so the eye anchors to the same run column.
+    const xAxisY = (PAD_T + innerH).toFixed(2)
+    const xAxisLine =
+      `<line x1="${PAD_L}" y1="${xAxisY}" x2="${W - PAD_R}" y2="${xAxisY}" ` +
+      `stroke="rgba(169,181,201,0.32)" stroke-width="1" />`
+    let xTicks = ''
+    if (runs.length >= 2) {
+      const first = formatShortDate(runs[0].capturedAt)
+      const last = formatShortDate(runs[runs.length - 1].capturedAt)
+      xTicks =
+        `<text x="${PAD_L}" y="${H - 10}" font-size="10" fill="#A9B5C9">${escapeHtml(first)}</text>` +
+        `<text x="${W - PAD_R}" y="${H - 10}" text-anchor="end" font-size="10" fill="#A9B5C9">${escapeHtml(last)}</text>`
+      if (runs.length >= 3) {
+        const midIdx = Math.floor((runs.length - 1) / 2)
+        const midLabel = formatShortDate(runs[midIdx].capturedAt)
+        const midX = xAt(midIdx)
+        if (midX > PAD_L + 40 && midX < W - PAD_R - 40) {
+          xTicks +=
+            `<text x="${midX.toFixed(2)}" y="${H - 10}" text-anchor="middle" ` +
+            `font-size="10" fill="#A9B5C9">${escapeHtml(midLabel)}</text>`
+        }
+      }
+    } else {
+      xTicks =
+        `<text x="${PAD_L + innerW / 2}" y="${H - 10}" text-anchor="middle" ` +
+        `font-size="10" fill="#A9B5C9">${escapeHtml(formatShortDate(runs[0].capturedAt))}</text>`
+    }
+
+    const yCaption = `<text x="6" y="${PAD_T + 9}" font-size="10" fill="#A9B5C9">ms</text>`
+
+    const ariaLabel =
+      `${section.scenario} at scale ${section.scale}: ` +
+      `${libsToPlot.length} framework${libsToPlot.length === 1 ? '' : 's'} ` +
+      `over ${runs.length} run${runs.length === 1 ? '' : 's'}`
+
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" ` +
+      `role="img" aria-label="${escapeHtml(ariaLabel)}">` +
+      yTicks +
+      allBands +
+      allLines +
+      xAxisLine +
+      allDots +
+      xTicks +
+      yCaption +
+      allHitRects +
+      `</svg>`
+    )
+  }
+
+  /** ----------------------------------------------------------------
+   *  Section card DOM — one card per (scenario × scale) with the
+   *  stacked chart on top and a legend strip beneath, one chip per
+   *  framework. Each chip shows: library colour swatch, library
+   *  name, latest median + p95, and a per-series verdict badge
+   *  (the same verdict logic that used to live on per-cell cards).
+   *  A "profile" link per chip provides the artifact-snapshot
+   *  affordance the original cell-card design exposed.
+   *  ---------------------------------------------------------------- */
+  function renderSectionCard(section, visibleLibraries) {
+    const card = document.createElement('article')
+    card.className = 'bench-section-card'
+    card.dataset.scenario = section.scenario
+    card.dataset.scale = String(section.scale)
+
+    const libsToPlot = LIBRARY_ORDER
+      .filter((l) => section.series.has(l) && visibleLibraries.has(l))
+      .concat(
+        Array.from(section.series.keys())
+          .filter((l) => !LIBRARY_ORDER.includes(l) && visibleLibraries.has(l))
+          .sort(),
+      )
+
+    // Header: scenario name + scale chip.
+    const header = document.createElement('header')
+    header.className = 'bench-section-head'
+    header.innerHTML =
+      `<h3 class="bench-section-title">${escapeHtml(section.scenario)}</h3>` +
+      `<span class="bench-section-scale">scale ${section.scale.toLocaleString('en-US')}</span>`
+    card.appendChild(header)
+
+    // Chart.
+    const chartWrap = document.createElement('div')
+    chartWrap.className = 'bench-section-chart'
+    chartWrap.innerHTML = renderSectionChart(section, visibleLibraries)
+    card.appendChild(chartWrap)
+
+    // Legend strip — one chip per framework currently visible.
+    const legend = document.createElement('ul')
+    legend.className = 'bench-section-legend'
+    legend.setAttribute('aria-label', 'Framework series legend with per-line verdicts')
+    for (const lib of libsToPlot) {
+      const series = section.series.get(lib)
+      const last = series.length > 0 ? series[series.length - 1] : null
+      const verdict = computeVerdict(series)
+      const color = LIBRARY_COLOR[lib] ?? '#A9B5C9'
+      const verdictColor = VERDICT_COLOR[verdict.kind] ?? VERDICT_COLOR.unknown
+      const lastMedian = last ? formatNumber(last.medianMs) : 'n/a'
+      const lastP95 = last ? formatNumber(last.p95Ms) : 'n/a'
+      const profileUrl = profileUrlFor(lib, section.scenario, section.scale)
+
+      const item = document.createElement('li')
+      item.className = 'bench-legend-item'
+      item.dataset.library = lib
+      item.dataset.verdict = verdict.kind
+      item.style.setProperty('--lib-color', color)
+      item.style.setProperty('--verdict-color', verdictColor)
+      item.innerHTML =
+        `<span class="bench-legend-swatch" aria-hidden="true"></span>` +
+        `<span class="bench-legend-lib">${escapeHtml(lib)}</span>` +
+        `<span class="bench-legend-stats">` +
+        `<span class="bench-legend-median">${lastMedian} ms</span>` +
+        `<span class="bench-legend-p95">p95 ${lastP95}</span>` +
+        `</span>` +
+        `<span class="bench-legend-verdict" title="${escapeHtml(verdict.detail)}">` +
+        `<span class="bench-legend-verdict-dot" aria-hidden="true"></span>` +
+        `<span class="bench-legend-verdict-label">${verdict.kind}</span>` +
+        `</span>` +
+        `<a class="bench-legend-profile-link" href="${profileUrl}" rel="noopener" ` +
+        `aria-label="Profile artifacts for ${escapeHtml(lib)} ${escapeHtml(section.scenario)} at scale ${section.scale} (placeholder — populated by #709 once CI is restored)" ` +
+        `title="profile snapshot → ${profileUrl} (placeholder until #709 nightly publish lands)">⌕</a>`
+      legend.appendChild(item)
+    }
+    card.appendChild(legend)
+
+    return card
+  }
+
+  /** Group sections by scenario for visual grouping in the page —
+   *  every (scenario × scale) belongs to its scenario's group. */
+  function groupByScenario(sections) {
+    const groups = new Map()
+    for (const section of sections) {
+      let bucket = groups.get(section.scenario)
+      if (!bucket) {
+        bucket = []
+        groups.set(section.scenario, bucket)
+      }
+      bucket.push(section)
+    }
+    return groups
+  }
+
+  /** ----------------------------------------------------------------
+   *  Filter UI
+   *  ---------------------------------------------------------------- */
+
+  /** Discover the universe of (library, scenario, scale) values and
+   *  seed the filterState with the default-view subset. */
+  function seedFilterState(allSections) {
+    const allLibs = new Set()
+    const allScenarios = new Set()
+    const allScales = new Set()
+    for (const s of allSections) {
+      allScenarios.add(s.scenario)
+      allScales.add(s.scale)
+      for (const lib of s.series.keys()) allLibs.add(lib)
+    }
+
+    // Defaults: causl + mobx (where present), 10000 scale, all
+    // scenarios on. Fall back gracefully if the universe is smaller
+    // than the spec defaults (e.g. a fixture without a 10k scale).
+    const defaultLibs = new Set(
+      [...DEFAULT_LIBRARIES].filter((l) => allLibs.has(l)),
+    )
+    if (defaultLibs.size === 0) {
+      // Nothing in the default set survived — open the gate so the
+      // user sees something rather than an empty grid.
+      for (const l of allLibs) defaultLibs.add(l)
+    }
+
+    const defaultScales = new Set(
+      [...DEFAULT_SCALES].filter((s) => allScales.has(s)),
+    )
+    if (defaultScales.size === 0) {
+      for (const s of allScales) defaultScales.add(s)
+    }
+
+    filterState.libraries = defaultLibs
+    filterState.scenarios = new Set(allScenarios)
+    filterState.scales = defaultScales
+
+    // Stash the universes on the state object so the UI can render
+    // checkboxes for them.
+    filterState._allLibraries = LIBRARY_ORDER.filter((l) => allLibs.has(l))
+      .concat([...allLibs].filter((l) => !LIBRARY_ORDER.includes(l)).sort())
+    filterState._allScenarios = [...allScenarios].sort()
+    filterState._allScales = [...allScales].sort((a, b) => a - b)
+  }
+
+  /** Apply current filterState to the universe of sections. We
+   *  filter by scenario + scale at the section level; library
+   *  filtering happens inside the section renderer (it controls
+   *  which lines are drawn, not which sections appear). */
+  function applyFilters(allSections) {
+    return allSections.filter((s) =>
+      filterState.scenarios.has(s.scenario) &&
+      filterState.scales.has(s.scale),
+    )
+  }
+
+  /** Build the filter UI. The caller wires the `onChange` callback
+   *  to the renderer so toggling a checkbox triggers a re-render. */
+  function renderFilterUI(host, onChange) {
+    host.innerHTML = ''
+
+    const fieldset = (legendText, ariaLabel, items, getKey, getLabel, stateSet) => {
+      const fs = document.createElement('fieldset')
+      fs.className = 'filter-group'
+      fs.setAttribute('aria-label', ariaLabel)
+
+      const legend = document.createElement('legend')
+      legend.className = 'filter-legend'
+      legend.textContent = legendText
+      fs.appendChild(legend)
+
+      const list = document.createElement('div')
+      list.className = 'filter-list'
+
+      for (const item of items) {
+        const key = getKey(item)
+        const label = document.createElement('label')
+        label.className = 'filter-chip'
+        const cb = document.createElement('input')
+        cb.type = 'checkbox'
+        cb.value = String(key)
+        cb.checked = stateSet.has(key)
+        cb.setAttribute(
+          'aria-label',
+          `${legendText.toLowerCase()} ${getLabel(item)}`,
+        )
+        cb.addEventListener('change', () => {
+          if (cb.checked) stateSet.add(key)
+          else stateSet.delete(key)
+          onChange()
+        })
+        const span = document.createElement('span')
+        span.className = 'filter-chip-text'
+        span.textContent = getLabel(item)
+        label.appendChild(cb)
+        label.appendChild(span)
+        list.appendChild(label)
+      }
+
+      fs.appendChild(list)
+      return fs
+    }
+
+    const libFs = fieldset(
+      'Library',
+      'Filter by library (controls which lines render on each chart)',
+      filterState._allLibraries,
+      (l) => l,
+      (l) => l,
+      filterState.libraries,
+    )
+
+    const scnFs = fieldset(
+      'Scenario',
+      'Filter by scenario',
+      filterState._allScenarios,
+      (s) => s,
+      (s) => s,
+      filterState.scenarios,
+    )
+
+    const scaleFs = fieldset(
+      'Scale',
+      'Filter by scale (node count)',
+      filterState._allScales,
+      (s) => s,
+      (s) => s.toLocaleString('en-US'),
+      filterState.scales,
+    )
+
+    host.appendChild(libFs)
+    host.appendChild(scnFs)
+    host.appendChild(scaleFs)
+
+    // "Reset" / "All on" affordances — small text buttons so power
+    // users can flip the gate without clicking through every chip.
+    const actions = document.createElement('div')
+    actions.className = 'filter-actions'
+
+    const allBtn = document.createElement('button')
+    allBtn.type = 'button'
+    allBtn.className = 'filter-action'
+    allBtn.textContent = 'All cells on'
+    allBtn.setAttribute('aria-label', 'Enable every library, scenario, and scale')
+    allBtn.addEventListener('click', () => {
+      for (const l of filterState._allLibraries) filterState.libraries.add(l)
+      for (const s of filterState._allScenarios) filterState.scenarios.add(s)
+      for (const s of filterState._allScales) filterState.scales.add(s)
+      onChange()
+      renderFilterUI(host, onChange)
+    })
+
+    const defaultBtn = document.createElement('button')
+    defaultBtn.type = 'button'
+    defaultBtn.className = 'filter-action'
+    defaultBtn.textContent = 'Default view (causl + mobx @ 10k)'
+    defaultBtn.setAttribute(
+      'aria-label',
+      'Restore the default view: causl and mobx at scale 10000',
+    )
+    defaultBtn.addEventListener('click', () => {
+      filterState.libraries = new Set(
+        [...DEFAULT_LIBRARIES].filter((l) => filterState._allLibraries.includes(l)),
+      )
+      filterState.scenarios = new Set(filterState._allScenarios)
+      filterState.scales = new Set(
+        [...DEFAULT_SCALES].filter((s) => filterState._allScales.includes(s)),
+      )
+      onChange()
+      renderFilterUI(host, onChange)
+    })
+
+    actions.appendChild(defaultBtn)
+    actions.appendChild(allBtn)
+    host.appendChild(actions)
+  }
+
+  /** ----------------------------------------------------------------
+   *  Top-level renderer
+   *  ---------------------------------------------------------------- */
+  function renderGrid(gridHost, allSections) {
+    gridHost.innerHTML = ''
+    const visible = applyFilters(allSections)
+    if (visible.length === 0) {
+      const empty = document.createElement('p')
+      empty.className = 'dashboard-empty'
+      empty.textContent =
+        'No sections match the current filters. Use the toggles above to widen the view.'
+      gridHost.appendChild(empty)
+      return
+    }
+
+    const groups = groupByScenario(visible)
+    for (const [scenario, scenarioSections] of groups) {
+      const groupEl = document.createElement('section')
+      groupEl.className = 'bench-section-group'
+      groupEl.setAttribute('aria-label', `Scenario: ${scenario}`)
+
+      const title = document.createElement('h2')
+      title.className = 'bench-section-group-title'
+      title.textContent = scenario
+      groupEl.appendChild(title)
+
+      const grid = document.createElement('div')
+      grid.className = 'bench-section-grid'
+      for (const section of scenarioSections) {
+        grid.appendChild(renderSectionCard(section, filterState.libraries))
+      }
+      groupEl.appendChild(grid)
+      gridHost.appendChild(groupEl)
+    }
+  }
+
+  function renderDashboard(host, history, sourceLabel) {
+    host.innerHTML = ''
+
+    // Top-line meta strip — number of runs, last-run timestamp, source.
+    const meta = document.createElement('div')
+    meta.className = 'dashboard-meta'
+    const runCount = history.length
+    const last = history[history.length - 1]
+    const lastWhen = last ? formatShortDate(last.capturedAt) : '—'
+    const lastVersion = last ? last.version : '—'
+    meta.innerHTML =
+      `<div><strong>Runs</strong> ${runCount}</div>` +
+      `<div><strong>Latest</strong> ${escapeHtml(lastWhen)}</div>` +
+      `<div><strong>Version</strong> <code>${escapeHtml(lastVersion)}</code></div>` +
+      `<div><strong>Source</strong> ${escapeHtml(sourceLabel)}</div>`
+    host.appendChild(meta)
+
+    const allSections = sortSections(groupSections(history))
+    if (allSections.length === 0) {
+      const empty = document.createElement('p')
+      empty.className = 'dashboard-empty'
+      empty.textContent = 'history.json had no samples to plot.'
+      host.appendChild(empty)
+      return
+    }
+
+    seedFilterState(allSections)
+
+    // Filter UI inside a <details> so it folds out of the way on
+    // narrow viewports while staying keyboard-reachable.
+    const filterShell = document.createElement('details')
+    filterShell.className = 'filter-shell'
+    filterShell.open = true
+    const filterSummary = document.createElement('summary')
+    filterSummary.className = 'filter-summary'
+    filterSummary.textContent = 'Filters'
+    filterShell.appendChild(filterSummary)
+
+    const filterHost = document.createElement('div')
+    filterHost.className = 'filter-host'
+    filterHost.setAttribute('role', 'group')
+    filterHost.setAttribute('aria-label', 'Dashboard filters')
+    filterShell.appendChild(filterHost)
+    host.appendChild(filterShell)
+
+    // Legend strip for the verdict badges.
+    const legend = document.createElement('div')
+    legend.className = 'verdict-legend'
+    legend.setAttribute('aria-label', 'Regression verdict legend')
+    legend.innerHTML =
+      `<span class="verdict-legend-label">Verdict</span>` +
+      Object.entries(VERDICT_COLOR)
+        .filter(([k]) => k !== 'unknown')
+        .map(
+          ([k, c]) =>
+            `<span class="verdict-legend-item" data-kind="${k}">` +
+            `<span class="verdict-legend-dot" style="--verdict-color:${c}"></span>` +
+            `<span class="verdict-legend-text">${k}</span>` +
+            `</span>`,
+        )
+        .join('')
+    host.appendChild(legend)
+
+    const gridHost = document.createElement('div')
+    gridHost.className = 'dashboard-grid'
+    host.appendChild(gridHost)
+
+    const onChange = () => renderGrid(gridHost, allSections)
+    renderFilterUI(filterHost, onChange)
+    renderGrid(gridHost, allSections)
+  }
+
+  /** Try the live URL, fall back to the sample stub. */
+  async function loadHistory() {
+    const tryFetch = async (url) => {
+      const res = await fetch(url, { cache: 'no-cache' })
+      if (!res.ok) {
+        const err = new Error(`HTTP ${res.status} for ${url}`)
+        err.status = res.status
+        throw err
+      }
+      return res.json()
+    }
+
+    try {
+      const data = await tryFetch(HISTORY_URL)
+      return { data, sourceLabel: 'history.json (live)' }
+    } catch {
+      const data = await tryFetch(SAMPLE_URL)
+      return { data, sourceLabel: 'history.sample.json (stub)' }
+    }
+  }
+
+  /** Public bootstrap. Called from index.html once the DOM is ready. */
+  async function bootstrap() {
+    const host = document.querySelector('#dashboard-root')
+    if (!host) return
+
+    host.innerHTML = '<p class="dashboard-loading">Loading history…</p>'
+
+    try {
+      const { data, sourceLabel } = await loadHistory()
+      if (!Array.isArray(data)) {
+        throw new Error('history JSON was not an array of HistoryEntry')
+      }
+      renderDashboard(host, data, sourceLabel)
+    } catch (err) {
+      host.innerHTML =
+        `<p class="dashboard-error">` +
+        `Could not load benchmark history: ${escapeHtml((err && err.message) || String(err))}.` +
+        `</p>`
+    } finally {
+      host.setAttribute('aria-busy', 'false')
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrap)
+  } else {
+    bootstrap()
+  }
+})()

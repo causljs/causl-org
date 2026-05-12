@@ -1,0 +1,441 @@
+/* ============================================================
+   causl.org — TypeDoc theme overlay.
+
+   Recolours TypeDoc's default theme with the Causl brand
+   palette and font stack so the auto-generated API reference
+   feels like part of the same site as causl-org/index.html.
+
+   All hex literals here are pulled from Causl Brand
+   Specification §8 (the same chips defined in css/site.css).
+   The legacy `--causal-*` aliases match the rest of causl-org
+   so existing page styles keep rendering without per-file
+   rewrites.
+   ============================================================ */
+
+:root,
+:root[data-theme="dark"],
+:root[data-theme="light"] {
+  /* -- Primary spec tokens (mirror css/site.css verbatim) --- */
+  --causl-void:           #070A0F;
+  --causl-ink:            #0B1118;
+  --causl-slate:          #101822;
+  --causl-graphite:       #2B333D;
+  --causl-mist:           #D7E6EA;
+  --causl-ash:            #8FA2AA;
+  --causl-async-cyan:     #11D9FF;
+  --causl-commit-green:   #A7FF18;
+  --causl-copper:         #C8743D;
+  --causl-conflict-amber: #FFB020;
+  --causl-rollback-red:   #FF4D5E;
+  --causl-mutation-violet: #7C4DFF;
+
+  /* -- Short-name aliases (compat with css/site.css) -------- */
+  --causl-cyan:    var(--causl-async-cyan);
+  --causl-green:   var(--causl-commit-green);
+  --causl-amber:   var(--causl-conflict-amber);
+  --causl-red:     var(--causl-rollback-red);
+  --causl-violet:  var(--causl-mutation-violet);
+
+  /* -- Legacy typedoc-overlay aliases ----------------------- */
+  --obsidian:        var(--causl-ink);
+  --obsidian-2:      var(--causl-void);
+  --slate-graphite:  var(--causl-slate);
+  --surface:         var(--causl-slate);
+  --surface-2:       #182032;
+  --night-line:      var(--causl-graphite);
+  --mist:            var(--causl-mist);
+  --pure-light:      #F7F8FA;
+  --steel:           var(--causl-ash);
+  --fog:             var(--causl-ash);
+  --causal-cyan:     var(--causl-async-cyan);
+  --causal-cyan-2:   #4FE4FF;
+  --signal-blue:     var(--causl-mutation-violet);
+  --commit-amber:    var(--causl-conflict-amber);
+  --conflict-coral:  var(--causl-rollback-red);
+  --success-mint:    var(--causl-commit-green);
+
+  --mono: "IBM Plex Mono", "JetBrains Mono", "SFMono-Regular",
+          Consolas, monospace;
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* -- Dark theme palette overrides -------------------------------- */
+
+:root[data-theme="dark"],
+:root {
+  --color-background:           var(--causl-ink);
+  --color-background-secondary: var(--causl-slate);
+  --color-background-warning:   rgba(255, 176, 32, 0.12);
+  --color-warning-text:         var(--causl-conflict-amber);
+  --color-icon-background:      #182032;
+  --color-accent:               var(--causl-async-cyan);
+  --color-active-menu-item:     rgba(17, 217, 255, 0.12);
+  --color-text:                 var(--causl-mist);
+  --color-text-aside:           var(--causl-async-cyan);
+  --color-link:                 var(--causl-async-cyan);
+  --color-focus-outline:        var(--causl-async-cyan);
+  --color-hover-outline:        #4FE4FF;
+  --color-ts-project:           var(--causl-mutation-violet);
+  --color-ts-module:            var(--causl-mutation-violet);
+  --color-ts-namespace:         var(--causl-mutation-violet);
+  --color-ts-enum:              var(--causl-conflict-amber);
+  --color-ts-variable:          var(--causl-commit-green);
+  --color-ts-function:          var(--causl-async-cyan);
+  --color-ts-class:             var(--causl-conflict-amber);
+  --color-ts-interface:         var(--causl-commit-green);
+  --color-ts-constructor-signature: var(--causl-async-cyan);
+  --color-ts-property:          var(--causl-mist);
+  --color-ts-method:            var(--causl-async-cyan);
+  --color-ts-call-signature:    var(--causl-async-cyan);
+  --color-ts-index-signature:   var(--causl-mist);
+  --color-ts-constructor:       var(--causl-conflict-amber);
+  --color-ts-parameter:         var(--causl-ash);
+  --color-ts-type-parameter:    var(--causl-mutation-violet);
+  --color-ts-accessor:          var(--causl-async-cyan);
+  --color-ts-get-signature:     var(--causl-async-cyan);
+  --color-ts-set-signature:     var(--causl-async-cyan);
+  --color-ts-type-alias:        var(--causl-mutation-violet);
+}
+
+/* -- Light theme palette overrides ------------------------------- */
+
+:root[data-theme="light"] {
+  --color-background:           #F7F8FA;
+  --color-background-secondary: #FFFFFF;
+  --color-text:                 #070A0F;
+  --color-text-aside:           #070A0F;
+  --color-link:                 #0B95B0;
+  --color-accent:               #0B95B0;
+  --color-active-menu-item:     rgba(11, 149, 176, 0.18);
+  --color-focus-outline:        #0B95B0;
+  --color-hover-outline:        #070A0F;
+}
+
+/* -- Body background + typography -------------------------------- */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--sans);
+  color: var(--causl-mist);
+  background:
+    radial-gradient(circle at 18% 8%, rgba(17, 217, 255, 0.14),
+                    transparent 32rem),
+    radial-gradient(circle at 86% 18%, rgba(167, 255, 24, 0.08),
+                    transparent 30rem),
+    linear-gradient(180deg, var(--causl-void),
+                    var(--causl-ink) 55%, var(--causl-slate));
+  background-attachment: fixed;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+:root[data-theme="light"] body {
+  color: #070A0F;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(11, 149, 176, 0.10),
+                    transparent 32rem),
+    radial-gradient(circle at 86% 18%, rgba(43, 138, 31, 0.06),
+                    transparent 30rem),
+    linear-gradient(180deg, #FFFFFF, #F7F8FA 60%, #F0F2F5);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--sans);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+code, kbd, samp, pre,
+.tsd-signature,
+.tsd-kind-icon + span,
+.tsd-typography pre,
+.tsd-typography code {
+  font-family: var(--mono);
+}
+
+/* -- Header / page-toolbar -------------------------------------- */
+
+.tsd-page-toolbar {
+  background: linear-gradient(180deg,
+    rgba(11, 17, 24, 0.92), rgba(11, 17, 24, 0.78));
+  border-bottom: 1px solid rgba(17, 217, 255, 0.32);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+:root[data-theme="light"] .tsd-page-toolbar {
+  background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.92), rgba(247, 248, 250, 0.92));
+  border-bottom-color: rgba(11, 149, 176, 0.4);
+}
+
+.tsd-page-toolbar a.title {
+  color: var(--causl-mist);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+:root[data-theme="light"] .tsd-page-toolbar a.title {
+  color: #070A0F;
+}
+
+.tsd-navigation a.tsd-page-toolbar-link,
+.tsd-page-toolbar .tsd-toolbar-contents a {
+  color: var(--causl-mist);
+}
+
+.tsd-page-toolbar .tsd-toolbar-contents a:hover {
+  color: var(--causl-async-cyan);
+}
+
+/* -- Links + accents ------------------------------------------- */
+
+a,
+a:visited {
+  color: var(--causl-async-cyan);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+a:hover {
+  color: #4FE4FF;
+  text-decoration: underline;
+}
+
+:root[data-theme="light"] a,
+:root[data-theme="light"] a:visited {
+  color: #0B95B0;
+}
+
+:root[data-theme="light"] a:hover {
+  color: #0F7E96;
+}
+
+.tsd-kind-project,
+.tsd-kind-module,
+.tsd-kind-namespace {
+  color: var(--causl-mutation-violet);
+}
+
+/* -- Sidebar / navigation -------------------------------------- */
+
+.site-menu,
+.page-menu {
+  border-color: rgba(143, 162, 170, 0.14);
+}
+
+.tsd-navigation a,
+.tsd-navigation summary {
+  color: var(--causl-mist);
+}
+
+:root[data-theme="light"] .tsd-navigation a,
+:root[data-theme="light"] .tsd-navigation summary {
+  color: #070A0F;
+}
+
+.tsd-navigation a:hover {
+  background: rgba(17, 217, 255, 0.08);
+  color: var(--causl-async-cyan);
+}
+
+.tsd-navigation a.current,
+.tsd-navigation .current > a {
+  background: rgba(17, 217, 255, 0.12);
+  color: var(--causl-async-cyan);
+  border-left: 2px solid var(--causl-async-cyan);
+}
+
+/* -- Panels / cards -------------------------------------------- */
+
+.tsd-panel {
+  background: linear-gradient(180deg,
+    rgba(16, 24, 34, 0.62), rgba(11, 17, 24, 0.7));
+  border: 1px solid rgba(143, 162, 170, 0.14);
+  border-radius: 14px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+:root[data-theme="light"] .tsd-panel {
+  background: #FFFFFF;
+  border-color: rgba(11, 16, 32, 0.08);
+  box-shadow: 0 8px 24px rgba(11, 16, 32, 0.04);
+}
+
+.tsd-panel-group .tsd-panel {
+  margin-bottom: 1rem;
+}
+
+.tsd-panel h2,
+.tsd-panel h3,
+.tsd-panel h4 {
+  color: var(--causl-mist);
+}
+
+:root[data-theme="light"] .tsd-panel h2,
+:root[data-theme="light"] .tsd-panel h3,
+:root[data-theme="light"] .tsd-panel h4 {
+  color: #070A0F;
+}
+
+/* -- Signatures + code blocks ---------------------------------- */
+
+.tsd-signature,
+.tsd-signatures .tsd-signature {
+  background: linear-gradient(180deg,
+    rgba(11, 17, 24, 0.92), rgba(7, 10, 15, 0.92));
+  border: 1px solid rgba(17, 217, 255, 0.18);
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  color: var(--causl-mist);
+}
+
+:root[data-theme="light"] .tsd-signature,
+:root[data-theme="light"] .tsd-signatures .tsd-signature {
+  background: linear-gradient(180deg, #0B1118, #070A0F);
+  color: var(--causl-mist);
+  border-color: rgba(17, 217, 255, 0.32);
+}
+
+pre,
+.tsd-typography pre {
+  background: linear-gradient(180deg,
+    rgba(11, 17, 24, 0.92), rgba(7, 10, 15, 0.92)) !important;
+  border: 1px solid rgba(17, 217, 255, 0.18);
+  border-radius: 10px;
+  color: var(--causl-mist);
+}
+
+:root[data-theme="light"] pre,
+:root[data-theme="light"] .tsd-typography pre {
+  background: linear-gradient(180deg, #0B1118, #070A0F) !important;
+  color: var(--causl-mist);
+  border-color: rgba(17, 217, 255, 0.32);
+}
+
+code,
+.tsd-typography code {
+  background: rgba(17, 217, 255, 0.08);
+  border: 1px solid rgba(17, 217, 255, 0.2);
+  color: var(--causl-mist);
+  padding: 0.05em 0.4em;
+  border-radius: 5px;
+  font-size: 0.86em;
+}
+
+:root[data-theme="light"] code,
+:root[data-theme="light"] .tsd-typography code {
+  color: #070A0F;
+  background: rgba(11, 149, 176, 0.12);
+  border-color: rgba(11, 149, 176, 0.32);
+}
+
+pre code,
+.tsd-typography pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+/* -- Tags / badges --------------------------------------------- */
+
+.tsd-tag,
+.tsd-flag {
+  background: rgba(17, 217, 255, 0.12);
+  border: 1px solid rgba(17, 217, 255, 0.32);
+  color: var(--causl-async-cyan);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* -- Breadcrumbs / footer -------------------------------------- */
+
+.tsd-breadcrumb a {
+  color: var(--causl-ash);
+}
+
+.tsd-breadcrumb a:hover {
+  color: var(--causl-async-cyan);
+}
+
+.tsd-generator {
+  border-top: 1px solid rgba(143, 162, 170, 0.14);
+  color: var(--causl-ash);
+  font-size: 0.85rem;
+}
+
+.tsd-generator a {
+  color: var(--causl-async-cyan);
+}
+
+/* -- Search input ---------------------------------------------- */
+
+#tsd-search input,
+#tsd-search .field input {
+  background: rgba(11, 17, 24, 0.6);
+  border: 1px solid rgba(17, 217, 255, 0.2);
+  color: var(--causl-mist);
+  border-radius: 8px;
+}
+
+:root[data-theme="light"] #tsd-search input,
+:root[data-theme="light"] #tsd-search .field input {
+  background: #FFFFFF;
+  color: #070A0F;
+  border-color: rgba(11, 16, 32, 0.16);
+}
+
+#tsd-search .results {
+  background: var(--causl-slate);
+  border: 1px solid rgba(17, 217, 255, 0.2);
+}
+
+#tsd-search .results li.current,
+#tsd-search .results li:hover {
+  background: rgba(17, 217, 255, 0.12);
+}
+
+/* -- Tables ---------------------------------------------------- */
+
+.tsd-typography table {
+  border-collapse: collapse;
+  border: 1px solid rgba(143, 162, 170, 0.14);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.tsd-typography th {
+  background: rgba(11, 17, 24, 0.55);
+  border-bottom: 1px solid rgba(17, 217, 255, 0.22);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(215, 230, 234, 0.82);
+  padding: 0.7rem 0.85rem;
+}
+
+.tsd-typography td {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid rgba(143, 162, 170, 0.1);
+}
+
+:root[data-theme="light"] .tsd-typography th {
+  background: #F0F2F5;
+  color: rgba(11, 16, 32, 0.82);
+  border-bottom-color: rgba(11, 149, 176, 0.32);
+}
+
+:root[data-theme="light"] .tsd-typography td {
+  border-bottom-color: rgba(11, 16, 32, 0.08);
+}

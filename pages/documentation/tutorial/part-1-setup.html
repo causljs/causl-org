@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tutorial Part 1: Setting Up Your Project — Causl</title>
+  <meta name="description" content="Part 1 of the Causl Essentials Tutorial — scaffold a Vite project, install @causl/core, lay out the source tree, and write your first createCausl() graph." />
+  <link rel="icon" href="../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../css/site.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: rgba(232, 238, 247, 0.86); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: rgba(11, 16, 32, 0.86); }
+    .tutorial-nav { display: flex; justify-content: space-between; gap: 1rem; margin: 2.5rem 0 1rem; font-size: 0.92rem; }
+    .tutorial-nav a { font-family: var(--mono); color: var(--causal-cyan); text-decoration: none; }
+    .tutorial-nav a:hover { text-decoration: underline; }
+    .crumb { font-size: 0.85rem; font-family: var(--mono); color: rgba(232, 238, 247, 0.86); letter-spacing: 0.04em; margin-top: 1.5rem; }
+    :root[data-theme="light"] .crumb { color: rgba(11, 16, 32, 0.86); }
+    .crumb a { color: var(--causal-cyan); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation"><span lang="en-fonipa">/ˈkɔː.zəl/</span> — like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/" class="is-current" aria-current="page">Tutorial</a>
+        <a href="/pages/documentation/usage/">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="/pages/brand/">Brand</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <p class="crumb"><a href="../">Documentation</a> / <a href="./">Tutorial</a> / Part 1</p>
+
+    <h1>Part 1: Setting Up Your Project</h1>
+
+    <p>
+      This part of the <a href="./">Essentials Tutorial</a> takes you from an empty
+      folder to a running TypeScript project with <code>@causl/core</code> installed and
+      a first graph wired up. By the end you will have committed a value, read it back,
+      and watched a derived node recompute — the smallest example the engine has to
+      support, and the foundation everything else in the tutorial builds on.
+    </p>
+
+    <h2>What you'll learn</h2>
+    <ul>
+      <li>How to scaffold a TypeScript project with Vite (and the equivalent with Create React App).</li>
+      <li>Which <code>@causl/*</code> packages you need now versus later in the tutorial.</li>
+      <li>The conventional <code>src/</code> layout we use throughout the rest of the tutorial.</li>
+      <li>How to call <code>createCausl()</code>, register an input and a derived node, and run your first <code>commit</code>.</li>
+    </ul>
+
+    <h2>1. Scaffold the project</h2>
+
+    <p>
+      Causl is a plain library — there is no Causl CLI and nothing about your build
+      tooling needs to know it exists. We recommend <strong>Vite</strong> for new projects
+      because it keeps the cold-start fast and its TypeScript defaults are sensible. If
+      you have a strong preference for Create React App, Next.js, Remix, or a non-React
+      tool like SvelteKit, Causl works there too; the differences are confined to which
+      packages you install in Part 5.
+    </p>
+
+    <p>Open a terminal and run:</p>
+
+    <pre><code>pnpm create vite@latest incident-tracker --template react-ts
+cd incident-tracker
+pnpm install</code></pre>
+
+    <p>
+      If you prefer npm or yarn, the equivalents are <code>npm create vite@latest …</code>
+      and <code>yarn create vite …</code>. Either way you should end up with a folder
+      containing <code>package.json</code>, <code>tsconfig.json</code>, a
+      <code>src/</code> directory, and a working <code>pnpm dev</code> command.
+    </p>
+
+    <blockquote>
+      <strong>Using Create React App?</strong> Run
+      <code>npx create-react-app incident-tracker --template typescript</code> instead.
+      Everything else in the tutorial is identical — Causl does not care which bundler
+      compiled it.
+    </blockquote>
+
+    <h2>2. Install Causl</h2>
+
+    <p>
+      The engine itself lives in <code>@causl/core</code>. That single package contains
+      <code>createCausl</code>, the canonical seven-method <code>Graph</code> surface,
+      and the structured error classes you will branch on. You do not need anything else
+      to follow Parts 1 through 4:
+    </p>
+
+    <pre><code>pnpm add @causl/core</code></pre>
+
+    <p>
+      The remaining packages are introduced as the tutorial needs them. For reference,
+      this is the full set you will install across the eight parts:
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Package</th><th>Introduced in</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>@causl/core</code></td><td>Part 1</td><td>The engine — <code>createCausl()</code>, inputs, deriveds, commits.</td></tr>
+        <tr><td><code>@causl/react</code></td><td>Part 5</td><td>React bindings — <code>useCauslNode</code>, <code>CauslProvider</code>.</td></tr>
+        <tr><td><code>@causl/sync</code></td><td>Part 6</td><td>Async resource lifecycle helpers.</td></tr>
+        <tr><td><code>@causl/persistence</code></td><td>Part 7</td><td>Snapshot/restore + storage adapters.</td></tr>
+        <tr><td><code>@causl/checker</code></td><td>Part 8</td><td>Static lint + bounded model checker.</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      You can install everything up front if you prefer one shopping trip; nothing is
+      pulled into the bundle until you import from it.
+    </p>
+
+    <h2>3. Lay out the source tree</h2>
+
+    <p>
+      Causl does not impose a folder convention, but the tutorial uses a layout that
+      scales well from "single graph in <code>src/state/</code>" up to feature-sliced
+      applications. Replace Vite's <code>src/</code> with the following structure:
+    </p>
+
+    <pre><code>src/
+├── main.tsx              # React entry point (added in Part 5)
+├── App.tsx               # Root component (added in Part 5)
+└── state/
+    ├── graph.ts          # createCausl() call — the single source of truth
+    ├── inputs.ts         # graph.input(...) declarations
+    ├── derived.ts        # graph.derived(...) declarations
+    └── actions.ts        # functions that wrap graph.commit(...)</code></pre>
+
+    <p>
+      The split matters for two reasons. First, it keeps the <em>shape</em> of your state
+      (inputs and deriveds) physically separate from the <em>transitions</em> that mutate
+      it (commit-wrapping action functions). That is the same separation Redux enforces
+      with slices and dispatched actions, and it makes both halves easier to test in
+      isolation. Second, exporting nodes from dedicated modules makes them
+      <a href="../api/causl-core/">tree-shakeable</a> and gives the static
+      <a href="../api/causl-checker/">checker</a> in Part 8 a stable surface to point at.
+    </p>
+
+    <h2>4. Create the graph</h2>
+
+    <p>
+      Open <code>src/state/graph.ts</code> and replace its contents with this:
+    </p>
+
+    <pre><code>// src/state/graph.ts
+import { createCausl } from '@causl/core'
+
+export const graph = createCausl()</code></pre>
+
+    <p>
+      That's the whole entry point. <code>createCausl()</code> returns a fresh
+      <code>Graph</code> with its own independent <code>GraphTime</code> — there is no
+      module-level state inside the engine and no implicit singleton. Calling
+      <code>createCausl()</code> twice gives you two separate universes that cannot see
+      each other; that property is what makes Causl easy to use in tests and in SSR
+      contexts where each request needs its own state.
+    </p>
+
+    <blockquote>
+      <strong>Detailed explanation: why a module-scoped export?</strong>
+      Exporting a singleton instance from <code>graph.ts</code> matches the
+      <code>createStore</code> pattern Redux apps use. In tests, you instead call
+      <code>createCausl()</code> inside <code>beforeEach</code> to get a fresh graph per
+      test. In SSR (Next.js, Remix), you create one per request and pass it through React
+      context — exactly the <code>CauslProvider</code> shape we wire up in Part 5.
+    </blockquote>
+
+    <h2>5. Add your first input and derivation</h2>
+
+    <p>
+      Now register a single mutable cell and a computed view over it. Create
+      <code>src/state/inputs.ts</code>:
+    </p>
+
+    <pre><code>// src/state/inputs.ts
+import { graph } from './graph'
+
+export const count = graph.input('count', 0)</code></pre>
+
+    <p>And <code>src/state/derived.ts</code>:</p>
+
+    <pre><code>// src/state/derived.ts
+import { graph } from './graph'
+import { count } from './inputs'
+
+export const doubled = graph.derived('doubled', (get) =&gt; get(count) * 2)</code></pre>
+
+    <p>
+      Two things are worth pausing on. First, both <code>graph.input()</code> and
+      <code>graph.derived()</code> take a stable string id as their first argument. That
+      id lives in <em>your</em> information-model namespace, separate from the variable
+      name — so even after a refactor, the same logical cell still has the same id, and
+      the bounded model checker can identify it across runs. Part 2 covers the id rules
+      in detail.
+    </p>
+
+    <p>
+      Second, the second argument to <code>graph.derived()</code> is a closure that
+      receives a tracked <code>get</code> accessor. The engine infers the derivation's
+      dependency set from the <code>get</code> calls it observes — there is no manual
+      "depends on" list to keep in sync. A derivation that switches inputs on an
+      <code>if</code> branch naturally rewires its dependency set on the next
+      evaluation.
+    </p>
+
+    <h2>6. Run your first commit</h2>
+
+    <p>
+      The only operation that advances <code>GraphTime</code> and writes to inputs is
+      <code>graph.commit()</code>. Add <code>src/state/actions.ts</code>:
+    </p>
+
+    <pre><code>// src/state/actions.ts
+import { graph } from './graph'
+import { count } from './inputs'
+
+export function increment(): void {
+  graph.commit('increment', (tx) =&gt; {
+    tx.set(count, graph.read(count) + 1)
+  })
+}</code></pre>
+
+    <p>
+      And finally, a throwaway script to prove the pieces fit together. Edit Vite's
+      generated <code>src/main.tsx</code> down to just this for now:
+    </p>
+
+    <pre><code>// src/main.tsx
+import { graph } from './state/graph'
+import { count } from './state/inputs'
+import { doubled } from './state/derived'
+import { increment } from './state/actions'
+
+console.log('initial count   ', graph.read(count))     // 0
+console.log('initial doubled ', graph.read(doubled))   // 0
+
+increment()
+increment()
+increment()
+
+console.log('count   ', graph.read(count))     // 3
+console.log('doubled ', graph.read(doubled))   // 6</code></pre>
+
+    <p>
+      Run <code>pnpm dev</code>, open the browser console, and you should see exactly
+      those six lines. If you do — <strong>congratulations, the engine is real on your
+      machine</strong>. You have an input, a derivation that recomputed when its
+      dependency changed, three commits that each advanced time by one, and reads that
+      returned the post-commit values.
+    </p>
+
+    <h2>What's next</h2>
+
+    <p>
+      You have the smallest possible Causl app. It still has one input, one derived, and
+      no UI; in <a href="part-2-graph-design.html">Part 2</a> we model the
+      incident-tracker domain as a richer graph and introduce the id and namespace rules
+      that scale beyond a single counter.
+    </p>
+
+    <div class="tutorial-nav">
+      <a href="./">← Tutorial index</a>
+      <a href="part-2-graph-design.html">Part 2: Modeling State as a Graph →</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../../js/topbar.js" defer></script>
+</body>
+</html>

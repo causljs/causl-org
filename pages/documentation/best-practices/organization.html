@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Code Organization — Causl</title>
+  <meta name="description" content="How to lay out a causl project — per-feature graph modules, the UI/graph seam, naming conventions, and how to avoid growing a single god-graph." />
+  <link rel="icon" href="../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../css/site.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: rgba(232, 238, 247, 0.86); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: rgba(11, 16, 32, 0.86); }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation"><span lang="en-fonipa">/ˈkɔː.zəl/</span> — like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/">Tutorial</a>
+        <a href="/pages/documentation/usage/">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/" class="is-current" aria-current="page">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="/pages/brand/">Brand</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <h1>Code Organization</h1>
+
+    <p>
+      This page covers how to lay out a causl application on disk —
+      where the graph lives, how to split it into per-feature modules,
+      where the seam with your UI should fall, and the naming
+      conventions we use across the engine and the migration codemods.
+      The goal is a codebase that a new contributor can navigate by
+      reading folder names.
+    </p>
+
+    <p>
+      causl is unopinionated about file layout. Nothing in the engine
+      requires a particular folder structure, and the static
+      <a href="../../#tools">checker</a> reads the program as a whole.
+      The conventions here are what we have found to scale; you should
+      feel free to deviate when a feature is genuinely shaped
+      differently.
+    </p>
+
+    <h2>1. Start with a feature-first folder structure</h2>
+
+    <p>
+      Group code by <em>feature</em>, not by <em>kind</em>. A common
+      anti-pattern, especially for teams arriving from Redux, is to
+      grow parallel <code>inputs/</code>, <code>derivations/</code>,
+      and <code>selectors/</code> folders that mirror the engine's
+      vocabulary. This forces every feature change to edit three or
+      four directories and makes it hard to see what a feature
+      actually owns.
+    </p>
+
+    <p>
+      A workable layout for a medium-sized application looks like:
+    </p>
+
+    <pre><code>src/
+├── app/
+│   ├── graph.ts            // createCausl() lives here
+│   └── App.tsx             // top-level &lt;CauslProvider&gt;
+├── features/
+│   ├── cart/
+│   │   ├── nodes.ts        // inputs + derivations
+│   │   ├── actions.ts      // transaction-shaped helpers
+│   │   ├── selectors.ts    // derived nodes exposed to UI
+│   │   ├── Cart.tsx        // React components
+│   │   └── nodes.test.ts
+│   ├── catalog/
+│   │   ├── nodes.ts
+│   │   ├── resources.ts    // @causl/sync fetches
+│   │   ├── selectors.ts
+│   │   └── Catalog.tsx
+│   └── auth/
+│       ├── nodes.ts
+│       ├── persistence.ts  // @causl/persistence wiring
+│       └── SignIn.tsx
+└── shared/
+    ├── ids.ts              // branded ID types
+    └── format.ts           // pure helpers
+</code></pre>
+
+    <p>
+      Each feature folder is read-mostly: it exports its public nodes,
+      a small set of actions, and the components that render them.
+      Cross-feature coupling — and there will always be some — happens
+      in <code>app/graph.ts</code> or in a deliberately-named seam
+      module, never by reaching into a sibling's <code>nodes.ts</code>.
+    </p>
+
+    <h2>2. One graph, per-feature modules</h2>
+
+    <p>
+      You almost always want exactly one <code>createCausl()</code>
+      call per application instance. The graph is the unit of
+      atomicity: anything you want to commit together has to live in
+      the same graph. Splitting into multiple graphs splits your
+      transactions, which defeats the central reason to use causl in
+      the first place (see SPEC §5.1 on phases A–H).
+    </p>
+
+    <p>
+      But "one graph" does not mean "one file". Each feature should
+      own its own module that registers its inputs and derivations
+      against the shared graph:
+    </p>
+
+    <pre><code>// app/graph.ts
+import { createCausl } from '@causl/core';
+
+export const graph = createCausl({ name: 'app' });
+</code></pre>
+
+    <pre><code>// features/cart/nodes.ts
+import { input, derived } from '@causl/core';
+import { graph } from '../../app/graph';
+
+export const items = input&lt;CartItem[]&gt;(graph, [], { name: 'cart.items' });
+export const couponCode = input&lt;string | null&gt;(graph, null, { name: 'cart.couponCode' });
+
+export const subtotal = derived(graph, (g) =&gt;
+  g.read(items).reduce((sum, it) =&gt; sum + it.price * it.qty, 0),
+  { name: 'cart.subtotal' },
+);
+
+export const total = derived(graph, (g) =&gt; {
+  const sub = g.read(subtotal);
+  const code = g.read(couponCode);
+  return code ? sub * 0.9 : sub;
+}, { name: 'cart.total' });
+</code></pre>
+
+    <p>
+      Three things are doing work here. First, every node has a
+      <code>name</code> option — these names appear in devtools traces,
+      in <code>graph.explain()</code> output, and in checker
+      diagnostics, so spending five seconds picking a good one pays
+      back many times over. Second, the <code>nodes.ts</code> module
+      <em>only</em> declares state and computation; it does not
+      mutate. Third, derivations are pure functions of
+      <code>g.read(...)</code> calls — they never call
+      <code>g.set</code>, never start fetches, and never depend on
+      anything outside the graph.
+    </p>
+
+    <blockquote>
+      <strong>Detailed explanation: why pure derivations.</strong>
+      The Kahn topological recompute in Phase D (SPEC §5.1) relies on
+      derivations being deterministic functions of their inputs. A
+      derivation that calls <code>fetch()</code> or reads
+      <code>Date.now()</code> is observably non-deterministic — the
+      same input state can yield different outputs across two
+      recomputes, which is the textbook glitch-freedom violation. If
+      you find yourself wanting to do this, the answer is almost
+      always an <code>@causl/sync</code> resource (see SPEC.async.md).
+    </blockquote>
+
+    <h2>3. Keep mutations in <code>actions.ts</code></h2>
+
+    <p>
+      Components should not call <code>graph.commit</code> directly.
+      Wrap every mutation in a named function in the feature's
+      <code>actions.ts</code>:
+    </p>
+
+    <pre><code>// features/cart/actions.ts
+import { graph } from '../../app/graph';
+import { items, couponCode } from './nodes';
+
+export function addItem(item: CartItem) {
+  graph.commit(() =&gt; {
+    const current = graph.read(items);
+    graph.set(items, [...current, item]);
+  });
+}
+
+export function applyCoupon(code: string) {
+  graph.commit(() =&gt; {
+    graph.set(couponCode, code);
+  });
+}
+</code></pre>
+
+    <p>
+      Three benefits. The <em>vocabulary of state change</em> for the
+      feature is enumerable — read <code>actions.ts</code> and you
+      know everything that can happen to the cart. Tests can call the
+      same functions the UI does. And when a future commit needs to
+      change two or three inputs together (the moment where atomicity
+      actually earns its keep), the wrapping transaction already
+      exists.
+    </p>
+
+    <h2>4. Separate UI from graph at the selector seam</h2>
+
+    <p>
+      The boundary between React and the graph belongs in
+      <code>selectors.ts</code>. A selector is a derivation — usually
+      a thin wrapper — that the UI subscribes to via
+      <code>useCauslNode</code>. Components import from
+      <code>selectors.ts</code>, not from <code>nodes.ts</code>:
+    </p>
+
+    <pre><code>// features/cart/selectors.ts
+import { derived } from '@causl/core';
+import { graph } from '../../app/graph';
+import { items, total } from './nodes';
+
+export const cartLineItems = derived(graph, (g) =&gt;
+  g.read(items).map((it) =&gt; ({
+    id: it.id,
+    label: `${it.name} × ${it.qty}`,
+    price: it.price * it.qty,
+  })),
+  { name: 'cart.cartLineItems' },
+);
+
+export const cartSummary = derived(graph, (g) =&gt; ({
+  count: g.read(items).length,
+  total: g.read(total),
+}), { name: 'cart.cartSummary' });
+</code></pre>
+
+    <pre><code>// features/cart/Cart.tsx
+import { useCauslNode } from '@causl/react';
+import { graph } from '../../app/graph';
+import { cartLineItems, cartSummary } from './selectors';
+import { addItem } from './actions';
+
+export function Cart() {
+  const lines = useCauslNode(graph, cartLineItems);
+  const summary = useCauslNode(graph, cartSummary);
+  return (
+    &lt;section&gt;
+      &lt;ul&gt;{lines.map((l) =&gt; &lt;li key={l.id}&gt;{l.label} — ${l.price}&lt;/li&gt;)}&lt;/ul&gt;
+      &lt;footer&gt;{summary.count} items · ${summary.total}&lt;/footer&gt;
+    &lt;/section&gt;
+  );
+}
+</code></pre>
+
+    <p>
+      The seam matters because selectors are where you shape data
+      <em>for rendering</em>. Components do not slice raw
+      <code>items</code> arrays; they consume the shape the selector
+      hands them. When you later want to memoize differently, push
+      work to <code>@causl/sync</code>, or render in a worker, you
+      change the selector and the component does not move.
+    </p>
+
+    <blockquote>
+      <strong>Reference identity is not contractual.</strong>
+      <code>graph.read()</code> does not guarantee referential
+      equality across reads — even for unchanged values (SPEC §15.1,
+      amended via PR #1129). If your component depends on stable
+      identity (e.g. for React keys, or as a <code>useEffect</code>
+      dependency), select the primitive fields you actually need
+      rather than the whole object. <code>useCauslNode</code> handles
+      shallow comparison for you; deeper invariants belong in the
+      selector.
+    </blockquote>
+
+    <h2>5. Naming conventions</h2>
+
+    <p>
+      Consistent naming makes the devtools trace, the checker output,
+      and code review all easier:
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Kind</th><th>Convention</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Input</td><td>noun, lowercase</td><td><code>items</code>, <code>couponCode</code></td></tr>
+        <tr><td>Derivation</td><td>noun or computed adjective</td><td><code>subtotal</code>, <code>isCheckoutReady</code></td></tr>
+        <tr><td>Action</td><td>verb in present tense</td><td><code>addItem</code>, <code>applyCoupon</code></td></tr>
+        <tr><td>Resource (<code>@causl/sync</code>)</td><td>noun + <code>Resource</code></td><td><code>productCatalogResource</code></td></tr>
+        <tr><td>Selector</td><td>noun describing the view</td><td><code>cartLineItems</code>, <code>cartSummary</code></td></tr>
+        <tr><td><code>name</code> option</td><td>feature-dot-node</td><td><code>'cart.items'</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      Two things to call out. Booleans as derivations should read like
+      assertions: <code>isCheckoutReady</code>, not
+      <code>checkoutReadyFlag</code>. And the <code>name</code> option
+      should be feature-prefixed because devtools sort lexically — a
+      flat list of <code>items</code>, <code>total</code>, <code>user</code>
+      is unnavigable once you have more than two features.
+    </p>
+
+    <h2>6. Avoiding god-graphs</h2>
+
+    <p>
+      A "god-graph" is what you get when every feature reaches into
+      every other feature's nodes and the dependency graph becomes a
+      single ball that nobody can refactor. The symptom is usually a
+      derivation that reads from eight different feature modules and
+      a commit that nobody is sure is atomic for the right reason.
+    </p>
+
+    <p>
+      Three habits keep it from happening:
+    </p>
+
+    <p>
+      <strong>(a) Cross-feature dependencies go through selectors.</strong>
+      If <code>checkout</code> needs to know about <code>cart.total</code>,
+      it imports <code>cartSummary</code> from
+      <code>features/cart/selectors</code>, not the raw
+      <code>items</code> input. The selector is the published surface;
+      the input is private. The convention is enforceable by lint
+      (see <code>@causl/checker</code>'s import-boundary pass).
+    </p>
+
+    <p>
+      <strong>(b) Periodically run <code>graph.explain()</code>.</strong>
+      It prints the node names, their dependencies, and the recompute
+      order. If a single derivation depends on more than a handful of
+      inputs across multiple features, that derivation is doing too
+      much — split it.
+    </p>
+
+    <p>
+      <strong>(c) Keep one bidirectional edge per feature pair.</strong>
+      Two features can absolutely depend on each other (cart depends
+      on inventory; inventory depends on cart for reservations). But
+      that dependency should travel through exactly one named
+      selector in each direction. If you find three or four, you are
+      growing a god-graph and the right move is to extract a
+      <code>shared/</code> sub-feature that owns the common nodes.
+    </p>
+
+    <h2>When to break these rules</h2>
+
+    <p>
+      Prototypes. Small apps where the whole graph fits in one file
+      and one person's head. Demos for a talk. The shape above pays
+      back at maybe 30 nodes and a second contributor; below that, a
+      single <code>graph.ts</code> with everything in it is fine and
+      will not haunt you.
+    </p>
+
+    <p>
+      causl is not the right tool for every state problem (see
+      <a href="../../#docs">the homepage note on where it fits</a>) —
+      but where it <em>is</em> the right tool, the layout above is
+      what we have seen survive feature growth, team growth, and the
+      kind of refactor that turns up six months in.
+    </p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../../js/topbar.js" defer></script>
+</body>
+</html>
