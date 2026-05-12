@@ -21,28 +21,30 @@
   <link rel="stylesheet" href="css/site.css" />
   <link rel="stylesheet" href="css/syntax.css" />
   <style>
-    /* Page-specific rules. */
+    /* Page-specific rules — spacing values use the --space-N tokens
+       defined in site.css :root (#1265). h1/h2/h3 inherit the unified
+       scale from site.css; no per-page heading override is needed. */
     .hero {
-      padding-top: 1rem;
-      padding-bottom: 4rem;
+      padding-top: var(--space-4);
+      padding-bottom: var(--space-8);
     }
 
     .hero-grid {
       display: grid;
       grid-template-columns: 1.1fr 0.9fr;
-      gap: 3rem;
+      gap: var(--space-7);
       align-items: center;
     }
 
     @media (max-width: 900px) {
-      .hero-grid { grid-template-columns: 1fr; gap: 2rem; }
+      .hero-grid { grid-template-columns: 1fr; gap: var(--space-6); }
     }
 
     .hero p.lede {
       font-size: 1.15rem;
       color: var(--text-on-base-muted);
       max-width: 580px;
-      margin: 1.2rem 0 1.8rem;
+      margin: var(--space-5) 0 var(--space-6);
     }
 
     :root[data-theme="light"] .hero p.lede { color: var(--text-on-base-muted); }
@@ -50,14 +52,14 @@
     .hero-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.7rem;
-      margin-bottom: 1.4rem;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
     }
 
     .hero-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 1rem 1.6rem;
+      gap: var(--space-4) var(--space-6);
       font-family: var(--mono);
       font-size: 0.82rem;
       color: var(--text-on-base-muted);
@@ -71,6 +73,7 @@
       font-size: 0.72rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
+      /* 0.15rem — hairline label gap; sub-grid, keep literal. */
       margin-bottom: 0.15rem;
     }
 
@@ -78,7 +81,7 @@
       counter-reset: commitment;
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 1.1rem;
+      gap: var(--space-5);
     }
 
     @media (max-width: 800px) { .commitment-list { grid-template-columns: 1fr; } }
@@ -86,7 +89,7 @@
     .commitment {
       counter-increment: commitment;
       position: relative;
-      padding: 1.4rem 1.5rem 1.4rem 3.6rem;
+      padding: var(--space-5) var(--space-5) var(--space-5) var(--space-7);
       background: linear-gradient(180deg,
         rgba(26, 34, 56, 0.7), rgba(12, 18, 34, 0.78));
       border: 1px solid rgba(169, 181, 201, 0.14);
@@ -103,8 +106,8 @@
     .commitment::before {
       content: counter(commitment, decimal-leading-zero);
       position: absolute;
-      left: 1.2rem;
-      top: 1.35rem;
+      left: var(--space-5);
+      top: var(--space-5);
       font-family: var(--mono);
       font-weight: 700;
       font-size: 1rem;
@@ -112,14 +115,13 @@
       letter-spacing: 0.04em;
     }
 
-    .commitment h3 { margin: 0 0 0.4rem; font-size: 1.1rem; }
     .commitment p { margin: 0; font-size: 0.95rem; }
 
     .package-row {
       display: grid;
       grid-template-columns: 240px 1fr;
-      gap: 1.2rem;
-      padding: 1rem 0;
+      gap: var(--space-5);
+      padding: var(--space-4) 0;
       border-top: 1px solid rgba(169, 181, 201, 0.12);
       align-items: baseline;
     }
@@ -127,7 +129,7 @@
     .package-row:first-child { border-top: none; }
 
     @media (max-width: 700px) {
-      .package-row { grid-template-columns: 1fr; gap: 0.3rem; }
+      .package-row { grid-template-columns: 1fr; gap: var(--space-1); }
     }
 
     .package-row .pkg-name {
@@ -147,7 +149,7 @@
     .when-cols {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1.4rem;
+      gap: var(--space-5);
     }
     @media (max-width: 800px) { .when-cols { grid-template-columns: 1fr; } }
 
@@ -158,7 +160,7 @@
     }
 
     .when-list li {
-      padding: 0.55rem 0 0.55rem 1.6rem;
+      padding: var(--space-2) 0 var(--space-2) var(--space-6);
       border-bottom: 1px dashed rgba(169, 181, 201, 0.14);
       position: relative;
       font-size: 0.95rem;
@@ -185,7 +187,7 @@
     .status-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
+      gap: var(--space-4);
     }
     @media (max-width: 800px) { .status-grid { grid-template-columns: 1fr; } }
 
@@ -199,8 +201,8 @@
      * the text remains legible in both themes.
      */
     .cta-strip {
-      margin-top: 3.5rem;
-      padding: 2.5rem 2rem;
+      margin-top: var(--space-7);
+      padding: var(--space-6);
       border-radius: var(--radius-xl);
       background:
         linear-gradient(135deg, rgba(39, 211, 195, 0.12),
@@ -212,7 +214,7 @@
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 1.5rem;
+      gap: var(--space-5);
     }
     :root[data-theme="light"] .cta-strip {
       background:
@@ -222,7 +224,7 @@
       border-color: rgba(11, 149, 176, 0.28);
     }
 
-    .cta-strip h2 { margin: 0 0 0.25rem; }
+    .cta-strip h2 { margin: 0 0 var(--space-1); }
     .cta-strip p { margin: 0; max-width: 560px; }
   </style>
 </head>
