@@ -25,7 +25,7 @@ Causl embraces that reality. It does not pretend application state is simple. It
 
 Canonical facts change inside transactions. Derived values recompute through a deterministic dependency graph. Observers see only committed snapshots. Async results are versioned so they cannot silently overwrite newer state. Conflicts become records that can be inspected, resolved, tested, and replayed.
 
-The Causl mascot is the creature that survives inside complex systems: small, clever, hard to kill, excellent at finding hidden paths, and perfectly comfortable in the walls of the stack.
+The canonical visual expression of the brand is the **Causl mark**: an abstract geometric mark — seven graph nodes arrayed on a circle, with a cyan arc tracing the causal path from the top-right node counter-clockwise to the bottom node, and the bottom-right node painted in commit-red. The mark is the dependency graph reduced to its essential shape: nodes, propagation, and one highlighted commit point. The brand has no animal mascot; the mark itself carries the identity. The prose voice can still be slightly feral — technical, scrappy, hacker-native, comfortable describing a state graph as a "rat's nest in the walls" — but the brand is never illustrated as a creature. (Option B decision, issue #1263.)
 
 **Brand narrative:**
 
@@ -155,7 +155,7 @@ It models application state as a live graph of canonical facts, derived values, 
 
 ## 6. Voice and Tone
 
-Causl should sound like a serious systems tool with a mischievous mascot.
+Causl should sound like a serious systems tool with a sharp, slightly feral edge — written by engineers who have debugged broken state graphs at 2 a.m.
 
 ### Voice Attributes
 
@@ -164,7 +164,7 @@ Causl should sound like a serious systems tool with a mischievous mascot.
 | Precise | Explain the mechanism. Avoid vague magic language. |
 | Hacker-native | Use developer vocabulary naturally: commit, trace, graph, stale, snapshot, conflict. |
 | Forensic | The product reveals hidden causality and provenance. |
-| Scrappy | The mascot gives the brand attitude without making the tool unserious. |
+| Scrappy | Slightly feral, technically grounded, hard to kill — attitude without unseriousness. |
 | Deterministic | The brand should repeatedly reinforce consistency, replayability, and testability. |
 
 ### Say This
@@ -191,30 +191,29 @@ Causl should sound like a serious systems tool with a mischievous mascot.
 
 ### Visual Concept
 
-The identity should combine three visual ideas:
+The identity is built on two interlocking visual ideas:
 
-1. **Rat:** clever systems creature.
-2. **Stack:** layered slabs, state layers, transaction history, snapshots.
-3. **Graph:** dependency edges, nodes, formulas, propagation paths.
+1. **Graph:** dependency edges, nodes, formulas, propagation paths.
+2. **Causal path:** a single arc tracing cause through derivation to commit — the open C of "Causl" reread as a directed graph closing on itself.
 
-The mark should ideally show a rat crouched on layered stack slabs, with graph nodes either orbiting around it or threading through the composition. The rat should have one bright neon eye to imply watchfulness, inspection, and hidden-state detection.
+The canonical visual expression is the abstract Causl mark (see §11): seven graph nodes arrayed on a circle, with a cyan arc swept counter-clockwise from the top-right node to the bottom node, and the bottom-right node painted in commit-red. The mark is the dependency graph reduced to its essential shape — nodes, propagation, and one highlighted commit point — and is the only required brand symbol.
 
 ### Logo Direction
 
-**Primary mark:** angular rat silhouette on a layered stack.  
-**Secondary motif:** tail as dependency edge or graph line.  
-**Accent motif:** one neon eye.  
-**Wordmark:** Causl in title case with strong camelcase distinction.
+**Primary mark:** abstract geometric mark — 7-node graph + cyan causal arc + commit-red node (see §11 for geometry).
+**Secondary motif:** directed graph edges and cyan propagation paths.
+**Accent motif:** one commit-red node as the resolution point.
+**Wordmark:** Causl in title case (capital C, lowercase remainder); never all-caps outside tiny metadata labels.
 
 ### Logo Usage
 
 | Context | Recommended Usage |
 |---|---|
-| GitHub org avatar | Icon-only rat-on-stack mark |
+| GitHub org avatar | Icon-only Causl mark on a dark plate |
 | README header | Full lockup: mark + Causl wordmark + tagline |
-| Favicon | Simplified rat head, bright eye, or rat-on-stack silhouette |
-| Devtools | Icon-only mark with semantic colors for live graph state |
-| Stickers | Mascot with tagline: “Commit only consistency.” |
+| Favicon | Causl mark, rendered at 32px / 16px; the seven-node geometry survives at the small sizes |
+| Devtools | Icon-only mark, with semantic colors driven by live graph state |
+| Stickers | Mark + wordmark + tagline ("Commit only consistency.") on dark plate |
 
 ---
 
@@ -227,12 +226,12 @@ The Causl palette is a dark terminal theme with semantic neon accents. Colors sh
 | **Void Black** | `#070A0F` | Primary background, terminal darkness, hero surfaces |
 | **Ink Black** | `#0B1118` | Secondary background, docs sections, app chrome |
 | **Stack Slate** | `#101822` | Panels, cards, devtools surfaces, code blocks |
-| **Rat Graphite** | `#2B333D` | Borders, disabled UI, mascot body, inactive nodes |
+| **Rat Graphite** | `#2B333D` | Borders, disabled UI, inactive nodes, low-contrast surface chrome |
 | **Snapshot Mist** | `#D7E6EA` | Primary text on dark backgrounds |
 | **Trace Ash** | `#8FA2AA` | Secondary text, annotations, low-emphasis metadata |
 | **Async Cyan** | `#11D9FF` | Live dependency edges, async resources, links, graph focus |
 | **Commit Green** | `#A7FF18` | Successful commits, active snapshots, healthy graph state |
-| **Copper Wire** | `#C8743D` | Machinery accents, mascot hardware, structural lines |
+| **Copper Wire** | `#C8743D` | Machinery accents, structural lines, hardware/process motifs |
 | **Conflict Amber** | `#FFB020` | Warnings, conflicts, unresolved branches, validation issues |
 | **Rollback Red** | `#FF4D5E` | Errors, stale overwrites, failed transactions, destructive actions |
 | **Mutation Violet** | `#7C4DFF` | Formula edits, experimental flows, mutation traces |
@@ -245,7 +244,7 @@ The Causl palette is a dark terminal theme with semantic neon accents. Colors sh
 - **Amber** means conflict, validation warning, unresolved branch, or user attention required.
 - **Red** means unsafe, stale, failed, rejected, destructive, or rolled back.
 - **Violet** means mutation, formula activity, experimental operation, or transient edit mode.
-- **Copper** is structural and brand-specific; use it for machinery, mascot hardware, and subtle accents.
+- **Copper** is structural and brand-specific; use it for machinery motifs, hardware accents, and subtle structural lines.
 
 ### Suggested CSS Tokens
 
@@ -385,7 +384,7 @@ State tokens compose with §8.1 pair tokens — a hover rule on `.button.ghost` 
 - Headlines should be short and declarative.
 - Body text should be clean and documentation-friendly.
 - Code, traces, graph labels, and transaction logs should use monospace.
-- Avoid overly playful typefaces. The mascot supplies personality; the typography should supply credibility.
+- Avoid overly playful typefaces. The mark and the prose voice supply personality; the typography should supply credibility.
 
 ### Canonical Typefaces (Causl Site)
 
@@ -426,49 +425,59 @@ Causl’s devtools and documentation should feel like a graph debugger at midnig
 
 ---
 
-## 11. Mascot Specification
+## 11. Brand Mark (Identity Mark)
 
-### Mascot Concept
+> Per the Option B decision in issue #1263, Causl has no animal mascot. This section, formerly "Mascot Specification," now anchors the brand's primary visual expression on the abstract geometric mark — the canonical Causl mark documented below. The single source of truth for the mark file is `causl-org/img/causl-mark.svg`; its inline comment back-references this section by number.
 
-The Causl mascot is a compact systems engineer that lives in the stack. It is clever, alert, and slightly suspicious of hidden side effects.
+### Mark Concept
 
-### Core Features
+The Causl mark is the dependency graph reduced to its essential shape. Seven nodes arrayed on a circle represent the graph's nodes; a single cyan arc traces the causal path through them; one node is painted commit-red to mark the point where causality becomes visible (commit, conflict, resolution). The composition reads simultaneously as an open C (the wordmark's first letter) and as a directed graph closing on itself. There is no creature, no fur, no eye, no harness — only nodes, propagation, and one highlighted commit point.
 
-- Dark graphite fur
-- One bright neon green or cyan eye
-- Angular ears and sharp silhouette
-- Long tail that can double as a graph edge
-- Small diagnostic visor or goggles
-- Harness or satchel for transaction logs
-- Commit stamp, tiny wrench, or rolled graph blueprint
-- Optional copper mechanical accents
+### Geometry
 
-### Personality
+- **viewBox:** `0 0 120 120` (square, 120-unit canvas).
+- **Nodes:** seven circles of radius 10, arrayed on a 40-unit circle centered at (60, 60). Node coordinates: `(88.3, 31.7)`, `(60, 20)`, `(31.7, 31.7)`, `(20, 60)`, `(31.7, 88.3)`, `(60, 100)`, and the commit node at `(88.3, 88.3)`.
+- **Causal arc:** SVG path `M 88.3 31.7 A 40 40 0 1 0 88.3 88.3`, swept counter-clockwise from the top-right node to the bottom-right node, with `fill="none"`, `stroke-width="8"`, `stroke-linecap="round"`.
+- **Plate:** no backing plate is baked into the canonical SVG. The mark works on both the dark site gradient and the light-mode paper. When a plate is required (favicon, social cards, OG images), apply it via CSS or a per-export wrapper SVG — never inside `causl-mark.svg`.
 
-| Trait | Expression |
+### Color
+
+- **Six graph nodes + causal arc:** Async Cyan `#11D9FF` (spec §8).
+- **Commit node (bottom-right, `88.3, 88.3`):** Rollback Red `#FF4D5E` (spec §8).
+- The cyan / commit-red pairing is load-bearing semantics, not decoration: cyan is live propagation, red is the resolved/committed point. Do not recolor the mark to fit a non-brand palette; if monochrome is required (single-color print, embossed surfaces), render the entire mark in a single neutral and document the substitution at the asset level.
+
+### Clear Space and Sizing
+
+- **Clear space:** at least one node diameter (≈8.3% of the mark's side) of empty space around the mark on all sides. No text, no UI chrome, no badges may enter the clear-space zone.
+- **Minimum size:** 16 × 16 px (favicon floor); the seven-node geometry remains legible at that size on a dark plate. Below 16 px, fall back to the wordmark only.
+- **Lockup:** in a full lockup (mark + wordmark), the mark's height matches the wordmark cap-height to approximately 2.6× — the wordmark sits to the right of the mark, baseline-aligned to the mark's lower commit node.
+
+### Placement
+
+| Context | Treatment |
 |---|---|
-| Clever | Inspecting a graph edge with narrowed eyes |
-| Scrappy | Carrying a commit stamp through cables |
-| Forensic | Pointing at a stale async result in a trace |
-| Triumphant | Holding a captured conflict record |
-| Calm under chaos | Sitting on top of a messy dependency nest |
+| GitHub org avatar | Icon-only mark on a dark plate (`#0B1020` or `--surface-overlay`) |
+| README header | Full lockup: mark + Causl wordmark + tagline |
+| Favicon | The mark itself, plate-less SVG at `causl-org/img/causl-mark.svg` |
+| Devtools | Icon-only mark; semantic node colors may shift to reflect live graph state |
+| Stickers / OG cards | Mark + wordmark + tagline on a dark plate |
 
-### Mascot Do / Don’t
+### Mark Do / Don't
 
 Do:
 
-- Make it sharp, alert, and technical.
-- Use it to explain state mechanics visually.
-- Pair it with real technical diagrams.
-- Use it in docs, stickers, release posts, and devtools empty states.
+- Use the canonical SVG at `causl-org/img/causl-mark.svg` verbatim — it is the single source of truth.
+- Pair the mark with the wordmark in lockups, never substitute one for the other.
+- Honor the cyan-and-commit-red color contract; the red node is the resolution point.
+- Preserve clear space on every placement.
 
-Don’t:
+Don't:
 
-- Make it gross or horror-coded.
-- Lean into disease/pest associations.
-- Overuse malware “RAT” references.
-- Make it so cute that the tool feels unserious.
-- Use random animal poses with no relation to dependency graphs or transactions.
+- Do not add a backing plate inside `causl-mark.svg`; apply plates externally.
+- Do not skew, rotate (beyond the canonical orientation), or distort the node array.
+- Do not swap in mascot illustrations, animal silhouettes, or character art — there is no mascot (issue #1263, Option B).
+- Do not recolor the mark to non-brand palettes; if monochrome is required, render in a single neutral and document.
+- Do not render the mark below 16 px; fall back to the wordmark.
 
 ---
 
@@ -489,7 +498,7 @@ causl-server
 
 | Feature | Suggested Name | Notes |
 |---|---|---|
-| Scoped state graph | Burrow | Optional, mascot-aligned but still understandable |
+| Scoped state graph | Burrow | Optional, evocative of the "in-the-walls" voice while staying understandable |
 | Dependency inspector | Nest View | Good for devtools only; avoid overusing in core docs |
 | Derivation provenance | Trace | Strong technical term |
 | Stale async protection | Snare | Brandable; use carefully with explanation |
@@ -499,7 +508,7 @@ causl-server
 
 ### Naming Principle
 
-Use brand vocabulary for memorable devtools surfaces and docs sections, but keep the public API technically clear. For example, `snapshot`, `transaction`, `trace`, and `conflict` are better API terms than overly cute mascot names.
+Use brand vocabulary for memorable devtools surfaces and docs sections, but keep the public API technically clear. For example, `snapshot`, `transaction`, `trace`, and `conflict` are better API terms than overly cute brand-vocabulary names.
 
 ---
 
@@ -538,9 +547,11 @@ A transactional, dependency-aware state engine for complex React and live-graph 
 
 - Commit only consistency.
 - Stale write caught.
-- There’s a rat in your stack.
+- Catch race conditions in the walls.
 - Untangle the graph.
 - I found the race condition.
+
+All sticker treatments pair the copy above with the Causl mark on a dark plate. No mascot illustrations.
 
 ---
 
@@ -570,13 +581,13 @@ Causl is less ideal for a product that wants to feel:
 
 ### Main Risk
 
-The word “rat” has negative associations: pest, snitch, and “RAT” as remote-access trojan. The brand should control this by making the mascot clearly a systems engineer / graph inspector, not malware or vermin.
+The word "rat" has negative associations: pest, snitch, and "RAT" as remote-access trojan. The brand controls this by *not* illustrating a rat: the mark is geometric, the prose voice keeps the "in the walls" metaphor at the language layer only, and the technical positioning carries the weight.
 
 ### Mitigation
 
 - Always pair the name with a clear technical tagline.
-- Use polished dark-tech visuals.
-- Keep the mascot sharp and intelligent, not gross.
+- Use polished dark-tech visuals — geometric, diagrammatic, never character-led.
+- Keep the mark front-and-center as the brand's primary symbol; never substitute illustration.
 - Avoid malware jokes in primary messaging.
 - Emphasize consistency, transactions, and graph inspection.
 
@@ -584,7 +595,7 @@ The word “rat” has negative associations: pest, snitch, and “RAT” as rem
 
 ## 15. Final Brand Direction
 
-**Causl** should be positioned as a serious open-source systems library with a memorable hacker mascot.
+**Causl** should be positioned as a serious open-source systems library anchored on a memorable geometric mark — the 7-node graph + cyan causal arc — and a slightly feral, hacker-native prose voice.
 
 The brand should make one promise repeatedly:
 
