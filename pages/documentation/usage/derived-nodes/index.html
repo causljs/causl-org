@@ -75,14 +75,7 @@
       from upstream behaviors <code>b₁ … bₙ</code>:
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-    </aside>
-      <code class="language-typescript">d(t) = f(b₁(t), b₂(t), …, bₙ(t))</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span></span><span class="codeblock-source language-typescript">d(t) = f(b₁(t), b₂(t), …, bₙ(t))</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <p>
       The variable that does the work is <code>t</code>: the same <code>t</code> on the
@@ -103,29 +96,7 @@
       <code>useMemo</code>-style array of identities to keep in sync.
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-    </aside>
-      <code class="language-typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span></span><span class="codeblock-source language-typescript">import { createCausl, input, derived } from '@causl/core';
 
 const graph = createCausl();
 
@@ -142,9 +113,7 @@ graph.commit(() =&gt; {
   graph.set(quantity, 5);
 });
 
-console.log(graph.read(total));  // 540</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+console.log(graph.read(total));  // 540</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <p>
       Two things happen at registration time. First, the engine evaluates the compute
@@ -175,21 +144,7 @@ console.log(graph.read(total));  // 540</code></pre>
       on the next is a real, supported pattern:
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-    </aside>
-      <code class="language-typescript">const mode = input&lt;'tax' | 'discount'&gt;(graph, 'tax');
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span></span><span class="codeblock-source language-typescript">const mode = input&lt;'tax' | 'discount'&gt;(graph, 'tax');
 const discount = input(graph, 0.1);
 
 const final = derived(graph, g =&gt; {
@@ -198,9 +153,7 @@ const final = derived(graph, g =&gt; {
     return base * (1 + g.read(taxRate));
   }
   return base * (1 - g.read(discount));
-});</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+});</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <p>
       While <code>mode === 'tax'</code>, the dep set of <code>final</code> is
@@ -234,28 +187,14 @@ const final = derived(graph, g =&gt; {
       DAG the engine will sort:
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-    </aside>
-      <code class="language-typescript">const a = input(graph, 1);
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-typescript">const a = input(graph, 1);
 
 const b = derived(graph, g =&gt; g.read(a) + 1);
 const c = derived(graph, g =&gt; g.read(a) * 2);
 const d = derived(graph, g =&gt; g.read(b) + g.read(c));  // diamond
 
 graph.commit(() =&gt; graph.set(a, 10));
-console.log(graph.read(d));  // 31, computed from b=11, c=20</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+console.log(graph.read(d));  // 31, computed from b=11, c=20</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <p>
       In a less disciplined reactive library the diamond at <code>d</code> is the
@@ -320,23 +259,7 @@ console.log(graph.read(d));  // 31, computed from b=11, c=20</code></pre>
       anyone tied to that node.
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-    </aside>
-      <code class="language-typescript">const x = input(graph, 5);
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span></span><span class="codeblock-source language-typescript">const x = input(graph, 5);
 const isPositive = derived(graph, g =&gt; g.read(x) &gt; 0);
 const sign       = derived(graph, g =&gt; g.read(isPositive) ? '+' : '-');
 
@@ -347,9 +270,7 @@ graph.commit(() =&gt; graph.set(x, 7));   // isPositive: true -&gt; true, cutoff
 graph.commit(() =&gt; graph.set(x, 12));  // same, cutoff fires
 graph.commit(() =&gt; graph.set(x, -1));  // isPositive: true -&gt; false, propagates
 
-console.log(signNotifications);  // 1</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+console.log(signNotifications);  // 1</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <p>
       <code>isPositive</code> is recomputed on every commit that writes <code>x</code>

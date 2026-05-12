@@ -774,18 +774,32 @@ table.compare tr:last-child td { border-bottom: none; }
 :root[data-theme="light"] .card h3 { color: var(--text-on-elevated); }
 :root[data-theme="light"] .card p  { color: var(--text-on-elevated-muted); }
 
-:root[data-theme="light"] pre.codeblock {
-  background: linear-gradient(180deg, #0B1118, #070A0F);
-  color: #D7E6EA;
+/* #1294 — homepage / brand hero codeblocks are intentionally kept
+ * "always dark" even in light mode so the marketing surface preserves
+ * its terminal aesthetic.
+ *
+ * The targeting trick: homepage hand-authored blocks have NO data-lang
+ * attribute (they use the local tok-* class system, not a recognized
+ * language grammar). Tutorial blocks carry data-lang="bash"/"typescript"
+ * (Prism) and API blocks carry data-lang="ts"/"js" (TypeDoc). So
+ * `code.codeblock:not([data-lang])` cleanly selects only the
+ * marketing-style blocks while leaving tutorial + API blocks on the
+ * pair-token contract from syntax.css. !important is required to
+ * defeat syntax.css's pair-token contract, which is itself flagged
+ * !important to win against TypeDoc's residual <pre>/<code>
+ * backgrounds on API pages. */
+:root[data-theme="light"] code.codeblock:not([data-lang]) {
+  background: linear-gradient(180deg, #0B1118, #070A0F) !important;
+  color: #D7E6EA !important;
   border-color: rgba(11, 149, 176, 0.22);
 }
 
-:root[data-theme="light"] pre.codeblock .tok-kw  { color: #B59BFF; }
-:root[data-theme="light"] pre.codeblock .tok-fn  { color: #4FE4FF; }
-:root[data-theme="light"] pre.codeblock .tok-str { color: #FFB347; }
-:root[data-theme="light"] pre.codeblock .tok-num { color: #A7FF18; }
-:root[data-theme="light"] pre.codeblock .tok-com { color: #8FA2AA; }
-:root[data-theme="light"] pre.codeblock .tok-typ { color: #FFB347; }
+:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-kw  { color: #B59BFF; }
+:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-fn  { color: #4FE4FF; }
+:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-str { color: #FFB347; }
+:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-num { color: #A7FF18; }
+:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-com { color: #8FA2AA; }
+:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-typ { color: #FFB347; }
 
 :root[data-theme="light"] .table-wrap {
   background: var(--surface-base);

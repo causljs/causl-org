@@ -93,28 +93,7 @@
     <p>
       Every graph exposes a <code>snapshot()</code> method that returns a serialisable envelope:
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-    </aside>
-      <code class="language-typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span></span><span class="codeblock-source language-typescript">import { createCausl, input, derived } from '@causl/core';
 
 const graph = createCausl();
 const count   = input(graph, 0, { id: 'count' });
@@ -131,30 +110,12 @@ const envelope = graph.snapshot();
 // }
 
 localStorage.setItem('myapp.graph', JSON.stringify(envelope));
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       Note that <code>doubled</code> is not in the envelope. On the receiving side you rebuild the same graph and
       hand the envelope to <code>hydrate()</code>:
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-    </aside>
-      <code class="language-typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span></span><span class="codeblock-source language-typescript">import { createCausl, input, derived } from '@causl/core';
 
 const graph = createCausl();
 const count   = input(graph, 0, { id: 'count' });
@@ -166,9 +127,7 @@ if (raw) {
 }
 
 graph.read(doubled); // 10 — recomputed from the restored input.
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <h3>What hydrate actually does</h3>
     <p>
@@ -205,25 +164,7 @@ graph.read(doubled); // 10 — recomputed from the restored input.
       hydrated from storage on construction and written back to storage on each commit that actually changes the
       value.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-    </aside>
-      <code class="language-typescript">import { createCausl } from '@causl/core';
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span></span><span class="codeblock-source language-typescript">import { createCausl } from '@causl/core';
 import { persistedInput, localStorageAdapter } from '@causl/persistence';
 
 const graph   = createCausl();
@@ -237,9 +178,7 @@ const theme = persistedInput&lt;'light' | 'dark'&gt;(graph, 'ui.theme', 'dark', 
 
 graph.commit(tx =&gt; tx.set(theme, 'light'));
 // localStorage now holds: { "version": 1, "value": "light" }
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       On the next page load the wrapper reads <code>myapp.ui.theme</code> from <code>localStorage</code>, parses the
       envelope, and constructs the input with <code>'light'</code> instead of the <code>'dark'</code> default — without
@@ -257,23 +196,12 @@ graph.commit(tx =&gt; tx.set(theme, 'light'));
     <p>
       The adapter contract is intentionally tiny — three synchronous methods:
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-    </aside>
-      <code class="language-typescript">interface StorageAdapter {
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span></span><span class="codeblock-source language-typescript">interface StorageAdapter {
   get(key: string): string | null;
   set(key: string, value: string): void;
   delete(key: string): void;
 }
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       Sync-only is a deliberate constraint: hydration must finish before the first <code>commit</code> runs, or that
       commit would observe a half-loaded snapshot. The engine has no fractional time and no concurrent-mutation API.
@@ -303,15 +231,8 @@ graph.commit(tx =&gt; tx.set(theme, 'light'));
     <p>
       Every value written to storage is wrapped:
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-    </aside>
-      <code class="language-typescript">{ "version": 1, "value": &lt;your value&gt; }
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span></span><span class="codeblock-source language-typescript">{ "version": 1, "value": &lt;your value&gt; }
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       The envelope is what makes schema evolution possible — it pins the on-disk shape to a version number so the
       next deploy can recognise older payloads instead of misreading them.
@@ -323,30 +244,7 @@ graph.commit(tx =&gt; tx.set(theme, 'light'));
       already have the old envelope on disk. The <code>migrate</code> option converts older payloads to the current
       shape on load:
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-tsx has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-      <span class="codeblock-gutter-line">19</span>
-    </aside>
-      <code class="language-tsx">type ThemeV1 = 'light' | 'dark';
+    <code class="codeblock" data-lang="tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span></span><span class="codeblock-source language-tsx">type ThemeV1 = 'light' | 'dark';
 type ThemeV2 = { name: 'light' | 'dark'; accent: string };
 
 const theme = persistedInput&lt;ThemeV2&gt;(
@@ -365,9 +263,7 @@ const theme = persistedInput&lt;ThemeV2&gt;(
     },
   },
 );
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       The contract is exact: <code>migrate(storedValue, storedVersion)</code> is called only when
       <code>storedVersion !== options.version</code>, and only when an envelope is actually present. Its return value
@@ -391,25 +287,13 @@ const theme = persistedInput&lt;ThemeV2&gt;(
       <code>onError</code>. The default sink is a single <code>console.warn</code> per failure so rollouts stay audible
       without crashing the host.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-    </aside>
-      <code class="language-typescript">type PersistenceError =
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span></span><span class="codeblock-source language-typescript">type PersistenceError =
   | { kind: 'parse';           key: string; cause: unknown }
   | { kind: 'migrate-threw';   key: string; expectedVersion: number; storedVersion: number; cause: unknown }
   | { kind: 'migrate-missing'; key: string; expectedVersion: number; storedVersion: number }
   | { kind: 'serialise';       key: string; cause: unknown }
   | { kind: 'quota';           key: string; cause: unknown };
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       The five tags map one-to-one to the five places persistence can break:
     </p>
@@ -431,53 +315,7 @@ const theme = persistedInput&lt;ThemeV2&gt;(
       Because the union is tagged, <code>switch (err.kind)</code> narrows correctly and the type checker enforces
       exhaustiveness:
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-      <span class="codeblock-gutter-line">19</span>
-      <span class="codeblock-gutter-line">20</span>
-      <span class="codeblock-gutter-line">21</span>
-      <span class="codeblock-gutter-line">22</span>
-      <span class="codeblock-gutter-line">23</span>
-      <span class="codeblock-gutter-line">24</span>
-      <span class="codeblock-gutter-line">25</span>
-      <span class="codeblock-gutter-line">26</span>
-      <span class="codeblock-gutter-line">27</span>
-      <span class="codeblock-gutter-line">28</span>
-      <span class="codeblock-gutter-line">29</span>
-      <span class="codeblock-gutter-line">30</span>
-      <span class="codeblock-gutter-line">31</span>
-      <span class="codeblock-gutter-line">32</span>
-      <span class="codeblock-gutter-line">33</span>
-      <span class="codeblock-gutter-line">34</span>
-      <span class="codeblock-gutter-line">35</span>
-      <span class="codeblock-gutter-line">36</span>
-      <span class="codeblock-gutter-line">37</span>
-      <span class="codeblock-gutter-line">38</span>
-      <span class="codeblock-gutter-line">39</span>
-      <span class="codeblock-gutter-line">40</span>
-      <span class="codeblock-gutter-line">41</span>
-      <span class="codeblock-gutter-line">42</span>
-    </aside>
-      <code class="language-typescript">import type { PersistenceError } from '@causl/persistence';
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span><span class="codeblock-gutter-line">24</span><span class="codeblock-gutter-line">25</span><span class="codeblock-gutter-line">26</span><span class="codeblock-gutter-line">27</span><span class="codeblock-gutter-line">28</span><span class="codeblock-gutter-line">29</span><span class="codeblock-gutter-line">30</span><span class="codeblock-gutter-line">31</span><span class="codeblock-gutter-line">32</span><span class="codeblock-gutter-line">33</span><span class="codeblock-gutter-line">34</span><span class="codeblock-gutter-line">35</span><span class="codeblock-gutter-line">36</span><span class="codeblock-gutter-line">37</span><span class="codeblock-gutter-line">38</span><span class="codeblock-gutter-line">39</span><span class="codeblock-gutter-line">40</span><span class="codeblock-gutter-line">41</span><span class="codeblock-gutter-line">42</span></span><span class="codeblock-source language-typescript">import type { PersistenceError } from '@causl/persistence';
 
 function reportPersistence(err: PersistenceError): void {
   switch (err.kind) {
@@ -519,9 +357,7 @@ persistedInput(graph, 'ui.theme', 'dark', {
   migrate,
   onError: reportPersistence,
 });
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <blockquote>
       <strong>Detailed explanation: why <code>migrate-threw</code> and <code>migrate-missing</code> are separate tags.</strong>
@@ -540,32 +376,7 @@ persistedInput(graph, 'ui.theme', 'dark', {
       filter — go through <code>persistedInput</code> so they survive across documents and deploys without polluting
       the document envelope.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-      <span class="codeblock-gutter-line">19</span>
-      <span class="codeblock-gutter-line">20</span>
-      <span class="codeblock-gutter-line">21</span>
-    </aside>
-      <code class="language-typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span></span><span class="codeblock-source language-typescript">import { createCausl, input, derived } from '@causl/core';
 import { persistedInput, localStorageAdapter } from '@causl/persistence';
 
 const graph   = createCausl();
@@ -586,9 +397,7 @@ function saveDocument() {
 function openDocument(json: string) {
   graph.hydrate(JSON.parse(json));
 }
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       The two paths do not interfere. <code>persistedInput</code>'s write path keys off
       <code>commit.changedNodes</code>; the snapshot taken with <code>graph.snapshot()</code> includes both document

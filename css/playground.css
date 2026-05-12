@@ -1,8 +1,9 @@
 /* =============================================================
    playground.css — interactive (editable) code-block component.
    Companion to causl-org/js/playground.js. Mirrors the visual
-   language of .codeblock-wrapper (same surface + text pair
-   tokens from #1268) so the read-only and editable blocks read
+   language of .codeblock (same surface + text pair tokens
+   from #1268; #1294 dropped the wrapper div) so the read-only
+   and editable blocks read
    as members of the same family, but adds an "editable" cue
    (caret, focus border, EDITABLE badge) so users know the box
    talks back.
