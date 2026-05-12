@@ -8,6 +8,7 @@
   <link rel="icon" href="../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../css/site.css" />
+  <link rel="stylesheet" href="../../../css/syntax.css" />
   <style>
     /* Page-specific overrides only — match the existing site's typographic scale. */
     .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
@@ -19,20 +20,20 @@
     .docs-content code { font-family: var(--mono); font-size: 0.92em; }
     .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
     .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
-    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: rgba(232, 238, 247, 0.86); background: rgba(39, 211, 195, 0.06); }
-    :root[data-theme="light"] .docs-content blockquote { color: rgba(11, 16, 32, 0.86); }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: var(--text-on-base-muted); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: var(--text-on-base-muted); }
 
     /* Section-landing TOC list — paired heading + blurb per entry. */
     .toc-list { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: 1.4rem; }
     .toc-list li { padding: 1rem 1.2rem; border: 1px solid rgba(169, 181, 201, 0.18); border-radius: 8px; background: rgba(26, 34, 56, 0.35); transition: border-color 0.15s, transform 0.15s; }
     :root[data-theme="light"] .toc-list li { background: rgba(11, 16, 32, 0.03); }
     .toc-list li:hover { border-color: rgba(39, 211, 195, 0.45); transform: translateY(-1px); }
-    .toc-list li a { font-weight: 600; font-size: 1.05rem; color: var(--causal-cyan); text-decoration: none; }
+    .toc-list li a { font-weight: 600; font-size: 1.05rem; color: var(--surface-emphasis); text-decoration: none; }
     .toc-list li a:hover { text-decoration: underline; }
-    .toc-list li p { margin: 0.4rem 0 0; font-size: 0.94rem; color: rgba(232, 238, 247, 0.86); }
-    :root[data-theme="light"] .toc-list li p { color: rgba(11, 16, 32, 0.86); }
-    .toc-list li .toc-meta { display: block; margin-top: 0.4rem; font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: rgba(232, 238, 247, 0.86); }
-    :root[data-theme="light"] .toc-list li .toc-meta { color: rgba(11, 16, 32, 0.86); }
+    .toc-list li p { margin: 0.4rem 0 0; font-size: 0.94rem; color: var(--text-on-base-muted); }
+    :root[data-theme="light"] .toc-list li p { color: var(--text-on-base-muted); }
+    .toc-list li .toc-meta { display: block; margin-top: 0.4rem; font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-on-base-muted); }
+    :root[data-theme="light"] .toc-list li .toc-meta { color: var(--text-on-base-muted); }
   </style>
 </head>
 <body>
@@ -61,7 +62,6 @@
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="/pages/brand/">Brand</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
         <hr class="menu-divider" />
         <button id="themeToggle" type="button"
@@ -103,10 +103,10 @@
 
     <p>
       If you are <strong>impatient</strong>, skip to the
-      <a href="./quick-start.html">5-Minute Quick Start</a> — it
+      <a href="./quick-start/">5-Minute Quick Start</a> — it
       installs the engine, writes a graph in fifteen lines, and runs
       it. If you are <strong>evaluating</strong>, start with
-      <a href="./why-causl.html">Why Causl</a>, which is honest about
+      <a href="./why-causl/">Why Causl</a>, which is honest about
       where causl is the wrong tool. If you are <strong>building
       something real</strong>, work through the pages top to bottom;
       they introduce one concept at a time, and each one builds on
@@ -138,7 +138,7 @@
 
     <ul class="toc-list">
       <li>
-        <a href="./introduction.html">Introduction</a>
+        <a href="./introduction/">Introduction</a>
         <p>
           What problem causl solves, the shape of its public API, and
           the mental model — graph, inputs, derivations, commits,
@@ -148,7 +148,7 @@
         <span class="toc-meta">~600 words · 4 min read</span>
       </li>
       <li>
-        <a href="./why-causl.html">Why Causl</a>
+        <a href="./why-causl/">Why Causl</a>
         <p>
           Motivation. Where causl is the right tool (tangled
           dependency graphs, audit trails, glitch-free reads across
@@ -159,7 +159,7 @@
         <span class="toc-meta">~900 words · 6 min read</span>
       </li>
       <li>
-        <a href="./installation.html">Installation</a>
+        <a href="./installation/">Installation</a>
         <p>
           Installing <code>@causl/core</code> and the optional
           packages — <code>@causl/react</code>,
@@ -170,7 +170,7 @@
         <span class="toc-meta">~500 words · 3 min read</span>
       </li>
       <li>
-        <a href="./quick-start.html">5-Minute Quick Start</a>
+        <a href="./quick-start/">5-Minute Quick Start</a>
         <p>
           The impatient developer's path. <code>npm install</code>,
           fifteen lines of code, run it, see the output. If you only
@@ -179,7 +179,7 @@
         <span class="toc-meta">~700 words · 5 min read</span>
       </li>
       <li>
-        <a href="./first-app.html">Your First App</a>
+        <a href="./first-app/">Your First App</a>
         <p>
           A longer worked example with React: a small dashboard with
           two inputs, three derivations, and a subscriber. Builds
@@ -189,7 +189,7 @@
         <span class="toc-meta">~1500 words · 12 min read</span>
       </li>
       <li>
-        <a href="./core-concepts.html">Core Concepts</a>
+        <a href="./core-concepts/">Core Concepts</a>
         <p>
           The vocabulary you need before reading the rest of the
           documentation: <em>Behavior</em>, <em>GraphTime</em>,
@@ -231,5 +231,16 @@
     </div>
   </footer>
   <script src="../../../js/topbar.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../../vendor/prismjs/prism-json.min.js" defer></script>
 </body>
 </html>

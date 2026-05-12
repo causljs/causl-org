@@ -1,0 +1,125 @@
+/* =============================================================
+   syntax.css — Prism.js theme authored against the causl-org
+   pair tokens from #1268. Drop-in companion for the vendored
+   Prism build under /vendor/prismjs/. Token mappings follow the
+   Prism convention so any Prism language grammar (js/ts/jsx/tsx/
+   bash/rust/json/markup/css) renders coherently.
+
+   All colours come from the pair-token system so light + dark
+   themes both stay legible. Code-block surfaces use
+   --surface-elevated; foreground text uses --text-on-elevated.
+   Brand accent tokens (--causl-commit-green, etc.) re-target
+   themselves automatically in light mode (site.css #1268).
+   ============================================================= */
+
+pre[class*="language-"],
+code[class*="language-"] {
+  background: var(--surface-elevated);
+  color: var(--text-on-elevated);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  border-radius: 8px;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  word-wrap: normal;
+  -moz-tab-size: 2;
+  -o-tab-size: 2;
+  tab-size: 2;
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  hyphens: none;
+}
+
+pre[class*="language-"] {
+  padding: 1rem 1.2rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+/* Inline code inside running prose: tighter than a block. */
+:not(pre) > code[class*="language-"] {
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.92em;
+  white-space: normal;
+}
+
+/* ---------- Token palette ---------- */
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: var(--text-on-elevated-subtle);
+  font-style: italic;
+}
+
+.token.punctuation {
+  color: var(--text-on-elevated-muted);
+}
+
+.token.namespace {
+  opacity: 0.7;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: var(--causl-commit-green);
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: var(--causl-conflict-amber);
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: var(--text-on-elevated-muted);
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: var(--causl-async-cyan);
+  font-weight: 600;
+}
+
+.token.function,
+.token.class-name {
+  color: var(--causl-mutation-violet);
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: var(--causl-conflict-amber);
+}
+
+.token.important,
+.token.bold {
+  font-weight: 700;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+.token.entity {
+  cursor: help;
+}

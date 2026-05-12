@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FAQ: Comparing to Other Libraries &mdash; Causl</title>
+  <meta name="description" content="An honest comparison of causl against MobX, Jotai, Redux, Recoil, Zustand, and Valtio. When to pick each one, where causl pays a capability-cost premium, and why." />
+  <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../../css/site.css" />
+  <link rel="stylesheet" href="../../../../css/syntax.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: var(--text-on-base-muted); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: var(--text-on-base-muted); }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../../" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation"><span lang="en-fonipa">/&#712;k&#596;&#720;.z&#601;l/</span> &mdash; like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/">Tutorial</a>
+        <a href="/pages/documentation/usage/">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/" class="is-current" aria-current="page">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <h1>FAQ &mdash; Comparing to Other Libraries</h1>
+
+    <p>This page is the honest comparison. Causl is one point in a rich design space; pretending it dominates every other library would waste your time and ours. The state-management ecosystem in JavaScript is mature, opinionated, and full of libraries that solve real problems &mdash; MobX, Jotai, Redux, Recoil, Zustand, Valtio. Each one is the right answer for some application. Causl is the right answer for a narrower band &mdash; tangled dependency graphs where atomic commits, deterministic replay, and a frozen commit log are load-bearing &mdash; and it pays a measurable cost outside that band.</p>
+
+    <p>The structure of this page: a one-line summary table; one section per library covering what it does well, what causl does differently, and when to pick which; a section on the capability-cost band causl commits to in <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#175-commitment-13-the-capability-cost-residual-amendment-1005">SPEC &sect;17.5 commitment 13</a>; and pointers to the per-library migration guides.</p>
+
+    <h2>One-line summary</h2>
+
+    <table>
+      <thead>
+        <tr><th>Library</th><th>Core model</th><th>Pick it over causl when&hellip;</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>MobX</td><td>Deep-proxy observables + transparent reactivity</td><td>You want zero-ceremony reactive objects and your team is fluent in proxies.</td></tr>
+        <tr><td>Jotai</td><td>Bottom-up atoms with derived atoms</td><td>You want React-first, atom-granular state without a graph identity story.</td></tr>
+        <tr><td>Redux (RTK)</td><td>Single-store reducer + middleware ecosystem</td><td>You want time-travel devtools, RTK Query, and a huge middleware ecosystem.</td></tr>
+        <tr><td>Recoil</td><td>Atoms + selectors with React-Suspense-first async</td><td>You want atoms with a Suspense-first story and you accept its experimental status.</td></tr>
+        <tr><td>Zustand</td><td>Tiny, hook-shaped store with manual selectors</td><td>You want the smallest possible API surface and no graph at all.</td></tr>
+        <tr><td>Valtio</td><td>Proxy snapshots with structural sharing</td><td>You want MobX-style ergonomics without decorators or class observables.</td></tr>
+        <tr><td><strong>Causl</strong></td><td>Explicit dependency graph + atomic commits + commit log</td><td>You have a tangled graph, you need atomic writes, and you want deterministic replay.</td></tr>
+      </tbody>
+    </table>
+
+    <blockquote>
+      <strong>What "tangled" means.</strong> If you can model your state as a forest (slices that do not reach into each other), Redux/Zustand/Jotai are excellent. Causl earns its keep when nodes depend on other nodes in a real graph &mdash; spreadsheets, build systems, statecharts, planners, dependency-driven editors &mdash; and one user action mutates multiple inputs whose derived consumers must update together or not at all.
+    </blockquote>
+
+    <h2>Causl vs MobX</h2>
+
+    <p>MobX is the most direct philosophical cousin to causl. Both express derived values as functions of observed inputs; both auto-track dependencies; both believe the user should not have to maintain a dependency graph by hand. The differences are about <em>boundaries</em> &mdash; what counts as one observable change, and what the engine promises across that change.</p>
+
+    <h3>What MobX does very well</h3>
+
+    <ul>
+      <li><strong>Ergonomics.</strong> Deep-proxy observables make ordinary object mutation reactive. <code>store.todos.push(t)</code> notifies subscribers without ceremony. Causl requires you to model that push as <code>tx.set(todos, [...current, t])</code> &mdash; correct and immutable, but more typing.</li>
+      <li><strong>Speed on isolated writes.</strong> MobX's per-write path is shorter because there is no transaction envelope, no commit log, no monotonic GraphTime stamp. On the <code>op-tx-set-isolated-1k</code> microbench, causl runs at roughly 1.84&times; MobX's median &mdash; the engine baseline before any of causl's contract surfaces enter the picture.</li>
+      <li><strong>Adoption.</strong> A decade of MobX patterns, mature React bindings (<code>mobx-react-lite</code>), and an enormous tutorial corpus.</li>
+    </ul>
+
+    <h3>What causl does differently</h3>
+
+    <ul>
+      <li><strong>One commit, atomic-or-nothing.</strong> <code>graph.commit(intent, tx =&gt; &hellip;)</code> stages every write; if the body throws, the graph rolls back as if nothing happened. MobX's <code>runInAction</code> does <em>not</em> roll back on throw &mdash; partial mutations remain. For a spreadsheet, an order entry form, or any flow where partial state is worse than no state, this is the decisive difference.</li>
+      <li><strong>Deterministic replay.</strong> Causl's commit log can be replayed on a fresh graph to reproduce byte-identical state. This underwrites the <code>@causl/persistence</code> snapshot/restore story and a future event-sourcing surface. MobX has no equivalent &mdash; observables capture present state, not the history that produced it.</li>
+      <li><strong>One subscriber dispatch per commit.</strong> MobX's deep proxies generate one notification per field mutation. Causl's Phase G fires subscribers once at the end of a commit, with a frozen <code>changedNodes</code> set. The migration guide (<code><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-mobx.md">docs/migration/from-mobx.md</a></code>) calls out the consequence: <code>observable({ a, b, c })</code> typically becomes three inputs, not one, because three fields changing is three changes.</li>
+    </ul>
+
+    <h3>Pick MobX when&hellip;</h3>
+
+    <ul>
+      <li>You are starting a new project, your state is a clean object tree, and you do not need replay or atomic commits.</li>
+      <li>You are writing a deeply nested editor (e.g. a form with dozens of fields) and the verbosity of <code>tx.set</code> per field would dominate the actual work.</li>
+      <li>You need to ship in days, not weeks, and the team already knows MobX.</li>
+    </ul>
+
+    <h3>Pick causl when&hellip;</h3>
+
+    <ul>
+      <li>One user action mutates multiple inputs that must commit together or not at all.</li>
+      <li>You need a commit log &mdash; for undo/redo, audit, time-travel, or persistence.</li>
+      <li>You need replay determinism: a recorded commit stream must produce identical state on every engine instance.</li>
+    </ul>
+
+    <blockquote>
+      <strong>The capability-cost band.</strong> SPEC &sect;17.5 commitment 13 commits causl to the band <code>mobx_median &times; 3.0 &le; causl_median &le; mobx_median &times; 8.0</code> on contract-bearing benchmark cells (<code>equality-cutoff &times; 10000</code>, <code>equality-cutoff-fanout-10k &times; 10000</code>, <code>spreadsheet-100x100 &times; 10000</code>). The post-wave anchor is 6.4&times;, decomposed as <strong>1.84&times; engine baseline &times; 3.5&times; replay-determinism contract premium</strong>. The 3.5&times; is what causl pays for the four contract surfaces MobX does not ship: <code>commitLog</code> rebuild on every commit, <code>changedNodes</code> set construction, GraphTime monotonicity stamping, and <code>readAt</code>/<code>snapshotAt</code> retention bookkeeping. If you do not need those, MobX is faster &mdash; honestly so. If you do need them, you are buying the 3.5&times; on purpose.
+    </blockquote>
+
+    <p>The migration guide at <code><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-mobx.md">docs/migration/from-mobx.md</a></code> covers the mechanical translation table and the structural decisions (record-shaped observables, <code>autorun</code> vs <code>subscribe</code>, why <code>runInAction</code> is a deceptive equivalent for <code>commit</code>).</p>
+
+    <h2>Causl vs Jotai</h2>
+
+    <p>Jotai's bottom-up atom model is the closest in <em>API shape</em> to causl's node model. Both have a "primitive" atom/input and a "derived" atom/derived. Both compose by reading dependencies in a body function. The differences are about <em>where the graph lives</em> and <em>how lifecycle works</em>.</p>
+
+    <h3>What Jotai does very well</h3>
+
+    <ul>
+      <li><strong>React-first ergonomics.</strong> Atoms are module-level constants; <code>useAtom</code> is the only hook you need most of the time. The mental model maps cleanly onto React's component tree.</li>
+      <li><strong>Atom families.</strong> <code>atomFamily</code> is the canonical pattern for per-entity state and Jotai's implementation is mature.</li>
+      <li><strong>Bundle size.</strong> Smaller than causl &mdash; no commit log, no transaction envelope, no GraphTime.</li>
+    </ul>
+
+    <h3>What causl does differently</h3>
+
+    <ul>
+      <li><strong>The graph is an object you hold.</strong> <code>createCausl()</code> returns a graph handle; nodes are registered on it. Jotai's atoms are global by default and per-Provider-scoped on demand. Causl's pattern makes multi-instance ergonomics (server-side rendering, tabs, test fixtures) the default rather than an opt-in.</li>
+      <li><strong>Atomic commits across atoms.</strong> Jotai sets one atom at a time; setting three atoms in a row is three notifications. Causl's <code>graph.commit</code> stages all writes and fires subscribers once.</li>
+      <li><strong>Static lint and race detection.</strong> <code>@causl/checker</code> is a Rust-backed static IR linter that catches dependency-graph hazards at lint time. Jotai has no equivalent &mdash; the discipline is review-based.</li>
+    </ul>
+
+    <h3>Pick Jotai when&hellip;</h3>
+
+    <ul>
+      <li>Your app is React-first and you want atom-granular state without a graph identity story.</li>
+      <li>You do not need atomic multi-write commits &mdash; one atom per user action is the norm.</li>
+      <li>You want the smallest possible reactive primitive and you are happy with module-global state.</li>
+    </ul>
+
+    <h3>Pick causl when&hellip;</h3>
+
+    <ul>
+      <li>You need atomic writes across many nodes per user action.</li>
+      <li>You need a commit log for replay, persistence, or undo/redo.</li>
+      <li>You want static checking of dependency-graph hazards.</li>
+    </ul>
+
+    <p>The migration guide at <code><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-jotai.md">docs/migration/from-jotai.md</a></code> covers the mechanical translation (<code>atom</code> &rarr; <code>graph.input</code>, derived atoms &rarr; <code>graph.derived</code>) and the structural decisions (atom families, persistence, async atoms).</p>
+
+    <h2>Causl vs Redux (and Redux Toolkit)</h2>
+
+    <p>Redux is the dominant single-store reducer library and Redux Toolkit (RTK) is the modern shape: <code>createSlice</code>, <code>createAsyncThunk</code>, RTK Query. Causl's commit log is philosophically close to Redux's action log &mdash; both treat the history of changes as a first-class artifact. The differences are about <em>shape</em> (graph vs single object) and <em>derived values</em> (memoized selectors vs an actual dependency graph).</p>
+
+    <h3>What Redux does very well</h3>
+
+    <ul>
+      <li><strong>Devtools.</strong> The Redux DevTools time-travel debugger is one of the best developer experiences in front-end engineering. Causl's commit log can be inspected, but the Redux DevTools surface remains unmatched.</li>
+      <li><strong>Middleware ecosystem.</strong> A decade of middlewares for logging, persistence, sagas, observables, undo, and RTK Query for server state.</li>
+      <li><strong>Single source of truth.</strong> One store, one reducer tree. Easy to reason about.</li>
+    </ul>
+
+    <h3>What causl does differently</h3>
+
+    <ul>
+      <li><strong>Derived values are nodes, not selectors.</strong> Redux's <code>reselect</code> memoizes selector functions; the dependency graph is implicit in the selector composition. Causl's <code>graph.derived</code> registers the node in an actual graph and recomputes via Kahn topological sort in Phase D. For a graph with many overlapping selectors, this is dramatically more efficient and removes the "did I memoize this correctly" footgun.</li>
+      <li><strong>Messages, not actions.</strong> Causl's React surface uses typed messages (<code>{ kind, &hellip;fields }</code>) and a typed <code>useDispatch&lt;Msg&gt;()</code>. Redux's loose <code>{ type, payload }</code> is exhaustively pattern-matched in causl via <code>createUpdate</code>.</li>
+      <li><strong>No middleware layer.</strong> Causl handles cross-cutting concerns through <code>graph.subscribeCommits</code> (commit-level observers). For async I/O, <code>@causl/sync</code> models resources directly rather than through thunks or sagas.</li>
+    </ul>
+
+    <h3>Pick Redux/RTK when&hellip;</h3>
+
+    <ul>
+      <li>You want time-travel devtools and the broader Redux ecosystem.</li>
+      <li>Your state is well-modeled as a tree of slices with no cross-slice derived values.</li>
+      <li>You depend on RTK Query for server-state caching and a migration would be expensive.</li>
+    </ul>
+
+    <h3>Pick causl when&hellip;</h3>
+
+    <ul>
+      <li>You have cross-slice derived values and your <code>reselect</code> graph is getting tangled.</li>
+      <li>You want typed messages and exhaustive pattern matching on action shape.</li>
+      <li>You want the commit log to be a structural commitment of the engine, not a middleware add-on.</li>
+    </ul>
+
+    <p>The migration guide at <code><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-redux.md">docs/migration/from-redux.md</a></code> covers the mapping from slices to inputs + derived nodes, the move from thunks to <code>@causl/sync</code> resources, and the discipline of value-bearing messages.</p>
+
+    <h2>Causl vs Recoil</h2>
+
+    <p>Recoil is Meta's atom/selector library, originally positioned as the "graph-of-state" answer for React. Its design influenced both Jotai and causl. As of 2026 Recoil is effectively unmaintained &mdash; the public guidance has been to migrate to Jotai &mdash; so causl is rarely a head-to-head competitor today. The comparison is still useful if you are reading old patterns.</p>
+
+    <h3>What Recoil aimed for</h3>
+
+    <ul>
+      <li>Atoms and selectors as first-class concepts.</li>
+      <li>Suspense-first async selectors.</li>
+      <li>Concurrent-mode-friendly snapshots.</li>
+    </ul>
+
+    <h3>What causl does differently</h3>
+
+    <ul>
+      <li><strong>The graph is explicit.</strong> Recoil's selectors compose into an implicit graph; causl's nodes are registered on a handle and the topology is observable.</li>
+      <li><strong>Commits, not snapshots.</strong> Recoil's snapshot/transaction story was always partial. Causl's <code>commit</code> is atomic-or-nothing by construction.</li>
+      <li><strong>Active development.</strong> Causl is shipping; Recoil is in maintenance mode.</li>
+    </ul>
+
+    <h3>Pick Recoil when&hellip;</h3>
+
+    <p>If you have an existing Recoil codebase that works and a migration is not on the roadmap, stay. If you are starting fresh, the practical alternatives in 2026 are Jotai (closest shape) or causl (if you need the contract surfaces).</p>
+
+    <h2>Causl vs Zustand</h2>
+
+    <p>Zustand is the smallest store in widespread use &mdash; one hook, a state object, a set function. It is deliberately, beautifully minimal. Causl is none of those things.</p>
+
+    <h3>What Zustand does very well</h3>
+
+    <ul>
+      <li><strong>API surface.</strong> Three concepts &mdash; <code>create</code>, the state object, and the set function. You can teach the whole library in five minutes.</li>
+      <li><strong>Bundle size.</strong> Tiny.</li>
+      <li><strong>No graph.</strong> If you do not have a dependency graph problem, you do not need a dependency graph library.</li>
+    </ul>
+
+    <h3>What causl does differently</h3>
+
+    <p>Causl has a substantially larger API surface (the canonical seven Graph methods plus a curated second tier, per SPEC &sect;12), an actual dependency graph, atomic commits, a commit log, and persistence/sync packages. If you do not need any of that, Zustand is the better tool. Honest.</p>
+
+    <h3>Pick Zustand when&hellip;</h3>
+
+    <ul>
+      <li>Your state is small and your derived values are computed inline in React components.</li>
+      <li>You want the absolute minimum API surface.</li>
+      <li>You do not have a dependency graph problem.</li>
+    </ul>
+
+    <h3>Pick causl when&hellip;</h3>
+
+    <ul>
+      <li>You started with Zustand, your state grew, and you are now juggling <code>useMemo</code>-based derived selectors that re-compute too often or too little.</li>
+      <li>You realize "derived value X depends on derived values Y and Z" is a graph you no longer want to maintain by hand.</li>
+    </ul>
+
+    <h2>Causl vs Valtio</h2>
+
+    <p>Valtio is "MobX without the decorators" &mdash; proxy-based reactivity over a plain object, with a snapshot function for React. The trade-off space is very close to MobX's.</p>
+
+    <h3>What Valtio does very well</h3>
+
+    <ul>
+      <li><strong>Ergonomics.</strong> <code>proxy({ count: 0 })</code> and then <code>state.count++</code> &mdash; reactivity is invisible.</li>
+      <li><strong>React story.</strong> <code>useSnapshot</code> gives a structurally-shared snapshot for stable references.</li>
+      <li><strong>No build step.</strong> Pure proxies, no decorators or compilers.</li>
+    </ul>
+
+    <h3>What causl does differently</h3>
+
+    <p>The same differences as MobX, structurally: atomic commits, deterministic replay, an explicit graph, a static checker. Valtio's atomic story is <code>subscribe</code> with debouncing; causl's is a transactional engine.</p>
+
+    <h3>Pick Valtio when&hellip;</h3>
+
+    <ul>
+      <li>You want MobX's ergonomics without decorators.</li>
+      <li>Your state is a clean object tree and your derived values are simple.</li>
+    </ul>
+
+    <h3>Pick causl when&hellip;</h3>
+
+    <ul>
+      <li>You need the contract surfaces &mdash; commit log, atomicity-on-throw, replay determinism &mdash; that no proxy library ships.</li>
+    </ul>
+
+    <h2>The capability-cost band, restated</h2>
+
+    <p>It would be dishonest to end this page without naming the cost. Causl's <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#175-commitment-13-the-capability-cost-residual-amendment-1005">SPEC &sect;17.5 commitment 13</a> binds the engine to a measurable band against MobX on three contract-bearing benchmark cells:</p>
+
+    <pre class="language-typescript"><code class="language-typescript">mobx_median &times; 3.0  &le;  causl_median  &le;  mobx_median &times; 8.0</code></pre>
+
+    <p>The post-wave anchor is <strong>6.4&times;</strong>, decomposed as <strong>1.84&times; engine baseline &times; 3.5&times; replay-determinism contract premium</strong>. The 1.84&times; is the honest engine-on-engine cost &mdash; what causl pays purely to be causl, before any contract surface enters the picture. The 3.5&times; is what causl pays for the four contract surfaces MobX does not ship:</p>
+
+    <ul>
+      <li><code>commitLog</code> rebuild on every commit (the ring buffer that underwrites replay).</li>
+      <li><code>changedNodes</code> set construction for subscribers.</li>
+      <li>GraphTime monotonicity stamping (the <code>now</code> tick that orders every commit).</li>
+      <li><code>readAt</code>/<code>snapshotAt</code> retention bookkeeping (the MVCC seam for time-travel reads).</li>
+    </ul>
+
+    <p>The <strong>upper bound</strong> (8.0&times;) is a regression gate. A PR that drives a contract-bearing cell past 8&times; either reintroduces a per-write allocation seam the May-2026 perf wave closed or invents a new one. The gate forces the conversation.</p>
+
+    <p>The <strong>lower bound</strong> (3.0&times;) is a capability-erosion gate. A PR that delivers a sub-3&times; ratio has either (a) shipped a real architectural breakthrough &mdash; promotion of the <code>@causl/engine-wasm</code> substrate to the default JS engine is the named candidate (SPEC &sect;17.6) &mdash; or (b) silently retired one of the four contract surfaces by trading capability for speed. The 3&times; floor flips that trade-off into a visible failure rather than a silent ship.</p>
+
+    <p>If you do not need replay determinism and a commit log, you are paying for surfaces you will not use. MobX is the right answer for that workload; we will say so on this page until the contract surfaces become free, which they will not, because the laws of JavaScript GC do not bend.</p>
+
+    <h2>A working example, three ways</h2>
+
+    <p>Same problem in three libraries to make the differences concrete: a counter and its doubled derivation.</p>
+
+    <p><strong>MobX:</strong></p>
+
+    <pre class="language-typescript"><code class="language-typescript">import { observable, computed, runInAction } from 'mobx'
+
+const store = observable({ count: 0 })
+const doubled = computed(() =&gt; store.count * 2)
+
+runInAction(() =&gt; { store.count = 5 })
+console.log(doubled.get())  // 10</code></pre>
+
+    <p><strong>Jotai:</strong></p>
+
+    <pre class="language-typescript"><code class="language-typescript">import { atom, getDefaultStore } from 'jotai'
+
+const countAtom = atom(0)
+const doubledAtom = atom((get) =&gt; get(countAtom) * 2)
+
+const store = getDefaultStore()
+store.set(countAtom, 5)
+console.log(store.get(doubledAtom))  // 10</code></pre>
+
+    <p><strong>Causl:</strong></p>
+
+    <pre class="language-typescript"><code class="language-typescript">import { createCausl } from '@causl/core'
+
+const graph = createCausl()
+const count = graph.input('count', 0)
+const doubled = graph.derived('doubled', (get) =&gt; get(count) * 2)
+
+graph.commit('set-count', (tx) =&gt; { tx.set(count, 5) })
+console.log(graph.read(doubled))  // 10</code></pre>
+
+    <p>For the counter alone, MobX and Jotai are smaller and faster. Causl's shape pays off when the next user action has to set <code>count</code>, <code>label</code>, and <code>color</code> at once &mdash; one commit, one subscriber dispatch, one frozen <code>Commit</code> in the log, atomic-or-nothing if anything throws.</p>
+
+    <h2>Where to go next</h2>
+
+    <ul>
+      <li><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-mobx.md"><code>docs/migration/from-mobx.md</code></a> &mdash; mechanical and structural migration from MobX.</li>
+      <li><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-jotai.md"><code>docs/migration/from-jotai.md</code></a> &mdash; mechanical and structural migration from Jotai.</li>
+      <li><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-redux.md"><code>docs/migration/from-redux.md</code></a> &mdash; mechanical and structural migration from Redux/RTK.</li>
+      <li><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/RULE_CATALOGUE.md"><code>docs/migration/RULE_CATALOGUE.md</code></a> &mdash; the rule IDs the drift detector reports.</li>
+      <li><a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#175-commitment-13-the-capability-cost-residual-amendment-1005">SPEC &sect;17.5</a> &mdash; the capability-cost band, in the engine's own words.</li>
+      <li><a href="../../benchmarks/">Benchmarks</a> &mdash; the live numbers behind the band.</li>
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>&copy; 2026 Causl contributors &middot; MIT License &middot; State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../../">Home</a>
+        <a href="../../">Documentation</a>
+        <a href="../../../benchmarks/">Benchmarks</a>
+        <a href="../../../playground/">Playground</a>
+        <a href="../../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../../../js/topbar.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
+</body>
+</html>

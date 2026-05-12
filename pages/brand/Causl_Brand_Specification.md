@@ -268,6 +268,67 @@ The Causl palette is a dark terminal theme with semantic neon accents. Colors sh
 
 ---
 
+## 8.1 Contrast-Pair Token System
+
+The hue tokens above name *what color is what*. They do not say *what colors are allowed together*. Components that freely mix `background:` from one hue and `color:` from another produce contrast bugs that no individual hex value can prevent. The contrast-pair system below addresses that at the token layer.
+
+Every text color is **bound to a specific surface** by name. Components write the pair together. Mismatching a text token against the wrong surface — for example painting `--text-on-emphasis` (intended as dark text on bright cyan) onto `--surface-base` (a dark page background) — is a design error caught at code review by the token name itself.
+
+### Surface families
+
+| Surface | Dark theme | Light theme | Role |
+|---|---|---|---|
+| `--surface-base` | `#070A0F` | `#FFFFFF` | Page background |
+| `--surface-elevated` | `#101822` | `#F4F6F9` | Cards, panels, table chrome |
+| `--surface-overlay` | `#0B1118` | `#FFFFFF` | Dialogs, topbar, footer, popovers |
+| `--surface-emphasis` | `#11D9FF` | `#0B95B0` | Primary CTAs, current-page pill |
+| `--surface-emphasis-2` | `#7C4DFF` | `#5B30C9` | Secondary CTAs, accent gradients |
+| `--surface-success` | `#A7FF18` | `#4A9300` | Success badges, do-list border |
+| `--surface-warning` | `#FFB020` | `#B57500` | Warning chips, conflict markers |
+| `--surface-danger` | `#FF4D5E` | `#C32A38` | Errors, dont-list border |
+| `--surface-info` | `#11D9FF` | `#0B95B0` | Info callouts |
+| `--surface-muted` | `#2B333D` | `#DDE1E6` | Disabled controls, hairline panels |
+
+### Text variants — paired by name
+
+| Surface | Primary text | Muted | Subtle |
+|---|---|---|---|
+| `--surface-base` | `--text-on-base` | `--text-on-base-muted` | `--text-on-base-subtle` |
+| `--surface-elevated` | `--text-on-elevated` | `--text-on-elevated-muted` | `--text-on-elevated-subtle` |
+| `--surface-overlay` | `--text-on-overlay` | `--text-on-overlay-muted` | — |
+| `--surface-emphasis` | `--text-on-emphasis` | — | — |
+| `--surface-emphasis-2` | `--text-on-emphasis-2` | — | — |
+| `--surface-success` | `--text-on-success` | — | — |
+| `--surface-warning` | `--text-on-warning` | — | — |
+| `--surface-danger` | `--text-on-danger` | — | — |
+| `--surface-info` | `--text-on-info` | — | — |
+| `--surface-muted` | `--text-on-muted` | — | — |
+
+### Borders
+
+| Surface | Hairline | Stronger | Accent |
+|---|---|---|---|
+| `--surface-base` | `--border-on-base` | `--border-on-elevated` | `--border-emphasis` |
+| `--surface-elevated` | — | `--border-on-elevated` | `--border-emphasis` |
+| `--surface-overlay` | `--border-on-overlay` | — | `--border-emphasis` |
+
+### Contrast contracts
+
+Each pair is guaranteed by construction to clear WCAG AA contrast on its surface in *both* themes:
+
+- `--text-on-*` primary: ≥ 7:1 (AAA where feasible, never below AA 4.5:1).
+- `--text-on-*-muted`: ≥ 7:1 on its paired surface for secondary copy.
+- `--text-on-*-subtle`: ≥ 4.5:1 — reserved for meta/caption text only.
+- Bright surface tokens (`emphasis`, `success`, `warning`) pair with `--causl-void` in dark theme and pure white in light theme so the contrast direction is consistent.
+
+### Rule
+
+> Any rule that sets `background:` must explicitly pair the matching `color:` token from the same surface family. Free-mixing across pairs is a brand-system violation.
+
+The hue tokens (`--causl-async-cyan`, `--causl-mist`, etc.) remain as the raw palette these pairs reference. They MAY still be used inside the pair-token definitions in `:root` and `:root[data-theme="light"]` (because the pair tokens *are* the palette mapping). They MUST NOT be used directly inside component rules: a component that writes `color: var(--causl-mist)` has bypassed the contract and will drift the next time a surface beneath it changes.
+
+---
+
 ## 9. Typography
 
 ### Recommended Type System

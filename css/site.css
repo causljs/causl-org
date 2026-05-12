@@ -60,6 +60,75 @@
   --conflict-coral:  var(--causl-red);
   --success-mint:    var(--causl-green);
 
+  /* ============================================================
+     Contrast-pair token system — §8.1 of Causl Brand Spec.
+
+     Every text color is bound to a specific background by name.
+     Components write the pair together; mismatching surfaces and
+     text tokens is a brand-system violation caught at review.
+     Issue #1268. The hue-named tokens above remain as the raw
+     palette these pairs reference (and the legacy aliases keep
+     pre-pair pages rendering).
+
+     ------------------------------------------------------------
+     DISCIPLINE RULE (issue #1276)
+
+     Every CSS rule that sets `background` (or `background-color`,
+     `background-image`) on a visible surface MUST do one of:
+
+       (a) Use a pair-token whose value auto-flips for light mode
+           (e.g. `background: var(--surface-elevated)` plus
+           `color: var(--text-on-elevated)`) — both sides of the
+           pair flip together via :root[data-theme="light"] below.
+
+       (b) Set the background with a hardcoded color/gradient AND
+           pair it with an explicit `color:` rule AND provide a
+           matching `:root[data-theme="light"] <selector>` block
+           that overrides the background to a light-mode value.
+
+     Setting only `background:` (with a hardcoded value) and
+     relying on inherited `color:` is the bug pattern that left
+     `.cta-strip` invisible in light mode. The dev-only tool at
+     `js/contrast-audit.js` walks all visible text nodes and
+     flags failures via console.warn — opt in by setting
+     `window.__CAUSL_CONTRAST_AUDIT__ = true` in DevTools.
+     ============================================================ */
+
+  /* SURFACES — backgrounds for hierarchy levels */
+  --surface-base:        var(--causl-void);              /* page background */
+  --surface-elevated:    var(--causl-slate);             /* cards, panels */
+  --surface-overlay:     var(--causl-ink);               /* dialogs, popovers */
+  --surface-emphasis:    var(--causl-async-cyan);        /* primary CTAs */
+  --surface-emphasis-2:  var(--causl-mutation-violet);   /* secondary CTAs */
+  --surface-success:     var(--causl-commit-green);
+  --surface-warning:     var(--causl-conflict-amber);
+  --surface-danger:      var(--causl-rollback-red);
+  --surface-info:        var(--causl-async-cyan);
+  --surface-muted:       var(--causl-graphite);
+
+  /* TEXT — bound to a surface, contrast-safe by construction */
+  --text-on-base:             var(--causl-mist);             /* primary body */
+  --text-on-base-muted:       rgba(215, 230, 234, 0.86);     /* secondary text — ≥ 7:1 on void */
+  --text-on-base-subtle:      rgba(215, 230, 234, 0.70);     /* meta/caption — ≥ 4.5:1 on void */
+  --text-on-elevated:         var(--causl-mist);
+  --text-on-elevated-muted:   rgba(215, 230, 234, 0.86);
+  --text-on-elevated-subtle:  rgba(215, 230, 234, 0.72);
+  --text-on-overlay:          var(--causl-mist);
+  --text-on-overlay-muted:    rgba(215, 230, 234, 0.86);
+  --text-on-emphasis:         var(--causl-void);             /* dark text on bright cyan */
+  --text-on-emphasis-2:       var(--causl-mist);             /* light text on violet */
+  --text-on-success:          var(--causl-void);             /* dark text on bright green */
+  --text-on-warning:          var(--causl-void);             /* dark text on amber */
+  --text-on-danger:           var(--causl-mist);             /* light text on red */
+  --text-on-info:             var(--causl-void);             /* same as emphasis */
+  --text-on-muted:            var(--causl-mist);
+
+  /* BORDERS — paired with the surface they sit on */
+  --border-on-base:           rgba(143, 162, 170, 0.15);     /* subtle hairline */
+  --border-on-elevated:       rgba(143, 162, 170, 0.25);
+  --border-on-overlay:        rgba(143, 162, 170, 0.18);
+  --border-emphasis:          var(--causl-async-cyan);
+
   --radius-xl: 28px;
   --radius-lg: 20px;
   --radius-md: 14px;
@@ -79,10 +148,15 @@
 
 html { scroll-behavior: smooth; }
 
+/* Body — paired with --surface-base. All descendants inherit
+   --text-on-base by default; sections that swap to --surface-elevated
+   must re-pair to --text-on-elevated. (#1268) */
 body {
   margin: 0;
   font-family: var(--sans);
-  color: var(--causl-mist);
+  background: var(--surface-base);
+  color: var(--text-on-base);
+  /* gradient overlay — purely cosmetic, sits on top of --surface-base */
   background:
     radial-gradient(circle at 18% 8%, rgba(17, 217, 255, 0.14),
                     transparent 32rem),
@@ -129,7 +203,8 @@ body {
 }
 
 .section-head .lead {
-  color: var(--causl-mist);
+  /* lead text sits on the page background — pair with base. */
+  color: var(--text-on-base);
   font-size: 1.05rem;
   max-width: 560px;
   margin: 0;
@@ -137,11 +212,13 @@ body {
 
 /* -- Typography --------------------------------------------------- */
 
-h1, h2, h3, h4 { letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 0.6rem; }
+h1, h2, h3, h4 { letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 0.6rem; color: var(--text-on-base); }
 h1 { font-size: clamp(2.4rem, 5.5vw, 4rem); font-weight: 800; }
 h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 800; }
 h3 { font-size: 1.18rem; font-weight: 700; }
-p { margin: 0 0 0.85rem; color: var(--causl-mist); }
+/* Body copy sits on --surface-base by default. Inside a .card,
+   the more specific .card p rule re-pairs to --text-on-elevated. */
+p { margin: 0 0 0.85rem; color: var(--text-on-base); }
 
 a { color: var(--causl-cyan); text-decoration: none; transition: color 0.15s; }
 a:hover { color: var(--causal-cyan-2); text-decoration: underline; }
@@ -154,7 +231,7 @@ code, kbd, samp, pre {
 p code, li code, td code {
   background: rgba(17, 217, 255, 0.08);
   border: 1px solid rgba(17, 217, 255, 0.22);
-  color: var(--causl-mist);
+  color: var(--text-on-base);
   padding: 0.05em 0.4em;
   border-radius: 5px;
   font-size: 0.86em;
@@ -181,53 +258,59 @@ p code, li code, td code {
 .button:hover { transform: translateY(-1px); }
 .button:active { transform: translateY(0); }
 
+/* Primary button — paired with --surface-emphasis. */
 .button.primary {
-  background: linear-gradient(135deg, var(--causl-cyan),
-                              var(--causl-green));
-  color: var(--causl-void);
+  background: linear-gradient(135deg, var(--surface-emphasis),
+                              var(--surface-success));
+  color: var(--text-on-emphasis);
   box-shadow: 0 6px 24px rgba(17, 217, 255, 0.35);
 }
 
 .button.primary:hover {
   box-shadow: 0 10px 32px rgba(17, 217, 255, 0.45);
-  color: var(--causl-void);
+  color: var(--text-on-emphasis);
   text-decoration: none;
 }
 
+/* Ghost button — transparent overlay over whatever surface it's on,
+   so we keep it paired with --text-on-base (most common ancestor). */
 .button.ghost {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(143, 162, 170, 0.28);
-  color: var(--causl-mist);
+  color: var(--text-on-base);
 }
 
 .button.ghost:hover {
-  border-color: var(--causl-cyan);
-  color: var(--causl-cyan);
+  border-color: var(--border-emphasis);
+  color: var(--surface-emphasis);
   background: rgba(17, 217, 255, 0.08);
   text-decoration: none;
 }
 
 /* -- Cards -------------------------------------------------------- */
 
+/* Card — paired with --surface-elevated. */
 .card {
   background: linear-gradient(180deg,
     rgba(16, 24, 34, 0.78), rgba(11, 17, 24, 0.82));
-  border: 1px solid rgba(143, 162, 170, 0.18);
+  border: 1px solid var(--border-on-elevated);
   border-radius: var(--radius-lg);
   padding: 1.4rem 1.5rem;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+  color: var(--text-on-elevated);
 }
 
 .card .mono-label {
   font-family: var(--mono);
   font-size: 0.74rem;
-  color: var(--causl-cyan);
+  color: var(--surface-emphasis);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 0.55rem;
 }
 
-.card h3 { color: var(--causl-mist); }
+.card h3 { color: var(--text-on-elevated); }
+.card p { color: var(--text-on-elevated); }
 .card p:last-child { margin-bottom: 0; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
@@ -239,6 +322,7 @@ p code, li code, td code {
 
 /* -- Code blocks -------------------------------------------------- */
 
+/* Code block — paired with --surface-overlay (deep terminal surface). */
 pre.codeblock {
   background: linear-gradient(180deg,
     rgba(11, 17, 24, 0.95), rgba(7, 10, 15, 0.95));
@@ -248,7 +332,7 @@ pre.codeblock {
   overflow-x: auto;
   font-size: 0.88rem;
   line-height: 1.55;
-  color: var(--causl-mist);
+  color: var(--text-on-overlay);
   box-shadow: var(--shadow-soft);
 }
 
@@ -269,11 +353,13 @@ pre.codeblock code {
 
 /* -- Tables ------------------------------------------------------- */
 
+/* Table wrapper — paired with --surface-elevated. */
 .table-wrap {
-  border: 1px solid rgba(143, 162, 170, 0.18);
+  border: 1px solid var(--border-on-elevated);
   border-radius: var(--radius-lg);
   background: linear-gradient(180deg,
     rgba(16, 24, 34, 0.72), rgba(11, 17, 24, 0.78));
+  color: var(--text-on-elevated);
   overflow: hidden;
   overflow-x: auto;
 }
@@ -298,7 +384,7 @@ table.compare th {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--causl-mist);
+  color: var(--text-on-elevated);
   background: rgba(11, 17, 24, 0.65);
   border-bottom: 1px solid rgba(17, 217, 255, 0.28);
 }
@@ -307,7 +393,7 @@ table.compare td:first-child,
 table.compare th:first-child {
   text-align: left;
   font-weight: 600;
-  color: var(--causl-mist);
+  color: var(--text-on-elevated);
   white-space: normal;
   min-width: 320px;
 }
@@ -315,11 +401,11 @@ table.compare th:first-child {
 table.compare th.col-causl,
 table.compare td.col-causl {
   background: rgba(17, 217, 255, 0.10);
-  color: var(--causl-mist);
+  color: var(--text-on-elevated);
 }
 
 table.compare th.col-causl {
-  color: var(--causl-cyan);
+  color: var(--surface-emphasis);
 }
 
 table.compare tr:last-child td { border-bottom: none; }
@@ -331,24 +417,26 @@ table.compare tr:last-child td { border-bottom: none; }
 .glyph-na { color: var(--causl-ash); font-style: italic; font-size: 0.84em; }
 
 /* -- CTA strip ---------------------------------------------------- */
-/* Foreground stays light (Snapshot Mist) so the strip reads on the
-   dark gradient even when rendered atop a paler background. #1253. */
+/* CTA strip sits over the elevated surface gradient; pair body
+   text with --text-on-elevated. #1253, #1259, #1268. */
 
-.cta-strip { color: var(--causl-mist); }
+.cta-strip { color: var(--text-on-elevated); }
 .cta-strip p,
 .cta-strip h2,
-.cta-strip h3 { color: var(--causl-mist); }
+.cta-strip h3 { color: var(--text-on-elevated); }
 
 /* -- Footer ------------------------------------------------------- */
 
+/* Site footer — paired with --surface-overlay (deep terminal). */
 .site-footer {
   margin-top: 5rem;
   padding: 2.5rem 0 3rem;
-  border-top: 1px solid rgba(143, 162, 170, 0.18);
+  border-top: 1px solid var(--border-on-overlay);
   background:
     radial-gradient(circle at 50% 0%, rgba(17, 217, 255, 0.10),
                     transparent 24rem),
     rgba(7, 10, 15, 0.6);
+  color: var(--text-on-overlay);
 }
 
 .site-footer .page {
@@ -359,7 +447,7 @@ table.compare tr:last-child td { border-bottom: none; }
   align-items: center;
 }
 
-.site-footer p { margin: 0; color: var(--causl-mist); font-size: 0.88rem; }
+.site-footer p { margin: 0; color: var(--text-on-overlay); font-size: 0.88rem; }
 
 .site-footer .footer-links {
   display: flex;
@@ -368,12 +456,12 @@ table.compare tr:last-child td { border-bottom: none; }
 }
 
 .site-footer .footer-links a {
-  color: var(--causl-mist);
+  color: var(--text-on-overlay);
   font-size: 0.88rem;
   font-weight: 600;
 }
 
-.site-footer .footer-links a:hover { color: var(--causl-cyan); }
+.site-footer .footer-links a:hover { color: var(--surface-emphasis); }
 
 /* -- Light theme --------------------------------------------------
    Light-mode floor: body text rgba(11,16,32,0.92), meta text
@@ -412,6 +500,44 @@ table.compare tr:last-child td { border-bottom: none; }
   --commit-amber:   #B57500;
   --conflict-coral: #C8202F;
   --success-mint:   #2B8A1F;
+
+  /* ============================================================
+     Contrast-pair tokens — light-theme contract (#1268).
+     Dimmed hues for AA contrast on white; light text always
+     #FFFFFF on bright surfaces so the pair stays legible.
+     ============================================================ */
+
+  --surface-base:        #FFFFFF;
+  --surface-elevated:    #F4F6F9;
+  --surface-overlay:     #FFFFFF;
+  --surface-emphasis:    #0B95B0;            /* dimmed cyan for AA-on-white */
+  --surface-emphasis-2:  #5B30C9;            /* dimmed violet for AA-on-white */
+  --surface-success:     #4A9300;            /* dimmed green */
+  --surface-warning:     #B57500;
+  --surface-danger:      #C32A38;            /* dimmed red */
+  --surface-info:        #0B95B0;
+  --surface-muted:       #DDE1E6;
+
+  --text-on-base:             rgba(11, 16, 32, 0.92);
+  --text-on-base-muted:       rgba(11, 16, 32, 0.82);
+  --text-on-base-subtle:      rgba(11, 16, 32, 0.70);  /* ≥ 4.5:1 on white */
+  --text-on-elevated:         rgba(11, 16, 32, 0.92);
+  --text-on-elevated-muted:   rgba(11, 16, 32, 0.82);
+  --text-on-elevated-subtle:  rgba(11, 16, 32, 0.70);
+  --text-on-overlay:          rgba(11, 16, 32, 0.92);
+  --text-on-overlay-muted:    rgba(11, 16, 32, 0.82);
+  --text-on-emphasis:         #FFFFFF;        /* white text on dimmed cyan */
+  --text-on-emphasis-2:       #FFFFFF;
+  --text-on-success:          #FFFFFF;
+  --text-on-warning:          #FFFFFF;
+  --text-on-danger:           #FFFFFF;
+  --text-on-info:             #FFFFFF;
+  --text-on-muted:            rgba(11, 16, 32, 0.92);
+
+  --border-on-base:           rgba(11, 16, 32, 0.12);
+  --border-on-elevated:       rgba(11, 16, 32, 0.18);
+  --border-on-overlay:        rgba(11, 16, 32, 0.12);
+  --border-emphasis:          #0B95B0;
 }
 
 :root[data-theme="light"] body {
@@ -421,38 +547,38 @@ table.compare tr:last-child td { border-bottom: none; }
     radial-gradient(circle at 86% 18%, rgba(43, 138, 31, 0.06),
                     transparent 30rem),
     linear-gradient(180deg, #FFFFFF, #F7F8FA 60%, #F0F2F5);
-  color: rgba(11, 16, 32, 0.92);
+  color: var(--text-on-base);
 }
 
-:root[data-theme="light"] p { color: rgba(11, 16, 32, 0.86); }
+:root[data-theme="light"] p { color: var(--text-on-base-muted); }
 
-:root[data-theme="light"] .section-head .lead { color: rgba(11, 16, 32, 0.86); }
+:root[data-theme="light"] .section-head .lead { color: var(--text-on-base-muted); }
 
 :root[data-theme="light"] .topbar {
   background: linear-gradient(180deg,
     rgba(255, 255, 255, 0.94), rgba(247, 248, 250, 0.94));
   border-bottom-color: rgba(11, 149, 176, 0.32);
-  color: rgba(11, 16, 32, 0.92);
+  color: var(--text-on-overlay);
 }
 
 :root[data-theme="light"] .topbar-brand,
 :root[data-theme="light"] .topbar .pronunciation,
 :root[data-theme="light"] .topbar .tagline,
 :root[data-theme="light"] .topbar-menu a {
-  color: rgba(11, 16, 32, 0.92);
+  color: var(--text-on-overlay);
 }
 
-:root[data-theme="light"] .topbar-menu a { border-color: rgba(11, 16, 32, 0.18); }
+:root[data-theme="light"] .topbar-menu a { border-color: var(--border-on-overlay); }
 
 :root[data-theme="light"] .topbar-menu a:hover {
   background: rgba(11, 149, 176, 0.10);
   border-color: rgba(11, 149, 176, 0.55);
-  color: rgba(11, 16, 32, 0.92);
+  color: var(--text-on-overlay);
 }
 
 :root[data-theme="light"] .topbar-menu a.is-current {
-  color: #FFFFFF;
-  background: linear-gradient(135deg, #0B95B0, #5E36CC);
+  color: var(--text-on-emphasis);
+  background: linear-gradient(135deg, var(--surface-emphasis), var(--surface-emphasis-2));
 }
 
 /* The brand mark is a single plate-less SVG (img/causl-mark.svg) —
@@ -463,13 +589,13 @@ table.compare tr:last-child td { border-bottom: none; }
 
 :root[data-theme="light"] .card {
   background: linear-gradient(180deg, #FFFFFF, #F7F8FA);
-  border-color: rgba(11, 16, 32, 0.10);
-  color: rgba(11, 16, 32, 0.92);
+  border-color: var(--border-on-elevated);
+  color: var(--text-on-elevated);
   box-shadow: 0 8px 24px rgba(11, 16, 32, 0.06);
 }
 
-:root[data-theme="light"] .card h3 { color: rgba(11, 16, 32, 0.92); }
-:root[data-theme="light"] .card p  { color: rgba(11, 16, 32, 0.86); }
+:root[data-theme="light"] .card h3 { color: var(--text-on-elevated); }
+:root[data-theme="light"] .card p  { color: var(--text-on-elevated-muted); }
 
 :root[data-theme="light"] pre.codeblock {
   background: linear-gradient(180deg, #0B1118, #070A0F);
@@ -485,51 +611,53 @@ table.compare tr:last-child td { border-bottom: none; }
 :root[data-theme="light"] pre.codeblock .tok-typ { color: #FFB347; }
 
 :root[data-theme="light"] .table-wrap {
-  background: #FFFFFF;
-  border-color: rgba(11, 16, 32, 0.10);
+  background: var(--surface-base);
+  border-color: var(--border-on-elevated);
+  color: var(--text-on-elevated);
 }
 
 :root[data-theme="light"] table.compare th {
-  background: #F0F2F5;
-  color: rgba(11, 16, 32, 0.92);
+  background: var(--surface-elevated);
+  color: var(--text-on-elevated);
   border-bottom-color: rgba(11, 149, 176, 0.28);
 }
 
-:root[data-theme="light"] table.compare td:first-child { color: rgba(11, 16, 32, 0.92); }
+:root[data-theme="light"] table.compare td:first-child { color: var(--text-on-elevated); }
 :root[data-theme="light"] table.compare td,
-:root[data-theme="light"] table.compare th { border-bottom-color: rgba(11, 16, 32, 0.10); }
+:root[data-theme="light"] table.compare th { border-bottom-color: var(--border-on-elevated); }
 
-:root[data-theme="light"] table.compare th.col-causl { color: #0B95B0; }
+:root[data-theme="light"] table.compare th.col-causl { color: var(--surface-emphasis); }
 :root[data-theme="light"] table.compare td.col-causl {
   background: rgba(11, 149, 176, 0.10);
-  color: rgba(11, 16, 32, 0.92);
+  color: var(--text-on-elevated);
 }
 
-:root[data-theme="light"] .button.primary { color: #FFFFFF; }
-:root[data-theme="light"] .button.primary:hover { color: #FFFFFF; }
+:root[data-theme="light"] .button.primary { color: var(--text-on-emphasis); }
+:root[data-theme="light"] .button.primary:hover { color: var(--text-on-emphasis); }
 :root[data-theme="light"] .button.ghost {
   background: rgba(11, 16, 32, 0.04);
-  border-color: rgba(11, 16, 32, 0.18);
-  color: rgba(11, 16, 32, 0.92);
+  border-color: var(--border-on-elevated);
+  color: var(--text-on-base);
 }
 :root[data-theme="light"] .button.ghost:hover {
   background: rgba(11, 149, 176, 0.10);
   border-color: rgba(11, 149, 176, 0.55);
-  color: rgba(11, 16, 32, 0.92);
+  color: var(--text-on-base);
 }
 
 :root[data-theme="light"] .cta-strip,
 :root[data-theme="light"] .cta-strip p,
 :root[data-theme="light"] .cta-strip h2,
-:root[data-theme="light"] .cta-strip h3 { color: rgba(11, 16, 32, 0.92); }
+:root[data-theme="light"] .cta-strip h3 { color: var(--text-on-elevated); }
 
 :root[data-theme="light"] .site-footer {
   background:
     radial-gradient(circle at 50% 0%, rgba(11, 149, 176, 0.14),
                     transparent 24rem),
-    #FFFFFF;
-  border-top-color: rgba(11, 16, 32, 0.10);
+    var(--surface-overlay);
+  border-top-color: var(--border-on-overlay);
+  color: var(--text-on-overlay);
 }
 
-:root[data-theme="light"] .site-footer p { color: rgba(11, 16, 32, 0.86); }
-:root[data-theme="light"] .site-footer .footer-links a { color: rgba(11, 16, 32, 0.92); }
+:root[data-theme="light"] .site-footer p { color: var(--text-on-overlay-muted); }
+:root[data-theme="light"] .site-footer .footer-links a { color: var(--text-on-overlay); }
