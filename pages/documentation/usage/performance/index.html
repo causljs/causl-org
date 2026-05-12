@@ -143,7 +143,7 @@
 
 const graph = createCausl();
 const source = input(graph, { count: 0 });
-const doubled = derived(graph, (g) =&gt; g.read(source).count * 2);
+const doubled = derived(graph, g =&gt; g.read(source).count * 2);
 
 graph.commit(() =&gt; {
   // Same value: equality cutoff drops the write, doubled is NOT recomputed.

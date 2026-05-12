@@ -226,7 +226,7 @@ export const count = graph.input('count', 0)</code></pre>
 import { graph } from './graph'
 import { count } from './inputs'
 
-export const doubled = graph.derived('doubled', (get) =&gt; get(count) * 2)</code></pre>
+export const doubled = graph.derived('doubled', g =&gt; g(count) * 2)</code></pre>
 
     <p>
       Two things are worth pausing on. First, both <code>graph.input()</code> and
@@ -239,8 +239,9 @@ export const doubled = graph.derived('doubled', (get) =&gt; get(count) * 2)</cod
 
     <p>
       Second, the second argument to <code>graph.derived()</code> is a closure that
-      receives a tracked <code>get</code> accessor. The engine infers the derivation's
-      dependency set from the <code>get</code> calls it observes — there is no manual
+      receives a tracked accessor (bound to <code>g</code> above — the single-letter
+      form is idiomatic for inline arrows; any name works). The engine infers the
+      derivation's dependency set from the accessor calls it observes — there is no manual
       "depends on" list to keep in sync. A derivation that switches inputs on an
       <code>if</code> branch naturally rewires its dependency set on the next
       evaluation.
@@ -258,7 +259,7 @@ import { graph } from './graph'
 import { count } from './inputs'
 
 export function increment(): void {
-  graph.commit('increment', (tx) =&gt; {
+  graph.commit('increment', tx =&gt; {
     tx.set(count, graph.read(count) + 1)
   })
 }</code></pre>

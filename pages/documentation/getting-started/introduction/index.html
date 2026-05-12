@@ -106,10 +106,10 @@
 const graph = createCausl()
 const a = graph.input('a', 1)
 const b = graph.input('b', 2)
-const sum = graph.derived('sum', (get) =&gt; get(a) + get(b))
-const sumPlusOne = graph.derived('sumPlusOne', (get) =&gt; get(sum) + 1)
+const sum = graph.derived('sum', g =&gt; g(a) + g(b))
+const sumPlusOne = graph.derived('sumPlusOne', g =&gt; g(sum) + 1)
 
-graph.subscribe(sumPlusOne, (v) =&gt; console.log(v))
+graph.subscribe(sumPlusOne, v =&gt; console.log(v))
 // 4
 
 graph.commit('bump-a', tx =&gt; tx.set(a, 10))
@@ -217,8 +217,8 @@ const graph = createCausl()</code></pre>
     <h3>2. Register inputs and derivations</h3>
 
     <pre class="language-typescript"><code class="language-typescript">const count = graph.input('count', 0)
-const doubled = graph.derived('doubled', (get) =&gt; get(count) * 2)
-const label   = graph.derived('label', (get) =&gt; `count is ${get(count)} (×2 = ${get(doubled)})`)</code></pre>
+const doubled = graph.derived('doubled', g =&gt; g(count) * 2)
+const label   = graph.derived('label', g =&gt; `count is ${g(count)} (×2 = ${g(doubled)})`)</code></pre>
 
     <p>
       Names are not cosmetic. They appear in <code>graph.explain</code> output,
@@ -230,7 +230,7 @@ const label   = graph.derived('label', (get) =&gt; `count is ${get(count)} (×2 
 
     <h3>3. Commit to mutate</h3>
 
-    <pre class="language-typescript"><code class="language-typescript">graph.commit('bump', (tx) =&gt; {
+    <pre class="language-typescript"><code class="language-typescript">graph.commit('bump', tx =&gt; {
   tx.set(count, 42)
 })
 
@@ -246,11 +246,11 @@ console.log(graph.read(label))  // "count is 42 (×2 = 84)"</code></pre>
 
     <h3>4. Subscribe to observe</h3>
 
-    <pre class="language-typescript"><code class="language-typescript">const unsubscribe = graph.subscribe(label, (next) =&gt; {
+    <pre class="language-typescript"><code class="language-typescript">const unsubscribe = graph.subscribe(label, next =&gt; {
   console.log('label changed:', next)
 })
 
-graph.commit('bump-again', (tx) =&gt; tx.set(count, 7))
+graph.commit('bump-again', tx =&gt; tx.set(count, 7))
 // "label changed: count is 7 (×2 = 14)"
 
 unsubscribe()</code></pre>

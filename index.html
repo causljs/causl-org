@@ -297,10 +297,10 @@
 <span class="tok-kw">const</span> graph = <span class="tok-fn">createCausl</span>()
 <span class="tok-kw">const</span> a   = graph.<span class="tok-fn">input</span>(<span class="tok-str">'a'</span>, <span class="tok-num">1</span>)
 <span class="tok-kw">const</span> b   = graph.<span class="tok-fn">input</span>(<span class="tok-str">'b'</span>, <span class="tok-num">2</span>)
-<span class="tok-kw">const</span> sum = graph.<span class="tok-fn">derived</span>(<span class="tok-str">'sum'</span>, (get) =&gt; <span class="tok-fn">get</span>(a) + <span class="tok-fn">get</span>(b))
-<span class="tok-kw">const</span> sum1 = graph.<span class="tok-fn">derived</span>(<span class="tok-str">'sum+1'</span>, (get) =&gt; <span class="tok-fn">get</span>(sum) + <span class="tok-num">1</span>)
+<span class="tok-kw">const</span> sum = graph.<span class="tok-fn">derived</span>(<span class="tok-str">'sum'</span>, g =&gt; <span class="tok-fn">g</span>(a) + <span class="tok-fn">g</span>(b))
+<span class="tok-kw">const</span> sum1 = graph.<span class="tok-fn">derived</span>(<span class="tok-str">'sum+1'</span>, g =&gt; <span class="tok-fn">g</span>(sum) + <span class="tok-num">1</span>)
 
-graph.<span class="tok-fn">subscribe</span>(sum1, (v) =&gt; <span class="tok-fn">log</span>(v))
+graph.<span class="tok-fn">subscribe</span>(sum1, v =&gt; <span class="tok-fn">log</span>(v))
 <span class="tok-com">// 4</span>
 
 graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-a'</span>, tx =&gt; tx.<span class="tok-fn">set</span>(a, <span class="tok-num">10</span>))
@@ -910,7 +910,7 @@ graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span
 <span class="tok-kw">const</span> b = graph.<span class="tok-fn">input</span>(<span class="tok-str">'b'</span>, <span class="tok-num">2</span>)
 <span class="tok-kw">const</span> sum = graph.<span class="tok-fn">derived</span>(
   <span class="tok-str">'sum'</span>,
-  (get) =&gt; <span class="tok-fn">get</span>(a) + <span class="tok-fn">get</span>(b)
+  g =&gt; <span class="tok-fn">g</span>(a) + <span class="tok-fn">g</span>(b)
 )
 
 graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span>, tx =&gt; {

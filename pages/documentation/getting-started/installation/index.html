@@ -130,7 +130,7 @@ yarn add @causl/core</code></pre>
 
 const graph = createCausl();
 const count = input(graph, 0);
-const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+const doubled = derived(graph, g =&gt; g.read(count) * 2);
 
 graph.commit(() =&gt; {
   graph.set(count, 5);
@@ -170,7 +170,7 @@ import { useCauslNode } from '@causl/react';
 
 const graph = createCausl();
 const count = input(graph, 0);
-const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+const doubled = derived(graph, g =&gt; g.read(count) * 2);
 
 export function Counter() {
   const value = useCauslNode(graph, doubled);

@@ -98,7 +98,7 @@
 
 const graph = createCausl();
 const count = input(graph, 0);
-const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+const doubled = derived(graph, g =&gt; g.read(count) * 2);
 
 graph.commit(() =&gt; {
   graph.set(count, 5);
@@ -298,7 +298,7 @@ console.log(graph.read(doubled));  // 10
 
     <pre class="language-typescript"><code class="language-typescript">// TypeScript narrows the value type all the way through.
 const name = input(graph, 'Ada');        // input&lt;string&gt;
-const upper = derived(graph, (g) =&gt;
+const upper = derived(graph, g =&gt;
   g.read(name).toUpperCase()             // typed as string
 );
 </code></pre>
@@ -362,7 +362,7 @@ const graph = createCausl();
 const userId = input(graph, 'ada');
 
 const user = resource(graph, {
-  key: (g) =&gt; g.read(userId),
+  key: g =&gt; g.read(userId),
   fetch: async (id, signal) =&gt; {
     const res = await fetch(`/api/users/${id}`, { signal });
     return res.json();

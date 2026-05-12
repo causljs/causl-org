@@ -189,25 +189,25 @@ export interface AppProjections {
 }
 
 export function buildProjections(graph: Graph, nodes: AppNodes): AppProjections {
-  const sortedNotes = graph.derived&lt;readonly Note[]&gt;('sortedNotes', (g) =&gt; {
+  const sortedNotes = graph.derived&lt;readonly Note[]&gt;('sortedNotes', g =&gt; {
     const map = g.read(nodes.notes)
     return Object.values(map).slice().sort((a, b) =&gt; b.updatedAt - a.updatedAt)
   })
 
-  const activeNote = graph.derived&lt;Note | null&gt;('activeNote', (g) =&gt; {
+  const activeNote = graph.derived&lt;Note | null&gt;('activeNote', g =&gt; {
     const id = g.read(nodes.selectedId)
     if (id === null) return null
     const note = g.read(nodes.notes)[id]
     return note ?? null
   })
 
-  const wordCount = graph.derived&lt;number&gt;('wordCount', (g) =&gt; {
+  const wordCount = graph.derived&lt;number&gt;('wordCount', g =&gt; {
     const note = g.read(activeNote)
     if (!note) return 0
     return note.body.trim().split(/\s+/).filter(Boolean).length
   })
 
-  const noteCount = graph.derived&lt;number&gt;('noteCount', (g) =&gt; {
+  const noteCount = graph.derived&lt;number&gt;('noteCount', g =&gt; {
     return Object.keys(g.read(nodes.notes)).length
   })
 
@@ -259,7 +259,7 @@ import type { AppNodes, Note, NoteMap } from './graph.js'
 export function buildUpdate(nodes: AppNodes) {
   return createUpdate&lt;AppMsg&gt;({
     'note/create': (_m, g) =&gt; {
-      g.commit('note/create', (tx) =&gt; {
+      g.commit('note/create', tx =&gt; {
         const id = crypto.randomUUID()
         const fresh: Note = { id, title: 'Untitled', body: '', updatedAt: Date.now() }
         const prev = g.read(nodes.notes)
@@ -269,10 +269,10 @@ export function buildUpdate(nodes: AppNodes) {
       })
     },
     'note/select': (m, g) =&gt; {
-      g.commit('note/select', (tx) =&gt; tx.set(nodes.selectedId, m.id))
+      g.commit('note/select', tx =&gt; tx.set(nodes.selectedId, m.id))
     },
     'note/edit-title': (m, g) =&gt; {
-      g.commit('note/edit-title', (tx) =&gt; {
+      g.commit('note/edit-title', tx =&gt; {
         const id = g.read(nodes.selectedId)
         if (id === null) return
         const prev = g.read(nodes.notes)
@@ -286,7 +286,7 @@ export function buildUpdate(nodes: AppNodes) {
       })
     },
     'note/edit-body': (m, g) =&gt; {
-      g.commit('note/edit-body', (tx) =&gt; {
+      g.commit('note/edit-body', tx =&gt; {
         const id = g.read(nodes.selectedId)
         if (id === null) return
         const prev = g.read(nodes.notes)
@@ -300,7 +300,7 @@ export function buildUpdate(nodes: AppNodes) {
       })
     },
     'note/delete': (m, g) =&gt; {
-      g.commit('note/delete', (tx) =&gt; {
+      g.commit('note/delete', tx =&gt; {
         const prev = g.read(nodes.notes)
         const { [m.id]: _gone, ...rest } = prev
         tx.set(nodes.notes, rest)
@@ -362,7 +362,7 @@ export function buildSync(graph: Graph, nodes: AppNodes) {
   // the remote value, and the resolution state.
   const conflicts = createConflictRegistry&lt;string, { local: Note; remote: ServerNote }&gt;(graph, {
     id: 'conflicts/notes',
-    detect: (g) =&gt; {
+    detect: g =&gt; {
       const local = g.read(nodes.notes)
       const remote = g.read(pullResource.value)
       const out: Record&lt;string, { local: Note; remote: ServerNote }&gt; = {}
@@ -388,7 +388,7 @@ export function buildSync(graph: Graph, nodes: AppNodes) {
   void sync.pullResource.refresh()
 },
 'sync/resolve-conflict': (m, g) =&gt; {
-  g.commit('sync/resolve-conflict', (tx) =&gt; {
+  g.commit('sync/resolve-conflict', tx =&gt; {
     const conflict = g.read(sync.conflicts.byKey)[m.id]
     if (!conflict) return
     const next: Note = m.pick === 'local' ? conflict.local : conflict.remote
@@ -497,7 +497,7 @@ function Editor() {
 function StatusBar() {
   // useCausl selector is the right choice here: one re-render per
   // status change, not three.
-  const { wordCount, noteCount, syncState, conflictCount } = useCausl((g) =&gt; ({
+  const { wordCount, noteCount, syncState, conflictCount } = useCausl(g =&gt; ({
     wordCount: g.read(projections.wordCount),
     noteCount: g.read(projections.noteCount),
     syncState: g.read(sync.pullResource.state).kind,
