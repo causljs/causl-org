@@ -259,10 +259,40 @@
     try { console.log.apply(console, arguments); } catch (_) { /* ignore */ }
   }
 
+  // Measure the bar's current rendered height and reserve it via
+  // body padding-top (set on documentElement so it cascades site-wide).
+  // Called on init AFTER the bar has been rendered, and on resize.
+  //
+  // The bar is position:fixed (out of flow); without this reservation
+  // page content would sit underneath the bar's footprint.
+  //
+  // We measure the *current* rendered height — on the homepage with
+  // .is-hero this captures the full hero stack; on inner pages
+  // without .is-hero the bar is already in its collapsed shape so
+  // the measurement is the smaller value. Either way the reservation
+  // matches what the bar actually occupies at the user's first paint.
+  // After scroll-collapse animation, the bar shrinks but the body
+  // padding stays at the max value — a slightly larger gap between
+  // collapsed bar and content is the acceptable trade-off vs. the
+  // #1289 in-flow scroll-flicker loop.
+  function measureAndReserveBarHeight() {
+    var bar = document.getElementById('topbar');
+    if (!bar) return;
+    // getBoundingClientRect().height includes padding + border but
+    // not margin, which is what we want for a reservation.
+    var h = Math.ceil(bar.getBoundingClientRect().height);
+    if (h > 0) {
+      document.documentElement.style.setProperty('--topbar-max-height', h + 'px');
+    }
+  }
+
   function initHeroCollapse() {
     var bar = document.getElementById('topbar');
     if (!bar || !bar.classList.contains('is-hero')) {
       log('[topbar:diag] init skipped — no is-hero');
+      // Still reserve the (collapsed) height for inner pages.
+      measureAndReserveBarHeight();
+      window.addEventListener('resize', measureAndReserveBarHeight);
       return;
     }
     // Respect reduced motion: snap fully expanded, no scroll handler.
@@ -305,9 +335,15 @@
       lastY = y;
     }
 
+    // Measure the bar's hero-state height once at init (before scroll
+    // shrinks it) and reserve that as body padding-top. Re-measure on
+    // resize (viewport rotation, font size change, etc.).
+    measureAndReserveBarHeight();
+
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', function () {
       log('[topbar:diag] resize', { newVh: window.innerHeight });
+      measureAndReserveBarHeight();
       update();
     });
     update();
