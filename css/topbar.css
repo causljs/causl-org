@@ -263,7 +263,7 @@ html, body {
   flex-shrink: 0;
 }
 
-.topbar-burger:hover { background: rgba(255, 255, 255, 0.25); }
+.topbar-burger:hover { background: var(--state-hover-bg); }
 
 .topbar-burger .burger-icon,
 .topbar-burger .burger-icon::before,
@@ -333,7 +333,7 @@ html, body {
 
 .topbar-menu a:hover,
 .topbar-menu .topbar-theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--state-hover-bg);
 }
 
 .topbar-menu a.is-current { background: rgba(255, 255, 255, 0.18); }
@@ -428,7 +428,7 @@ html, body {
   .topbar-menu a:hover,
   .topbar-menu .topbar-theme-toggle:hover {
     opacity: 0.9;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--state-hover-bg);
     border-color: rgba(255, 255, 255, 0.6);
   }
 

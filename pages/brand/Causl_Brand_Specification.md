@@ -329,6 +329,46 @@ The hue tokens (`--causl-async-cyan`, `--causl-mist`, etc.) remain as the raw pa
 
 ---
 
+## 8.2 Semantic State Tokens
+
+§8.1 binds *what color sits on what surface*. The state-token layer in this section binds *what color expresses what interaction*. Hover, focus, active, pressed, disabled, error, warning, success, and info each map to a named token pair (background + foreground; some include a border or focus ring). Components MUST reference these tokens — never inline `rgba()` or hex — so the entire state palette flips together in light theme via `:root[data-theme="light"]`.
+
+The state tokens live in `causl-org/css/site.css` between the §8.1 surface/text contract and the component rules; the TypeDoc overlay (`causl-typedoc.css`) mirrors the same definitions so generated pages resolve them without depending on `site.css`.
+
+### Interaction states
+
+| State | Token pair | Dark bg | Dark fg | Light bg | Light fg |
+|---|---|---|---|---|---|
+| Hover | `--state-hover-bg` / `--state-hover-fg` | `rgba(17,217,255,0.08)` | `#11D9FF` | `rgba(11,149,176,0.08)` | `#0B95B0` |
+| Focus | `--state-focus-outline` / `--state-focus-ring` | `#11D9FF` / `0 0 0 3px rgba(17,217,255,0.4)` | — | `#0B95B0` / `0 0 0 3px rgba(11,149,176,0.4)` | — |
+| Active | `--state-active-bg` / `--state-active-fg` | `#11D9FF` | `#070A0F` | `#0B95B0` | `#FFFFFF` |
+| Pressed | `--state-pressed-bg` | `rgba(17,217,255,0.16)` | — | `rgba(11,149,176,0.16)` | — |
+| Disabled | `--state-disabled-bg` / `--state-disabled-fg` | `#2B333D` | `#8FA2AA` | `#DDE1E6` | `#5A6470` |
+
+### Status states
+
+| State | Token triple | Dark bg | Dark fg / border | Light bg | Light fg / border |
+|---|---|---|---|---|---|
+| Error | `--state-error-bg` / `--state-error-fg` / `--state-error-border` | `rgba(255,77,94,0.08)` | `#FF4D5E` | `rgba(195,42,56,0.08)` | `#C32A38` |
+| Warning | `--state-warning-bg` / `--state-warning-fg` / `--state-warning-border` | `rgba(255,176,32,0.08)` | `#FFB020` | `rgba(181,117,0,0.08)` | `#B57500` |
+| Success | `--state-success-bg` / `--state-success-fg` / `--state-success-border` | `rgba(167,255,24,0.08)` | `#A7FF18` | `rgba(74,147,0,0.08)` | `#4A9300` |
+| Info | `--state-info-bg` / `--state-info-fg` / `--state-info-border` | `rgba(17,217,255,0.08)` | `#11D9FF` | `rgba(11,149,176,0.08)` | `#0B95B0` |
+
+### Contrast contracts
+
+Every fg-on-bg state pair clears WCAG AA in *both* themes. Status backgrounds are an 8% alpha tint of the hue, so they sit transparently over `--surface-base` or `--surface-elevated` without breaking the §8.1 pair contract. The fg tokens are the full-strength dimmed hue:
+
+- Light theme fg colors `#0B95B0` (cyan), `#C32A38` (red), `#B57500` (amber), `#4A9300` (green) all clear ≥ 4.5:1 against `#FFFFFF` and against the 8%-alpha tint composited over white.
+- Dark theme fg colors are the high-luminance brand hues, all ≥ 7:1 against `#070A0F` (`--surface-base`) and the 8%-alpha tint composited over it.
+
+### Rule
+
+> Any new component that expresses an interaction state (hover, focus, active, pressed, disabled) or a status (error, warning, success, info) MUST reference the corresponding state token. Inlining `rgba(17,217,255,0.08)` or `#FF4D5E` in a component rule is a brand-system violation: the value will not flip in light theme and bypasses the contrast contract.
+
+State tokens compose with §8.1 pair tokens — a hover rule on `.button.ghost` sets `background: var(--state-hover-bg)` *and* keeps `color:` paired against its surface; an error callout sets `background: var(--state-error-bg)` *and* `color: var(--state-error-fg)`, treating the (bg, fg) pair as a single unit just like the surface/text pairs.
+
+---
+
 ## 9. Typography
 
 ### Recommended Type System
