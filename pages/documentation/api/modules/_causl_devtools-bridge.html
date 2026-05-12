@@ -42,27 +42,7 @@
 </blockquote>
 <hr>
 <a id="quickstart" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Quickstart<a href="#quickstart" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The example in <a href="../media/SPEC.md#10-the-smallest-worked-example-i-will-support">SPEC §10</a> is the gate for &quot;the engine is real&quot; — two inputs, one derived value, one diamond derivation, one subscriber, two commits, three observed propagations. Everything else in the engine is downstream of getting this right.</p>
-<div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-    </aside>
-      <code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createCausl</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/core&#39;</span>
+<code class="codeblock" data-lang="ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span></span><span class="codeblock-source"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createCausl</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/core&#39;</span>
 
 <span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()</span>
 <span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">a</span><span class="hl-1"> = </span><span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-3">&#39;a&#39;</span><span class="hl-1">, </span><span class="hl-7">1</span><span class="hl-1">)</span>
@@ -78,9 +58,7 @@
 
 <span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">commit</span><span class="hl-1">(</span><span class="hl-3">&#39;bump-both&#39;</span><span class="hl-1">, </span><span class="hl-5">tx</span><span class="hl-1"> </span><span class="hl-2">=&gt;</span><span class="hl-1"> { </span><span class="hl-5">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-5">a</span><span class="hl-1">, </span><span class="hl-7">100</span><span class="hl-1">); </span><span class="hl-5">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-5">b</span><span class="hl-1">, </span><span class="hl-7">200</span><span class="hl-1">) })</span>
 <span class="hl-6">// 301  — exactly one notification, not two</span>
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
 <p>The four invariants — atomic commit, dependency tracking, dynamic-dep cleanup, glitch-free diamond — fall out of this example. It is pinned as an acceptance test at <a href="../media/spec-10-worked-example.test.ts"><code>packages/core/test/spec-10-worked-example.test.ts</code></a>.</p>
 <hr>
@@ -96,32 +74,15 @@
 </ul>
 <p>Real systems that look like this: spreadsheets, CMMS, capital-planning tools, BIM-style asset graphs, configuration editors, scheduling/Gantt systems, scenario planning, dashboard composers, and large operational consoles. The author of this library has shipped several. Every one of them ran into the same wall.</p>
 <p>If you have ever written this and watched it fire in the wrong order:</p>
-<div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-    </aside>
-      <code class="ts"><span class="hl-0">useEffect</span><span class="hl-1">(() </span><span class="hl-2">=&gt;</span><span class="hl-1"> { </span><span class="hl-0">setHighlights</span><span class="hl-1">(</span><span class="hl-0">deriveFromSelection</span><span class="hl-1">(</span><span class="hl-5">selection</span><span class="hl-1">, </span><span class="hl-5">plan</span><span class="hl-1">)); }, [</span><span class="hl-5">selection</span><span class="hl-1">, </span><span class="hl-5">plan</span><span class="hl-1">])</span>
+<code class="codeblock" data-lang="ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span></span><span class="codeblock-source"><span class="hl-0">useEffect</span><span class="hl-1">(() </span><span class="hl-2">=&gt;</span><span class="hl-1"> { </span><span class="hl-0">setHighlights</span><span class="hl-1">(</span><span class="hl-0">deriveFromSelection</span><span class="hl-1">(</span><span class="hl-5">selection</span><span class="hl-1">, </span><span class="hl-5">plan</span><span class="hl-1">)); }, [</span><span class="hl-5">selection</span><span class="hl-1">, </span><span class="hl-5">plan</span><span class="hl-1">])</span>
 <span class="hl-0">useEffect</span><span class="hl-1">(() </span><span class="hl-2">=&gt;</span><span class="hl-1"> { </span><span class="hl-0">setActiveAttachments</span><span class="hl-1">(</span><span class="hl-0">forSelection</span><span class="hl-1">(</span><span class="hl-5">selection</span><span class="hl-1">)); }, [</span><span class="hl-5">selection</span><span class="hl-1">])</span>
 <span class="hl-0">useEffect</span><span class="hl-1">(() </span><span class="hl-2">=&gt;</span><span class="hl-1"> { </span><span class="hl-0">setPlanPings</span><span class="hl-1">(</span><span class="hl-0">forHighlights</span><span class="hl-1">(</span><span class="hl-5">highlights</span><span class="hl-1">)); }, [</span><span class="hl-5">highlights</span><span class="hl-1">])</span>
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
 <p>— or written this and wondered if the result is still relevant:</p>
-<div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-    </aside>
-      <code class="ts"><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">fetched</span><span class="hl-1"> = </span><span class="hl-8">await</span><span class="hl-1"> </span><span class="hl-0">fetchAssetStatus</span><span class="hl-1">(</span><span class="hl-5">activeAssetId</span><span class="hl-1">)</span>
+<code class="codeblock" data-lang="ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span></span><span class="codeblock-source"><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">fetched</span><span class="hl-1"> = </span><span class="hl-8">await</span><span class="hl-1"> </span><span class="hl-0">fetchAssetStatus</span><span class="hl-1">(</span><span class="hl-5">activeAssetId</span><span class="hl-1">)</span>
 <span class="hl-0">setStatus</span><span class="hl-1">(</span><span class="hl-5">fetched</span><span class="hl-1">) </span><span class="hl-6">// is activeAssetId still the same as when we started?</span>
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
 <p>— or watched a 100-row tabular UI re-render the entire grid because a single cell's formula changed — you have hit the wall this library is for.</p>
 <p>The existing libraries each handle a <em>piece</em>. Redux gives you transactional commits but no dependency tracking. MobX gives you dependency tracking but no transactional commits and no semantic glitch-freedom guarantee. TanStack Query gives you async safety but only for HTTP state. XState gives you statecharts but not a dependency engine. Jotai gives you fine-grained atoms but no story for cross-atom transactions or stale-async protection.</p>
@@ -524,47 +485,22 @@
 </tbody>
 </table>
 <p>The repository pins Node via <code>.nvmrc</code> and pnpm via <code>packageManager</code> in the root <code>package.json</code>. With <code>nvm</code> and Corepack on, switching into the directory and running <code>pnpm install</code> is enough.</p>
-<div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-    </aside>
-      <code class="sh"><span class="hl-6"># one-time setup</span>
+<code class="codeblock" data-lang="sh" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span></span><span class="codeblock-source"><span class="hl-6"># one-time setup</span>
 <span class="hl-0">nvm</span><span class="hl-1"> </span><span class="hl-3">install</span><span class="hl-1">        </span><span class="hl-6"># installs Node 24 from .nvmrc</span>
 <span class="hl-0">nvm</span><span class="hl-1"> </span><span class="hl-3">use</span><span class="hl-1">            </span><span class="hl-6"># activates it for this shell</span>
 <span class="hl-0">corepack</span><span class="hl-1"> </span><span class="hl-3">enable</span><span class="hl-1">    </span><span class="hl-6"># makes the pinned pnpm available</span>
 
 <span class="hl-6"># install workspace dependencies</span>
 <span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">install</span>
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
-<a id="common-commands" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Common commands<a href="#common-commands" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-    </aside>
-      <code class="sh"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">validate</span><span class="hl-1">       </span><span class="hl-6"># typecheck + build + test (run before committing)</span>
+<a id="common-commands" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Common commands<a href="#common-commands" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><code class="codeblock" data-lang="sh" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span></span><span class="codeblock-source"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">validate</span><span class="hl-1">       </span><span class="hl-6"># typecheck + build + test (run before committing)</span>
 <span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">typecheck</span><span class="hl-1">      </span><span class="hl-6"># tsc --noEmit across packages</span>
 <span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">build</span><span class="hl-1">          </span><span class="hl-6"># tsup builds for every package</span>
 <span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">test</span><span class="hl-1">           </span><span class="hl-6"># vitest in watch mode</span>
 <span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">test:run</span><span class="hl-1">       </span><span class="hl-6"># vitest --run (single pass)</span>
 <span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">lint</span><span class="hl-1">           </span><span class="hl-6"># eslint across packages</span>
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
 <p>A Husky pre-commit hook runs <code>pnpm typecheck</code> and <code>pnpm test:run</code> against staged code; it picks up the same toolchain the CI workflows use.</p>
 <hr>

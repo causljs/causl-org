@@ -94,18 +94,9 @@
       its own commit log, its own set of nodes. You can have several graphs in the same process and
       they will not interfere with each other.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-    </aside>
-      <code class="language-typescript">import { createCausl } from '@causl/core';
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span></span><span class="codeblock-source language-typescript">import { createCausl } from '@causl/core';
 
-const graph = createCausl();</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+const graph = createCausl();</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       <code>createCausl()</code> takes an options object — used later for things like commit-log capacity,
       observer error handlers, and the auto-adapt backend selector — but for a first app the defaults
@@ -119,16 +110,8 @@ const graph = createCausl();</code></pre>
       An <strong>input node</strong> is a writable cell. You give it a stable identifier and an initial
       value, and you get back a typed handle.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-    </aside>
-      <code class="language-typescript">const count = graph.input('count', 0);
-const step  = graph.input('step', 1);</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span></span><span class="codeblock-source language-typescript">const count = graph.input('count', 0);
+const step  = graph.input('step', 1);</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       The id (<code>'count'</code>, <code>'step'</code>) is the cell's name inside this graph. It must be
       unique — registering a second node with the same id throws
@@ -150,14 +133,7 @@ const step  = graph.input('step', 1);</code></pre>
       idiomatic for inline arrows; any name works) — and any node you pass to that accessor becomes
       a dependency. Causl infers the dependency set from observed reads; you do not declare it up front.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-    </aside>
-      <code class="language-typescript">const doubled = graph.derived('doubled', g =&gt; g(count) * g(step));</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span></span><span class="codeblock-source language-typescript">const doubled = graph.derived('doubled', g =&gt; g(count) * g(step));</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       The closure has read <code>count</code> and <code>step</code>, so <code>doubled</code> now depends
       on both. If a later commit changes <code>count</code> or <code>step</code>, the engine will
@@ -181,18 +157,9 @@ const step  = graph.input('step', 1);</code></pre>
       against a derived node forces the engine to evaluate the compute closure once; subsequent reads
       are O(1) until something invalidates the cell.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-    </aside>
-      <code class="language-typescript">console.log(graph.read(count));    // 0
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span></span><span class="codeblock-source language-typescript">console.log(graph.read(count));    // 0
 console.log(graph.read(step));     // 1
-console.log(graph.read(doubled));  // 0  (because 0 * 1)</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+console.log(graph.read(doubled));  // 0  (because 0 * 1)</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       Notice that <code>doubled</code> reports <code>0</code>, not <code>NaN</code> or
       <code>undefined</code>. Causl evaluates derivations lazily on first read and remembers the
@@ -204,20 +171,10 @@ console.log(graph.read(doubled));  // 0  (because 0 * 1)</code></pre>
       A subscriber observes a single node. The observer fires once synchronously on registration
       (with the current value), then once per commit during which the node's value changed.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-    </aside>
-      <code class="language-typescript">const unsubscribe = graph.subscribe(doubled, v =&gt; {
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span></span><span class="codeblock-source language-typescript">const unsubscribe = graph.subscribe(doubled, v =&gt; {
   console.log('doubled =&gt;', v);
 });
-// logs: doubled =&gt; 0</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+// logs: doubled =&gt; 0</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       That initial synchronous fire is intentional — it gives subscribers their starting value
       without an extra <code>read</code> call, which is the contract React adapters such as
@@ -238,20 +195,10 @@ console.log(graph.read(doubled));  // 0  (because 0 * 1)</code></pre>
       <code>graph.commit(intent, run)</code>, which takes a human-readable label and a callback that
       receives a transaction handle.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-    </aside>
-      <code class="language-typescript">graph.commit('increment', tx =&gt; {
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span></span><span class="codeblock-source language-typescript">graph.commit('increment', tx =&gt; {
   tx.set(count, 5);
 });
-// logs: doubled =&gt; 10</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+// logs: doubled =&gt; 10</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       A few things just happened. The engine opened Phase A (precondition check), staged the write
       in Phase B, propagated through the input-layer fast path in Phase C, ran the Kahn topological
@@ -272,22 +219,11 @@ console.log(graph.read(doubled));  // 0  (because 0 * 1)</code></pre>
       at the same tick. The subscriber for <code>doubled</code> fires exactly once even when both of
       its inputs move in the same transaction.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-    </aside>
-      <code class="language-typescript">graph.commit('rescale', tx =&gt; {
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span></span><span class="codeblock-source language-typescript">graph.commit('rescale', tx =&gt; {
   tx.set(count, 10);
   tx.set(step, 2);
 });
-// logs: doubled =&gt; 20    (NOT 10, then 20)</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+// logs: doubled =&gt; 20    (NOT 10, then 20)</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       Compare this to a setter-per-cell library, where the subscriber would have seen an intermediate
       value of <code>10 * 1 = 10</code> in between the two writes. Causl never publishes that
@@ -300,22 +236,11 @@ console.log(graph.read(doubled));  // 0  (because 0 * 1)</code></pre>
       because <code>doubled</code> did not change. The engine compares each derived cell's new value
       to its previous value with <code>Object.is</code> equality and stops dispatch on identity.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-    </aside>
-      <code class="language-typescript">graph.commit('noop', tx =&gt; {
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span></span><span class="codeblock-source language-typescript">graph.commit('noop', tx =&gt; {
   tx.set(count, 10);   // already 10
   tx.set(step, 2);     // already 2
 });
-// nothing logged</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+// nothing logged</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       This is what makes causl safe to call eagerly from event handlers and effects: writing the
       same value back is free at the subscriber layer. It costs the commit pipeline (the transaction
@@ -406,20 +331,10 @@ unsubscribe();</textarea>
     </div>
 
     <p>The expected console output is:</p>
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-    </aside>
-      <code class="language-typescript">initial doubled: 0
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span></span><span class="codeblock-source language-typescript">initial doubled: 0
 doubled =&gt; 0
 doubled =&gt; 10
-doubled =&gt; 20</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+doubled =&gt; 20</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <h2>What you just used</h2>
     <table>
