@@ -84,7 +84,8 @@
 <pre class="language-typescript codeblock is-playground"><code class="language-typescript">import { createCausl } from '@causl/core'
 
 const graph = createCausl({ name: 'ledger' })
-console.log('graph name:', graph.name)
+const ready = graph.input('ready', false)
+console.log('initial value:', graph.read(ready))
 </code></pre>
     <p>
       The optional <code>name</code> is for devtools and telemetry; it has to
