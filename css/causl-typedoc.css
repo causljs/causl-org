@@ -367,7 +367,7 @@ a:hover {
     rgba(11, 17, 24, 0.92), rgba(7, 10, 15, 0.92));
   border: 1px solid rgba(17, 217, 255, 0.18);
   border-radius: 10px;
-  padding: 0.8rem 1rem;
+  padding: var(--space-3) var(--space-4);
   color: var(--text-on-overlay);
 }
 
@@ -500,11 +500,11 @@ pre code,
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-on-elevated-muted);
-  padding: 0.7rem 0.85rem;
+  padding: var(--space-3) var(--space-4);
 }
 
 .tsd-typography td {
-  padding: 0.7rem 0.85rem;
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid rgba(143, 162, 170, 0.1);
 }
 
