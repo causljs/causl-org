@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>React Integration — Deep Dive — Causl</title>
+  <meta name="description" content="A deep-dive guide to integrating Causl with React: per-node and selector subscriptions, Suspense, atomFamily-style lifecycles, SSR hydration, StrictMode safety, and the H1 reference-identity hazard." />
+  <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../../css/site.css" />
+  <link rel="stylesheet" href="../../../../css/syntax.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: var(--text-on-base-muted); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: var(--text-on-base-muted); }
+    .docs-content .breadcrumb { font-family: var(--mono); font-size: 0.82rem; color: rgba(169, 181, 201, 0.75); margin-top: 1.6rem; }
+    .docs-content .breadcrumb a { color: var(--surface-emphasis); text-decoration: none; }
+    .docs-content .breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../../" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation"><span lang="en-fonipa">/ˈkɔː.zəl/</span> — like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/">Tutorial</a>
+        <a href="/pages/documentation/usage/" class="is-current" aria-current="page">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <p class="breadcrumb"><a href="../../">Documentation</a> / <a href="../">Usage</a> / React Integration</p>
+
+    <h1>React Integration &mdash; Deep Dive</h1>
+
+    <p>This page is the long-form companion to the React quick-start. It explains how
+    <code>@causl/react</code> binds a Causl <code>Graph</code> to React's rendering and
+    reconciliation model: which hook subscribes to what, why <code>useSyncExternalStore</code>
+    is the substrate under every hook, how Suspense and SSR hydration cooperate with the
+    engine's <code>GraphTime</code>-consistent reads, and which adopter pitfalls
+    (StrictMode, fresh-literal selectors, the H1 reference-identity hazard) you should
+    design around from day one rather than discover in production.</p>
+
+    <p>If you are looking for "five lines that render a counter," start with the
+    <a href="../../tutorial/part-5-react/">React quick-start</a>. This page assumes
+    you already have a <code>&lt;CauslProvider&gt;</code> wrapping your tree and at least
+    one component reading from it.</p>
+
+    <h2>Why a binding layer at all</h2>
+
+    <p>Causl's engine is framework-agnostic. A <code>Graph</code> exposes
+    <code>read</code>, <code>commit</code>, <code>subscribe</code>, and
+    <code>subscribeCommits</code>; everything else is layered on top. React, by
+    contrast, has its own contract for external stores (tear-free reads under
+    concurrent rendering, StrictMode double-invocation, hydration ordering). The
+    binding layer in <code>@causl/react</code> exists to satisfy both contracts
+    simultaneously, so that application code can write <code>useCauslNode(total)</code>
+    and not have to think about <code>useSyncExternalStore</code>, capability narrowing,
+    or commit-log subscription identity.</p>
+
+    <p>The package is deliberately small. There is no <code>useGraphValue</code>,
+    <code>useGraphStatus</code>, <code>useGraphConflicts</code> family of hooks: status,
+    conflicts, and explanations are values you select from the same graph. The public
+    surface is six hooks plus a provider and a Suspense-aware hydration component.</p>
+
+    <h2>1. The provider</h2>
+
+    <p><code>&lt;CauslProvider&gt;</code> is the single entry point. It takes a
+    host-constructed <code>Graph</code> and, optionally, an MVU <code>update</code>
+    runner for typed dispatch. The provider deliberately does <strong>not</strong> own
+    the graph &mdash; lifecycle, disposal, and replacement remain with the host &mdash;
+    so React mounting and unmounting cannot lose engine state.</p>
+
+    <pre class="language-jsx"><code class="language-jsx">import { createCausl, input, derived } from '@causl/core';
+import { CauslProvider } from '@causl/react';
+
+const graph = createCausl();
+const count = input(graph, 0);
+const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+
+export function App() {
+  return (
+    &lt;CauslProvider graph={graph}&gt;
+      &lt;Counter /&gt;
+    &lt;/CauslProvider&gt;
+  );
+}</code></pre>
+
+    <p>The context value is memoised on <code>graph</code> identity, so consumer hooks
+    do not re-subscribe on every render. A second provider further down the tree creates
+    an isolated family namespace (see <a href="#family">section 4</a>) even when both
+    providers share the same graph.</p>
+
+    <h2>2. <code>useCauslNode</code> &mdash; per-node subscriptions</h2>
+
+    <p><code>useCauslNode(node)</code> is the right default for reading a single node.
+    It subscribes via <code>graph.subscribe(node, cb)</code>, which the engine fires
+    exactly once per commit during which the node's value changed (with an
+    <code>Object.is</code> equality cutoff applied at the engine boundary). React's
+    <code>onChange</code> never fires for commits that do not touch the subscribed node
+    &mdash; unrelated work in the same transaction does not provoke a re-render.</p>
+
+    <pre class="language-jsx"><code class="language-jsx">import { useCauslNode, useDispatch } from '@causl/react';
+
+function Counter() {
+  const value = useCauslNode(doubled);
+  const dispatch = useDispatch();
+  return (
+    &lt;button onClick={() =&gt; dispatch({ kind: 'INC' })}&gt;
+      Doubled: {value}
+    &lt;/button&gt;
+  );
+}</code></pre>
+
+    <blockquote>
+      <strong>Detailed explanation &mdash; why per-node beats per-commit for hot leaves.</strong>
+      The selector-based <code>useCausl</code> hook subscribes to every commit and
+      deduplicates at the selector boundary with <code>Object.is</code>. That is a
+      one-line subscription and an O(selector) cost per commit. For a leaf component
+      reading a single node out of a 10 000-node graph, that is wasted work on 99.99%
+      of commits. <code>useCauslNode</code> instead pushes the dedup down to the
+      engine's per-node subscriber list, so the React layer is woken only when the
+      node's value actually changed. The dropped-frames gate (&le;&nbsp;5% over 30 s
+      on a 1 000-cell viewport at 60 Hz, plus p95 commit-to-paint &le;&nbsp;16 ms)
+      lives in the e2e suite at
+      <code>packages/react/e2e/tests/dropped-frames-1000.spec.ts</code>.
+    </blockquote>
+
+    <h2>3. <code>useCausl</code> with selectors &mdash; multi-node projections</h2>
+
+    <p>When a component needs to combine values from multiple nodes &mdash; a derived
+    aggregate that does not exist as a graph node, a tuple, a sliced array &mdash; reach
+    for the selector-based <code>useCausl(selector)</code>. The selector receives a
+    <code>ReadOnlyGraph</code> (a capability-narrowed handle that cannot call
+    <code>commit</code>, <code>input</code>, <code>derived</code>, or
+    <code>exportModel</code>) and must return a value derived purely from
+    <code>graph.read</code> calls.</p>
+
+    <pre class="language-typescript"><code class="language-typescript">import { useCausl } from '@causl/react';
+
+function Stats() {
+  const { total, count } = useCausl((g) =&gt; ({
+    total: g.read(sumNode),
+    count: g.read(countNode),
+  }));
+  return &lt;span&gt;{count} items, total {total}&lt;/span&gt;;
+}</code></pre>
+
+    <p>The selector runs once per commit; the return is compared to the previous return
+    with <code>Object.is</code>. If equal, the component does not re-render. The
+    <code>ReadOnlyGraph</code> proxy enforces capability narrowing at runtime &mdash; a
+    selector that smuggles a <code>commit</code> call past TypeScript via
+    <code>as any</code> throws <code>CapabilityViolation</code>.</p>
+
+    <h3>The fresh-literal trap</h3>
+
+    <p>The selector above returns a fresh object on every commit, even when
+    <code>total</code> and <code>count</code> are unchanged. <code>Object.is</code> on
+    two distinct object references is always <code>false</code>, so this component
+    re-renders on every commit even though the displayed values never differ. Use
+    <code>useCauslShallow</code> when the selector returns a fresh object or array
+    literal:</p>
+
+    <pre class="language-typescript"><code class="language-typescript">import { useCauslShallow } from '@causl/react';
+
+const stats = useCauslShallow((g) =&gt; ({
+  total: g.read(sumNode),
+  count: g.read(countNode),
+}));</code></pre>
+
+    <p><code>useCauslShallow</code> swaps the equality predicate for a one-level shallow
+    compare of object keys / array elements. Two structurally equal returns are treated
+    as equal and the component does not re-render.</p>
+
+    <h2 id="family">4. <code>useCauslFamily</code> &mdash; per-key node lifetimes</h2>
+
+    <p>Virtualised lists, dynamic forms, and any "one node per identity" pattern need a
+    way to mint a node when an entity appears and dispose it when the entity leaves the
+    tree. <code>useCauslFamily</code> closes Jotai's <em>atomFamily</em> gap: the first
+    mount of a key invokes a factory; subsequent mounts return the cached handle;
+    refcounting tracks live consumers; the last unmount schedules disposal.</p>
+
+    <pre class="language-typescript"><code class="language-typescript">import { useCausl, useCauslFamily } from '@causl/react';
+
+function Row({ rowId }: { rowId: string }) {
+  const node = useCauslFamily(`row:${rowId}`, (graph, key) =&gt;
+    graph.input(key, defaultRow),
+  );
+  const value = useCausl((g) =&gt; g.read(node));
+  return &lt;tr&gt;&lt;td&gt;{value.title}&lt;/td&gt;&lt;/tr&gt;;
+}</code></pre>
+
+    <p>Three properties make this hook safe in real-world apps:</p>
+
+    <ol>
+      <li><strong>Identity sharing.</strong> Two components rendering
+      <code>Row rowId="42"</code> in the same provider observe the same
+      <code>Node&lt;Row&gt;</code>. The factory runs once.</li>
+      <li><strong>StrictMode-safe disposal.</strong> When the refcount drops to zero,
+      disposal is scheduled on a microtask. If StrictMode's mount&ndash;unmount&ndash;remount
+      cycle re-mounts the key before the microtask fires, the refcount bumps back up and
+      the disposal call is skipped.</li>
+      <li><strong>Per-provider namespace.</strong> The family registry lives on
+      <code>CauslContext</code>, not in a module-global cache. Two providers around the
+      same graph maintain isolated namespaces, so a key collision in one provider does
+      not leak a node into the other.</li>
+    </ol>
+
+    <p>Disposal routes through <code>@causl/core/internal</code>'s <code>dispose</code>
+    rather than a public method on <code>Graph</code>: lifecycle is an adapter concern,
+    not a load-bearing engine primitive, so it stays out of the public package's SemVer
+    surface.</p>
+
+    <h2>5. <code>useCauslSuspense</code> &mdash; Suspense-aware reads</h2>
+
+    <p>For asynchronous resources modelled with <code>@causl/sync</code>'s
+    <code>ResourceState&lt;T&gt;</code>, <code>useCauslSuspense</code> projects the
+    tagged-union state into either a resolved <code>T</code>, a thrown Promise (caught
+    by <code>&lt;Suspense&gt;</code>), or a thrown error (caught by an error boundary):</p>
+
+    <pre class="language-tsx"><code class="language-tsx">import { useCauslSuspense } from '@causl/react';
+import type { ResourceState } from '@causl/sync';
+
+function Profile() {
+  const user = useCauslSuspense&lt;User&gt;((g) =&gt; g.read(userResource));
+  return &lt;h1&gt;{user.name}&lt;/h1&gt;;
+}
+
+function Page() {
+  return (
+    &lt;Suspense fallback={&lt;Spinner /&gt;}&gt;
+      &lt;ErrorBoundary&gt;&lt;Profile /&gt;&lt;/ErrorBoundary&gt;
+    &lt;/Suspense&gt;
+  );
+}</code></pre>
+
+    <p>The state-to-Suspense mapping is:</p>
+
+    <table>
+      <thead><tr><th>State</th><th>Behavior</th></tr></thead>
+      <tbody>
+        <tr><td><code>loaded</code></td><td>Return <code>value</code>.</td></tr>
+        <tr><td><code>stale</code></td><td>Return cached <code>value</code> (do not throw &mdash; you already have something to render).</td></tr>
+        <tr><td><code>loading</code></td><td>Throw the engine-anchored <code>promise</code> on the state. Identity-stable across renders for the same loading episode.</td></tr>
+        <tr><td><code>errored</code></td><td>Throw the original <code>error</code>.</td></tr>
+        <tr><td><code>idle</code></td><td>Throw a Promise that resolves on the next graph commit (identity-stable per graph). Suspends, not errors.</td></tr>
+      </tbody>
+    </table>
+
+    <p>Promise identity is what makes Suspense actually behave: SuspenseList ordering,
+    transition cached-value display, and hydration-warning suppression all key off
+    Promise identity across renders. The <code>loading</code> state carries its own
+    engine-owned Promise; the <code>idle</code> case is cached per-graph in a WeakMap
+    so multiple renders see the same Promise reference until the next commit.</p>
+
+    <h2>6. Persisted inputs and React</h2>
+
+    <p>When you combine <code>@causl/persistence</code> with the React binding, the
+    pattern is: construct the graph at the host level, restore the snapshot
+    <em>before</em> mounting the provider, and let React see a graph that already has
+    its hydrated values. Reads under the provider then see the persisted values from
+    the very first render &mdash; no flash of empty state.</p>
+
+    <pre class="language-jsx"><code class="language-jsx">import { createCausl } from '@causl/core';
+import { createPersistedGraph } from '@causl/persistence';
+import { CauslProvider } from '@causl/react';
+
+const { graph, ready } = createPersistedGraph({
+  graph: createCausl(),
+  storage: localStorageAdapter('app-v1'),
+});
+
+await ready;  // Wait for restore before mounting.
+
+createRoot(document.getElementById('root')!).render(
+  &lt;CauslProvider graph={graph}&gt;&lt;App /&gt;&lt;/CauslProvider&gt;,
+);</code></pre>
+
+    <p>If you cannot await before render (for example, when persistence is best-effort
+    and the app should boot from defaults if storage is slow), wrap the provider's
+    children in <code>&lt;Suspense&gt;</code> and let an <em>idle</em>
+    <code>ResourceState</code> carry the loading semantics through the same hook
+    machinery you use for any other async resource.</p>
+
+    <h2>7. <code>&lt;Hydrate&gt;</code> &mdash; SSR snapshot application</h2>
+
+    <p>For server rendering, capture a <code>GraphSnapshot</code> on the server and
+    apply it on the client before <code>App</code> commits anything of its own. The
+    <code>Hydrate</code> component does this via <code>useLayoutEffect</code> so SSR HTML
+    and the first client paint observe the same hydrated values, while render bodies stay
+    pure.</p>
+
+    <pre class="language-jsx"><code class="language-jsx">// app/page.tsx (Next.js server component)
+const graph = createCausl();
+bootGraphFromDb(graph);
+const snapshot = graph.snapshot();
+
+return (
+  &lt;CauslProvider graph={clientGraph}&gt;
+    &lt;Hydrate snapshot={snapshot}&gt;
+      &lt;App /&gt;
+    &lt;/Hydrate&gt;
+  &lt;/CauslProvider&gt;
+);</code></pre>
+
+    <p><code>Hydrate</code> keys on graph identity, not on snapshot prop identity. A
+    module-scoped <code>WeakMap&lt;Graph, GraphSnapshot&gt;</code> records "applied"
+    pairs; under StrictMode's mount&ndash;cleanup&ndash;remount cycle the second mount
+    finds the pair recorded and short-circuits, so subscribers see exactly one
+    <code>Commit { intent: 'hydrate' }</code> per provider mount. Snapshot-prop churn
+    without a graph swap is a no-op (the engine's <code>hydrate</code> is
+    non-monotonic on <code>now</code>, so re-hydrating on every prop change would drag
+    <code>GraphTime</code> backward).</p>
+
+    <h2>8. StrictMode</h2>
+
+    <p>Every hook in <code>@causl/react</code> is built on
+    <code>useSyncExternalStore</code> and is StrictMode-safe by design. The three places
+    where naïve adapter code typically misbehaves are:</p>
+
+    <ol>
+      <li><strong>Subscription identity.</strong> <code>useCausl</code> memoises its
+      subscribe function on <code>[graph]</code>, so React only re-subscribes when the
+      provider's graph handle itself changes &mdash; not on every render double-invocation.</li>
+      <li><strong>Family disposal.</strong> <code>useCauslFamily</code> defers disposal
+      to a microtask so a StrictMode unmount-then-remount cycle does not destroy and
+      recreate the node; the second mount cancels the pending dispose.</li>
+      <li><strong>Hydration.</strong> <code>&lt;Hydrate&gt;</code> guards on a
+      module-scoped WeakMap of (graph, snapshot) pairs, which survives the StrictMode
+      component-instance teardown a <code>useRef</code> would not.</li>
+    </ol>
+
+    <h2 id="h1-hazard">9. The H1 hazard: <code>useMemo</code> on <code>read()</code> values</h2>
+
+    <p>This is the single most important adopter pitfall in the React binding. Per
+    <strong>SPEC §15.1</strong>, <code>graph.read(node)</code> is <strong>not</strong>
+    contractually required to return the same JavaScript reference across calls. Today's
+    <code>WasmBackend</code> is a TS-engine wrapper, so <code>read()</code> returns
+    identical references trivially &mdash; but the day the real Rust
+    <code>serde</code>/<code>wasmgc</code> bridges land per SPEC §17.6, every
+    <code>read()</code> returns a fresh object as the value crosses the FFI boundary.</p>
+
+    <p>Adopters who key <code>useMemo</code> / <code>React.memo</code> / dependency
+    arrays off the return reference will silently re-compute every commit after
+    <code>migrate('wasm')</code>:</p>
+
+    <pre class="language-jsx"><code class="language-jsx">// WRONG &mdash; reference may change on every commit after WASM migration.
+function Chart() {
+  const data = useCausl((g) =&gt; g.read(seriesNode));
+  const transformed = useMemo(() =&gt; transform(data), [data]);
+  return &lt;Plot data={transformed} /&gt;;
+}</code></pre>
+
+    <p>The fix is to key memoisation on a stable identity that the engine
+    <strong>does</strong> guarantee. SPEC §15.1 amendment names two: the
+    <code>commit.time</code> (a <code>GraphTime</code> exposed on the
+    <code>Commit</code> object) or the per-node version counter that
+    <code>EngineTelemetry</code> surfaces. The version counter is the cheaper option in
+    a tight loop &mdash; it is exposed as the public accessor
+    <code>engine.stats().nodeVersion(node)</code>. Pinning a downstream cache key to that
+    integer gives you a stable memoisation surface that survives the engine's per-read
+    <code>structuredClone</code> boundary, with byte-identical behaviour across the TS
+    engine and the Phase-1 WasmBackend wrapper for the same commit sequence.</p>
+
+    <pre class="language-jsx"><code class="language-jsx">// RIGHT &mdash; key memoisation on the per-node version, not the reference.
+import { useCausl, useCauslNode } from '@causl/react';
+
+function Chart() {
+  const data = useCauslNode(seriesNode);
+  // `engine.stats().nodeVersion(node)` increments by exactly 1 each
+  // commit where the node's value changed (per SPEC §15.1's
+  // `!Object.is` cutoff) and stays unchanged otherwise &mdash; a
+  // no-op write or sibling write does not bump the counter.
+  const version = useCausl((g) =&gt; g.stats().nodeVersion(seriesNode));
+  const transformed = useMemo(() =&gt; transform(data), [version]);
+  return &lt;Plot data={transformed} /&gt;;
+}</code></pre>
+
+    <p>The contractual identity surface is <strong>value identity at a fixed
+    <code>GraphTime</code></strong>: <code>Object.is(read(node)@t, read(node)@t)</code>
+    holds for any two synchronous reads at the same <code>GraphTime</code>.
+    <code>Object.is(read(node)@t, read(node)@t')</code> across two different commit
+    times may or may not hold, depending on backend.</p>
+
+    <blockquote>
+      <strong>Detailed explanation &mdash; why this is a SPEC clarification, not a
+      breaking change.</strong> An external ship-verdict review surfaced the
+      H1 hazard from the WASM adopter audit as the load-bearing pre-Rust-swap
+      risk. Today's TS-engine wrapper produces identical references "by accident";
+      adopters writing against the current behavior have a working component that turns
+      into a perf regression on a future <code>migrate('wasm')</code> call. The
+      amendment makes the always-implied contract explicit &mdash; identity across
+      commits was never promised &mdash; and points adopters at the stable keys
+      (<code>commit.time</code>, per-node version) before the Rust swap lands. The
+      property test <code>read-no-identity-contract.property.test.ts</code> enrolls a
+      <code>BackendEngine</code> wrapper that returns deep-copies on every
+      <code>read()</code>; the engine itself never relies on identity, so internal
+      code is unaffected.
+    </blockquote>
+
+    <h2>10. Recommended selector patterns</h2>
+
+    <p>A small set of patterns covers the vast majority of components.</p>
+
+    <h3>Read one node</h3>
+    <pre class="language-typescript"><code class="language-typescript">const value = useCauslNode(node);</code></pre>
+    <p>Use <code>useCauslNode</code> &mdash; the engine-level dedup is cheaper than
+    any selector dedup, and the API is the smallest possible.</p>
+
+    <h3>Read N nodes into a tuple or object</h3>
+    <pre class="language-typescript"><code class="language-typescript">const { a, b } = useCauslShallow((g) =&gt; ({
+  a: g.read(aNode),
+  b: g.read(bNode),
+}));</code></pre>
+    <p>Use <code>useCauslShallow</code>, never plain <code>useCausl</code>, when the
+    selector returns a fresh literal. Otherwise every commit causes a re-render.</p>
+
+    <h3>Derive a scalar from N nodes</h3>
+    <pre class="language-typescript"><code class="language-typescript">const ratio = useCausl((g) =&gt;
+  g.read(numerator) / Math.max(1, g.read(denominator)),
+);</code></pre>
+    <p>Plain <code>useCausl</code> is correct because <code>Object.is</code> on two
+    equal numbers is <code>true</code>.</p>
+
+    <h3>Read a value that crosses the FFI boundary</h3>
+    <pre class="language-typescript"><code class="language-typescript">const data = useCauslNode(bigArrayNode);
+const version = useCausl((g) =&gt; g.stats().nodeVersion(bigArrayNode));
+const sorted = useMemo(() =&gt; data.slice().sort(), [version]);</code></pre>
+    <p>Key the <code>useMemo</code> on the per-node version, not the value reference.
+    See <a href="#h1-hazard">section 9</a>.</p>
+
+    <h3>Read bulk numeric data</h3>
+    <pre class="language-typescript"><code class="language-typescript">import { useCauslTypedArrayNode } from '@causl/react';
+
+const view = useCauslTypedArrayNode(weightsNode, Float64Array);</code></pre>
+    <p>Returns a typed-array view stable across renders until the next commit. Designed
+    to become zero-copy once the WASM backend lands; falls back to a coerced view of the
+    JS-engine value with the same stability contract, so adopters can program against
+    the final shape today.</p>
+
+    <h2>Where to go next</h2>
+
+    <ul>
+      <li><a href="../statecharts/">The MVU update pattern</a> &mdash; typed
+      messages, <code>defineMsgs</code>, <code>createUpdate</code>, and
+      <code>useDispatch</code>.</li>
+      <li><a href="../async/">Async resources with @causl/sync</a> &mdash;
+      modelling fetches, retries, and races as graph nodes.</li>
+      <li><a href="../persistence/">Persistence and SSR</a> &mdash; storage adapters,
+      snapshot transport, and hydration patterns.</li>
+      <li><a href="../../api/react/">@causl/react API reference</a> &mdash; full TypeDoc.</li>
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>&copy; 2026 Causl contributors &middot; MIT License &middot; State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../../">Home</a>
+        <a href="../../">Documentation</a>
+        <a href="../../../benchmarks/">Benchmarks</a>
+        <a href="../../../playground/">Playground</a>
+        <a href="../../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../../../js/topbar.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
+</body>
+</html>

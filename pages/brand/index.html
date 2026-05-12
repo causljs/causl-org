@@ -8,28 +8,38 @@
   <link rel="icon" href="../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../css/topbar.css" />
   <link rel="stylesheet" href="../../css/site.css" />
+  <link rel="stylesheet" href="../../css/syntax.css" />
   <style>
     /* Brand-page styles inherit the global token system from
-       causl-org/css/site.css — see Causl Brand Specification §8.
-       This stylesheet only overrides page-specific layout. */
+       causl-org/css/site.css — see Causl Brand Specification §8 and
+       the §8.1 contrast-pair token system. Every rule below that
+       writes `background:` also pairs the matching `color:` from the
+       same surface family. The pair tokens (--surface-* / --text-on-*)
+       auto-swap between dark and light themes, so this page reads
+       WCAG-AA in either theme without a separate :root[data-theme]
+       block.
+    */
 
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
+
+    /* Body — paired with --surface-base. */
     body {
       margin: 0;
       font-family: var(--sans);
-      color: var(--mist);
+      color: var(--text-on-base);
       background:
         radial-gradient(circle at 18% 8%, rgba(39,211,195,.16), transparent 32rem),
         radial-gradient(circle at 86% 18%, rgba(79,124,255,.14), transparent 30rem),
-        linear-gradient(180deg, var(--obsidian), var(--obsidian-2) 55%, #050812);
+        linear-gradient(180deg, var(--surface-base), var(--surface-overlay) 55%, var(--surface-base));
       line-height: 1.55;
     }
 
-    a { color: var(--causal-cyan); text-decoration: none; }
+    a { color: var(--surface-emphasis); text-decoration: none; }
     a:hover { text-decoration: underline; }
-    p { margin: 0 0 1rem; color: rgba(232,238,247,.86); }
-    h1, h2, h3 { margin: 0; letter-spacing: -.035em; line-height: 1.05; }
+    /* Paragraph text on --surface-base — pair with text-on-base-muted. */
+    p { margin: 0 0 1rem; color: var(--text-on-base-muted); }
+    h1, h2, h3 { margin: 0; letter-spacing: -.035em; line-height: 1.05; color: var(--text-on-base); }
     h1 { font-size: clamp(3.6rem, 11vw, 9.5rem); font-weight: 800; }
     h2 { font-size: clamp(2rem, 4vw, 4rem); font-weight: 760; }
     h3 { font-size: 1.25rem; font-weight: 740; letter-spacing: -.02em; }
@@ -46,7 +56,8 @@
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       background: rgba(11,16,32,.72);
-      border-bottom: 1px solid rgba(169,181,201,.12);
+      border-bottom: 1px solid var(--border-on-overlay);
+      color: var(--text-on-overlay);
     }
     .nav-inner {
       width: min(1180px, calc(100% - 40px));
@@ -57,16 +68,21 @@
       min-height: 72px;
       gap: 24px;
     }
-    .mini-lockup { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.03em; font-size: 1.25rem; }
+    .mini-lockup { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.03em; font-size: 1.25rem; color: var(--text-on-elevated); }
     .mini-mark { width: 34px; height: 39px; display: grid; place-items: center; }
     .mini-mark svg, .mini-mark img { width: 100%; height: 100%; display: block; }
-    .nav-links { display: flex; gap: 18px; flex-wrap: wrap; font-size: .9rem; color: var(--fog); }
-    .nav-links a { color: rgba(232, 238, 247, 0.86); }
+    .nav-links { display: flex; gap: 18px; flex-wrap: wrap; font-size: .9rem; color: var(--text-on-overlay-muted); }
+    .nav-links a { color: var(--text-on-overlay-muted); }
 
     .hero { padding: 88px 0 64px; }
     .hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
-    .hero-subtitle { font-size: clamp(1.25rem, 2.2vw, 2rem); color: rgba(232, 238, 247, 0.86); max-width: 760px; margin-top: 16px; }
+    /* Hero subtitle on --surface-base — muted pair. */
+    .hero-subtitle { font-size: clamp(1.25rem, 2.2vw, 2rem); color: var(--text-on-base-muted); max-width: 760px; margin-top: 16px; }
     .hero-actions { display: flex; gap: 14px; margin-top: 30px; flex-wrap: wrap; }
+    /* Brand-page button override — paired with --surface-elevated
+       so it reads on both themes. The shared .button.primary rule
+       in site.css uses --surface-emphasis + --text-on-emphasis;
+       the unsuffixed .button here is the ghost / secondary. */
     .button {
       display: inline-flex;
       align-items: center;
@@ -74,17 +90,24 @@
       min-height: 46px;
       padding: 0 18px;
       border-radius: 999px;
-      border: 1px solid rgba(169,181,201,.18);
-      background: rgba(232,238,247,.06);
-      color: var(--mist);
+      border: 1px solid var(--border-on-elevated);
+      background: var(--surface-elevated);
+      color: var(--text-on-elevated);
       font-weight: 720;
       box-shadow: inset 0 1px rgba(255,255,255,.08);
     }
-    .button.primary { background: linear-gradient(135deg, var(--causal-cyan), var(--signal-blue)); color: #04101A; border: 0; }
+    /* Primary CTA — paired with --surface-emphasis. */
+    .button.primary {
+      background: linear-gradient(135deg, var(--surface-emphasis), var(--surface-emphasis-2));
+      color: var(--text-on-emphasis);
+      border: 0;
+    }
 
+    /* Hero card — paired with --surface-elevated. */
     .hero-card {
-      background: var(--causl-slate);
-      border: 1px solid var(--causl-graphite);
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-on-elevated);
+      color: var(--text-on-elevated);
       border-radius: var(--radius-xl);
       padding: 28px;
       position: relative;
@@ -94,31 +117,40 @@
     .logo-lockup { display: flex; align-items: center; gap: 26px; position: relative; z-index: 2; }
     .mark-large { width: 148px; height: 168px; display: grid; place-items: center; }
     .mark-large svg, .mark-large img { width: 100%; height: 100%; display: block; }
-    .wordmark { font-size: clamp(3.7rem, 9vw, 6.7rem); font-weight: 840; letter-spacing: -.07em; line-height: .9; color: var(--pure-light); }
-    .tagline { margin-top: 14px; font-size: 1.25rem; color: rgba(232, 238, 247, 0.86); letter-spacing: -.015em; }
+    /* Wordmark sits in the --surface-elevated hero-card. */
+    .wordmark { font-size: clamp(3.7rem, 9vw, 6.7rem); font-weight: 840; letter-spacing: -.07em; line-height: .9; color: var(--text-on-elevated); }
+    .tagline { margin-top: 14px; font-size: 1.25rem; color: var(--text-on-elevated-muted); letter-spacing: -.015em; }
 
     .section { padding: 54px 0; }
     .section-head { display: grid; grid-template-columns: .72fr 1.28fr; gap: 42px; align-items: end; margin-bottom: 26px; }
-    .section-kicker { color: var(--causal-cyan); font: 760 .82rem/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; }
-    .lead { font-size: clamp(1.1rem, 1.7vw, 1.4rem); color: rgba(232, 238, 247, 0.86); }
+    .section-kicker { color: var(--surface-emphasis); font: 760 .82rem/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; }
+    .lead { font-size: clamp(1.1rem, 1.7vw, 1.4rem); color: var(--text-on-base-muted); }
 
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
     .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    /* Card — paired with --surface-elevated. */
     .card {
-      border: 1px solid var(--causl-graphite);
+      border: 1px solid var(--border-on-elevated);
       border-radius: var(--radius-lg);
-      background: var(--causl-slate);
+      background: var(--surface-elevated);
+      color: var(--text-on-elevated);
       padding: 24px;
     }
-    .card h3 { margin-bottom: 10px; }
-    .card p { color: rgba(232, 238, 247, 0.86); }
-    .mono-label { font-family: var(--mono); font-size: .78rem; color: var(--fog); text-transform: uppercase; letter-spacing: .08em; }
+    .card h3 { margin-bottom: 10px; color: var(--text-on-elevated); }
+    .card p { color: var(--text-on-elevated-muted); }
+    /* mono-label sits on whatever surface its ancestor pairs.
+       The element is used inside .card (elevated) and in the
+       footer-card; both pair their text the same way. We use the
+       elevated-subtle variant which has ≥ 4.5:1 against both. */
+    .mono-label { font-family: var(--mono); font-size: .78rem; color: var(--text-on-elevated-subtle); text-transform: uppercase; letter-spacing: .08em; }
 
+    /* Story card — paired with --surface-elevated. */
     .story-card {
       border-radius: var(--radius-xl);
       padding: 38px;
-      background: var(--causl-slate);
-      border: 1px solid var(--causl-graphite);
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-on-elevated);
+      color: var(--text-on-elevated);
       position: relative;
       overflow: hidden;
     }
@@ -127,71 +159,87 @@
       position: absolute;
       right: 28px;
       bottom: 20px;
-      color: rgba(169,181,201,.13);
+      color: var(--text-on-elevated-subtle);
+      opacity: 0.3;
       font: 800 clamp(1.2rem, 3vw, 3rem)/1 var(--mono);
       letter-spacing: -.08em;
       white-space: nowrap;
     }
-    .story-card p { max-width: 820px; font-size: 1.12rem; position: relative; z-index: 2; }
+    .story-card p { max-width: 820px; font-size: 1.12rem; position: relative; z-index: 2; color: var(--text-on-elevated); }
 
     .palette { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
-    .swatch { overflow: hidden; border-radius: 18px; border: 1px solid rgba(169,181,201,.14); background: rgba(26,34,56,.7); }
+    /* Swatch — paired with --surface-elevated. */
+    .swatch { overflow: hidden; border-radius: 18px; border: 1px solid var(--border-on-elevated); background: var(--surface-elevated); color: var(--text-on-elevated); }
     .swatch-chip { height: 96px; }
     .swatch-body { padding: 14px; }
-    .swatch-name { font-weight: 800; letter-spacing: -.02em; }
-    .swatch-hex { font-family: var(--mono); color: var(--fog); font-size: .84rem; margin-top: 2px; }
-    .usage { margin-top: 6px; color: rgba(232, 238, 247, 0.86); font-size: .86rem; }
+    .swatch-name { font-weight: 800; letter-spacing: -.02em; color: var(--text-on-elevated); }
+    .swatch-hex { font-family: var(--mono); color: var(--text-on-elevated-subtle); font-size: .84rem; margin-top: 2px; }
+    .usage { margin-top: 6px; color: var(--text-on-elevated-muted); font-size: .86rem; }
 
+    /* Diagram — paired with --surface-elevated. */
     .diagram {
       min-height: 340px;
       border-radius: var(--radius-xl);
-      border: 1px solid rgba(169,181,201,.14);
+      border: 1px solid var(--border-on-elevated);
       background:
         linear-gradient(rgba(169,181,201,.08) 1px, transparent 1px),
         linear-gradient(90deg, rgba(169,181,201,.08) 1px, transparent 1px),
         linear-gradient(180deg, rgba(26,34,56,.7), rgba(8,12,24,.8));
       background-size: 48px 48px, 48px 48px, auto;
+      color: var(--text-on-elevated);
       position: relative;
       overflow: hidden;
       padding: 32px;
     }
-    .node { position: absolute; width: 18px; height: 18px; border-radius: 999px; background: var(--causal-cyan); }
-    .node.red { background: var(--conflict-coral); }
-    .node.amber { background: var(--commit-amber); }
+    .node { position: absolute; width: 18px; height: 18px; border-radius: 999px; background: var(--surface-emphasis); }
+    .node.red { background: var(--surface-danger); }
+    .node.amber { background: var(--surface-warning); }
     .edge { position: absolute; height: 3px; background: linear-gradient(90deg, rgba(39,211,195,.18), rgba(39,211,195,.95)); transform-origin: left center; border-radius: 999px; }
-    .caption-pill { position: absolute; padding: 9px 12px; border-radius: 999px; background: rgba(11,16,32,.86); border: 1px solid rgba(169,181,201,.14); color: rgba(232, 238, 247, 0.86); font: 700 .78rem/1 var(--mono); }
+    /* Caption pill — paired with --surface-overlay. */
+    .caption-pill { position: absolute; padding: 9px 12px; border-radius: 999px; background: var(--surface-overlay); border: 1px solid var(--border-on-overlay); color: var(--text-on-overlay-muted); font: 700 .78rem/1 var(--mono); }
 
     .logo-system { display: grid; grid-template-columns: .8fr 1.2fr; gap: 18px; align-items: stretch; }
-    .logo-tile { display: grid; place-items: center; min-height: 320px; border-radius: var(--radius-xl); border: 1px solid rgba(169,181,201,.14); background: #0B1020; overflow: hidden; }
-    .logo-tile.light { background: var(--pure-light); color: var(--obsidian); }
+    /* Logo tile is intentionally a dark plate — paired with overlay surface. */
+    .logo-tile { display: grid; place-items: center; min-height: 320px; border-radius: var(--radius-xl); border: 1px solid var(--border-on-overlay); background: #0B1020; color: #D7E6EA; overflow: hidden; }
+    /* Light-variant logo tile — paired with white-on-overlay (light surface, dark text). */
+    .logo-tile.light { background: #FFFFFF; color: #070A0F; }
     .logo-mark-preview { width: 46%; max-width: 220px; min-width: 130px; }
     .logo-mark-preview svg { width: 100%; height: auto; }
     .spec-list { display: grid; gap: 12px; }
-    .spec-item { display: flex; gap: 14px; padding: 14px; border-radius: 16px; background: rgba(232,238,247,.04); border: 1px solid rgba(169,181,201,.1); }
-    .spec-dot { flex: 0 0 10px; width: 10px; height: 10px; margin-top: 7px; border-radius: 999px; background: var(--causal-cyan); }
+    /* spec-item inherits the .card pair (elevated). */
+    .spec-item { display: flex; gap: 14px; padding: 14px; border-radius: 16px; background: rgba(232,238,247,.04); border: 1px solid var(--border-on-elevated); color: var(--text-on-elevated); }
+    .spec-dot { flex: 0 0 10px; width: 10px; height: 10px; margin-top: 7px; border-radius: 999px; background: var(--surface-emphasis); }
 
-    .type-sample { padding: 32px; border-radius: var(--radius-xl); background: var(--pure-light); color: var(--obsidian); }
-    .type-sample h3 { color: var(--obsidian); font-size: clamp(2.1rem, 5vw, 5rem); }
-    .type-sample p { color: #36405A; max-width: 720px; }
-    .code-block { background: rgba(7,11,22,.85); color: var(--mist); border: 1px solid rgba(169,181,201,.16); border-radius: var(--radius-lg); padding: 20px; overflow-x: auto; font-size: .92rem; }
-    .code-block .cyan { color: var(--causal-cyan); }
+    /* Type sample — paired with white background + obsidian text on purpose
+       (showcase of light-on-light combinations in the spec). */
+    .type-sample { padding: 32px; border-radius: var(--radius-xl); background: #FFFFFF; color: #070A0F; }
+    .type-sample h3 { color: #070A0F; font-size: clamp(2.1rem, 5vw, 5rem); }
+    .type-sample p { color: var(--text-on-base-subtle); max-width: 720px; }
+    /* Code block — paired with --surface-overlay (always a dark code surface). */
+    .code-block { background: rgba(7,11,22,.85); color: #D7E6EA; border: 1px solid var(--border-on-overlay); border-radius: var(--radius-lg); padding: 20px; overflow-x: auto; font-size: .92rem; }
+    .code-block .cyan { color: #11D9FF; }
     .code-block .blue { color: #91A9FF; }
-    .code-block .amber { color: var(--commit-amber); }
+    .code-block .amber { color: #FFB020; }
 
-    .quote { font-size: clamp(1.5rem, 3.2vw, 3rem); line-height: 1.1; font-weight: 780; letter-spacing: -.045em; color: var(--pure-light); }
-    .quote span { color: var(--causal-cyan); }
+    /* Quote sits on --surface-base — pair with text-on-base. */
+    .quote { font-size: clamp(1.5rem, 3.2vw, 3rem); line-height: 1.1; font-weight: 780; letter-spacing: -.045em; color: var(--text-on-base); }
+    .quote span { color: var(--surface-emphasis); }
 
-    .image-reference { margin-top: 18px; border-radius: var(--radius-xl); overflow: hidden; border: 1px solid rgba(169,181,201,.14); background: rgba(26,34,56,.4); }
+    .image-reference { margin-top: 18px; border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border-on-elevated); background: var(--surface-elevated); }
     .image-reference img { display: block; width: 100%; height: auto; }
 
     .dos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
-    .do { border-top: 4px solid var(--success-mint); }
-    .dont { border-top: 4px solid var(--conflict-coral); }
-    ul { margin: 12px 0 0 1.1rem; padding: 0; color: rgba(232, 238, 247, 0.86); }
+    .do { border-top: 4px solid var(--surface-success); }
+    .dont { border-top: 4px solid var(--surface-danger); }
+    /* ul/li sit inside .card (elevated). */
+    ul { margin: 12px 0 0 1.1rem; padding: 0; color: var(--text-on-elevated-muted); }
     li { margin: 8px 0; }
 
-    .footer { padding: 56px 0 80px; color: rgba(232, 238, 247, 0.86); }
-    .footer-card { border-radius: var(--radius-xl); padding: 28px; border: 1px solid rgba(169,181,201,.14); background: rgba(26,34,56,.5); display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+    /* Footer area on --surface-base. */
+    .footer { padding: 56px 0 80px; color: var(--text-on-base-muted); }
+    /* Footer card — paired with --surface-elevated. */
+    .footer-card { border-radius: var(--radius-xl); padding: 28px; border: 1px solid var(--border-on-elevated); background: var(--surface-elevated); color: var(--text-on-elevated); display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+    .footer-card p { color: var(--text-on-elevated-muted); }
 
     @media (max-width: 920px) {
       .hero-grid, .section-head, .logo-system, .grid-2 { grid-template-columns: 1fr; }
@@ -247,7 +295,6 @@
         <a href="../benchmarks/">Benchmarks</a>
         <a href="../playground/">Playground</a>
         <a href="../spreadsheet/">Spreadsheet</a>
-        <a href="./" class="is-current" aria-current="page">Brand</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
         <hr class="menu-divider" />
         <button id="themeToggle" type="button"
@@ -299,9 +346,11 @@
         <p><strong>Causl</strong> is named for causality: the relationship between what changed, what depends on it, and what the system is now allowed to show. The brand should feel precise because the product is built around precision: canonical facts change inside transactions; dependent values recompute deterministically; observers see coherent snapshots; stale async results are rejected by version; and conflicts become visible records instead of hidden side effects.</p>
         <p>The visual language is a directed graph becoming legible. The logo’s open C is not a decorative circle. It is a causal path: nodes, propagation, and one highlighted commit/conflict point. The system starts complex, then resolves to a trustworthy state.</p>
       </div>
-      <blockquote style="margin: 2rem 0 0; padding: 1.5rem 1.8rem; border-left: 3px solid var(--causl-cyan); background: rgba(17, 217, 255, 0.06); border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: 1.18rem; line-height: 1.55; color: var(--causl-mist); font-style: italic;">
-        <p style="margin: 0;">When application state turns into a rat's nest, Causl goes in. It follows every dependency, blocks stale writes, records conflicts, and commits only consistent snapshots.</p>
-        <footer style="margin-top: 0.7rem; font-family: var(--mono); font-style: normal; font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--causl-cyan); opacity: 0.92;">— Brand Narrative, Causl Brand Specification §2</footer>
+      <!-- Blockquote sits on --surface-base; tinted cyan accent background
+           plus --text-on-base preserves the pair. -->
+      <blockquote style="margin: 2rem 0 0; padding: 1.5rem 1.8rem; border-left: 3px solid var(--border-emphasis); background: rgba(17, 217, 255, 0.06); border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: 1.18rem; line-height: 1.55; color: var(--text-on-base); font-style: italic;">
+        <p style="margin: 0; color: var(--text-on-base);">When application state turns into a rat's nest, Causl goes in. It follows every dependency, blocks stale writes, records conflicts, and commits only consistent snapshots.</p>
+        <footer style="margin-top: 0.7rem; font-family: var(--mono); font-style: normal; font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--surface-emphasis); opacity: 0.92;">— Brand Narrative, Causl Brand Specification §2</footer>
       </blockquote>
     </section>
 
@@ -509,5 +558,16 @@ graph.commit(<span class="amber">'update-rate'</span>, tx =&gt; {
     </div>
   </footer>
   <script src="../../js/topbar.js" defer></script>
+  <script src="../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../vendor/prismjs/prism-json.min.js" defer></script>
 </body>
 </html>

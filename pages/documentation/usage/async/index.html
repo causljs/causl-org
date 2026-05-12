@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Async Operations and Sync — Causl</title>
+  <meta name="description" content="Modelling async resource lifecycles, conflict registries, and the staleness guard with @causl/sync. Covers the loading/loaded/stale/errored state machine, Promise identity stability, race rows S-1 and S-2, and the whyUpdated decoders." />
+  <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../../css/site.css" />
+  <link rel="stylesheet" href="../../../../css/syntax.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: var(--text-on-base-muted); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: var(--text-on-base-muted); }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../../" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation"><span lang="en-fonipa">/ˈkɔː.zəl/</span> — like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/">Tutorial</a>
+        <a href="/pages/documentation/usage/" class="is-current" aria-current="page">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <h1>Async Operations and Sync</h1>
+    <p>
+      The Causl engine is deliberately synchronous: time only advances through
+      <code>graph.commit()</code>, and outside a commit the graph is read-only. That
+      property is what makes Phase A&ndash;H deterministic and what lets the static
+      checker prove things about recompute order. But real applications fetch data,
+      and a fetch is the prototypical thing the engine cannot directly express &mdash;
+      it spans wall-clock time, can interleave with other commits, and can fail.
+    </p>
+    <p>
+      <code>@causl/sync</code> is the adapter package that bridges that gap. It
+      models an async fetch as an external <em>Event</em> source whose lifecycle
+      is observed by an <code>InputNode</code>, and surfaces the result as a
+      tagged discriminated union the type system can narrow over. The engine stays
+      synchronous; the package translates loader callbacks into commits.
+    </p>
+    <p>
+      This page covers what you need to use it correctly: the resource lifecycle
+      state machine, the staleness guard, Promise identity for Suspense, the
+      conflict registry, the two adapter race rows the property suite guards, and
+      the <code>whyUpdated</code> / <code>whyNotUpdated</code> decoders.
+    </p>
+
+    <h2>Why async needs its own primitive</h2>
+    <p>
+      You could write <code>graph.set(node, await fetch(...))</code> from inside a
+      handler and call it a day. The reason not to is that the world can move
+      between the moment the fetch starts and the moment it resolves &mdash; a
+      second fetch can fire, an input that the loader depended on can be edited,
+      the resource can be disposed. Without a structured lifecycle, each of those
+      cases turns into an ad-hoc bug at the call site.
+    </p>
+    <p>
+      <code>@causl/sync</code> names the relevant states explicitly, attaches the
+      originating <code>GraphTime</code> to each fetch, and routes the &ldquo;late
+      resolve&rdquo; case to a distinct <code>stale</code> tag rather than
+      silently overwriting newer data. That moves the entire family of fetch races
+      from runtime surprises to compile-time tag checks.
+    </p>
+
+    <h2>The resource lifecycle</h2>
+    <p>
+      A resource is registered with <code>resource(graph, key, options)</code>. It
+      allocates an <code>InputNode&lt;ResourceState&lt;T&gt;&gt;</code> initialised
+      to <code>{ state: 'idle' }</code> and returns a handle that drives transitions
+      through one-shot commits.
+    </p>
+<pre class="language-typescript"><code class="language-typescript">import { createCausl } from '@causl/core';
+import { resource } from '@causl/sync';
+
+const graph = createCausl();
+const items = resource&lt;Item[]&gt;(graph, 'items', {
+  loader: async () =&gt; fetch('/api/items').then((r) =&gt; r.json()),
+});
+
+const data = await items.fetch();
+const snapshot = graph.read(items.node);
+// snapshot.state is one of: 'idle' | 'loading' | 'loaded' | 'stale' | 'errored'
+</code></pre>
+    <p>
+      The five state tags correspond to the ResourceFleet sub-statechart inside
+      Causl's composite lifecycle (SPEC.async &sect;6). Every transition lands
+      as exactly one engine commit, so each fetch advances <code>GraphTime</code>
+      by a known number of ticks: one for <code>loading</code>, one for the
+      resolution (<code>loaded</code> or <code>stale</code>) or rejection
+      (<code>errored</code>).
+    </p>
+
+    <h3>1. Reading state &mdash; narrow before you touch <code>.value</code></h3>
+    <p>
+      <code>ResourceState&lt;T&gt;</code> is a discriminated union, not an object
+      with optional fields. Reading <code>.value</code> requires narrowing on
+      <code>.state</code> first &mdash; the type system rejects code that tries
+      to read the value before the loader resolved.
+    </p>
+<pre class="language-typescript"><code class="language-typescript">const s = graph.read(items.node);
+switch (s.state) {
+  case 'idle':
+    return ui.placeholder();
+  case 'loading':
+    return ui.spinner(s.promise);     // s.promise typed only on this arm
+  case 'loaded':
+    return ui.list(s.value);          // s.value typed only on this arm
+  case 'stale':
+    return ui.list(s.value, { dim: true });
+  case 'errored':
+    return ui.error(s.error);
+}
+</code></pre>
+    <blockquote>
+      <strong>Detailed explanation: why tags instead of optional fields.</strong>
+      Every &ldquo;X may or may not have Y&rdquo; field is a state machine in
+      disguise. <code>ResourceState</code> surfaces the machine as the type so
+      <code>tsc</code> catches the &ldquo;read value before loaded&rdquo; bug
+      before it ships. The same principle drives the <code>Conflict&lt;T&gt;</code>
+      shape further down this page.
+    </blockquote>
+
+    <h3>2. The transitions and their commits</h3>
+    <p>
+      Each handle method produces exactly one transition per outcome. The intent
+      label on the commit is set per chart edge so the <code>whyUpdated</code>
+      decoder can name the reason later without consulting <code>prev</code>
+      and <code>next</code>:
+    </p>
+    <table>
+      <thead><tr><th>Edge</th><th>Trigger</th><th>Intent label</th></tr></thead>
+      <tbody>
+        <tr><td>Idle &rarr; Loading</td><td><code>fetch()</code></td><td><code>fetch:&lt;key&gt;:start</code></td></tr>
+        <tr><td>Loading &rarr; Loaded</td><td>loader resolves, no drift</td><td><code>fetch:&lt;key&gt;:loaded</code></td></tr>
+        <tr><td>Loading &rarr; Stale</td><td>loader resolves, drift detected</td><td><code>fetch:&lt;key&gt;:stale</code></td></tr>
+        <tr><td>Loading &rarr; Errored</td><td>loader rejects</td><td><code>fetch:&lt;key&gt;:error</code></td></tr>
+        <tr><td>Loaded &rarr; Stale</td><td><code>invalidate()</code></td><td><code>invalidate:&lt;key&gt;</code></td></tr>
+        <tr><td>Loading | Loaded &rarr; Errored</td><td><code>fail(error)</code></td><td><code>fail:&lt;key&gt;</code></td></tr>
+      </tbody>
+    </table>
+    <p>
+      Transitions <em>not</em> in this table are not in the chart. Calling
+      <code>fail()</code> from <code>idle</code>, <code>stale</code>, or
+      <code>errored</code> throws <code>ForbiddenResourceTransitionError</code>
+      rather than silently writing the <code>errored</code> tag. Calling
+      <code>invalidate()</code> outside of <code>loaded</code> is a chart-named
+      no-op &mdash; the reducer returns the input state unchanged and the
+      adapter skips the commit, so <code>GraphTime</code> does not advance.
+    </p>
+
+    <h3>3. The staleness guard</h3>
+    <p>
+      The classic async-resource bug is the stale-async race: <code>fetchA</code>
+      starts, <code>fetchB</code> starts later, <code>fetchA</code> resolves last
+      &mdash; and overwrites the fresher data. The engine cannot prevent the race
+      (the loaders run outside its control), but it can make the response
+      <em>defined</em>. When the loader resolves, the adapter compares the
+      <code>GraphTime</code> captured at <code>fetch()</code> start
+      (<code>origin</code>) against <code>graph.now</code>. If anything has
+      committed in the meantime, the transition is Loading &rarr; Stale, not
+      Loading &rarr; Loaded:
+    </p>
+<pre class="language-typescript"><code class="language-typescript">const a = items.fetch();        // origin = T0, state: 'loading'
+graph.commit('unrelated', (tx) =&gt; tx.set(otherInput, 7));
+await a;
+graph.read(items.node);
+// { state: 'stale', value: ..., origin: T0, loadedAt: T2 }
+</code></pre>
+    <p>
+      The same shape covers a fetch that resolved after a later fetch already
+      finished &mdash; the older origin is no longer authoritative. Opt out
+      per-resource for last-writer-wins semantics:
+    </p>
+<pre class="language-typescript"><code class="language-typescript">resource(graph, 'items', { loader, stalenessGuard: false });
+</code></pre>
+    <p>
+      This is <strong>race row S-1</strong> from <code>SPEC.async</code>
+      &sect;9.1.1: stale-async resolution. The witness is at
+      <code>packages/sync/test/properties/race-row-S-1.property.test.ts</code> and
+      runs at least 1000 random
+      <code>(commit | fetch-start | fetch-resolve | fetch-reject)</code>
+      sequences per CI build; failing seeds are committed as regressions.
+    </p>
+
+    <h3>4. Promise identity stability</h3>
+    <p>
+      The <code>loading</code> arm carries the in-flight promise on the state
+      itself:
+      <code>{ state: 'loading', origin, promise }</code>. This is what React's
+      Suspense renderer throws when a component reads a not-yet-loaded resource,
+      and identity matters: a fresh Promise per render breaks
+      <code>SuspenseList</code> and <code>startTransition</code>&apos;s ability
+      to deduplicate awaits.
+    </p>
+    <p>
+      <code>SPEC.async</code> &sect;3.1 Theorem 3 commits to <em>Promise identity
+      stability</em>: every read of the same loading episode returns the same
+      <code>promise</code> reference under <code>Object.is</code>. The witness is
+      <code>theorem-3-promise-identity-stability.test.ts</code>.
+    </p>
+    <blockquote>
+      <strong>Detailed explanation: settle-only-resolve.</strong> The promise the
+      adapter carries on the <code>loading</code> arm is constructed as
+      <code>loaderPromise.then(() =&gt; undefined, () =&gt; undefined)</code>. It
+      always resolves, never rejects, so React throwing it never produces an
+      unhandled-rejection warning. The original loader rejection still drives the
+      resource to <code>errored</code> and re-throws to the caller of
+      <code>fetch()</code>; the next render reads the <code>errored</code> tag and
+      an error boundary catches it. The Suspense-safe promise is a wrapper, not
+      a replacement.
+    </blockquote>
+
+    <h2>The conflict registry</h2>
+    <p>
+      Not every async operation succeeds. When a resource lands in
+      <code>errored</code>, when two writers disagree about the same key, or
+      when an offline sync surfaces a server-side rejection, you need a UI
+      surface to display the conflict and a typed protocol for resolving it.
+    </p>
+    <p>
+      The conflict registry is a <em>derived view</em> over engine primitives.
+      The runtime universe contains only <code>InputNode</code> and
+      <code>DerivedNode</code>; &ldquo;conflict&rdquo; is a role, not a permanent
+      node kind. Two pieces compose:
+    </p>
+    <ol>
+      <li>An application-supplied derived that emits the currently-open conflict set.</li>
+      <li>An <code>Input&lt;ReadonlyMap&lt;...&gt;&gt;</code> mapping conflict id to a resolution record.</li>
+    </ol>
+    <p>
+      The exported registry is itself a derived node that overlays the resolution
+      map onto the open set:
+    </p>
+<pre class="language-typescript"><code class="language-typescript">import { createConflictRegistry, singleConflictWhen } from '@causl/sync';
+
+const conflicts = createConflictRegistry&lt;Item[]&gt;(graph, {
+  id: 'conflicts',
+  compute: singleConflictWhen(
+    items.node,
+    (s) =&gt; s.state === 'errored',
+    () =&gt; ({ id: 'items-errored', target: items.key }),
+  ),
+});
+
+for (const c of conflicts.read(graph)) {
+  switch (c.kind) {
+    case 'open':       ui.show(c.target, c.value); break;
+    case 'resolved':   ui.audit(c.id, c.resolution, c.resolvedAt); break;
+    case 'ignored':    ui.dim(c.id, c.ignoredAt); break;
+    case 'superseded': ui.link(c.id, c.supersededBy, c.supersededAt); break;
+  }
+}
+</code></pre>
+    <p>
+      The discriminator is <code>kind</code> &mdash; the open arm carries
+      <code>value</code> and <code>raisedAt</code>, the resolved arm carries
+      <code>resolution</code> and <code>resolvedAt</code>, and so on. Each
+      variant carries exactly the fields the ConflictRegistry sub-statechart
+      guarantees in that state. The same &ldquo;optional-fields-are-state-
+      machines&rdquo; principle as <code>ResourceState</code>: there is no
+      <code>c.resolution !== undefined</code> runtime check left for callers.
+    </p>
+
+    <h3>Three legal transitions out of Open</h3>
+    <p>
+      The states are <code>Open | Resolved | Ignored | Superseded</code>; the
+      latter three are terminal. The mutators each commit one tick:
+    </p>
+<pre class="language-typescript"><code class="language-typescript">conflicts.resolve(graph, 'items-errored', { choice: 'use-cache' });
+conflicts.ignore(graph, 'items-errored');
+conflicts.supersede(graph, oldId, newId);
+</code></pre>
+    <p>
+      Targeting a non-Open conflict throws
+      <code>ForbiddenConflictTransitionError</code>. Shipping a transition that
+      is not in the chart is the <code>SPEC.md</code> &sect;17.7 anti-pattern
+      this package was written against &mdash; a silent no-op there would let
+      adopters reason inconsistently about the state space.
+    </p>
+
+    <h3>Race row S-2 &mdash; open-set drift mid-resolution</h3>
+    <p>
+      The second adapter race the property suite guards is open-set drift: while
+      a <code>resolve()</code> mutator is running, the application's open-set
+      compute can change (an upstream input edits, a derived recomputes), and
+      the seam between the <code>requireOpen</code> guard and the resolution-Input
+      commit must remain atomic. The witness at
+      <code>packages/sync/test/properties/conflict-registry-drift.property.test.ts</code>
+      fuzzes randomized open-set-source mutations across that seam and asserts
+      the &sect;5 atomicity contract holds: the resolution record stamps the same
+      <code>GraphTime</code> the guard read, and the post-resolve <code>now</code>
+      is exactly one tick past it. The drift seam is closed structurally.
+    </p>
+
+    <h2>Disposal and post-dispose loader resolution</h2>
+    <p>
+      A resource can be disposed (released by the host) while a fetch is in
+      flight. The adapter must not write the resolved value back to a disposed
+      node &mdash; that would resurrect state the host believed gone. The witness
+      at <code>packages/sync/test/spec-async-10-4-disposed-mid-load.test.ts</code>
+      asserts the &sect;10.4 invariant: a loader that resolves after dispose is a
+      no-op against the disposed node, and subsequent reads surface a dispose
+      tombstone rather than the resolved value. The adjacent property test at
+      <code>disposed-mid-load.property.test.ts</code> extends the resource state
+      with a terminal <code>disposed</code> tag in the model and verifies that
+      no event sequence after dispose mutates the state. Note that
+      <code>disposed</code> is engine-level node disposal &mdash; the
+      <code>ResourceState&lt;T&gt;</code> union itself has five arms; disposal
+      lives one level below it.
+    </p>
+
+    <h2>Decoding updates: <code>whyUpdated</code> and <code>whyNotUpdated</code></h2>
+    <p>
+      Subscribers see commits flow past. To classify <em>why</em> a particular
+      commit updated a resource &mdash; for devtools, telemetry, or higher-level
+      sync orchestration &mdash; <code>SPEC.async</code> &sect;11.1 ships two
+      pure decoders.
+    </p>
+
+    <h3><code>whyUpdated(commit, prev, next): ResourceUpdateReason</code></h3>
+    <p>
+      Returns one of seven closed reasons. The decoder reads the commit&apos;s
+      <code>intent</code> label (which the resource adapter set per chart edge)
+      and maps it to the matching tag; <code>prev</code> and <code>next</code>
+      are accepted in the signature so a future schema bump that needs cross-arm
+      disambiguation does not break adopter call sites.
+    </p>
+<pre class="language-typescript"><code class="language-typescript">import { whyUpdated } from '@causl/sync';
+
+graph.subscribe(items.node, (next, prev, commit) =&gt; {
+  const reason = whyUpdated(commit, prev, next);
+  // 'fetch-begin' | 'fetch-resolved' | 'fetch-stale' | 'fetch-rejected'
+  // | 'invalidated' | 'failed' | 'dep-changed'
+  telemetry.record({ key: items.key, reason });
+});
+</code></pre>
+    <p>
+      The runtime tuple <code>RESOURCE_UPDATE_REASONS</code> is the value-level
+      dual: TypeScript erases types at runtime, so a devtools panel that wants
+      to render every possible reason reaches for the frozen tuple rather than
+      reconstructing the enum from string literals.
+    </p>
+
+    <h3><code>whyNotUpdated(prev, next): WhyNotUpdatedReason | null</code></h3>
+    <p>
+      The dual: when a subscriber didn&apos;t see an update, this decoder names
+      why. There are two named reasons; <code>null</code> is returned only when
+      the resource actually <em>did</em> transition (so the &ldquo;why
+      not&rdquo; question has no answer):
+    </p>
+    <ul>
+      <li><code>'object-is-deduped'</code> &mdash; <code>prev</code> and <code>next</code> are <code>Object.is</code>-equal. The engine&apos;s Phase B equality cutoff suppressed the dispatch.</li>
+      <li><code>'no-dep-overlap'</code> &mdash; structurally identical states with different references. The commit&apos;s <code>changedNodes</code> set did not include this resource&apos;s node.</li>
+    </ul>
+<pre class="language-typescript"><code class="language-typescript">import { whyNotUpdated } from '@causl/sync';
+
+const before = graph.read(items.node);
+graph.commit('unrelated', (tx) =&gt; tx.set(otherInput, 7));
+const after = graph.read(items.node);
+
+whyNotUpdated(before, after);
+// 'no-dep-overlap' &mdash; the commit didn't touch items.node
+</code></pre>
+    <p>
+      Both decoders are pure: same inputs produce same outputs, no graph reads,
+      no side effects. They compose with <code>subscribeCommits</code> or
+      <code>commitMetadataDerived</code> at the application layer. A future
+      iteration lifts them into derived nodes via the Phase F.5 seam; this
+      module ships the synchronous helper API first.
+    </p>
+
+    <h2>Bundle budget</h2>
+    <p>
+      <code>@causl/sync</code> ships with per-primitive sub-imports so adopters
+      pay only for what they use. Three CI-gated <code>size-limit</code>
+      ceilings:
+    </p>
+    <table>
+      <thead><tr><th>Import</th><th>Ceiling</th></tr></thead>
+      <tbody>
+        <tr><td><code>@causl/sync</code> (full barrel)</td><td>12 KB</td></tr>
+        <tr><td><code>@causl/sync/resource</code></td><td>8 KB</td></tr>
+        <tr><td><code>@causl/sync/conflict</code></td><td>8 KB</td></tr>
+      </tbody>
+    </table>
+<pre class="language-typescript"><code class="language-typescript">import { resource } from '@causl/sync/resource';
+import { createConflictRegistry } from '@causl/sync/conflict';
+</code></pre>
+    <p>
+      A PR that crosses a ceiling fails the bundle-size gate. The &sect;14.2
+      narrative pins the trade-off: a smaller bundle buys a smaller install
+      footprint; the ceiling rules out unilateral growth.
+    </p>
+
+    <h2>When async/sync is the right tool &mdash; and when it isn&apos;t</h2>
+    <p>
+      <code>@causl/sync</code> is the right fit when you have multiple async
+      resources whose results can interleave, when staleness matters (an old
+      result must not overwrite a new one), and when you want compile-time
+      narrowing instead of optional-field discipline. Pair it with
+      <code>@causl/react</code>&apos;s <code>useCauslNode</code> for Suspense
+      integration and the Promise-identity guarantee buys you stable
+      <code>SuspenseList</code> ordering.
+    </p>
+    <p>
+      It is <em>not</em> a replacement for a fetch library: there is no caching,
+      no deduplication of identical requests across keys, no retry policy. Those
+      live in your loader. <code>@causl/sync</code>&apos;s contribution is the
+      lifecycle and the race-row coverage; the network stays your problem.
+    </p>
+    <p>
+      Next: see the <a href="../../api/">API reference</a> for the full
+      <code>ResourceHandle</code> and <code>ConflictRegistry</code> surfaces,
+      or move on to the persistence guide for snapshotting graphs that contain
+      live resources.
+    </p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>&copy; 2026 Causl contributors &middot; MIT License &middot; State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../../">Home</a>
+        <a href="../../">Documentation</a>
+        <a href="../../../benchmarks/">Benchmarks</a>
+        <a href="../../../playground/">Playground</a>
+        <a href="../../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../../../js/topbar.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
+</body>
+</html>

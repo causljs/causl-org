@@ -1609,3 +1609,142 @@
         }
     }
 }
+
+/* =====================================================================
+ * causl-org pair-token bridge for TypeDoc-generated API pages (#1275)
+ *
+ * The TypeDoc theme uses its own --color-* custom properties. By default,
+ * these are dark-only (no light-mode override that respects causl's theme
+ * key). The block below remaps TypeDoc's color variables onto causl's
+ * pair-token contract (--surface-*, --text-on-*, --causl-*-*) which IS
+ * theme-aware via :root[data-theme="light"] in site.css.
+ *
+ * Because site.css is loaded into the same root (via a <link> injected
+ * into each typedoc HTML page), all these var() refs resolve correctly
+ * in both light and dark modes. A small inline <script> in each page
+ * also syncs causl's 'causl-theme' localStorage key into TypeDoc's
+ * 'tsd-theme' key so the theme selectors agree.
+ * ===================================================================== */
+:root,
+:root.os,
+:root.default,
+:root.dark,
+:root[data-theme="dark"],
+:root[data-theme="os"] {
+    --color-background: var(--surface-base, #070A0F);
+    --color-background-secondary: var(--surface-elevated, #101822);
+    --color-background-warning: var(--causl-conflict-amber, #FFB020);
+    --color-warning-text: var(--causl-conflict-amber, #FFB020);
+    --color-accent: var(--causl-async-cyan, #11D9FF);
+    --color-active-menu-item: var(--surface-emphasis, #11D9FF);
+    --color-text: var(--text-on-base, #D7E6EA);
+    --color-text-aside: var(--text-on-base-muted, rgba(215, 230, 234, 0.86));
+    --color-icon-background: var(--surface-elevated, #101822);
+    --color-icon-text: var(--text-on-elevated, #D7E6EA);
+    --color-comment-tag-text: var(--text-on-base, #D7E6EA);
+    --color-comment-tag: var(--surface-elevated, #101822);
+    --color-link: var(--causl-async-cyan, #11D9FF);
+    --color-focus-outline: var(--causl-async-cyan, #11D9FF);
+    --color-code-background: var(--surface-elevated, #101822);
+    --color-ts-keyword: var(--causl-async-cyan, #11D9FF);
+    --color-ts-project: var(--text-on-base, #D7E6EA);
+    --color-ts-module: var(--causl-async-cyan, #11D9FF);
+    --color-ts-namespace: var(--causl-mutation-violet, #7C4DFF);
+    --color-ts-enum: var(--causl-conflict-amber, #FFB020);
+    --color-ts-enum-member: var(--causl-conflict-amber, #FFB020);
+    --color-ts-variable: var(--causl-commit-green, #A7FF18);
+    --color-ts-function: var(--causl-async-cyan, #11D9FF);
+    --color-ts-class: var(--causl-mutation-violet, #7C4DFF);
+    --color-ts-interface: var(--causl-mutation-violet, #7C4DFF);
+    --color-ts-constructor: var(--causl-mutation-violet, #7C4DFF);
+    --color-ts-property: var(--causl-commit-green, #A7FF18);
+    --color-ts-method: var(--causl-async-cyan, #11D9FF);
+    --color-ts-reference: var(--text-on-base-muted, rgba(215, 230, 234, 0.86));
+    --color-ts-call-signature: var(--causl-async-cyan, #11D9FF);
+    --color-ts-index-signature: var(--causl-mutation-violet, #7C4DFF);
+    --color-ts-constructor-signature: var(--causl-mutation-violet, #7C4DFF);
+    --color-ts-parameter: var(--text-on-base-muted, rgba(215, 230, 234, 0.86));
+    --color-ts-type-parameter: var(--causl-mutation-violet, #7C4DFF);
+    --color-ts-accessor: var(--causl-async-cyan, #11D9FF);
+    --color-ts-get-signature: var(--causl-async-cyan, #11D9FF);
+    --color-ts-set-signature: var(--causl-async-cyan, #11D9FF);
+    --color-ts-type-alias: var(--causl-conflict-amber, #FFB020);
+    --color-document: var(--text-on-base, #D7E6EA);
+    --color-alert-note: var(--causl-async-cyan, #11D9FF);
+    --color-alert-tip: var(--causl-commit-green, #A7FF18);
+    --color-alert-important: var(--causl-mutation-violet, #7C4DFF);
+    --color-alert-warning: var(--causl-conflict-amber, #FFB020);
+    --color-alert-caution: var(--causl-rollback-red, #FF4D5E);
+    --color-scheme: dark;
+}
+
+:root.light,
+:root[data-theme="light"] {
+    --color-background: var(--surface-base, #FFFFFF);
+    --color-background-secondary: var(--surface-elevated, #F4F6F9);
+    --color-background-warning: var(--causl-conflict-amber, #B57500);
+    --color-warning-text: var(--causl-conflict-amber, #B57500);
+    --color-accent: var(--causl-async-cyan, #0B95B0);
+    --color-active-menu-item: var(--causl-async-cyan, #0B95B0);
+    --color-text: var(--text-on-base, rgba(11, 16, 32, 0.92));
+    --color-text-aside: var(--text-on-base-muted, rgba(11, 16, 32, 0.82));
+    --color-icon-background: var(--surface-elevated, #F4F6F9);
+    --color-icon-text: var(--text-on-elevated, rgba(11, 16, 32, 0.92));
+    --color-comment-tag-text: var(--text-on-base, rgba(11, 16, 32, 0.92));
+    --color-comment-tag: var(--surface-elevated, #F4F6F9);
+    --color-link: var(--causl-async-cyan, #0B95B0);
+    --color-focus-outline: var(--causl-async-cyan, #0B95B0);
+    --color-code-background: var(--surface-elevated, #F4F6F9);
+    --color-ts-keyword: var(--causl-async-cyan, #0B95B0);
+    --color-ts-project: var(--text-on-base, rgba(11, 16, 32, 0.92));
+    --color-ts-module: var(--causl-async-cyan, #0B95B0);
+    --color-ts-namespace: var(--causl-mutation-violet, #5E36CC);
+    --color-ts-enum: var(--causl-conflict-amber, #B57500);
+    --color-ts-enum-member: var(--causl-conflict-amber, #B57500);
+    --color-ts-variable: var(--causl-commit-green, #2B8A1F);
+    --color-ts-function: var(--causl-async-cyan, #0B95B0);
+    --color-ts-class: var(--causl-mutation-violet, #5E36CC);
+    --color-ts-interface: var(--causl-mutation-violet, #5E36CC);
+    --color-ts-constructor: var(--causl-mutation-violet, #5E36CC);
+    --color-ts-property: var(--causl-commit-green, #2B8A1F);
+    --color-ts-method: var(--causl-async-cyan, #0B95B0);
+    --color-ts-reference: var(--text-on-base-muted, rgba(11, 16, 32, 0.82));
+    --color-ts-call-signature: var(--causl-async-cyan, #0B95B0);
+    --color-ts-index-signature: var(--causl-mutation-violet, #5E36CC);
+    --color-ts-constructor-signature: var(--causl-mutation-violet, #5E36CC);
+    --color-ts-parameter: var(--text-on-base-muted, rgba(11, 16, 32, 0.82));
+    --color-ts-type-parameter: var(--causl-mutation-violet, #5E36CC);
+    --color-ts-accessor: var(--causl-async-cyan, #0B95B0);
+    --color-ts-get-signature: var(--causl-async-cyan, #0B95B0);
+    --color-ts-set-signature: var(--causl-async-cyan, #0B95B0);
+    --color-ts-type-alias: var(--causl-conflict-amber, #B57500);
+    --color-document: var(--text-on-base, rgba(11, 16, 32, 0.92));
+    --color-alert-note: var(--causl-async-cyan, #0B95B0);
+    --color-alert-tip: var(--causl-commit-green, #2B8A1F);
+    --color-alert-important: var(--causl-mutation-violet, #5E36CC);
+    --color-alert-warning: var(--causl-conflict-amber, #B57500);
+    --color-alert-caution: var(--causl-rollback-red, #C8202F);
+    --color-scheme: light;
+}
+
+/* Honor OS-level preference when TypeDoc's theme is "os" (default).
+ * site.css applies its own prefers-color-scheme handling via
+ * :root[data-theme="light"], but for typedoc-only pages we mirror it. */
+@media (prefers-color-scheme: light) {
+    :root.os,
+    :root.default,
+    :root[data-theme="os"] {
+        --color-background: var(--surface-base, #FFFFFF);
+        --color-background-secondary: var(--surface-elevated, #F4F6F9);
+        --color-text: var(--text-on-base, rgba(11, 16, 32, 0.92));
+        --color-text-aside: var(--text-on-base-muted, rgba(11, 16, 32, 0.82));
+        --color-link: var(--causl-async-cyan, #0B95B0);
+        --color-accent: var(--causl-async-cyan, #0B95B0);
+        --color-active-menu-item: var(--causl-async-cyan, #0B95B0);
+        --color-icon-background: var(--surface-elevated, #F4F6F9);
+        --color-code-background: var(--surface-elevated, #F4F6F9);
+        --color-warning-text: var(--causl-conflict-amber, #B57500);
+        --color-scheme: light;
+    }
+}
+

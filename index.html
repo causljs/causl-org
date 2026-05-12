@@ -8,6 +8,7 @@
   <link rel="icon" href="img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="css/topbar.css" />
   <link rel="stylesheet" href="css/site.css" />
+  <link rel="stylesheet" href="css/syntax.css" />
   <style>
     /* Page-specific rules. */
     .hero {
@@ -28,12 +29,12 @@
 
     .hero p.lede {
       font-size: 1.15rem;
-      color: rgba(232, 238, 247, 0.86);
+      color: var(--text-on-base-muted);
       max-width: 580px;
       margin: 1.2rem 0 1.8rem;
     }
 
-    :root[data-theme="light"] .hero p.lede { color: rgba(11, 16, 32, 0.86); }
+    :root[data-theme="light"] .hero p.lede { color: var(--text-on-base-muted); }
 
     .hero-actions {
       display: flex;
@@ -48,14 +49,14 @@
       gap: 1rem 1.6rem;
       font-family: var(--mono);
       font-size: 0.82rem;
-      color: rgba(232, 238, 247, 0.86);
+      color: var(--text-on-base-muted);
     }
 
-    :root[data-theme="light"] .hero-meta { color: rgba(11, 16, 32, 0.86); }
+    :root[data-theme="light"] .hero-meta { color: var(--text-on-base-muted); }
 
     .hero-meta strong {
       display: block;
-      color: var(--causal-cyan);
+      color: var(--surface-emphasis);
       font-size: 0.72rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -84,7 +85,7 @@
 
     :root[data-theme="light"] .commitment {
       background: #FFFFFF;
-      border-color: rgba(11, 16, 32, 0.86);
+      border-color: var(--text-on-base-muted);
       box-shadow: 0 8px 24px rgba(11, 16, 32, 0.06);
     }
 
@@ -96,7 +97,7 @@
       font-family: var(--mono);
       font-weight: 700;
       font-size: 1rem;
-      color: var(--causal-cyan);
+      color: var(--surface-emphasis);
       letter-spacing: 0.04em;
     }
 
@@ -121,16 +122,16 @@
     .package-row .pkg-name {
       font-family: var(--mono);
       font-size: 0.92rem;
-      color: var(--causal-cyan);
+      color: var(--surface-emphasis);
       font-weight: 700;
     }
 
     .package-row .pkg-desc {
-      color: rgba(232, 238, 247, 0.86);
+      color: var(--text-on-base-muted);
       font-size: 0.95rem;
     }
 
-    :root[data-theme="light"] .package-row .pkg-desc { color: rgba(11, 16, 32, 0.86); }
+    :root[data-theme="light"] .package-row .pkg-desc { color: var(--text-on-base-muted); }
 
     .when-cols {
       display: grid;
@@ -150,10 +151,10 @@
       border-bottom: 1px dashed rgba(169, 181, 201, 0.14);
       position: relative;
       font-size: 0.95rem;
-      color: rgba(232, 238, 247, 0.86);
+      color: var(--text-on-base-muted);
     }
 
-    :root[data-theme="light"] .when-list li { color: rgba(11, 16, 32, 0.86); }
+    :root[data-theme="light"] .when-list li { color: var(--text-on-base-muted); }
 
     .when-list li:last-child { border-bottom: none; }
 
@@ -180,7 +181,12 @@
     .status-card .mono-label { color: var(--success-mint); }
     .status-card.future .mono-label { color: var(--commit-amber); }
 
-    /* CTA strip at the bottom of the homepage. */
+    /* CTA strip at the bottom of the homepage.
+     *
+     * Uses --surface-elevated (theme-aware) as the base, layers a faint
+     * accent tint on top, and provides an explicit light-mode override so
+     * the text remains legible in both themes.
+     */
     .cta-strip {
       margin-top: 3.5rem;
       padding: 2.5rem 2rem;
@@ -188,14 +194,21 @@
       background:
         linear-gradient(135deg, rgba(39, 211, 195, 0.12),
                         rgba(79, 124, 255, 0.12) 70%, transparent),
-        linear-gradient(180deg, rgba(26, 34, 56, 0.78),
-                        rgba(11, 16, 32, 0.86));
+        var(--surface-elevated);
+      color: var(--text-on-elevated);
       border: 1px solid rgba(39, 211, 195, 0.22);
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
       gap: 1.5rem;
+    }
+    :root[data-theme="light"] .cta-strip {
+      background:
+        linear-gradient(135deg, rgba(11, 149, 176, 0.08),
+                        rgba(124, 77, 255, 0.08) 70%, transparent),
+        var(--surface-elevated);
+      border-color: rgba(11, 149, 176, 0.28);
     }
 
     .cta-strip h2 { margin: 0 0 0.25rem; }
@@ -237,7 +250,6 @@
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="/pages/brand/">Brand</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
         <hr class="menu-divider" />
         <button id="themeToggle" type="button"
@@ -685,7 +697,7 @@ graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span
       </table>
     </div>
 
-    <p style="margin-top: 1rem; color: rgba(232, 238, 247, 0.86); font-size: 0.9rem;">
+    <p style="margin-top: 1rem; color: var(--text-on-base-muted); font-size: 0.9rem;">
       Legend:
       <span class="glyph-yes">✓</span> strictly handles ·
       <span class="glyph-partial">~</span> covers in some form ·
@@ -801,10 +813,10 @@ graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span
       </div>
     </div>
 
-    <p style="margin-top: 1.4rem; color: rgba(232, 238, 247, 0.86); font-size: 0.9rem;">
+    <p style="margin-top: 1.4rem; color: var(--text-on-base-muted); font-size: 0.9rem;">
       Two Rust crates ship under <code>tools/</code> as CI gates, not runtimes:
-      <strong style="color: var(--causal-cyan);">causl-check</strong> (static IR linter)
-      and <strong style="color: var(--causal-cyan);">causl-enumerate</strong>
+      <strong style="color: var(--surface-emphasis);">causl-check</strong> (static IR linter)
+      and <strong style="color: var(--surface-emphasis);">causl-enumerate</strong>
       (SPEC §16.4 bounded model checker, with an Apalache differential
       runner against the EPIC-7 TLA+ corpus).
     </p>
@@ -820,8 +832,8 @@ graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span
         <h2>Phases 1–4 ship on <code>main</code>. Pre-1.0.</h2>
       </div>
       <p class="lead">
-        Phase-8 SPEC compliance audit (umbrella #564) closed; the
-        bounded enumerator’s full §16.4.1 type surface is implemented.
+        The Phase-8 SPEC compliance audit is closed; the bounded
+        enumerator’s full §16.4.1 type surface is implemented.
         APIs are stable but not version-locked until 1.0.
       </p>
     </div>
@@ -850,7 +862,7 @@ graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span
       <div class="card status-card">
         <div class="mono-label">Shipped</div>
         <h3>BFS memory ceilings</h3>
-        <p>Configurable via <code>CAUSL_BFS_FRONTIER_CAP</code> / <code>CAUSL_BFS_TRACES_CAP</code> / <code>CAUSL_BFS_RACES_CAP</code> env vars (#646). Conservative defaults stay until adopter empirical data supports retuning.</p>
+        <p>Configurable via <code>CAUSL_BFS_FRONTIER_CAP</code> / <code>CAUSL_BFS_TRACES_CAP</code> / <code>CAUSL_BFS_RACES_CAP</code> env vars. Conservative defaults stay until adopter empirical data supports retuning.</p>
       </div>
       <div class="card status-card">
         <div class="mono-label">Shipped</div>
@@ -940,11 +952,26 @@ graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
-        <a href="/pages/brand/">Brand</a>
       </div>
     </div>
   </footer>
 
   <script src="js/topbar.js" defer></script>
+  <script src="vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="vendor/prismjs/prism-json.min.js" defer></script>
+
+  <!-- Dev-only contrast audit. Opt in via DevTools:
+       `window.__CAUSL_CONTRAST_AUDIT__ = true; location.reload();`
+       or run manually with `window.__causlContrastAudit()`. -->
+  <script src="js/contrast-audit.js" defer></script>
 </body>
 </html>

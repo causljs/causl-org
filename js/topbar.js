@@ -7,17 +7,21 @@
  *   2. Burger drawer toggle (.menu-open on the header).
  *   3. Light/dark theme toggle (now lives inside the drawer).
  *
- * Scroll logic, threshold ranges, and CSS variable names mirror
- * libviprs-org/topbar.js verbatim — the prior causl implementation
- * (--c1/--c2/--c3 with steeper 0–0.075 ranges) jittered when the
- * user scrolled back up slowly near the page top; the libviprs
- * version uses gentler 0–0.06 ranges and a clean stage helper that
- * avoids the snap-back. See #1250 for the visual diff.
+ * Ported verbatim from libviprs-org/topbar.js. The scroll handler
+ * shape, stage thresholds (0→0.02, 0.02→0.04, 0.04→0.06) and CSS
+ * variable names (--p1/--p2/--p3) are kept literally — the bug fixed
+ * in #1248 and #1259 regressed because the local refactor diverged
+ * from the canonical libviprs source. This file is now identical to
+ * libviprs-org/topbar.js except for the localStorage key, which is
+ * scoped to "causl-theme" so the two sites don't fight over the
+ * setting on browsers that share storage across subdomains.
  */
 (function () {
   'use strict';
 
-  // -- theme ---------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Theme toggle
+  // ---------------------------------------------------------------------------
 
   function initTheme() {
     var btn = document.getElementById('themeToggle');
@@ -62,7 +66,9 @@
     }
   }
 
-  // -- burger drawer -------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Burger drawer
+  // ---------------------------------------------------------------------------
 
   function initDrawer() {
     var bar = document.getElementById('topbar');
@@ -82,7 +88,7 @@
       setOpen(!bar.classList.contains('menu-open'));
     });
 
-    // Tap a link → close so navigation feels snappy.
+    // Tap a link → close so the navigation feels snappy.
     Array.prototype.forEach.call(menu.querySelectorAll('a'), function (a) {
       a.addEventListener('click', function () { setOpen(false); });
     });
@@ -102,54 +108,106 @@
     });
   }
 
-  // -- scroll-collapse (home page only) ------------------------------
+  // ---------------------------------------------------------------------------
+  // Scroll-collapse animation (home page only)
+  // ---------------------------------------------------------------------------
 
-  function prefersReducedMotion() {
-    return !!(window.matchMedia
-              && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // ---------------------------------------------------------------------------
+  // Diagnostics flag for #1277 — when true, the hero-collapse update path
+  // logs every scroll/resize event + threshold crossings + ResizeObserver
+  // entries to the console. Verbose by design: the user runs the site,
+  // captures the trace, and pastes back for analysis. Set to false (here
+  // or via `window.__TOPBAR_DEBUG__ = false`) after diagnosis to silence.
+  // Behavior is otherwise unchanged from the canonical libviprs-org port.
+  // ---------------------------------------------------------------------------
+  var DEBUG = true;
+  function log() {
+    var enabled = (typeof window !== 'undefined' && window.__TOPBAR_DEBUG__ !== undefined)
+      ? !!window.__TOPBAR_DEBUG__
+      : DEBUG;
+    if (!enabled) return;
+    try { console.log.apply(console, arguments); } catch (_) { /* ignore */ }
   }
 
   function initHeroCollapse() {
     var bar = document.getElementById('topbar');
-    if (!bar || !bar.classList.contains('is-hero')) return;
-
-    /* prefers-reduced-motion users get the collapsed state
-       statically. CSS pins the variables too; pinning them in JS
-       is belt-and-braces. No scroll listener is registered, so the
-       hero never animates. Per #1259 review T2.9. */
-    if (prefersReducedMotion()) {
-      bar.style.setProperty('--p1', '1');
-      bar.style.setProperty('--p2', '1');
-      bar.style.setProperty('--p3', '1');
-      bar.classList.add('collapsed');
+    if (!bar || !bar.classList.contains('is-hero')) {
+      log('[topbar:diag] init skipped — no is-hero', { hasBar: !!bar, classes: bar && bar.className });
       return;
     }
+    log('[topbar:diag] init', { vh: window.innerHeight, scrollY: window.scrollY, classList: bar.className });
+
+    var lastY = window.scrollY;
+    var lastCollapsed = bar.classList.contains('collapsed');
 
     function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+    function stage(start, end) {
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      var y = window.scrollY || document.documentElement.scrollTop;
+      return clamp01((y - vh * start) / (vh * (end - start)));
+    }
 
     function update() {
       var vh = window.innerHeight || document.documentElement.clientHeight;
       var y = window.scrollY || document.documentElement.scrollTop;
-      var stage = function (start, end) {
-        return clamp01((y - vh * start) / (vh * (end - start)));
-      };
-      bar.style.setProperty('--p1', stage(0, 0.02));
-      bar.style.setProperty('--p2', stage(0.02, 0.04));
+      var direction = y > lastY ? 'down' : (y < lastY ? 'up' : 'stable');
+      var p1 = stage(0, 0.02);
+      var p2 = stage(0.02, 0.04);
       var p3 = stage(0.04, 0.06);
+      bar.style.setProperty('--p1', p1);
+      bar.style.setProperty('--p2', p2);
       bar.style.setProperty('--p3', p3);
-      bar.classList.toggle('collapsed', p3 >= 1);
+      var willCollapse = p3 >= 1;
+      if (willCollapse !== lastCollapsed) {
+        log('[topbar:diag] threshold-cross', {
+          from: lastCollapsed ? 'collapsed' : 'hero',
+          to: willCollapse ? 'collapsed' : 'hero',
+          y: y,
+          p3: p3,
+          direction: direction,
+        });
+      }
+      bar.classList.toggle('collapsed', willCollapse);
+      lastCollapsed = willCollapse;
+      log('[topbar:diag] scroll', {
+        y: y,
+        dy: y - lastY,
+        dir: direction,
+        p1: p1.toFixed(3),
+        p2: p2.toFixed(3),
+        p3: p3.toFixed(3),
+        collapsed: willCollapse,
+      });
+      lastY = y;
     }
 
     window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
+    window.addEventListener('resize', function () {
+      log('[topbar:diag] resize', { newVh: window.innerHeight });
+      update();
+    });
+
+    // Also watch the bar's actual height — if it isn't growing on scroll-up,
+    // this surfaces it (browser layout vs. our CSS-variable contract).
+    if (typeof ResizeObserver !== 'undefined') {
+      var resizeObs = new ResizeObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          var e = entries[i];
+          log('[topbar:diag] bar resized', { height: e.contentRect.height, classes: bar.className });
+        }
+      });
+      resizeObs.observe(bar);
+    }
+
     update();
   }
 
-  // -- bootstrap -----------------------------------------------------
-  // Run *now* if DOM is already parsed; otherwise wait for it. Don't
-  // gate on DOMContentLoaded alone, because <script defer> runs after
-  // parse but before DCL fires, and we want the burger to work the
-  // moment the user can see it.
+  // ---------------------------------------------------------------------------
+  // Init — run *now* if DOM is already parsed; otherwise wait for it. Don't
+  // gate on DOMContentLoaded alone, because <script defer> runs after parse
+  // but before DCL fires, and we want the burger to work the moment the
+  // user can see it.
+  // ---------------------------------------------------------------------------
 
   function start() {
     initTheme();
