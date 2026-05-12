@@ -148,17 +148,17 @@ const name  = graph.input('user:name', 'Ada');
       reads other nodes and returns a value.
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">const doubled = graph.derived('doubled', get =&gt; get(count) * 2);
+    <pre class="language-typescript"><code class="language-typescript">const doubled = graph.derived('doubled', g =&gt; g(count) * 2);
 
 const greeting = graph.derived('greeting',
-  get =&gt; `Hello, ${get(name)}!`);
+  g =&gt; `Hello, ${g(name)}!`);
 
 const summary = graph.derived('summary',
-  get =&gt; `${get(greeting)} You picked ${get(doubled)}.`);
+  g =&gt; `${g(greeting)} You picked ${g(doubled)}.`);
 </code></pre>
 
     <p>
-      The <code>get</code> accessor records a dependency: the engine learns
+      The accessor records a dependency: the engine learns
       <code>doubled</code> depends on <code>count</code>, and <code>summary</code> on both
       <code>greeting</code> and <code>doubled</code>. You never declare dependencies up front; they
       are inferred by execution, so a derivation with an <code>if</code> branch rewires its
@@ -384,7 +384,7 @@ const a    = graph.input('a', 1);
 const b    = graph.input('b', 2);
 
 const branch = graph.derived('branch',
-  get =&gt; get(flag) ? get(a) : get(b));
+  g =&gt; g(flag) ? g(a) : g(b));
 
 // branch depends on { flag, a } right now.
 graph.commit('flip', tx =&gt; tx.set(flag, false));
@@ -454,13 +454,13 @@ const taxRate  = graph.input('taxRate', 0.08);
 
 // Derivations
 const subtotal = graph.derived('subtotal',
-  get =&gt; get(price) * get(quantity));
+  g =&gt; g(price) * g(quantity));
 
 const tax = graph.derived('tax',
-  get =&gt; get(subtotal) * get(taxRate));
+  g =&gt; g(subtotal) * g(taxRate));
 
 const total = graph.derived('total',
-  get =&gt; get(subtotal) + get(tax));
+  g =&gt; g(subtotal) + g(tax));
 
 // Observe
 graph.subscribe(total, (commit, value) =&gt; {

@@ -113,7 +113,7 @@ import { CauslProvider } from '@causl/react'
 
 const graph = createCausl()
 const counter = graph.input('counter', 0)
-const doubled = graph.derived('doubled', (get) => get(counter) * 2)
+const doubled = graph.derived('doubled', g => g(counter) * 2)
 
 export function App() {
   return (
