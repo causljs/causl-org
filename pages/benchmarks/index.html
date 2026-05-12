@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Causl — Benchmarks</title>
+  <meta name="description" content="Live benchmarks dashboard — per-cell history (median + p95) for @causl/core vs Jotai, Redux Toolkit, and MobX across the canonical scenario taxonomy in packages/bench/." />
+
+  <!-- Lighthouse polish (#769):
+       - icon as SVG: scales without raster cost, no separate favicon.ico fetch.
+       - preload the dashboard's data file so fetch() doesn't add a round-trip
+         on the critical path. ./history.json may 404 on the static-site mirror;
+         the dashboard.js falls back to ./history.sample.json gracefully, so
+         we preload the *sample* (the file that always exists) and let the
+         fetch waterfall promote it to ./history.json automatically when CI
+         lands. The 'as=fetch' hint costs nothing if the script never reads it.
+       - dashboard.css and dashboard.js are loaded with `defer` so neither
+         blocks the initial paint of the hero/section. -->
+  <link rel="icon" href="../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="preload" href="./history.sample.json" as="fetch" type="application/json" crossorigin="anonymous" />
+  <link rel="stylesheet" href="../../css/topbar.css" />
+  <link rel="stylesheet" href="../../css/site.css" />
+  <link rel="stylesheet" href="./dashboard.css" />
+  <style>
+    /* Page-specific layout — keeps the dashboard inside the same
+       page/section primitives the rest of causl.org uses. */
+    .hero {
+      padding-top: 2rem;
+      padding-bottom: 1.6rem;
+    }
+
+    .hero h1 { margin-top: 1rem; }
+
+    .hero p.lede {
+      font-size: 1.05rem;
+      color: rgba(232, 238, 247, 0.86);
+      max-width: 720px;
+      margin: 1rem 0 1.4rem;
+    }
+
+    :root[data-theme="light"] .hero p.lede { color: rgba(11, 16, 32, 0.92); }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- ============================================================
+       Topbar — inner page, starts collapsed (no .is-hero).
+       ============================================================ -->
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+
+      <div class="pronunciation"><span lang="en-fonipa">/ˈkɔː.zəl/</span> — like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+
+    <button id="topbarBurger" class="topbar-burger"
+            aria-label="Open navigation menu" aria-expanded="false"
+            aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true"
+         aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/">Tutorial</a>
+        <a href="/pages/documentation/usage/">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/" class="is-current" aria-current="page">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="/pages/brand/">Brand</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+  <!-- ============================================================
+       Hero
+       ============================================================ -->
+  <section class="hero page" aria-labelledby="page-title">
+    <h1 id="page-title">Benchmarks.</h1>
+    <p class="lede">
+      Per-cell history for <code>@causl/core</code> vs Jotai, Redux
+      Toolkit, and MobX across the canonical scenario taxonomy in
+      <code>packages/bench/</code>. Each card shows one
+      (library × scenario × scale) cell — median wall-time as the
+      solid line, p95 as the translucent band, run-by-run, with a
+      regression verdict computed from the latest two runs.
+    </p>
+    <div class="hero-actions">
+      <a class="button primary"
+         href="https://github.com/iasbuilt/causl/tree/main/packages/bench"
+         rel="noopener">View packages/bench</a>
+      <a class="button ghost"
+         href="https://github.com/iasbuilt/causl/issues/707"
+         rel="noopener">Tracking issue #707</a>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Live dashboard
+       ============================================================ -->
+  <section class="page section" id="dashboard" aria-labelledby="dashboard-title">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">Live history</div>
+        <h2 id="dashboard-title">Per-cell median + p95 + verdict.</h2>
+      </div>
+      <p class="lead">
+        The page first tries <code>./history.json</code>; if the
+        nightly publish hasn't landed yet (issue #709) it falls
+        back to <code>./history.sample.json</code>, a checked-in
+        multi-run stub so the dashboard is never empty. The “source”
+        cell in the meta strip below tells you which one is showing.
+      </p>
+    </div>
+
+    <div class="status-callout" role="note" aria-label="Profile artifact status">
+      <strong>Profile artifacts pending CI restoration</strong>
+      <p>
+        Each cell carries a <code>profile</code> link that points at
+        <code>./profiles/latest/&lt;library-scenario-scale&gt;/</code>.
+        Those directories are populated by <a href="https://github.com/iasbuilt/causl/issues/709" rel="noopener">#709</a>'s
+        nightly <code>perf-snapshot</code> workflow, which is
+        currently parked in
+        <code>.github/workflows-disabled/perf-snapshot.yml</code>
+        until GitHub Actions is re-enabled (tracked in
+        <a href="https://github.com/iasbuilt/causl/issues/725" rel="noopener">#725</a>).
+        The links remain useful as discoverable placeholders so the
+        dashboard surface doesn't change shape when CI is restored.
+      </p>
+    </div>
+
+    <details class="status-callout" aria-label="Charting library decision">
+      <summary><strong>Charting library — vanilla SVG (decision log, #769)</strong></summary>
+      <p>
+        Issue <a href="https://github.com/iasbuilt/causl/issues/769" rel="noopener">#769</a>
+        evaluated D3 (~70 KB minified) and Plotly (~3.5 MB minified)
+        as upgrades over the inline-SVG MVP shipped in
+        <a href="https://github.com/iasbuilt/causl/pull/771" rel="noopener">PR #771</a>.
+        We stayed on vanilla SVG and brought the visible upgrades —
+        cubic-Hermite (Catmull-Rom α=0.5) line smoothing, D3-style
+        "nice" axis ticks at 1/2/5 × 10<sup>k</sup>, per-point hover
+        tooltips covering every run — directly into <code>dashboard.js</code>.
+      </p>
+      <p>
+        The trade we declined: a lazy-loaded D3 bundle would have
+        added ~70 KB of parse/compile cost to a page whose only
+        interactive surface is a small per-cell sparkline grid.
+        Lighthouse Performance budgets penalise any third-party JS
+        that touches the main thread post-paint, and Plotly is
+        two orders of magnitude over budget. The visible upgrades
+        the issue wanted were ~80 lines of inline math each, not a
+        framework dependency. The dashboard ships with zero external
+        runtime dependencies; the <code>&lt;noscript&gt;</code> block
+        below points no-JS readers at the raw history JSON.
+      </p>
+    </details>
+
+    <div id="dashboard-root" aria-live="polite" aria-busy="true">
+      <noscript>
+        <p class="dashboard-error">
+          The benchmarks dashboard needs JavaScript to render the
+          per-cell sparklines. The raw JSON is checked in at
+          <code>causl-org/benchmarks/history.sample.json</code>.
+        </p>
+      </noscript>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       What we measure (kept from the previous stub — unchanged
+       prose, useful context for first-time visitors).
+       ============================================================ -->
+  <section class="page section" id="measure" aria-labelledby="measure-title">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">What we measure</div>
+        <h2 id="measure-title">Three axes, picked because they fail in the field.</h2>
+      </div>
+      <p class="lead">
+        Microbenchmarks lie about real workloads, so each axis is
+        anchored to a scenario that already exists as a runnable
+        demo in the repository. No synthetic loops without a
+        corresponding adopter shape.
+      </p>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="mono-label">Cascade latency</div>
+        <h3>Time-to-coherent-state.</h3>
+        <p>
+          Spreadsheet-diamond and linear-chain scenarios from
+          <code>packages/bench/scenarios/</code> commit a single
+          root edit and measure wall-clock time until every
+          dependent has settled to its glitch-free value.
+          Reported as median + p95 across runs, library by library.
+        </p>
+      </div>
+      <div class="card">
+        <div class="mono-label">Bundle size</div>
+        <h3>Full-import @causl/core.</h3>
+        <p>
+          Measured against the SPEC §14.2 budget — the 15–30 KB
+          band with an 18 KB working target — using the same
+          <code>size-limit</code> configuration that already gates
+          every PR. Surfaced via <code>bundle-table.ts</code> and
+          will land on this page in a follow-up.
+        </p>
+      </div>
+      <div class="card">
+        <div class="mono-label">Memory ceiling</div>
+        <h3>Bounded enumerator under load.</h3>
+        <p>
+          The BFS frontier / traces / races caps from #646 are
+          swept across cap settings, plotting
+          <code>states_visited</code> versus wall-clock so adopters
+          can pick a cap without guessing.
+        </p>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <!-- ============================================================
+       Footer
+       ============================================================ -->
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../">Home</a>
+        <a href="../documentation/">Documentation</a>
+        <a href="../benchmarks/">Benchmarks</a>
+        <a href="../playground/">Playground</a>
+        <a href="../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <a href="../brand/">Brand</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../../js/topbar.js" defer></script>
+  <script src="./dashboard.js" defer></script>
+</body>
+</html>

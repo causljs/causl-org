@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Part 2: Building Your First Graph — Causl</title>
+  <meta name="description" content="Hands-on tutorial introducing inputs, deriveds, the commit transaction model, and what makes a causl commit atomic-or-nothing." />
+  <link rel="icon" href="../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../css/site.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: rgba(232, 238, 247, 0.86); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: rgba(11, 16, 32, 0.86); }
+    .docs-content .next-prev { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(169, 181, 201, 0.2); font-size: 0.95rem; }
+    .docs-content .next-prev a { font-family: var(--mono); color: var(--causal-cyan); text-decoration: none; }
+    .docs-content .next-prev a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation"><span lang="en-fonipa">/ˈkɔː.zəl/</span> — like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/" class="is-current" aria-current="page">Tutorial</a>
+        <a href="/pages/documentation/usage/">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="/pages/brand/">Brand</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <h1>Part 2: Building Your First Graph</h1>
+    <p>
+      In <a href="./part-1-intro.html">Part 1</a> we sketched what causl is and why
+      a reactive engine deserves a dedicated transaction model. This page is the
+      first one where we open an editor and write code. By the end you will
+      have a working graph with two writable cells, one computed cell, a
+      committed mutation, and a clear mental model for what a commit actually
+      <em>does</em> when you call it.
+    </p>
+    <p>
+      We will build the example in four numbered steps, then circle back to
+      the question every adopter eventually asks: <em>what does causl
+      guarantee if my callback throws?</em>
+    </p>
+
+    <h2>What you will build</h2>
+    <p>
+      A miniature ledger. Two input cells — <code>balance</code> and
+      <code>interestRate</code> — drive a single derived cell,
+      <code>nextStatement</code>, that projects the balance one period
+      forward. Trivial domain, but it exercises every shape we will need in
+      Parts 3 through 9: input writes, derived recomputation, the commit
+      boundary, and the read-after-commit pattern.
+    </p>
+
+    <h2>1. Create the graph</h2>
+    <p>
+      Every causl application starts with a graph. The graph is the value of
+      record — there is no separate "store" sitting next to it. You construct
+      one by calling <code>createCausl()</code> from <code>@causl/core</code>:
+    </p>
+<pre><code>import { createCausl } from '@causl/core'
+
+const graph = createCausl({ name: 'ledger' })
+</code></pre>
+    <p>
+      The optional <code>name</code> is for devtools and telemetry; it has to
+      match <code>/^[A-Za-z0-9_.:-]{1,256}$/</code> if you supply it. Multiple
+      graphs in the same process are first-class — you can have one graph
+      per workbook, one per tab, one per test. They do not share state and
+      they do not share clocks.
+    </p>
+    <blockquote>
+      <strong>Detailed explanation: why a constructor and not a singleton?</strong>
+      Causl deliberately rejects the global-store pattern Redux popularised.
+      A graph is a handle, not an ambient. Tests construct fresh graphs
+      between cases without any teardown ceremony; long-running tools (the
+      <a href="../../playground/">playground</a>, the
+      <a href="../../spreadsheet/">spreadsheet</a> demo) keep many graphs
+      alive in parallel without aliasing. The cost is one explicit
+      reference — we think it pays for itself the first time you write a
+      parametric test.
+    </blockquote>
+
+    <h2>2. Register input nodes</h2>
+    <p>
+      An <em>input</em> is a writable cell whose value can change across
+      commits. You declare one with <code>graph.input(id, initial)</code>:
+    </p>
+<pre><code>const balance      = graph.input('account:balance', 1000)
+const interestRate = graph.input('account:rate', 0.05)
+</code></pre>
+    <p>
+      The first argument is a stable, graph-unique string identifier from
+      your information-model namespace; the second is the value at
+      <em>GraphTime zero</em>. The id is the name causl prints in
+      <code>explain</code> output, persists in
+      <a href="../../documentation/api/">snapshots</a>, and matches across
+      hot reloads — so resist the urge to embed a counter in it. Use names
+      that survive a refactor: <code>cell:wb1:Sheet1:A1</code>,
+      <code>user:profile:displayName</code>,
+      <code>workflow:onboarding:state</code>.
+    </p>
+    <p>
+      Registering the same id twice throws a
+      <code>DuplicateNodeError</code>. The error is structured — it carries
+      the offending id on the instance — so you can branch on
+      <code>instanceof</code> rather than parse a string. Every causl error
+      follows that pattern; we will lean on it once we get to async work in
+      Part 7.
+    </p>
+
+    <h2>3. Register a derived node</h2>
+    <p>
+      A <em>derived</em> is a read-only cell whose value is a pure function
+      of other cells. You declare one with
+      <code>graph.derived(id, compute)</code>, where <code>compute</code>
+      receives a tracked <code>get</code> accessor:
+    </p>
+<pre><code>const nextStatement = graph.derived(
+  'account:nextStatement',
+  (get) => {
+    const b = get(balance)
+    const r = get(interestRate)
+    return b * (1 + r)
+  },
+)
+</code></pre>
+    <p>
+      Two things happen on this line. First, causl runs your compute once,
+      synchronously, against the current values of <code>balance</code> and
+      <code>interestRate</code> — so the node has a real value the moment it
+      is registered. Second, the calls to <code>get</code> are
+      <em>tracked</em>: causl records that <code>nextStatement</code> depends
+      on <code>balance</code> and <code>interestRate</code>. You do not
+      declare those edges by hand and you do not pass an array of deps.
+    </p>
+    <p>
+      Tracking is dynamic. If <code>compute</code> contains an
+      <code>if</code> branch that reads one input on the true arm and
+      another on the false arm, the dependency set rewires itself on every
+      evaluation. A derivation that once read <code>balance</code> and now
+      reads only <code>interestRate</code> stops listening to
+      <code>balance</code> the moment its next recompute settles — there
+      are no orphan edges. (The bounded model checker in
+      <code>@causl/checker</code> verifies this property with random
+      derivations and random commits, which is why we are comfortable
+      promising it here.)
+    </p>
+
+    <h2>4. Read, then commit, then read again</h2>
+    <p>
+      Outside a commit, the graph is read-only. The way you observe a value
+      is <code>graph.read(node)</code>:
+    </p>
+<pre><code>console.log(graph.read(balance))        // 1000
+console.log(graph.read(nextStatement))  // 1050
+</code></pre>
+    <p>
+      To change anything, you open a transaction with
+      <code>graph.commit(intent, run)</code>:
+    </p>
+<pre><code>const c = graph.commit('apply-rate-bump', (tx) => {
+  tx.set(interestRate, 0.07)
+})
+
+console.log(c.time)                     // 1
+console.log(c.intent)                   // 'apply-rate-bump'
+console.log(c.changedNodes)             // ['account:rate', 'account:nextStatement']
+
+console.log(graph.read(interestRate))   // 0.07
+console.log(graph.read(nextStatement))  // 1070
+</code></pre>
+    <p>
+      That is the entire mutation surface of the engine. There is no
+      <code>graph.set</code>, no <code>graph.update</code>, no
+      <code>node.value = x</code>. The only way bits change is by handing a
+      <code>run</code> callback to <code>commit</code> and letting the
+      pipeline drive the write. The synchronous return value is a frozen
+      <code>Commit</code> record: <code>{ time, intent, originatedAt,
+      changedNodes }</code>. Devtools, async pumps, and conflict trackers
+      all read it from the return value rather than reaching into the
+      commit-history ring buffer.
+    </p>
+    <blockquote>
+      <strong>Anticipated question: where did <code>nextStatement</code> get
+      recomputed?</strong>
+      Inside the commit. Causl walked the dependency graph downstream of
+      every input you wrote, re-ran each affected derivation against the
+      newly-published values, and assembled a single <code>Commit</code>
+      record covering both the input change and the derived change. The
+      observable order is: your <code>run</code> finishes; clocks advance;
+      deriveds settle; the <code>Commit</code> appears. Subscribers see the
+      after-state, never an intermediate one.
+    </blockquote>
+
+    <h2>The commit transaction model</h2>
+    <p>
+      A causl commit is closer to a database transaction than to a Redux
+      action. Concretely, the call <code>graph.commit('apply-rate-bump',
+      …)</code> drives an eight-phase pipeline (named Phase A through Phase
+      H, with dotted sub-phases for seams added later) before returning to
+      your code. The two phases you need to know about right now are:
+    </p>
+    <ul>
+      <li>
+        <strong>Phase A — Validate.</strong> Causl runs your
+        <code>run(tx)</code> callback. Every <code>tx.set</code> call
+        stages a write into a transient map; no live cell has changed yet.
+        A throw escaping <code>run</code> short-circuits the pipeline
+        entirely — nothing in Phases B through H has executed.
+      </li>
+      <li>
+        <strong>Phase B — Prepare.</strong> Staged writes are merged into
+        the live input table, gated by <code>Object.is</code> equality. A
+        write of the previous value is a no-op for the rest of the
+        pipeline, which means <code>changedNodes</code> reports a
+        structurally honest answer.
+      </li>
+    </ul>
+    <p>
+      Phases C through F.6 advance the clock, recompute the affected
+      deriveds, freeze the <code>Commit</code> record, and update the
+      bounded history ring. Phase G then fires per-node subscribers; Phase
+      H fires commit-level subscribers. We will cover both subscriber
+      shapes in <a href="./part-3-subscriptions.html">Part 3</a>; for now,
+      what matters is the order: <strong>writes settle, deriveds settle,
+      the <code>Commit</code> is sealed, then observers fire.</strong>
+    </p>
+    <p>
+      That order is the engine's central contract. It is also why you
+      cannot read a "halfway" graph — there is no point in time at which
+      an input has been written but its downstream derivation has not yet
+      caught up.
+    </p>
+
+    <h2>What makes a commit atomic-or-nothing</h2>
+    <p>
+      The atomicity guarantee causl makes is stronger than the one
+      transactional databases make, because it is <em>structural</em>:
+      there is no public API through which a partial-state could become
+      observable, even by accident. Three properties combine to produce
+      that:
+    </p>
+    <ol>
+      <li>
+        <strong>Single mutation entry-point.</strong>
+        Outside <code>commit</code> the graph is read-only. There is no
+        side-channel that bypasses the pipeline.
+      </li>
+      <li>
+        <strong>Scoped transaction handle.</strong>
+        The <code>tx</code> object lives only for the duration of your
+        <code>run</code> callback. If you smuggle it out — store it in a
+        module variable, attach it to a Promise — calling
+        <code>tx.set</code> afterwards throws
+        <code>StaleTxError</code>. The escape is structurally impossible,
+        not just discouraged.
+      </li>
+      <li>
+        <strong>Rollback on any throw.</strong>
+        If Phase B, the Phase D recompute, or any subsequent envelope
+        phase throws, causl restores byte-identical pre-commit state:
+        input cells revert, every derived the pipeline touched reverts to
+        its previous value via a rollback map, the clock un-increments,
+        and the history ring un-appends. Subscribers <em>never</em> fire
+        on a failed commit, because Phases G and H sit outside the
+        rollback envelope and are unreachable on the failure path.
+      </li>
+    </ol>
+    <p>
+      A worked example makes the contract concrete. Suppose the rate-bump
+      derivation accidentally pushes a value through a buggy validator
+      that throws:
+    </p>
+<pre><code>const guarded = graph.derived('account:guarded', (get) => {
+  const r = get(interestRate)
+  if (r > 0.5) throw new Error('rate out of range')
+  return r * 100
+})
+
+try {
+  graph.commit('try-bad-rate', (tx) => {
+    tx.set(interestRate, 0.9)
+  })
+} catch (e) {
+  console.error('commit failed:', (e as Error).message)
+}
+
+console.log(graph.read(interestRate))   // still 0.07 — Phase B was rolled back
+console.log(graph.read(nextStatement))  // still 1070 — Phase D was rolled back
+</code></pre>
+    <p>
+      No subscriber fired. <code>graph.now</code> did not advance.
+      <code>graph.commitLog</code> has no record of the attempted commit.
+      The catch handler is the only place in your code that learned the
+      mutation was attempted at all. Conal Elliott's framing —
+      "atomicity is just the statement that the next state is a function
+      of the previous state" — is what this guarantee buys you: your
+      derivations remain pure functions of input <em>at the same
+      GraphTime</em>, even across failed transactions.
+    </p>
+    <blockquote>
+      <strong>Honest limits.</strong>
+      Atomicity is for the engine, not for the world. If your
+      <code>run</code> callback also wrote to <code>localStorage</code>,
+      called <code>fetch</code>, or mutated an external object, those
+      effects are <em>not</em> rolled back. Side-effects belong outside
+      the commit (in a <code>subscribeCommits</code> observer that fires
+      in Phase H) or behind the async lifecycle primitives in
+      <a href="../../documentation/api/">@causl/sync</a>. Part 8 of this
+      tutorial walks through both patterns.
+    </blockquote>
+
+    <h2>Multiple writes in one commit</h2>
+    <p>
+      A single <code>commit</code> can stage as many writes as you want.
+      They all land at the same <code>GraphTime</code> — one commit
+      produces exactly one new <em>t</em>, never a fractional moment, and
+      every downstream derivation sees a self-consistent slice of input
+      values:
+    </p>
+<pre><code>graph.commit('apply-month-end', (tx) => {
+  tx.set(balance, graph.read(nextStatement))
+  tx.set(interestRate, 0.06)
+})
+
+console.log(graph.read(balance))         // 1070  (post-rollover)
+console.log(graph.read(interestRate))    // 0.06
+console.log(graph.read(nextStatement))   // 1134.2 (1070 * 1.06)
+</code></pre>
+    <p>
+      Notice the <code>graph.read(nextStatement)</code> inside the
+      callback. Reads are still safe during a commit — they observe the
+      committed values from before the call, plus any writes the same
+      <code>run</code> has already staged via <code>tx.set</code>. This is
+      the canonical way to express "commit a change relative to the
+      current value" without splitting it across two transactions.
+    </p>
+
+    <h2>What we glossed over</h2>
+    <p>
+      Two real features are absent from this page on purpose; we will
+      return to them when they earn their keep.
+    </p>
+    <ul>
+      <li>
+        <strong>Subscribers.</strong>
+        <code>graph.subscribe(node, observer)</code> wakes a callback in
+        Phase G whenever a node's value changes;
+        <code>graph.subscribeCommits(observer)</code> wakes one in Phase H
+        once per commit. Both are covered in
+        <a href="./part-3-subscriptions.html">Part 3</a>.
+      </li>
+      <li>
+        <strong>Dry-run.</strong>
+        <code>graph.simulate(intent, run)</code> answers "what
+        <em>would</em> commit do here?" without advancing the clock or
+        firing observers. It is invaluable for previews and conflict
+        detection. We pick it up in
+        <a href="./part-6-simulate.html">Part 6</a>.
+      </li>
+    </ul>
+
+    <h2>Recap</h2>
+    <p>
+      In this part you wrote a real causl program. You learned that:
+    </p>
+    <ul>
+      <li>
+        <code>createCausl()</code> returns a graph; multiple graphs can
+        coexist without aliasing.
+      </li>
+      <li>
+        <code>graph.input(id, initial)</code> registers a writable cell;
+        <code>graph.derived(id, compute)</code> registers a pure function
+        of other cells with automatically-tracked dependencies.
+      </li>
+      <li>
+        <code>graph.read(node)</code> observes; <code>graph.commit(intent,
+        run)</code> mutates. Outside a commit, the graph is read-only.
+      </li>
+      <li>
+        The commit pipeline runs in eight named phases. Inputs settle,
+        deriveds settle, the <code>Commit</code> record is frozen, then
+        observers fire — never in any other order.
+      </li>
+      <li>
+        Atomicity is structural: a throw anywhere in the envelope
+        restores byte-identical pre-commit state. No subscriber sees a
+        failed commit, ever.
+      </li>
+    </ul>
+    <p>
+      In Part 3 we will hook a <code>subscribe</code> callback up to
+      <code>nextStatement</code> and watch the dispatch run exactly once
+      per actual value change — including the edge case where you write
+      the same value back and nothing fires at all.
+    </p>
+
+    <div class="next-prev">
+      <a href="./part-1-intro.html">← Part 1: Why causl?</a>
+      <a href="./part-3-subscriptions.html">Part 3: Subscribing to changes →</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../../js/topbar.js" defer></script>
+</body>
+</html>
