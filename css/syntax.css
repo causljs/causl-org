@@ -155,9 +155,12 @@ pre[class*="language-"] {
   border-color: var(--causl-commit-green);
 }
 
-/* Copy sits flush bottom-right; Run sits to its left. */
+/* Copy sits flush bottom-right. The legacy .codeblock-run / .codeblock-
+   terminal rules were removed in #1292 — the editable playground is
+   now a separate component (.playground-wrapper) with its own styles
+   in playground.css, so read-only blocks no longer host a Run
+   button or slide-out terminal. */
 .codeblock-copy { right: 0.5rem; }
-.codeblock-run  { right: 2.6rem; }
 
 /* Tooltip: hidden by default, fades in on hover / focus. */
 .codeblock-btn-tooltip {
@@ -183,40 +186,9 @@ pre[class*="language-"] {
   opacity: 1;
 }
 
-/* ---------- Slide-out terminal ---------- */
-
-.codeblock-terminal {
-  margin: 0;
-  padding: 0;
-  max-height: 0;
-  overflow: hidden;
-  background: var(--surface-overlay);
-  color: var(--text-on-overlay, var(--text-on-elevated));
-  font-family: var(--mono);
-  font-size: 0.82rem;
-  line-height: 1.55;
-  border-radius: 0 0 8px 8px;
-  border-left: 3px solid var(--causl-async-cyan);
-  transition: max-height 250ms ease, padding 250ms ease;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.codeblock-terminal.is-open {
-  max-height: 240px;
-  overflow: auto;
-  padding: 0.75rem 1rem;
-  margin-top: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .codeblock-terminal {
-    transition: none;
-  }
-}
-
 /* Hidden iframe — the sandbox is never visible; it only exists to
-   evaluate user code and post messages back. */
+   evaluate user code and post messages back. Shared by the editable
+   .playground-wrapper component (causl-org/js/sandbox-runner.js). */
 iframe.codeblock-sandbox {
   display: none !important;
 }
