@@ -95,9 +95,10 @@
       record — there is no separate "store" sitting next to it. You construct
       one by calling <code>createCausl()</code> from <code>@causl/core</code>:
     </p>
-<pre class="language-typescript"><code class="language-typescript">import { createCausl } from '@causl/core'
+<pre class="language-typescript codeblock is-playground"><code class="language-typescript">import { createCausl } from '@causl/core'
 
 const graph = createCausl({ name: 'ledger' })
+console.log('graph name:', graph.name)
 </code></pre>
     <p>
       The optional <code>name</code> is for devtools and telemetry; it has to
@@ -466,5 +467,6 @@ console.log(graph.read(nextStatement))   // 1134.2 (1070 * 1.06)
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
+  <script src="../../../../js/codeblock-enhance.js" defer></script>
 </body>
 </html>
