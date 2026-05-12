@@ -73,17 +73,41 @@
       hundred kilobytes.
     </p>
 
-<pre class="language-bash"><code class="language-bash">mkdir causl-quick-start &amp;&amp; cd causl-quick-start
+<div class="codeblock-wrapper">
+    <pre class="language-bash has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+    </aside>
+      <code class="language-bash">mkdir causl-quick-start &amp;&amp; cd causl-quick-start
 npm init -y
 npm install @causl/core
 npm install -D typescript tsx @types/node</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Add a minimal <code>tsconfig.json</code> so <code>tsx</code> is
       happy with the ESM exports:
     </p>
 
-<pre class="language-json"><code class="language-json">{
+<div class="codeblock-wrapper">
+    <pre class="language-json has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+    </aside>
+      <code class="language-json">{
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
@@ -93,6 +117,8 @@ npm install -D typescript tsx @types/node</code></pre>
     "skipLibCheck": true
   }
 }</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Then set <code>"type": "module"</code> in
@@ -132,7 +158,14 @@ console.log(`final subtotal: ${graph.read(subtotal).toFixed(2)}`);
 
     <h2><span class="step-pill">Step 3</span> Run it</h2>
 
-<pre class="language-typescript"><code class="language-typescript">npx tsx quick-start.ts</code></pre>
+<div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="language-typescript">npx tsx quick-start.ts</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <div class="output-block">subtotal -&gt; 37.50
 subtotal -&gt; 60.00

@@ -49,11 +49,41 @@ a pure function of its inputs at the same <code>t</code>, so writing a derived t
 disk would be both redundant and a glitch-freedom hazard the moment its
 formula or upstream inputs change. Derived values recompute from inputs
 on rehydration; they are never on-disk-canonical.</p>
-<a id="install" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><pre><code class="bash"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">add</span><span class="hl-1"> </span><span class="hl-3">@causl/persistence</span><span class="hl-1"> </span><span class="hl-3">@causl/core</span>
-</code><button type="button">Copy</button></pre>
+<a id="install" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><div class="codeblock-wrapper">
+    <pre class="has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="bash"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">add</span><span class="hl-1"> </span><span class="hl-3">@causl/persistence</span><span class="hl-1"> </span><span class="hl-3">@causl/core</span>
+</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
-<a id="quick-start" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Quick start<a href="#quick-start" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><pre><code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createCausl</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/core&#39;</span><br/><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">persistedInput</span><span class="hl-1">, </span><span class="hl-5">localStorageAdapter</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/persistence&#39;</span><br/><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()</span><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">columnWidth</span><span class="hl-1"> = </span><span class="hl-0">persistedInput</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-3">&#39;colWidth&#39;</span><span class="hl-1">, </span><span class="hl-7">200</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-5">key:</span><span class="hl-1"> </span><span class="hl-3">&#39;xldatagrid:col-width&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-5">storage:</span><span class="hl-1"> </span><span class="hl-0">localStorageAdapter</span><span class="hl-1">(),</span><br/><span class="hl-1">  </span><span class="hl-5">version:</span><span class="hl-1"> </span><span class="hl-7">1</span><span class="hl-1">,</span><br/><span class="hl-1">})</span>
-</code><button type="button">Copy</button></pre>
+<a id="quick-start" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Quick start<a href="#quick-start" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><div class="codeblock-wrapper">
+    <pre class="has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+    </aside>
+      <code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createCausl</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/core&#39;</span>
+<span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">persistedInput</span><span class="hl-1">, </span><span class="hl-5">localStorageAdapter</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/persistence&#39;</span>
+
+<span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()</span>
+<span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">columnWidth</span><span class="hl-1"> = </span><span class="hl-0">persistedInput</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-3">&#39;colWidth&#39;</span><span class="hl-1">, </span><span class="hl-7">200</span><span class="hl-1">, {</span>
+<span class="hl-1">  </span><span class="hl-5">key:</span><span class="hl-1"> </span><span class="hl-3">&#39;xldatagrid:col-width&#39;</span><span class="hl-1">,</span>
+<span class="hl-1">  </span><span class="hl-5">storage:</span><span class="hl-1"> </span><span class="hl-0">localStorageAdapter</span><span class="hl-1">(),</span>
+<span class="hl-1">  </span><span class="hl-5">version:</span><span class="hl-1"> </span><span class="hl-7">1</span><span class="hl-1">,</span>
+<span class="hl-1">})</span>
+</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
 <a id="boundary" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Boundary<a href="#boundary" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>This package enforces a strict boundary against the information model.
 Multi-user synchronisation, server-authoritative state, and any

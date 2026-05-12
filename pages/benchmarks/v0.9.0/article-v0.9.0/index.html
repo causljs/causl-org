@@ -170,7 +170,14 @@
       The full report was produced in a single command run:
     </p>
 
-    <pre class="language-bash"><code class="language-bash">pnpm --filter @causl/bench run bench:report</code></pre>
+    <div class="codeblock-wrapper">
+    <pre class="language-bash has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="language-bash">pnpm --filter @causl/bench run bench:report</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The runner exercises four libraries &mdash; <a href="https://github.com/iasbuilt/causl" rel="noopener"><code>@causl/core</code></a> (v0.9.0), MobX 6.13, Jotai 2.10, and Redux Toolkit 2.4 &mdash; across 28 canonical scenarios at three scales (100, 1,000, and 10,000 nodes). Each cell is sampled <code>N&nbsp;=&nbsp;15</code> times with a coefficient&#8209;of&#8209;variance acceptance gate of CoV&nbsp;&le;&nbsp;0.10; cells that exceed the gate are re&#8209;sampled and, if still noisy, surfaced in <code>engine-status.md</code> rather than the public table. A quiescent&#8209;machine guard fires <code>--prof</code> on the warm&#8209;up trace and refuses to publish a run if background CPU pressure crossed the noise floor while the bench was live.
@@ -491,12 +498,24 @@
 
     <h2>Reproduce</h2>
 
-    <pre class="language-bash"><code class="language-bash">git clone https://github.com/iasbuilt/causl.git
+    <div class="codeblock-wrapper">
+    <pre class="language-bash has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+    </aside>
+      <code class="language-bash">git clone https://github.com/iasbuilt/causl.git
 cd causl
 pnpm install
 pnpm --filter @causl/core build
 pnpm --filter @causl/bench run bench:report
 open packages/bench/report/SUMMARY.md</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Each cell takes 10&ndash;120&nbsp;s wall on dev hardware; the full <code>bench:report</code> takes &sim;30&nbsp;min on an M2&nbsp;Max in the quiescent&#8209;machine&#8209;guard mode. Cells that fail the CoV gate are surfaced in <code>engine-status.md</code> for manual triage. The long&#8209;run cell is sequential by design &mdash; running it in parallel with the rest creates GC contention that contaminates the heap&#8209;slope measurement.
