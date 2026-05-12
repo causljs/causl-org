@@ -44,7 +44,7 @@
   }
 
   function enhance() {
-    var blocks = document.querySelectorAll('pre code[class*="language-"]');
+    var blocks = document.querySelectorAll('pre > code');
     Array.prototype.forEach.call(blocks, enhanceBlock);
   }
 
