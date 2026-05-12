@@ -49,13 +49,22 @@
   --p2: 1;  /* shrinks logo + brand name */
   --p3: 1;  /* shrinks padding */
 
-  /* Sticky at every scroll position; never switches to fixed. The
-     previous `.collapsed { position: fixed }` flip combined with a
-     `body:has(...)` padding-top reservation to produce the #1289
-     scroll-flicker loop, so both were removed. */
-  position: -webkit-sticky;
-  position: sticky;
+  /* Fixed at the viewport top regardless of scroll position. Taking
+     the bar OUT OF FLOW (vs the previous sticky-in-flow approach) is
+     what eliminates the #1289 scroll-flicker: when the bar's height
+     animated between hero and collapsed states while sitting IN flow,
+     each height change reshuffled the document below by tens of pixels.
+     Browser scroll-anchoring then re-pinned scrollY, pushing the page
+     across the collapse threshold, which retriggered the height
+     animation — an infinite loop visible in the #1277 trace.
+     With position: fixed, height changes affect only the bar itself;
+     document flow is unchanged; scrollY stays put; no loop.
+     body { padding-top: var(--topbar-max-height) } below reserves the
+     fixed-bar's max footprint so content never sits behind it. */
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: var(--topbar-zindex);
   background: var(--surface-overlay);
   color: var(--text-on-overlay);
@@ -82,10 +91,22 @@
    element (long code block, wide table, oversized image) can't
    force the page wider than the viewport on mobile. `clip` is used
    instead of `hidden` because `clip` doesn't create a new scrolling
-   container — `position: sticky` on the topbar still works. */
+   container; the fixed topbar still composites correctly above it. */
 html, body {
   overflow-x: clip;
   max-width: 100%;
+}
+
+/* Reserve the topbar's max footprint so content under the fixed bar
+   never gets hidden. `--topbar-max-height` is measured + written by
+   js/topbar.js at init time (and re-measured on resize); the literal
+   fallback below covers the no-JS path with the rough hero-state height
+   so server-rendered HTML still reads correctly before scripts settle.
+   Inner pages (no .is-hero) measure to the collapsed height (smaller),
+   so the gap below the bar is tight; the homepage measures the full
+   hero stack (taller). */
+body {
+  padding-top: var(--topbar-max-height, 280px);
 }
 
 .topbar.is-hero {
