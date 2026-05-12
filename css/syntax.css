@@ -14,12 +14,10 @@
 
 pre[class*="language-"],
 code[class*="language-"] {
-  background: var(--surface-elevated);
   color: var(--text-on-elevated);
   font-family: var(--mono);
   font-size: 0.875rem;
   line-height: 1.6;
-  border-radius: 8px;
   text-align: left;
   white-space: pre;
   word-spacing: normal;
@@ -35,17 +33,192 @@ code[class*="language-"] {
 }
 
 pre[class*="language-"] {
+  background: var(--surface-elevated);
+  border-radius: 8px;
   padding: 1rem 1.2rem;
   margin: 1rem 0;
   overflow-x: auto;
 }
 
-/* Inline code inside running prose: tighter than a block. */
+/* Inline code inside running prose: just the mono font, no pill.
+   The previous background+padding "pill" treatment was removed for
+   #1280 — inline code now reads as part of the sentence and inherits
+   the surrounding paragraph color via --text-on-elevated. */
 :not(pre) > code[class*="language-"] {
-  padding: 0.15em 0.4em;
-  border-radius: 4px;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
   font-size: 0.92em;
   white-space: normal;
+}
+
+/* =============================================================
+   Code-block enhancements (#1280) — line-number gutter,
+   copy / run buttons, and slide-out terminal. Driven by
+   causl-org/js/codeblock-enhance.js. The script wraps every
+   highlighted <pre> in <div class="codeblock-wrapper"> and
+   injects the gutter / buttons / terminal at runtime.
+   ============================================================= */
+
+.codeblock-wrapper {
+  position: relative;
+  margin: 1rem 0;
+}
+
+/* The wrapper owns the outer margin now; the <pre> inside it should
+   not double-stack. */
+.codeblock-wrapper > pre[class*="language-"] {
+  margin: 0;
+}
+
+/* Two-column layout when a gutter is present. The gutter is a flex
+   item sitting before <code> inside the <pre>. */
+.codeblock-wrapper > pre.has-gutter {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding-left: 0.6rem;
+}
+
+.codeblock-wrapper > pre.has-gutter > code[class*="language-"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
+  overflow-x: auto;
+}
+
+.codeblock-gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0 0.4rem 0 0.1rem;
+  border-right: 1px solid rgba(143, 162, 170, 0.18);
+  color: var(--text-on-elevated-subtle);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  /* Numbers must not appear in copy/paste selections. */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  pointer-events: none;
+  flex: 0 0 auto;
+}
+
+.codeblock-gutter-line {
+  display: block;
+  text-align: right;
+  min-width: 1.4em;
+  /* Match the leading of the highlighted code so numbers line up
+     with their corresponding source line, even across font fallbacks. */
+  line-height: inherit;
+}
+
+/* ---------- Buttons ---------- */
+
+.codeblock-btn {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(215, 230, 234, 0.18);
+  border-radius: 6px;
+  background: rgba(11, 17, 24, 0.55);
+  color: var(--text-on-elevated-muted);
+  cursor: pointer;
+  /* Stack the SVG above the tooltip span. */
+  font: inherit;
+  line-height: 0;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.codeblock-btn:hover,
+.codeblock-btn:focus-visible {
+  background: var(--surface-overlay);
+  color: var(--text-on-overlay, var(--text-on-elevated));
+  border-color: rgba(215, 230, 234, 0.35);
+  outline: none;
+}
+
+.codeblock-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--causl-async-cyan);
+}
+
+.codeblock-btn.is-success {
+  color: var(--causl-commit-green);
+  border-color: var(--causl-commit-green);
+}
+
+/* Copy sits flush bottom-right; Run sits to its left. */
+.codeblock-copy { right: 0.5rem; }
+.codeblock-run  { right: 2.6rem; }
+
+/* Tooltip: hidden by default, fades in on hover / focus. */
+.codeblock-btn-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: var(--surface-overlay);
+  color: var(--text-on-overlay, var(--text-on-elevated));
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.codeblock-btn:hover .codeblock-btn-tooltip,
+.codeblock-btn:focus-visible .codeblock-btn-tooltip,
+.codeblock-btn.is-success .codeblock-btn-tooltip {
+  opacity: 1;
+}
+
+/* ---------- Slide-out terminal ---------- */
+
+.codeblock-terminal {
+  margin: 0;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  background: var(--surface-overlay);
+  color: var(--text-on-overlay, var(--text-on-elevated));
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  border-radius: 0 0 8px 8px;
+  border-left: 3px solid var(--causl-async-cyan);
+  transition: max-height 250ms ease, padding 250ms ease;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.codeblock-terminal.is-open {
+  max-height: 240px;
+  overflow: auto;
+  padding: 0.75rem 1rem;
+  margin-top: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .codeblock-terminal {
+    transition: none;
+  }
+}
+
+/* Hidden iframe — the sandbox is never visible; it only exists to
+   evaluate user code and post messages back. */
+iframe.codeblock-sandbox {
+  display: none !important;
 }
 
 /* ---------- Token palette ---------- */
