@@ -57,6 +57,15 @@
     if (pre.tagName !== 'PRE') return;
     pre.dataset.enhanced = 'true';
 
+    // Normalize emitter-specific markup before we count lines or copy.
+    // TypeDoc (and a few other generators) substitute <br/> for raw
+    // newlines inside <code> AND embed their own Copy button as a
+    // sibling of <code>. Without this step, textContent.split('\n')
+    // returns 1, the gutter shows only "1", and the Copy handler
+    // ends up including the foreign button's text in the clipboard
+    // payload.
+    normalizeBlock(code, pre);
+
     // Wrap the <pre> so we have a positioning context for the buttons
     // and the slide-out terminal. Preserves siblings/order.
     var wrapper = document.createElement('div');
@@ -70,6 +79,43 @@
     addCopyButton(code, wrapper);
     if (pre.classList.contains('is-playground')) {
       addRunButton(code, wrapper);
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Normalization — fix up emitter-specific quirks so the rest of the
+  // pipeline can treat every block uniformly.
+  //
+  // 1. Replace <br> / <br/> elements inside <code> with text-node "\n".
+  //    TypeDoc emits multi-line code with <br/> separators rather than
+  //    raw newlines; textContent collapses <br/> to nothing, so without
+  //    this step a 20-line TypeDoc example reads as a single "line".
+  //
+  // 2. Drop element siblings of <code> inside <pre>. TypeDoc inserts its
+  //    own <button>Copy</button> inside the <pre>, immediately after
+  //    </code>. We're replacing that with our own copy button on the
+  //    wrapper; the original would otherwise show up in copy payloads
+  //    (appending the literal string "Copy" to the clipboard) and would
+  //    visually duplicate our button.
+  // ---------------------------------------------------------------------
+  function normalizeBlock(code, pre) {
+    var brs = code.getElementsByTagName('br');
+    // Iterate backwards because we mutate the live HTMLCollection as we
+    // replace each <br> with a text node.
+    for (var i = brs.length - 1; i >= 0; i--) {
+      var br = brs[i];
+      if (br.parentNode) {
+        br.parentNode.replaceChild(document.createTextNode('\n'), br);
+      }
+    }
+    // Remove non-<code> element children of <pre>. We keep the <code>
+    // intact (with its highlight spans). Iterating a snapshot avoids
+    // skipping the right element when we remove the wrong one.
+    var children = Array.prototype.slice.call(pre.children);
+    for (var j = 0; j < children.length; j++) {
+      if (children[j] !== code) {
+        pre.removeChild(children[j]);
+      }
     }
   }
 
