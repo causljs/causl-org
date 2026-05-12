@@ -109,41 +109,27 @@
   </style>
 </head>
 <body>
-  <header id="topbar" class="topbar">
-    <div class="topbar-content">
-      <a href="../../../" class="topbar-brand" aria-label="Causl home">
-        <img class="topbar-brand-img" src="../../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
-        <span class="brand-name">caus<span class="accent">l</span></span>
-      </a>
-      <div class="pronunciation"><span lang="en-fonipa">/&#712;k&#596;&#720;.z&#601;l/</span> &mdash; like “causal”</div>
-      <p class="tagline">Transactional state for tangled dependency graphs.</p>
-    </div>
-    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
-      <span class="burger-icon"></span>
-    </button>
-    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
-      <div class="topbar-menu-inner">
-        <a href="/">Home</a>
-        <a href="/pages/documentation/">Documentation</a>
-        <a href="/pages/documentation/getting-started/">Getting Started</a>
-        <a href="/pages/documentation/tutorial/">Tutorial</a>
-        <a href="/pages/documentation/usage/">Usage Guide</a>
-        <a href="/pages/documentation/api/">API</a>
-        <a href="/pages/documentation/faq/">FAQ</a>
-        <a href="/pages/documentation/best-practices/">Best Practices</a>
-        <a href="/pages/benchmarks/" class="is-current" aria-current="page">Benchmarks</a>
-        <a href="/pages/playground/">Playground</a>
-        <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
-        <hr class="menu-divider" />
-        <button id="themeToggle" type="button"
-                class="topbar-theme-toggle" role="switch" aria-checked="false">
-          <span class="theme-glyph">☾</span>
-          <span class="theme-label">Dark</span>
-        </button>
-      </div>
-    </nav>
-  </header>
+    <!-- Topbar host — js/topbar.js replaces this with the canonical
+       <header id="topbar"> element. The fallback links inside the
+       <noscript> block keep nav usable for crawlers and no-JS users. -->
+  <div id="topbar-host" data-current="benchmarks">
+    <noscript>
+      <nav class="topbar-fallback" aria-label="Site navigation">
+      <a href="/">Home</a>
+      <a href="/pages/documentation/">Documentation</a>
+      <a href="/pages/documentation/getting-started/">Getting Started</a>
+      <a href="/pages/documentation/tutorial/">Tutorial</a>
+      <a href="/pages/documentation/usage/">Usage Guide</a>
+      <a href="/pages/documentation/api/">API</a>
+      <a href="/pages/documentation/faq/">FAQ</a>
+      <a href="/pages/documentation/best-practices/">Best Practices</a>
+      <a href="/pages/benchmarks/">Benchmarks</a>
+      <a href="/pages/playground/">Playground</a>
+      <a href="/pages/spreadsheet/">Spreadsheet</a>
+      <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </nav>
+    </noscript>
+  </div>
 
   <main class="docs-content">
 
@@ -531,17 +517,22 @@ open packages/bench/report/SUMMARY.md</code></pre>
 
   </main>
 
-  <footer class="site-footer">
-    <div class="page">
-      <p>&copy; 2026 Causl contributors &middot; MIT License &middot; State with cause and effect.</p>
-      <div class="footer-links">
-        <a href="../../../">Home</a>
-        <a href="../../../documentation/">Documentation</a>
-        <a href="../../">Benchmarks</a>
+    <!-- Footer host — js/footer.js replaces this with the canonical
+       <footer class="site-footer"> element. -->
+  <div id="footer-host">
+    <noscript>
+      <footer class="site-footer">
+        <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
         <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
-      </div>
-    </div>
-  </footer>
+      </footer>
+    </noscript>
+  </div>
+  <script src="../../../../js/footer.js" defer></script>
   <script src="../../../../js/topbar.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-core.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-markup.min.js" defer></script>

@@ -1,23 +1,143 @@
 /* causl.org shared header — used on every page.
  *
- * Three responsibilities:
+ * Single-source-of-truth topbar injection (#1260).
+ * --------------------------------------------------------------------
+ * Every page renders a minimal placeholder:
+ *
+ *   <div id="topbar-host"
+ *        data-current="documentation"
+ *        data-depth="1"
+ *        data-hero="false">
+ *     <!-- progressive-enhancement fallback links live here for
+ *          crawlers / no-JS users. JS replaces the host with the
+ *          canonical <header id="topbar"> element below. -->
+ *   </div>
+ *
+ * renderTopbar() replaces that host with the full topbar HTML so the
+ * nav is canonical: one template, 41+ pages. No hand-edited copies to
+ * drift. See issue #1260 for the rationale.
+ *
+ * Three runtime responsibilities (unchanged from the pre-#1260 file):
  *   1. Scroll-collapse animation on the home page (.topbar.is-hero).
  *      Drives --p1 / --p2 / --p3 and toggles .collapsed when fully shrunk.
  *      Inner pages don't ship .is-hero, so this becomes a no-op for them.
  *   2. Burger drawer toggle (.menu-open on the header).
- *   3. Light/dark theme toggle (now lives inside the drawer).
+ *   3. Light/dark theme toggle (lives inside the drawer).
  *
- * Ported verbatim from libviprs-org/topbar.js. The scroll handler
- * shape, stage thresholds (0→0.02, 0.02→0.04, 0.04→0.06) and CSS
- * variable names (--p1/--p2/--p3) are kept literally — the bug fixed
- * in #1248 and #1259 regressed because the local refactor diverged
- * from the canonical libviprs source. This file is now identical to
- * libviprs-org/topbar.js except for the localStorage key, which is
- * scoped to "causl-theme" so the two sites don't fight over the
- * setting on browsers that share storage across subdomains.
+ * Ported verbatim from libviprs-org/topbar.js. The scroll handler shape,
+ * stage thresholds (0→0.02, 0.02→0.04, 0.04→0.06) and CSS variable names
+ * (--p1/--p2/--p3) are kept literally — the bug fixed in #1248 and
+ * #1259 regressed because the local refactor diverged from the canonical
+ * libviprs source. Diagnostics flag added per #1277.
  */
 (function () {
   'use strict';
+
+  // ---------------------------------------------------------------------------
+  // Topbar template
+  //
+  // Every URL is root-relative ("/pages/...") — the site lives at the
+  // domain root (causl.org) and uses pretty trailing-slash URLs. The
+  // brand image is also root-relative so the topbar HTML is identical
+  // regardless of which page injects it.
+  // ---------------------------------------------------------------------------
+
+  /** Canonical nav links: [href, label, currentKey]. */
+  var NAV_LINKS = [
+    ['/',                                       'Home',            'home'],
+    ['/pages/documentation/',                   'Documentation',   'documentation'],
+    ['/pages/documentation/getting-started/',   'Getting Started', 'getting-started'],
+    ['/pages/documentation/tutorial/',          'Tutorial',        'tutorial'],
+    ['/pages/documentation/usage/',             'Usage Guide',     'usage'],
+    ['/pages/documentation/api/',               'API',             'api'],
+    ['/pages/documentation/faq/',               'FAQ',             'faq'],
+    ['/pages/documentation/best-practices/',    'Best Practices',  'best-practices'],
+    ['/pages/benchmarks/',                      'Benchmarks',      'benchmarks'],
+    ['/pages/playground/',                      'Playground',      'playground'],
+    ['/pages/spreadsheet/',                     'Spreadsheet',     'spreadsheet'],
+    ['https://github.com/iasbuilt/causl',       'GitHub',          'github']
+  ];
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function buildNavLinksHtml(current) {
+    var out = '';
+    for (var i = 0; i < NAV_LINKS.length; i++) {
+      var href = NAV_LINKS[i][0];
+      var label = NAV_LINKS[i][1];
+      var key = NAV_LINKS[i][2];
+      var isCurrent = current && current === key;
+      var attrs = ' href="' + escapeHtml(href) + '"';
+      if (isCurrent) attrs += ' class="is-current" aria-current="page"';
+      if (/^https?:/.test(href)) attrs += ' rel="noopener"';
+      out += '        <a' + attrs + '>' + escapeHtml(label) + '</a>\n';
+    }
+    return out;
+  }
+
+  function buildTopbarHtml(opts) {
+    var isHero = !!opts.hero;
+    var current = opts.current || '';
+    var heroClass = isHero ? ' is-hero' : '';
+    return ''
+      + '<header id="topbar" class="topbar' + heroClass + '">\n'
+      + '  <div class="topbar-content">\n'
+      + '    <a href="/" class="topbar-brand" aria-label="Causl home">\n'
+      + '      <img class="topbar-brand-img" src="/img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">\n'
+      + '      <span class="brand-name">caus<span class="accent">l</span></span>\n'
+      + '    </a>\n'
+      + '    <div class="pronunciation"><span lang="en-fonipa">/ˈkɔː.zəl/</span> — like “causal”</div>\n'
+      + '    <p class="tagline">Transactional state for tangled dependency graphs.</p>\n'
+      + '  </div>\n'
+      + '\n'
+      + '  <button id="topbarBurger" class="topbar-burger"\n'
+      + '          aria-label="Open navigation menu" aria-expanded="false"\n'
+      + '          aria-controls="topbar-menu">\n'
+      + '    <span class="burger-icon"></span>\n'
+      + '  </button>\n'
+      + '\n'
+      + '  <nav id="topbar-menu" class="topbar-menu" aria-hidden="true"\n'
+      + '       aria-label="Site navigation">\n'
+      + '    <div class="topbar-menu-inner">\n'
+      + buildNavLinksHtml(current)
+      + '      <hr class="menu-divider" />\n'
+      + '      <button id="themeToggle" type="button"\n'
+      + '              class="topbar-theme-toggle" role="switch" aria-checked="false">\n'
+      + '        <span class="theme-glyph">☾</span>\n'
+      + '        <span class="theme-label">Dark</span>\n'
+      + '      </button>\n'
+      + '    </div>\n'
+      + '  </nav>\n'
+      + '</header>\n';
+  }
+
+  /**
+   * Replace `host` (a <div id="topbar-host">) with the canonical topbar.
+   * Reads `data-current` (nav key), `data-hero` (truthy → is-hero variant).
+   * Safe no-op when host is null.
+   */
+  function renderTopbar(host) {
+    if (!host) return;
+    var current = host.getAttribute('data-current') || '';
+    var hero = (host.getAttribute('data-hero') || '').toLowerCase() === 'true';
+    var html = buildTopbarHtml({ current: current, hero: hero });
+    // Use a transient wrapper so we can lift a real <header> element out.
+    var tpl = document.createElement('template');
+    tpl.innerHTML = html.trim();
+    var header = tpl.content.firstElementChild;
+    if (header && host.parentNode) {
+      host.parentNode.replaceChild(header, host);
+    }
+  }
+
+  // Exposed so footer.js and tests can call it directly.
+  window.renderTopbar = renderTopbar;
 
   // ---------------------------------------------------------------------------
   // Theme toggle
@@ -110,9 +230,7 @@
 
   // ---------------------------------------------------------------------------
   // Scroll-collapse animation (home page only)
-  // ---------------------------------------------------------------------------
-
-  // ---------------------------------------------------------------------------
+  //
   // Diagnostics flag for #1277 — when true, the hero-collapse update path
   // logs every scroll/resize event + threshold crossings + ResizeObserver
   // entries to the console. Verbose by design: the user runs the site,
@@ -207,9 +325,16 @@
   // gate on DOMContentLoaded alone, because <script defer> runs after parse
   // but before DCL fires, and we want the burger to work the moment the
   // user can see it.
+  //
+  // Order matters: render the placeholder → real header *first*, then init
+  // theme/drawer/hero-collapse so those handlers find their target elements.
   // ---------------------------------------------------------------------------
 
   function start() {
+    renderTopbar(document.getElementById('topbar-host'));
+    if (typeof window.renderFooter === 'function') {
+      window.renderFooter(document.getElementById('footer-host'));
+    }
     initTheme();
     initDrawer();
     initHeroCollapse();
