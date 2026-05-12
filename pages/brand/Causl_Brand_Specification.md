@@ -347,6 +347,15 @@ The hue tokens (`--causl-async-cyan`, `--causl-mist`, etc.) remain as the raw pa
 - Code, traces, graph labels, and transaction logs should use monospace.
 - Avoid overly playful typefaces. The mascot supplies personality; the typography should supply credibility.
 
+### Canonical Typefaces (Causl Site)
+
+For the canonical Causl site (causl.org), the brand commits to two specific typefaces, self-hosted to keep first-paint independent of any third-party CDN and to avoid the privacy/uptime costs of Google Fonts:
+
+- **Inter** (Latin subset, self-hosted) — body, UI, headlines. Weights shipped: 400 / 500 / 600 / 700 / 800–900. Source: rsms/inter.
+- **IBM Plex Mono** (Latin-1 subset, self-hosted) — code, transaction IDs, graph labels, log lines. Weights shipped: 400 / 500 / 700. Source: IBM/plex.
+
+These are loaded via `@font-face` in `causl-org/css/site.css` from `causl-org/fonts/*.woff2` with `font-display: swap`. The sans / mono fallback chains declared in `--sans` and `--mono` exist as a defensive layer only (for the swap window and for browsers that fail to fetch the WOFF2); they MUST NOT be cited as acceptable canonical brand faces. Substituting a different sans or mono on the canonical site is a brand-system violation. Issue #1262.
+
 ---
 
 ## 10. UI Theme

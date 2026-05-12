@@ -15,6 +15,81 @@
    without per-file rewrites.
    ============================================================ */
 
+/* ============================================================
+   Self-hosted brand typefaces (issue #1262).
+
+   Inter (rsms/inter) and IBM Plex Mono (IBM/plex) ship as WOFF2
+   under ../fonts/. The fallback chain in --sans / --mono below
+   is kept as a defensive layer for the brief window before swap
+   and for users on networks where the WOFF2 fails. font-display:
+   swap means body text paints in the fallback first, then
+   re-renders once the brand face arrives — no FOIT.
+
+   Source URLs (also documented in causl-org/fonts/README.md):
+     Inter      https://rsms.me/inter/font-files/Inter-{weight}.woff2
+     IBM Plex   https://raw.githubusercontent.com/IBM/plex/master/
+                packages/plex-mono/fonts/split/woff2/
+                IBMPlexMono-{weight}-Latin1.woff2
+   ============================================================ */
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/Inter-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/Inter-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/Inter-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/Inter-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/Inter-Black.woff2') format('woff2');
+  font-weight: 800 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('../fonts/IBMPlexMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('../fonts/IBMPlexMono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('../fonts/IBMPlexMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* -- Primary spec tokens (Causl Brand Specification §8).
         Names below are the SEMANTIC SPEC TOKENS. Short names
