@@ -491,6 +491,55 @@
 
 .bench-legend-verdict-label { line-height: 1; }
 
+/* #1293 — skipped-library legend chip: strikethrough on the framework
+   name, ✗ badge in the verdict slot, muted stats columns, and a
+   subdued chip surface so the skipped row reads as "no measurement"
+   rather than "regressed". Tooltip carries the runner's reason. */
+.bench-legend-item--skipped {
+  opacity: 0.78;
+  background: rgba(169, 181, 201, 0.06);
+  border-style: dashed;
+}
+
+:root[data-theme="light"] .bench-legend-item--skipped {
+  background: rgba(11, 16, 32, 0.04);
+}
+
+.bench-legend-lib--strike s {
+  text-decoration: line-through;
+  text-decoration-thickness: 0.12em;
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--lib-color, var(--fog)) 80%,
+    transparent
+  );
+}
+
+.bench-legend-stats--muted {
+  color: var(--text-on-elevated-subtle);
+  font-style: italic;
+}
+
+.bench-legend-verdict--skipped {
+  color: var(--fog);
+  background: color-mix(in srgb, var(--fog) 14%, transparent);
+  border-color: color-mix(in srgb, var(--fog) 50%, transparent);
+}
+
+.bench-legend-verdict-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  background: var(--fog);
+  color: rgba(11, 16, 32, 0.85);
+  font-size: 0.6rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .bench-legend-profile-link {
   display: inline-flex;
   align-items: center;
