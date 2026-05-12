@@ -136,6 +136,27 @@
   --shadow-soft: 0 12px 36px rgba(0, 0, 0, 0.32);
   --shadow-deep: 0 24px 80px rgba(0, 0, 0, 0.4);
 
+  /* ============================================================
+     Spacing grid — 4px base unit (#1265).
+
+     Every page-chrome rule should use one of these tokens for
+     padding / margin / gap. Ad-hoc values (0.4rem, 0.45rem,
+     0.65rem, 1.1rem, 1.4rem, etc.) round to the wrong place on
+     fractional-DPI displays and break visual rhythm at scale.
+     Round to the nearest token below; if a per-page rule truly
+     needs a sub-token value (rare), document why in a comment.
+     ============================================================ */
+  --space-0: 0;
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.5rem;   /* 24px */
+  --space-6: 2rem;     /* 32px */
+  --space-7: 3rem;     /* 48px */
+  --space-8: 4rem;     /* 64px */
+  --space-9: 6rem;     /* 96px */
+
   --mono: "IBM Plex Mono", "JetBrains Mono", "SFMono-Regular",
           Consolas, monospace;
   --sans: Inter, ui-sans-serif, system-ui, -apple-system,
@@ -174,23 +195,23 @@ body {
   width: 100%;
   max-width: var(--max-page);
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 var(--space-5);
 }
 
-.section { padding: 5rem 0 1rem; }
-.section:first-of-type { padding-top: 3rem; }
+.section { padding: var(--space-8) 0 var(--space-4); }
+.section:first-of-type { padding-top: var(--space-7); }
 
 .section-head {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  gap: var(--space-6);
   align-items: end;
-  margin-bottom: 2.2rem;
+  margin-bottom: var(--space-6);
 }
 
 @media (max-width: 800px) {
-  .section { padding: 3.4rem 0 0.5rem; }
-  .section-head { grid-template-columns: 1fr; gap: 0.6rem; align-items: start; }
+  .section { padding: var(--space-7) 0 var(--space-2); }
+  .section-head { grid-template-columns: 1fr; gap: var(--space-3); align-items: start; }
 }
 
 .section-kicker {
@@ -199,7 +220,7 @@ body {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--causl-cyan);
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .section-head .lead {
@@ -210,15 +231,22 @@ body {
   margin: 0;
 }
 
-/* -- Typography --------------------------------------------------- */
+/* -- Typography ---------------------------------------------------
+   Unified heading scale (#1265). One scale across every page, every
+   per-page override stripped unless it serves a legitimate scoped
+   purpose (brand-page hero, see pages/brand/index.html). Standard
+   font weights only (Inter ships at 100/200/.../900 — anything in
+   between rounds silently on most platforms). */
 
-h1, h2, h3, h4 { letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 0.6rem; color: var(--text-on-base); }
-h1 { font-size: clamp(2.4rem, 5.5vw, 4rem); font-weight: 800; }
-h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 800; }
-h3 { font-size: 1.18rem; font-weight: 700; }
+h1, h2, h3, h4, h5 { margin: 0 0 var(--space-3); color: var(--text-on-base); }
+h1 { font-size: clamp(2.4rem, 5.5vw, 4rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 700; letter-spacing: -0.015em; line-height: 1.1; }
+h3 { font-size: clamp(1.3rem, 2vw, 1.7rem); font-weight: 700; letter-spacing: -0.01em; line-height: 1.15; }
+h4 { font-size: 1.1rem; font-weight: 600; }
+h5 { font-size: 1rem; font-weight: 600; }
 /* Body copy sits on --surface-base by default. Inside a .card,
    the more specific .card p rule re-pairs to --text-on-elevated. */
-p { margin: 0 0 0.85rem; color: var(--text-on-base); }
+p { margin: 0 0 var(--space-4); color: var(--text-on-base); }
 
 a { color: var(--causl-cyan); text-decoration: none; transition: color 0.15s; }
 a:hover { color: var(--causal-cyan-2); text-decoration: underline; }
@@ -242,8 +270,8 @@ p code, li code, td code {
 .button {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.85rem 1.3rem;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
   border-radius: 999px;
   font-weight: 700;
   font-size: 0.95rem;
@@ -295,7 +323,7 @@ p code, li code, td code {
     rgba(16, 24, 34, 0.78), rgba(11, 17, 24, 0.82));
   border: 1px solid var(--border-on-elevated);
   border-radius: var(--radius-lg);
-  padding: 1.4rem 1.5rem;
+  padding: var(--space-5);
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
   color: var(--text-on-elevated);
 }
@@ -306,16 +334,16 @@ p code, li code, td code {
   color: var(--surface-emphasis);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: 0.55rem;
+  margin-bottom: var(--space-2);
 }
 
 .card h3 { color: var(--text-on-elevated); }
 .card p { color: var(--text-on-elevated); }
 .card p:last-child { margin-bottom: 0; }
 
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5); }
 
 @media (max-width: 900px) { .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
@@ -328,7 +356,7 @@ pre.codeblock {
     rgba(11, 17, 24, 0.95), rgba(7, 10, 15, 0.95));
   border: 1px solid rgba(17, 217, 255, 0.20);
   border-radius: var(--radius-md);
-  padding: 1.1rem 1.3rem;
+  padding: var(--space-4) var(--space-5);
   overflow-x: auto;
   font-size: 0.88rem;
   line-height: 1.55;
@@ -372,7 +400,7 @@ table.compare {
 
 table.compare th,
 table.compare td {
-  padding: 0.7rem 0.85rem;
+  padding: var(--space-3) var(--space-4);
   text-align: center;
   border-bottom: 1px solid rgba(143, 162, 170, 0.16);
   white-space: nowrap;
@@ -429,8 +457,8 @@ table.compare tr:last-child td { border-bottom: none; }
 
 /* Site footer — paired with --surface-overlay (deep terminal). */
 .site-footer {
-  margin-top: 5rem;
-  padding: 2.5rem 0 3rem;
+  margin-top: var(--space-8);
+  padding: var(--space-6) 0 var(--space-7);
   border-top: 1px solid var(--border-on-overlay);
   background:
     radial-gradient(circle at 50% 0%, rgba(17, 217, 255, 0.10),
@@ -443,7 +471,7 @@ table.compare tr:last-child td { border-bottom: none; }
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: var(--space-5);
   align-items: center;
 }
 
@@ -451,7 +479,7 @@ table.compare tr:last-child td { border-bottom: none; }
 
 .site-footer .footer-links {
   display: flex;
-  gap: 1.2rem;
+  gap: var(--space-5);
   flex-wrap: wrap;
 }
 
