@@ -17,7 +17,6 @@ on this page is supported natively, without polyfills.
 | Feature                                  | Why we use it                                                                                                       | Floor       |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------- |
 | `<script type="importmap">`              | Aliases bare specifiers (`@causl/core`) to the vendored ESM build under `vendor/@causl/*/index.js`, with esm.sh fallback. | Safari 16.4, Chrome 89, Firefox 108 |
-| CSS `:has()` selector                    | `body:has(.topbar.collapsed)` reserves the sticky-bar offset, without JS-driven body class.                          | Safari 15.4, Chrome 105, Firefox 121 |
 | ESM with `import()` + dynamic chunks     | The playground and spreadsheet pages dynamically `import()` `@causl/*` and React 19 from the vendored ESM modules.   | Universal in baseline |
 | `backdrop-filter` (with `-webkit-` prefix) | Topbar blur backdrop. The `-webkit-` prefix lands the same effect on Safari 9–15.                                   | Safari 9 (prefixed), Chrome 76, Firefox 103 |
 | `prefers-reduced-motion`                 | Disables the scroll-driven hero collapse for users who opted out of motion.                                          | Universal in baseline |
@@ -36,8 +35,6 @@ on this page is supported natively, without polyfills.
 | Below-baseline browser | What breaks                                                                                                  |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Safari < 16.4          | Importmap is ignored; playground + spreadsheet fall back to esm.sh URLs (which still work).                  |
-| Safari < 15.4 / Firefox < 121 | `body:has(.topbar.collapsed)` does nothing — the sticky bar still works but a 3.6rem offset is missing under the collapsed bar. Visual only. |
-| Chrome < 105           | Same as Safari < 15.4 (no `:has()`).                                                                          |
 | Anything ≤ ES5         | Pages fail to execute the topbar JS (uses `var` only, but `Array.prototype.forEach` and `Map` are required).  |
 
 ## Updating the baseline
