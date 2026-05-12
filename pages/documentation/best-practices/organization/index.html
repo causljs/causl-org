@@ -160,12 +160,12 @@ import { graph } from '../../app/graph';
 export const items = input&lt;CartItem[]&gt;(graph, [], { name: 'cart.items' });
 export const couponCode = input&lt;string | null&gt;(graph, null, { name: 'cart.couponCode' });
 
-export const subtotal = derived(graph, (g) =&gt;
+export const subtotal = derived(graph, g =&gt;
   g.read(items).reduce((sum, it) =&gt; sum + it.price * it.qty, 0),
   { name: 'cart.subtotal' },
 );
 
-export const total = derived(graph, (g) =&gt; {
+export const total = derived(graph, g =&gt; {
   const sub = g.read(subtotal);
   const code = g.read(couponCode);
   return code ? sub * 0.9 : sub;
@@ -248,7 +248,7 @@ import { derived } from '@causl/core';
 import { graph } from '../../app/graph';
 import { items, total } from './nodes';
 
-export const cartLineItems = derived(graph, (g) =&gt;
+export const cartLineItems = derived(graph, g =&gt;
   g.read(items).map((it) =&gt; ({
     id: it.id,
     label: `${it.name} × ${it.qty}`,
@@ -257,7 +257,7 @@ export const cartLineItems = derived(graph, (g) =&gt;
   { name: 'cart.cartLineItems' },
 );
 
-export const cartSummary = derived(graph, (g) =&gt; ({
+export const cartSummary = derived(graph, g =&gt; ({
   count: g.read(items).length,
   total: g.read(total),
 }), { name: 'cart.cartSummary' });

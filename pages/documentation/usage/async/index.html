@@ -200,7 +200,7 @@ switch (s.state) {
       Loading &rarr; Loaded:
     </p>
 <pre class="language-typescript"><code class="language-typescript">const a = items.fetch();        // origin = T0, state: 'loading'
-graph.commit('unrelated', (tx) =&gt; tx.set(otherInput, 7));
+graph.commit('unrelated', tx =&gt; tx.set(otherInput, 7));
 await a;
 graph.read(items.node);
 // { state: 'stale', value: ..., origin: T0, loadedAt: T2 }
@@ -394,7 +394,7 @@ graph.subscribe(items.node, (next, prev, commit) =&gt; {
 <pre class="language-typescript"><code class="language-typescript">import { whyNotUpdated } from '@causl/sync';
 
 const before = graph.read(items.node);
-graph.commit('unrelated', (tx) =&gt; tx.set(otherInput, 7));
+graph.commit('unrelated', tx =&gt; tx.set(otherInput, 7));
 const after = graph.read(items.node);
 
 whyNotUpdated(before, after);

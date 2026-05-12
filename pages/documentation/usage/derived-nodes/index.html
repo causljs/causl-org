@@ -118,8 +118,8 @@ const price    = input(graph, 100);
 const quantity = input(graph, 3);
 const taxRate  = input(graph, 0.08);
 
-const subtotal = derived(graph, (g) =&gt; g.read(price) * g.read(quantity));
-const total    = derived(graph, (g) =&gt; g.read(subtotal) * (1 + g.read(taxRate)));
+const subtotal = derived(graph, g =&gt; g.read(price) * g.read(quantity));
+const total    = derived(graph, g =&gt; g.read(subtotal) * (1 + g.read(taxRate)));
 
 console.log(graph.read(total));  // 324
 
@@ -161,7 +161,7 @@ console.log(graph.read(total));  // 540</code></pre>
     <pre class="language-typescript"><code class="language-typescript">const mode = input&lt;'tax' | 'discount'&gt;(graph, 'tax');
 const discount = input(graph, 0.1);
 
-const final = derived(graph, (g) =&gt; {
+const final = derived(graph, g =&gt; {
   const base = g.read(subtotal);
   if (g.read(mode) === 'tax') {
     return base * (1 + g.read(taxRate));
@@ -203,9 +203,9 @@ const final = derived(graph, (g) =&gt; {
 
     <pre class="language-typescript"><code class="language-typescript">const a = input(graph, 1);
 
-const b = derived(graph, (g) =&gt; g.read(a) + 1);
-const c = derived(graph, (g) =&gt; g.read(a) * 2);
-const d = derived(graph, (g) =&gt; g.read(b) + g.read(c));  // diamond
+const b = derived(graph, g =&gt; g.read(a) + 1);
+const c = derived(graph, g =&gt; g.read(a) * 2);
+const d = derived(graph, g =&gt; g.read(b) + g.read(c));  // diamond
 
 graph.commit(() =&gt; graph.set(a, 10));
 console.log(graph.read(d));  // 31, computed from b=11, c=20</code></pre>
@@ -274,8 +274,8 @@ console.log(graph.read(d));  // 31, computed from b=11, c=20</code></pre>
     </p>
 
     <pre class="language-typescript"><code class="language-typescript">const x = input(graph, 5);
-const isPositive = derived(graph, (g) =&gt; g.read(x) &gt; 0);
-const sign       = derived(graph, (g) =&gt; g.read(isPositive) ? '+' : '-');
+const isPositive = derived(graph, g =&gt; g.read(x) &gt; 0);
+const sign       = derived(graph, g =&gt; g.read(isPositive) ? '+' : '-');
 
 let signNotifications = 0;
 graph.subscribe(sign, () =&gt; signNotifications++);
@@ -299,7 +299,7 @@ console.log(signNotifications);  // 1</code></pre>
       The cutoff is <code>Object.is</code>: <code>NaN</code> equals <code>NaN</code>,
       <code>+0</code> does not equal <code>-0</code>, and objects compare by reference.
       A derived that returns a fresh array each call —
-      <code>(g) =&gt; g.read(items).filter(p)</code> — will never trip the cutoff.
+      <code>g =&gt; g.read(items).filter(p)</code> — will never trip the cutoff.
       Cache the result with a stable identity (memoised projection, immutable
       structure-shared value, reused TypedArray) if you want the cutoff to do work for
       downstream nodes. <a href="../../best-practices/patterns/">Best practices

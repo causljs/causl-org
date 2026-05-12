@@ -143,11 +143,11 @@ const step  = graph.input('step', 1);</code></pre>
     <h2>3. Register a derived node</h2>
     <p>
       A <strong>derived node</strong> is a computed cell. You give it an id and a pure function. The
-      function receives a tracked accessor — call it <code>get</code> — and any node you pass to
-      <code>get</code> becomes a dependency. Causl infers the dependency set from observed reads; you
-      do not declare it up front.
+      function receives a tracked accessor — bind it to <code>g</code> (the single-letter form is
+      idiomatic for inline arrows; any name works) — and any node you pass to that accessor becomes
+      a dependency. Causl infers the dependency set from observed reads; you do not declare it up front.
     </p>
-    <pre class="language-typescript"><code class="language-typescript">const doubled = graph.derived('doubled', (get) =&gt; get(count) * get(step));</code></pre>
+    <pre class="language-typescript"><code class="language-typescript">const doubled = graph.derived('doubled', g =&gt; g(count) * g(step));</code></pre>
     <p>
       The closure has read <code>count</code> and <code>step</code>, so <code>doubled</code> now depends
       on both. If a later commit changes <code>count</code> or <code>step</code>, the engine will
@@ -160,7 +160,7 @@ const step  = graph.input('step', 1);</code></pre>
       <strong>Detailed explanation: conditional dependencies.</strong>
       Because the dependency set is inferred per evaluation, a derivation that switches inputs on an
       <code>if</code> branch naturally rewires its dependency set on the next recompute. A derivation
-      written as <code>(get) =&gt; get(flag) ? get(a) : get(b)</code> tracks <code>{flag, a}</code> while
+      written as <code>g =&gt; g(flag) ? g(a) : g(b)</code> tracks <code>{flag, a}</code> while
       <code>flag</code> is true and <code>{flag, b}</code> after it flips. No dependency-array
       bookkeeping is required.
     </blockquote>
@@ -185,8 +185,8 @@ console.log(graph.read(doubled));  // 0  (because 0 * 1)</code></pre>
       A subscriber observes a single node. The observer fires once synchronously on registration
       (with the current value), then once per commit during which the node's value changed.
     </p>
-    <pre class="language-typescript"><code class="language-typescript">const unsubscribe = graph.subscribe(doubled, (value) =&gt; {
-  console.log('doubled =&gt;', value);
+    <pre class="language-typescript"><code class="language-typescript">const unsubscribe = graph.subscribe(doubled, v =&gt; {
+  console.log('doubled =&gt;', v);
 });
 // logs: doubled =&gt; 0</code></pre>
     <p>
@@ -209,7 +209,7 @@ console.log(graph.read(doubled));  // 0  (because 0 * 1)</code></pre>
       <code>graph.commit(intent, run)</code>, which takes a human-readable label and a callback that
       receives a transaction handle.
     </p>
-    <pre class="language-typescript"><code class="language-typescript">graph.commit('increment', (tx) =&gt; {
+    <pre class="language-typescript"><code class="language-typescript">graph.commit('increment', tx =&gt; {
   tx.set(count, 5);
 });
 // logs: doubled =&gt; 10</code></pre>
@@ -233,7 +233,7 @@ console.log(graph.read(doubled));  // 0  (because 0 * 1)</code></pre>
       at the same tick. The subscriber for <code>doubled</code> fires exactly once even when both of
       its inputs move in the same transaction.
     </p>
-    <pre class="language-typescript"><code class="language-typescript">graph.commit('rescale', (tx) =&gt; {
+    <pre class="language-typescript"><code class="language-typescript">graph.commit('rescale', tx =&gt; {
   tx.set(count, 10);
   tx.set(step, 2);
 });
@@ -250,7 +250,7 @@ console.log(graph.read(doubled));  // 0  (because 0 * 1)</code></pre>
       because <code>doubled</code> did not change. The engine compares each derived cell's new value
       to its previous value with <code>Object.is</code> equality and stops dispatch on identity.
     </p>
-    <pre class="language-typescript"><code class="language-typescript">graph.commit('noop', (tx) =&gt; {
+    <pre class="language-typescript"><code class="language-typescript">graph.commit('noop', tx =&gt; {
   tx.set(count, 10);   // already 10
   tx.set(step, 2);     // already 2
 });
@@ -272,27 +272,27 @@ const graph = createCausl();
 
 const count   = graph.input('count', 0);
 const step    = graph.input('step', 1);
-const doubled = graph.derived('doubled', (get) =&gt; get(count) * get(step));
+const doubled = graph.derived('doubled', g =&gt; g(count) * g(step));
 
 console.log('initial doubled:', graph.read(doubled));  // 0
 
-const unsubscribe = graph.subscribe(doubled, (value) =&gt; {
-  console.log('doubled =&gt;', value);
+const unsubscribe = graph.subscribe(doubled, v =&gt; {
+  console.log('doubled =&gt;', v);
 });
 // doubled =&gt; 0   (synchronous initial fire)
 
-graph.commit('increment', (tx) =&gt; {
+graph.commit('increment', tx =&gt; {
   tx.set(count, 5);
 });
 // doubled =&gt; 10
 
-graph.commit('rescale', (tx) =&gt; {
+graph.commit('rescale', tx =&gt; {
   tx.set(count, 10);
   tx.set(step, 2);
 });
 // doubled =&gt; 20
 
-graph.commit('noop', (tx) =&gt; {
+graph.commit('noop', tx =&gt; {
   tx.set(count, 10);
   tx.set(step, 2);
 });
@@ -324,9 +324,9 @@ doubled =&gt; 20</code></pre>
 
     <h2>Things to try</h2>
     <ul>
-      <li>Add a second derived node — <code>const quad = graph.derived('quad', (get) =&gt; get(doubled) * 2);</code> — and subscribe to it. Confirm that a single commit still fires it exactly once.</li>
+      <li>Add a second derived node — <code>const quad = graph.derived('quad', g =&gt; g(doubled) * 2);</code> — and subscribe to it. Confirm that a single commit still fires it exactly once.</li>
       <li>Try to call <code>tx.set</code> on <code>doubled</code>. The engine throws <code>NotAnInputNodeError</code> — derived cells are not writable by design, because permitting the write would tear the equation <code>doubled = f(count, step)</code>.</li>
-      <li>Close a cycle. Register <code>const a = graph.derived('a', (get) =&gt; get(b))</code> and <code>const b = graph.derived('b', (get) =&gt; get(a))</code>. The first commit that touches either side throws <code>CycleError</code> with the cycle path named.</li>
+      <li>Close a cycle. Register <code>const a = graph.derived('a', g =&gt; g(b))</code> and <code>const b = graph.derived('b', g =&gt; g(a))</code>. The first commit that touches either side throws <code>CycleError</code> with the cycle path named.</li>
       <li>Capture the <code>tx</code> handle in a variable and try to use it after the callback returns. The engine throws <code>StaleTxError</code> — the handle is bounded to its commit.</li>
     </ul>
 

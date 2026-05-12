@@ -99,9 +99,9 @@ export const graph = createCausl({ name: 'app' });
 
 export const currentUser    = graph.input('currentUser',    null);
 export const cartItems      = graph.input('cartItems',      []);
-export const cartTotal      = graph.derived('cartTotal',    (g) =&gt; { /* … */ });
+export const cartTotal      = graph.derived('cartTotal',    g =&gt; { /* … */ });
 export const searchQuery    = graph.input('searchQuery',    '');
-export const searchResults  = graph.derived('searchResults',(g) =&gt; { /* … */ });
+export const searchResults  = graph.derived('searchResults',g =&gt; { /* … */ });
 export const checkoutStep   = graph.input('checkoutStep',   'address');
 export const addressDraft   = graph.input('addressDraft',   { line1: '', city: '' });
 export const paymentDraft   = graph.input('paymentDraft',   { card: '' });
@@ -152,28 +152,28 @@ export function createCart(graph: Graph) {
   const items = graph.input&lt;CartItem[]&gt;('cart.items', []);
   const couponCode = graph.input&lt;string | null&gt;('cart.couponCode', null);
 
-  const subtotal = graph.derived('cart.subtotal', (g) =&gt;
+  const subtotal = graph.derived('cart.subtotal', g =&gt;
     g.read(items).reduce((sum, item) =&gt; sum + item.priceCents * item.qty, 0),
   );
 
-  const discount = graph.derived('cart.discount', (g) =&gt; {
+  const discount = graph.derived('cart.discount', g =&gt; {
     const code = g.read(couponCode);
     if (!code) return 0;
     return Math.floor(g.read(subtotal) * discountRate(code));
   });
 
-  const totalCents = graph.derived('cart.total', (g) =&gt;
+  const totalCents = graph.derived('cart.total', g =&gt;
     g.read(subtotal) - g.read(discount),
   );
 
   function addItem(item: CartItem) {
-    graph.commit('cart/addItem', (tx) =&gt; {
+    graph.commit('cart/addItem', tx =&gt; {
       tx.set(items, [...graph.read(items), item]);
     });
   }
 
   function applyCoupon(code: string) {
-    graph.commit('cart/applyCoupon', (tx) =&gt; { tx.set(couponCode, code); });
+    graph.commit('cart/applyCoupon', tx =&gt; { tx.set(couponCode, code); });
   }
 
   return { items, subtotal, discount, totalCents, addItem, applyCoupon };
@@ -267,7 +267,7 @@ function rowNode(graph: Graph, key: string): Node&lt;Row&gt; {
 
 function RowView({ rowId }: { rowId: string }) {
   const node = useCauslFamily(`row:${rowId}`, rowNode);
-  const row  = useCausl((g) =&gt; g.read(node));
+  const row  = useCausl(g =&gt; g.read(node));
   return &lt;li&gt;{row.checked ? '[x]' : '[ ]'} {row.label || row.id}&lt;/li&gt;;
 }</code></pre>
 
@@ -305,7 +305,7 @@ function RowView({ rowId }: { rowId: string }) {
 
 <pre class="language-typescript"><code class="language-typescript">function rowBundle(graph: Graph, key: string) {
   const raw = graph.input(`${key}.raw`, defaultRow(key));
-  const display = graph.derived(`${key}.display`, (g) =&gt; formatRow(g.read(raw)));
+  const display = graph.derived(`${key}.display`, g =&gt; formatRow(g.read(raw)));
   return { raw, display };
 }
 
