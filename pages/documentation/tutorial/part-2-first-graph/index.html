@@ -81,12 +81,27 @@
       record — there is no separate "store" sitting next to it. You construct
       one by calling <code>createCausl()</code> from <code>@causl/core</code>:
     </p>
-<pre class="language-typescript codeblock is-playground"><code class="language-typescript">import { createCausl } from '@causl/core'
+<div class="playground-wrapper" data-initial="import { createCausl } from '@causl/core'&#10;&#10;const graph = createCausl({ name: 'ledger' })&#10;const ready = graph.input('ready', false)&#10;console.log('initial value:', graph.read(ready))">
+  <div class="playground-editor-row">
+    <aside class="playground-gutter" aria-hidden="true">
+        <span class="playground-gutter-line">1</span>
+        <span class="playground-gutter-line">2</span>
+        <span class="playground-gutter-line">3</span>
+        <span class="playground-gutter-line">4</span>
+        <span class="playground-gutter-line">5</span>
+    </aside>
+    <textarea class="playground-source" spellcheck="false" autocorrect="off" autocapitalize="off" wrap="off" aria-label="Editable code">import { createCausl } from '@causl/core'
 
 const graph = createCausl({ name: 'ledger' })
 const ready = graph.input('ready', false)
-console.log('initial value:', graph.read(ready))
-</code></pre>
+console.log('initial value:', graph.read(ready))</textarea>
+  </div>
+  <div class="playground-toolbar">
+    <button type="button" class="playground-btn playground-run" aria-label="Run code"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 3.2v9.6a.5.5 0 0 0 .76.43l8-4.8a.5.5 0 0 0 0-.86l-8-4.8A.5.5 0 0 0 4 3.2z"/></svg> Run</button>
+    <button type="button" class="playground-btn playground-reset" aria-label="Reset code to initial"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 1 0 1.61-3.89"/><polyline points="2 2.5 2 6 5.5 6"/></svg> Reset</button>
+  </div>
+  <pre class="playground-terminal" aria-live="polite" aria-label="Code output"></pre>
+</div>
     <p>
       The optional <code>name</code> is for devtools and telemetry; it has to
       match <code>/^[A-Za-z0-9_.:-]{1,256}$/</code> if you supply it. Multiple

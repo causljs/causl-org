@@ -327,7 +327,44 @@ console.log(graph.read(doubled));  // 0  (because 0 * 1)</code></pre>
       Here is the complete program. Copy it into a single file, run it with <code>node</code> (or
       <code>tsx</code> / <code>ts-node</code>), and the output should match the comments line for line.
     </p>
-    <pre class="language-typescript codeblock is-playground"><code class="language-typescript">import { createCausl } from '@causl/core';
+<div class="playground-wrapper" data-initial="import { createCausl } from '@causl/core';&#10;&#10;const graph = createCausl();&#10;&#10;const count   = graph.input('count', 0);&#10;const step    = graph.input('step', 1);&#10;const doubled = graph.derived('doubled', g => g(count) * g(step));&#10;&#10;console.log('initial doubled:', graph.read(doubled));  // 0&#10;&#10;const unsubscribe = graph.subscribe(doubled, v => {&#10;  console.log('doubled =>', v);&#10;});&#10;// doubled => 0   (synchronous initial fire)&#10;&#10;graph.commit('increment', tx => {&#10;  tx.set(count, 5);&#10;});&#10;// doubled => 10&#10;&#10;graph.commit('rescale', tx => {&#10;  tx.set(count, 10);&#10;  tx.set(step, 2);&#10;});&#10;// doubled => 20&#10;&#10;graph.commit('noop', tx => {&#10;  tx.set(count, 10);&#10;  tx.set(step, 2);&#10;});&#10;// (silent)&#10;&#10;unsubscribe();">
+      <div class="playground-editor-row">
+        <aside class="playground-gutter" aria-hidden="true">
+            <span class="playground-gutter-line">1</span>
+        <span class="playground-gutter-line">2</span>
+        <span class="playground-gutter-line">3</span>
+        <span class="playground-gutter-line">4</span>
+        <span class="playground-gutter-line">5</span>
+        <span class="playground-gutter-line">6</span>
+        <span class="playground-gutter-line">7</span>
+        <span class="playground-gutter-line">8</span>
+        <span class="playground-gutter-line">9</span>
+        <span class="playground-gutter-line">10</span>
+        <span class="playground-gutter-line">11</span>
+        <span class="playground-gutter-line">12</span>
+        <span class="playground-gutter-line">13</span>
+        <span class="playground-gutter-line">14</span>
+        <span class="playground-gutter-line">15</span>
+        <span class="playground-gutter-line">16</span>
+        <span class="playground-gutter-line">17</span>
+        <span class="playground-gutter-line">18</span>
+        <span class="playground-gutter-line">19</span>
+        <span class="playground-gutter-line">20</span>
+        <span class="playground-gutter-line">21</span>
+        <span class="playground-gutter-line">22</span>
+        <span class="playground-gutter-line">23</span>
+        <span class="playground-gutter-line">24</span>
+        <span class="playground-gutter-line">25</span>
+        <span class="playground-gutter-line">26</span>
+        <span class="playground-gutter-line">27</span>
+        <span class="playground-gutter-line">28</span>
+        <span class="playground-gutter-line">29</span>
+        <span class="playground-gutter-line">30</span>
+        <span class="playground-gutter-line">31</span>
+        <span class="playground-gutter-line">32</span>
+        <span class="playground-gutter-line">33</span>
+        </aside>
+        <textarea class="playground-source" spellcheck="false" autocorrect="off" autocapitalize="off" wrap="off" aria-label="Editable code">import { createCausl } from '@causl/core';
 
 const graph = createCausl();
 
@@ -359,7 +396,14 @@ graph.commit('noop', tx =&gt; {
 });
 // (silent)
 
-unsubscribe();</code></pre>
+unsubscribe();</textarea>
+      </div>
+      <div class="playground-toolbar">
+        <button type="button" class="playground-btn playground-run" aria-label="Run code"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 3.2v9.6a.5.5 0 0 0 .76.43l8-4.8a.5.5 0 0 0 0-.86l-8-4.8A.5.5 0 0 0 4 3.2z"/></svg> Run</button>
+        <button type="button" class="playground-btn playground-reset" aria-label="Reset code to initial"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 1 0 1.61-3.89"/><polyline points="2 2.5 2 6 5.5 6"/></svg> Reset</button>
+      </div>
+      <pre class="playground-terminal" aria-live="polite" aria-label="Code output"></pre>
+    </div>
 
     <p>The expected console output is:</p>
     <div class="codeblock-wrapper">

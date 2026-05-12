@@ -133,7 +133,32 @@ npm install -D typescript tsx @types/node</code></pre>
       is below; we will walk through it after you have it running.
     </p>
 
-<pre class="language-typescript codeblock is-playground"><code class="language-typescript">// quick-start.ts
+<div class="playground-wrapper" data-initial="// quick-start.ts&#10;import { createCausl } from '@causl/core';&#10;&#10;const graph = createCausl({ name: 'quick-start' });&#10;&#10;// Two inputs (mutable cells) and one derivation (a pure function of inputs).&#10;const price    = graph.input('price', 9.99);&#10;const quantity = graph.input('quantity', 3);&#10;const subtotal = graph.derived('subtotal', g => g(price) * g(quantity));&#10;&#10;// Observe the derivation. The subscriber fires once per commit that changes it.&#10;graph.subscribe(subtotal, next => {&#10;  console.log(`subtotal -> ${next.toFixed(2)}`);&#10;});&#10;&#10;// All mutation happens inside graph.commit(intent, tx => ...).&#10;graph.commit('change-price',  tx => tx.set(price, 12.50));&#10;graph.commit('change-both',   tx => { tx.set(price, 15); tx.set(quantity, 4); });&#10;graph.commit('no-op-rewrite', tx => tx.set(quantity, 4));  // no fire — value unchanged&#10;&#10;console.log(`final subtotal: ${graph.read(subtotal).toFixed(2)}`);">
+  <div class="playground-editor-row">
+    <aside class="playground-gutter" aria-hidden="true">
+        <span class="playground-gutter-line">1</span>
+        <span class="playground-gutter-line">2</span>
+        <span class="playground-gutter-line">3</span>
+        <span class="playground-gutter-line">4</span>
+        <span class="playground-gutter-line">5</span>
+        <span class="playground-gutter-line">6</span>
+        <span class="playground-gutter-line">7</span>
+        <span class="playground-gutter-line">8</span>
+        <span class="playground-gutter-line">9</span>
+        <span class="playground-gutter-line">10</span>
+        <span class="playground-gutter-line">11</span>
+        <span class="playground-gutter-line">12</span>
+        <span class="playground-gutter-line">13</span>
+        <span class="playground-gutter-line">14</span>
+        <span class="playground-gutter-line">15</span>
+        <span class="playground-gutter-line">16</span>
+        <span class="playground-gutter-line">17</span>
+        <span class="playground-gutter-line">18</span>
+        <span class="playground-gutter-line">19</span>
+        <span class="playground-gutter-line">20</span>
+        <span class="playground-gutter-line">21</span>
+    </aside>
+    <textarea class="playground-source" spellcheck="false" autocorrect="off" autocapitalize="off" wrap="off" aria-label="Editable code">// quick-start.ts
 import { createCausl } from '@causl/core';
 
 const graph = createCausl({ name: 'quick-start' });
@@ -153,8 +178,14 @@ graph.commit('change-price',  tx =&gt; tx.set(price, 12.50));
 graph.commit('change-both',   tx =&gt; { tx.set(price, 15); tx.set(quantity, 4); });
 graph.commit('no-op-rewrite', tx =&gt; tx.set(quantity, 4));  // no fire — value unchanged
 
-console.log(`final subtotal: ${graph.read(subtotal).toFixed(2)}`);
-</code></pre>
+console.log(`final subtotal: ${graph.read(subtotal).toFixed(2)}`);</textarea>
+  </div>
+  <div class="playground-toolbar">
+    <button type="button" class="playground-btn playground-run" aria-label="Run code"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 3.2v9.6a.5.5 0 0 0 .76.43l8-4.8a.5.5 0 0 0 0-.86l-8-4.8A.5.5 0 0 0 4 3.2z"/></svg> Run</button>
+    <button type="button" class="playground-btn playground-reset" aria-label="Reset code to initial"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 1 0 1.61-3.89"/><polyline points="2 2.5 2 6 5.5 6"/></svg> Reset</button>
+  </div>
+  <pre class="playground-terminal" aria-live="polite" aria-label="Code output"></pre>
+</div>
 
     <h2><span class="step-pill">Step 3</span> Run it</h2>
 
