@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Testing Strategies — Causl</title>
+  <meta name="description" content="How to test causl graphs: unit tests with vitest, property-based fuzz with fast-check and tieredPropertyTrials, the CAUSL_FUZZ_TIER budget knob, and parity tests against the migration-check package." />
+  <link rel="icon" href="../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../css/site.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: rgba(232, 238, 247, 0.86); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: rgba(11, 16, 32, 0.86); }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation"><span lang="en-fonipa">/ˈkɔː.zəl/</span> — like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/">Tutorial</a>
+        <a href="/pages/documentation/usage/" class="is-current" aria-current="page">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="/pages/brand/">Brand</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <h1>Testing Strategies</h1>
+
+    <p>
+      Causl graphs are deterministic state machines: given the same sequence of commits, a graph always
+      produces the same observed values. That property makes them unusually pleasant to test &mdash; you
+      do not need a DOM, a network mock, or a fake clock to exercise interesting behaviour. This guide
+      covers the four layers a causl-backed application typically tests at:
+      <em>unit tests</em> over individual graphs, <em>property-based fuzz</em> via
+      <code>fast-check</code> and <code>tieredPropertyTrials</code>, the <code>CAUSL_FUZZ_TIER</code>
+      env-var that scales fuzz budgets in CI, and <em>parity tests</em> that compare a causl graph
+      against a reference implementation &mdash; the pattern <code>@causl/migration-check</code> uses to
+      validate Redux-to-causl migrations.
+    </p>
+
+    <p>
+      Every example below assumes <a href="https://vitest.dev" rel="noopener">vitest</a> as the runner;
+      the patterns translate cleanly to Jest or Node's built-in test runner if you prefer.
+    </p>
+
+    <h2>1. Unit testing a causl graph</h2>
+
+    <p>
+      A unit test for a causl graph is the same shape as a unit test for a pure function: construct a
+      graph, commit a sequence of writes, read the observable values, assert. There is no asynchrony,
+      no setup or teardown, no module-level state. A graph is just a value.
+    </p>
+
+    <pre><code>import { describe, it, expect } from 'vitest';
+import { createCausl, input, derived } from '@causl/core';
+
+describe('counter graph', () =&gt; {
+  it('doubles the input', () =&gt; {
+    const graph = createCausl();
+    const count = input(graph, 0);
+    const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+
+    graph.commit(() =&gt; {
+      graph.set(count, 5);
+    });
+
+    expect(graph.read(doubled)).toBe(10);
+  });
+
+  it('atomically rolls back on commit failure', () =&gt; {
+    const graph = createCausl();
+    const count = input(graph, 0);
+
+    expect(() =&gt; {
+      graph.commit(() =&gt; {
+        graph.set(count, 7);
+        throw new Error('rollback');
+      });
+    }).toThrow('rollback');
+
+    expect(graph.read(count)).toBe(0);
+  });
+});</code></pre>
+
+    <p>
+      Two things to notice. First, every assertion runs against
+      <code>graph.read(node)</code>, not against an internal field &mdash; the read is the public
+      observation, and it is what subscribers in <a href="../../">Phase G</a> ultimately see. Second,
+      the rollback test exercises an <em>invariant</em> rather than an
+      implementation detail: a thrown error inside <code>commit()</code> guarantees the graph reverts
+      to its prior state, per SPEC &sect;3. Tests that exercise invariants survive refactors.
+    </p>
+
+    <blockquote>
+      <strong>Detailed explanation &mdash; reference identity.</strong>
+      <code>graph.read()</code> does not contractually preserve reference identity across commits even
+      when the value is structurally unchanged (SPEC &sect;15.1, amended via PR #1129). Tests that rely
+      on <code>===</code> for object values are an H1-hazard; use deep-equality
+      (<code>expect(value).toEqual(...)</code>) or compare specific fields instead. The same warning
+      applies to React renderers: do not memoise on a causl-read object's identity unless you have
+      opted into the typed-array fast path through <code>useCauslNode</code>.
+    </blockquote>
+
+    <h3>Testing subscribers</h3>
+
+    <p>
+      Subscribers fire in Phase G after a commit finalises. A subscriber test should spy on the
+      callback and assert the dispatched value &mdash; not the number of times the underlying derived
+      node was recomputed (which the engine is free to elide).
+    </p>
+
+    <pre><code>import { vi } from 'vitest';
+
+it('notifies subscribers on commit', () =&gt; {
+  const graph = createCausl();
+  const count = input(graph, 0);
+  const cb = vi.fn();
+
+  const unsubscribe = graph.subscribe(count, cb);
+  graph.commit(() =&gt; graph.set(count, 1));
+  graph.commit(() =&gt; graph.set(count, 2));
+  unsubscribe();
+  graph.commit(() =&gt; graph.set(count, 3));
+
+  expect(cb).toHaveBeenCalledTimes(2);
+  expect(cb).toHaveBeenLastCalledWith(2);
+});</code></pre>
+
+    <h2>2. Property-based fuzz with fast-check</h2>
+
+    <p>
+      Unit tests cover hand-picked inputs. They are good at confirming the path you remembered to
+      write down and bad at finding the one you forgot. Property-based tests &mdash; using
+      <a href="https://fast-check.dev" rel="noopener">fast-check</a> &mdash; flip the polarity:
+      describe a <em>property</em> that should hold for all valid inputs, then let the framework
+      generate hundreds or thousands of inputs and shrink any failures down to a minimal
+      counter-example.
+    </p>
+
+    <p>
+      Causl's testing seam ships <code>tieredPropertyTrials</code> from
+      <code>@causl/core/testing</code> &mdash; a fast-check configuration helper that enforces a
+      minimum trial count (1000, per SPEC &sect;15.2) and routes trial budgets through the
+      <code>CAUSL_FUZZ_TIER</code> env-var so CI can scale fuzz on different lanes.
+    </p>
+
+    <pre><code>import fc from 'fast-check';
+import { describe, it } from 'vitest';
+import { createCausl, input, derived } from '@causl/core';
+import { tieredPropertyTrials } from '@causl/core/testing';
+
+describe('doubled is always 2x count', () =&gt; {
+  it('holds for any commit sequence', () =&gt; {
+    fc.assert(
+      fc.property(fc.array(fc.integer()), (writes) =&gt; {
+        const graph = createCausl();
+        const count = input(graph, 0);
+        const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+
+        for (const v of writes) {
+          graph.commit(() =&gt; graph.set(count, v));
+        }
+
+        return graph.read(doubled) === graph.read(count) * 2;
+      }),
+      tieredPropertyTrials('doubled-invariant'),
+    );
+  });
+});</code></pre>
+
+    <p>
+      The string label (<code>'doubled-invariant'</code>) is folded into failure logs and seed
+      reports, so a CI failure tells you which property fired without spelunking through stack
+      traces. If a property fails, fast-check's shrinker minimises the counter-example and prints a
+      reproduction hint of the form
+      <code>CAUSL_FUZZ_SEED=1234567 pnpm test:run</code>; setting that env-var on a developer machine
+      replays the exact shrunk failure.
+    </p>
+
+    <h3>What kinds of properties to write</h3>
+
+    <p>
+      The most valuable properties are ones the type system cannot encode. A few archetypes:
+    </p>
+
+    <ul>
+      <li>
+        <strong>Glitch-freedom.</strong> For any commit sequence, no derived node ever observes an
+        intermediate value. Use <code>glitchDetector</code> from <code>@causl/core/testing</code>.
+      </li>
+      <li>
+        <strong>Atomicity.</strong> A thrown error inside <code>commit()</code> leaves the graph
+        identical to its pre-commit state.
+      </li>
+      <li>
+        <strong>Determinism.</strong> Two graphs built with the same arbitrary-generated
+        <code>DagSpec</code> and fed the same writes produce identical reads on every node.
+      </li>
+      <li>
+        <strong>Subscriber dispatch order.</strong> Subscribers fire in registration order, exactly
+        once per affected node per commit (Phase G).
+      </li>
+    </ul>
+
+    <p>
+      Several of these are pre-built helpers in <code>@causl/core/testing</code>:
+      <code>propertyDag</code> generates random valid DAGs, <code>arbAdversarialValue</code>
+      generates corner-case numbers (NaN, signed zero, INT32 boundaries) and pathological strings,
+      and <code>recomputeCounter</code> instruments a derived to count its recomputations.
+    </p>
+
+    <h2>3. The CAUSL_FUZZ_TIER budget</h2>
+
+    <p>
+      The 1000-trial floor is the right budget for the local <code>pnpm test</code> loop, but it is
+      not the right budget for a nightly CI job that has eight hours to find rare races. Causl
+      routes fuzz budgets through the <code>CAUSL_FUZZ_TIER</code> environment variable, and
+      <code>tieredPropertyTrials</code> picks up the tier automatically.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Tier</th><th>Trials per property</th><th>Typical lane</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>default</code></td><td>1,000</td><td>Local dev, push CI</td></tr>
+        <tr><td><code>pr</code></td><td>5,000</td><td>Pull-request gate</td></tr>
+        <tr><td><code>nightly</code></td><td>100,000</td><td>Scheduled nightly run</td></tr>
+        <tr><td><code>cargo-fuzz</code></td><td>(skip marker)</td><td>Rust fuzz harness handles it</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      The tier is picked from <code>CAUSL_FUZZ_TIER</code> first, then a numeric
+      <code>CAUSL_FUZZ_TRIALS</code> override, then the default floor. A typical CI workflow:
+    </p>
+
+    <pre><code># .github/workflows/pr.yml
+- name: Run PR fuzz tier
+  run: pnpm test:run
+  env:
+    CAUSL_FUZZ_TIER: pr
+
+# .github/workflows/nightly.yml
+- name: Run nightly fuzz tier
+  run: pnpm test:run
+  env:
+    CAUSL_FUZZ_TIER: nightly</code></pre>
+
+    <p>
+      For a local "bump the budget for an afternoon" run, set the env-var inline:
+    </p>
+
+    <pre><code>CAUSL_FUZZ_TIER=pr pnpm test:run
+# or, for an ad-hoc custom budget:
+CAUSL_FUZZ_TRIALS=20000 pnpm test:run</code></pre>
+
+    <blockquote>
+      <strong>Detailed explanation &mdash; why the floor is a structural check.</strong>
+      <code>tieredPropertyTrials</code> throws if a caller passes <code>numRuns</code> below 1000
+      without an explicit <code>unsafeTrials</code> escape hatch. The
+      <code>causl/no-unsafe-trials</code> lint rule rejects <code>unsafeTrials</code> without an
+      ESLint-disable comment documenting why. The floor is part of the engine's race-detection
+      commitment (SPEC &sect;15.2): properties are <em>not</em> a smoke test, they are the
+      replacement for runtime race detection on the JS side, so under-trialling them silently
+      weakens the safety net.
+    </blockquote>
+
+    <h2>4. Parity testing against a reference implementation</h2>
+
+    <p>
+      When you migrate an existing store to causl &mdash; or when you rewrite a derivation for
+      performance and want to be sure the new shape behaves identically &mdash; the cleanest
+      regression-proofing strategy is a <em>parity property</em>: pick a message vocabulary, define
+      both the old and new implementations as pure functions over it, and assert they produce the
+      same observed view for every sequence of messages fast-check can generate.
+    </p>
+
+    <p>
+      The <code>@causl/migration-check</code> package ships this exact pattern in
+      <code>test/properties/parity.property.test.ts</code> &mdash; it validates a Redux-to-causl
+      migration of a counter+todos store by running both sides in-process and comparing the
+      derived view.
+    </p>
+
+    <pre><code>import fc from 'fast-check';
+import { describe, it } from 'vitest';
+import { tieredPropertyTrials } from '@causl/core/testing';
+import { reduxOracle, causlMigrated } from './oracle';
+
+type Msg =
+  | { kind: 'inc' }
+  | { kind: 'dec' }
+  | { kind: 'set'; value: number }
+  | { kind: 'addTodo'; text: string };
+
+const arbMsg: fc.Arbitrary&lt;Msg&gt; = fc.oneof(
+  fc.constant({ kind: 'inc' } as const),
+  fc.constant({ kind: 'dec' } as const),
+  fc.integer().map((value) =&gt; ({ kind: 'set', value } as const)),
+  fc.string().map((text) =&gt; ({ kind: 'addTodo', text } as const)),
+);
+
+describe('redux ↔ causl parity', () =&gt; {
+  it('produces the same view for any Msg sequence', () =&gt; {
+    fc.assert(
+      fc.property(fc.array(arbMsg, { maxLength: 200 }), (msgs) =&gt; {
+        const oracle = msgs.reduce(reduxOracle, INITIAL_VIEW);
+        const migrated = msgs.reduce(causlMigrated, INITIAL_VIEW);
+        return JSON.stringify(oracle) === JSON.stringify(migrated);
+      }),
+      tieredPropertyTrials('redux-causl-parity'),
+    );
+  });
+});</code></pre>
+
+    <p>
+      The two encodings are <em>structurally distinct</em> &mdash; mutation-on-state vs. graph commit
+      plus derivation &mdash; which is exactly why the property is meaningful. A parity-breaking
+      regression in either path surfaces as a shrunk Msg-sequence counter-example you can paste
+      directly into a unit test.
+    </p>
+
+    <p>
+      The same pattern works for non-Redux references: a hand-written reducer, a snapshot of the
+      pre-causl code, or even a second causl graph with a different DAG shape. The only contract is
+      that both sides accept the same message vocabulary and project to the same view shape.
+    </p>
+
+    <h2>5. Integration with vitest</h2>
+
+    <p>
+      Causl tests are plain vitest tests. There are a few conventions worth adopting:
+    </p>
+
+    <ol>
+      <li>
+        <strong>Keep property tests in a <code>test/properties/</code> directory.</strong> The
+        conformance meta-test (<code>spec-15.2-conformance.test.ts</code>) walks that directory to
+        confirm every file uses <code>tieredPropertyTrials</code> or <code>propertyTrials</code>.
+        Putting them anywhere else silently bypasses the floor enforcement.
+      </li>
+      <li>
+        <strong>Set <code>testTimeout</code> high enough for the <code>nightly</code> tier.</strong>
+        100,000 trials of a non-trivial property can take minutes. The default 5-second vitest
+        timeout will abort. A typical <code>vitest.config.ts</code> sets
+        <code>testTimeout: 600_000</code> on the property-test project.
+      </li>
+      <li>
+        <strong>Pin the seed in CI on failure.</strong> The failure reporter shipped with causl's
+        <code>propertyOptions</code> prints a <code>CAUSL_FUZZ_SEED=…</code> line; copy it into a
+        rerun job so the same shrunk counter-example replays without rebuilding the matrix.
+      </li>
+      <li>
+        <strong>Co-locate unit and property tests.</strong> A property test that finds a shrunk
+        counter-example becomes a unit test &mdash; paste the values verbatim, drop the
+        <code>fc.assert</code> wrapper, and check it in. The property keeps fuzzing for new failures
+        while the unit test guards the specific regression.
+      </li>
+    </ol>
+
+    <h3>A minimal vitest.config.ts</h3>
+
+    <pre><code>import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    include: ['test/**/*.test.ts'],
+    testTimeout: 600_000,
+    // Property tests log the seed on failure; let vitest pass stdout through.
+    silent: false,
+  },
+});</code></pre>
+
+    <h2>What this guide does <em>not</em> cover</h2>
+
+    <p>
+      A few testing concerns live in adjacent packages and have their own pages:
+    </p>
+
+    <ul>
+      <li>
+        <strong>Async resource lifecycles</strong> &mdash; race rows S-1 and S-2, the open-set
+        invariant, the conflict state machine: see the testing strategy in
+        <code>@causl/sync</code>. The pattern is the same (property tests under
+        <code>test/properties/</code>) but the arbitraries model async events rather than synchronous
+        writes.
+      </li>
+      <li>
+        <strong>Static analysis</strong> &mdash; <code>@causl/checker</code> catches a class of
+        races at lint time (forbidden transitions, missing precondition phases). It complements
+        runtime tests rather than replacing them.
+      </li>
+      <li>
+        <strong>Snapshot/restore round-trips</strong> &mdash; <code>@causl/persistence</code> ships
+        its own snapshot-roundtrip property; the testing pattern is identical but the arbitraries
+        model storage adapters.
+      </li>
+      <li>
+        <strong>React rendering tests</strong> &mdash; mount a component with
+        <code>@testing-library/react</code> and let <code>useCauslNode</code> drive the renders.
+        Causl itself does not need React test utilities.
+      </li>
+    </ul>
+
+    <p>
+      The four-layer stack &mdash; unit, property, tiered fuzz, parity &mdash; covers the vast
+      majority of correctness questions a causl-backed application needs to answer. Start with unit
+      tests for the paths you care about today; promote the ones that matter to properties; turn the
+      tier knob up in CI; and use parity whenever you have a reference implementation lying around.
+    </p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../../js/topbar.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,535 @@
+/* ============================================================
+   causl.org — shared page chrome.
+
+   Every page links this stylesheet (after topbar.css) for the
+   token system, typography, layout primitives, and content card
+   styles. Page-specific rules live in each page's <style> block.
+
+   Colors follow the Causl Brand Specification §8 verbatim:
+   Void Black / Ink Black / Stack Slate / Rat Graphite /
+   Snapshot Mist / Trace Ash / Async Cyan / Commit Green
+   plus the secondary tokens (Copper Wire / Conflict Amber /
+   Rollback Red / Mutation Violet). The legacy token names
+   (--obsidian, --causal-cyan, --mist, …) are preserved as
+   aliases of the spec tokens so existing pages keep rendering
+   without per-file rewrites.
+   ============================================================ */
+
+:root {
+  /* -- Primary spec tokens (Causl Brand Specification §8).
+        Names below are the SEMANTIC SPEC TOKENS. Short names
+        (--causl-cyan / red / amber / green / violet) are kept
+        as aliases below so every existing reference still
+        resolves; new code should prefer the semantic names. -- */
+  --causl-void:            #070A0F;
+  --causl-ink:             #0B1118;
+  --causl-slate:           #101822;
+  --causl-graphite:        #2B333D;
+  --causl-mist:            #D7E6EA;
+  --causl-ash:             #8FA2AA;
+  --causl-async-cyan:      #11D9FF;
+  --causl-commit-green:    #A7FF18;
+  --causl-copper:          #C8743D;
+  --causl-conflict-amber:  #FFB020;
+  --causl-rollback-red:    #FF4D5E;
+  --causl-mutation-violet: #7C4DFF;
+
+  /* -- Short-name aliases (compat with all pre-T2.1 references). -- */
+  --causl-cyan:    var(--causl-async-cyan);
+  --causl-green:   var(--causl-commit-green);
+  --causl-amber:   var(--causl-conflict-amber);
+  --causl-red:     var(--causl-rollback-red);
+  --causl-violet:  var(--causl-mutation-violet);
+
+  /* -- Legacy aliases — keep them pointing at the new spec values. */
+  --obsidian:        var(--causl-ink);
+  --obsidian-2:      var(--causl-void);
+  --slate-graphite:  var(--causl-slate);
+  --surface:         var(--causl-slate);
+  --surface-2:       #182032;
+  --night-line:      var(--causl-graphite);
+  --mist:            var(--causl-mist);
+  --pure-light:      #F7F8FA;
+  --steel:           var(--causl-ash);
+  --fog:             var(--causl-ash);
+
+  --causal-cyan:     var(--causl-cyan);
+  --causal-cyan-2:   #4FE4FF;
+  --signal-blue:     var(--causl-violet);
+  --commit-amber:    var(--causl-amber);
+  --conflict-coral:  var(--causl-red);
+  --success-mint:    var(--causl-green);
+
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --shadow-soft: 0 12px 36px rgba(0, 0, 0, 0.32);
+  --shadow-deep: 0 24px 80px rgba(0, 0, 0, 0.4);
+
+  --mono: "IBM Plex Mono", "JetBrains Mono", "SFMono-Regular",
+          Consolas, monospace;
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --max-page: 1180px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  color: var(--causl-mist);
+  background:
+    radial-gradient(circle at 18% 8%, rgba(17, 217, 255, 0.14),
+                    transparent 32rem),
+    radial-gradient(circle at 86% 18%, rgba(167, 255, 24, 0.08),
+                    transparent 30rem),
+    linear-gradient(180deg, var(--causl-void),
+                    var(--causl-ink) 55%, var(--causl-slate));
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* -- Layout primitives -------------------------------------------- */
+
+.page {
+  width: 100%;
+  max-width: var(--max-page);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.section { padding: 5rem 0 1rem; }
+.section:first-of-type { padding-top: 3rem; }
+
+.section-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: end;
+  margin-bottom: 2.2rem;
+}
+
+@media (max-width: 800px) {
+  .section { padding: 3.4rem 0 0.5rem; }
+  .section-head { grid-template-columns: 1fr; gap: 0.6rem; align-items: start; }
+}
+
+.section-kicker {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--causl-cyan);
+  margin-bottom: 0.5rem;
+}
+
+.section-head .lead {
+  color: var(--causl-mist);
+  font-size: 1.05rem;
+  max-width: 560px;
+  margin: 0;
+}
+
+/* -- Typography --------------------------------------------------- */
+
+h1, h2, h3, h4 { letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 0.6rem; }
+h1 { font-size: clamp(2.4rem, 5.5vw, 4rem); font-weight: 800; }
+h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 800; }
+h3 { font-size: 1.18rem; font-weight: 700; }
+p { margin: 0 0 0.85rem; color: var(--causl-mist); }
+
+a { color: var(--causl-cyan); text-decoration: none; transition: color 0.15s; }
+a:hover { color: var(--causal-cyan-2); text-decoration: underline; }
+
+code, kbd, samp, pre {
+  font-family: var(--mono);
+  font-size: 0.92em;
+}
+
+p code, li code, td code {
+  background: rgba(17, 217, 255, 0.08);
+  border: 1px solid rgba(17, 217, 255, 0.22);
+  color: var(--causl-mist);
+  padding: 0.05em 0.4em;
+  border-radius: 5px;
+  font-size: 0.86em;
+}
+
+/* -- Buttons ------------------------------------------------------ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.3rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.005em;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.2s,
+              color 0.2s, border-color 0.2s;
+}
+
+.button:hover { transform: translateY(-1px); }
+.button:active { transform: translateY(0); }
+
+.button.primary {
+  background: linear-gradient(135deg, var(--causl-cyan),
+                              var(--causl-green));
+  color: var(--causl-void);
+  box-shadow: 0 6px 24px rgba(17, 217, 255, 0.35);
+}
+
+.button.primary:hover {
+  box-shadow: 0 10px 32px rgba(17, 217, 255, 0.45);
+  color: var(--causl-void);
+  text-decoration: none;
+}
+
+.button.ghost {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(143, 162, 170, 0.28);
+  color: var(--causl-mist);
+}
+
+.button.ghost:hover {
+  border-color: var(--causl-cyan);
+  color: var(--causl-cyan);
+  background: rgba(17, 217, 255, 0.08);
+  text-decoration: none;
+}
+
+/* -- Cards -------------------------------------------------------- */
+
+.card {
+  background: linear-gradient(180deg,
+    rgba(16, 24, 34, 0.78), rgba(11, 17, 24, 0.82));
+  border: 1px solid rgba(143, 162, 170, 0.18);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem 1.5rem;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.card .mono-label {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--causl-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.55rem;
+}
+
+.card h3 { color: var(--causl-mist); }
+.card p:last-child { margin-bottom: 0; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
+
+@media (max-width: 900px) { .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+/* -- Code blocks -------------------------------------------------- */
+
+pre.codeblock {
+  background: linear-gradient(180deg,
+    rgba(11, 17, 24, 0.95), rgba(7, 10, 15, 0.95));
+  border: 1px solid rgba(17, 217, 255, 0.20);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.3rem;
+  overflow-x: auto;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--causl-mist);
+  box-shadow: var(--shadow-soft);
+}
+
+pre.codeblock code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.tok-kw { color: var(--causl-violet); }
+.tok-fn { color: var(--causl-cyan); }
+.tok-str { color: var(--causl-amber); }
+.tok-num { color: var(--causl-green); }
+.tok-com { color: var(--causl-ash); font-style: italic; }
+.tok-typ { color: var(--causl-copper); }
+
+/* -- Tables ------------------------------------------------------- */
+
+.table-wrap {
+  border: 1px solid rgba(143, 162, 170, 0.18);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg,
+    rgba(16, 24, 34, 0.72), rgba(11, 17, 24, 0.78));
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+table.compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+table.compare th,
+table.compare td {
+  padding: 0.7rem 0.85rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(143, 162, 170, 0.16);
+  white-space: nowrap;
+}
+
+table.compare th {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--causl-mist);
+  background: rgba(11, 17, 24, 0.65);
+  border-bottom: 1px solid rgba(17, 217, 255, 0.28);
+}
+
+table.compare td:first-child,
+table.compare th:first-child {
+  text-align: left;
+  font-weight: 600;
+  color: var(--causl-mist);
+  white-space: normal;
+  min-width: 320px;
+}
+
+table.compare th.col-causl,
+table.compare td.col-causl {
+  background: rgba(17, 217, 255, 0.10);
+  color: var(--causl-mist);
+}
+
+table.compare th.col-causl {
+  color: var(--causl-cyan);
+}
+
+table.compare tr:last-child td { border-bottom: none; }
+
+.glyph-yes { color: var(--causl-green); font-weight: 700; }
+.glyph-partial { color: var(--causl-amber); font-weight: 700; }
+.glyph-no { color: var(--causl-ash); font-weight: 700; }
+.glyph-fut { color: var(--causl-cyan); font-weight: 700; }
+.glyph-na { color: var(--causl-ash); font-style: italic; font-size: 0.84em; }
+
+/* -- CTA strip ---------------------------------------------------- */
+/* Foreground stays light (Snapshot Mist) so the strip reads on the
+   dark gradient even when rendered atop a paler background. #1253. */
+
+.cta-strip { color: var(--causl-mist); }
+.cta-strip p,
+.cta-strip h2,
+.cta-strip h3 { color: var(--causl-mist); }
+
+/* -- Footer ------------------------------------------------------- */
+
+.site-footer {
+  margin-top: 5rem;
+  padding: 2.5rem 0 3rem;
+  border-top: 1px solid rgba(143, 162, 170, 0.18);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(17, 217, 255, 0.10),
+                    transparent 24rem),
+    rgba(7, 10, 15, 0.6);
+}
+
+.site-footer .page {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.site-footer p { margin: 0; color: var(--causl-mist); font-size: 0.88rem; }
+
+.site-footer .footer-links {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.site-footer .footer-links a {
+  color: var(--causl-mist);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.site-footer .footer-links a:hover { color: var(--causl-cyan); }
+
+/* -- Light theme --------------------------------------------------
+   Light-mode floor: body text rgba(11,16,32,0.92), meta text
+   rgba(11,16,32,0.86), accent links use #0B95B0 (≥ 4.5:1 against
+   #F7F8FA). #1254, #1255.
+   ------------------------------------------------------------ */
+
+:root[data-theme="light"] {
+  --causl-void:            #F7F8FA;
+  --causl-ink:             #FFFFFF;
+  --causl-slate:           #F0F2F5;
+  --causl-graphite:        #D4D9DE;
+  --causl-mist:            #070A0F;
+  --causl-ash:             #2B333D;
+  --causl-async-cyan:      #0B95B0;
+  --causl-commit-green:    #2B8A1F;
+  --causl-mutation-violet: #5E36CC;
+  --causl-copper:          #8A4F22;
+  --causl-conflict-amber:  #B57500;
+  --causl-rollback-red:    #C8202F;
+  /* Short-name aliases re-point at the light values so consumers
+     of the short names get the light palette too. */
+  --causl-cyan:    var(--causl-async-cyan);
+  --causl-green:   var(--causl-commit-green);
+  --causl-amber:   var(--causl-conflict-amber);
+  --causl-red:     var(--causl-rollback-red);
+  --causl-violet:  var(--causl-mutation-violet);
+  --obsidian:       #070A0F;
+  --pure-light:     #070A0F;
+  --mist:           #070A0F;
+  --steel:          #2B333D;
+  --fog:            #2B333D;
+  --causal-cyan:    #0B95B0;
+  --causal-cyan-2:  #0F7E96;
+  --signal-blue:    #5E36CC;
+  --commit-amber:   #B57500;
+  --conflict-coral: #C8202F;
+  --success-mint:   #2B8A1F;
+}
+
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(11, 149, 176, 0.10),
+                    transparent 32rem),
+    radial-gradient(circle at 86% 18%, rgba(43, 138, 31, 0.06),
+                    transparent 30rem),
+    linear-gradient(180deg, #FFFFFF, #F7F8FA 60%, #F0F2F5);
+  color: rgba(11, 16, 32, 0.92);
+}
+
+:root[data-theme="light"] p { color: rgba(11, 16, 32, 0.86); }
+
+:root[data-theme="light"] .section-head .lead { color: rgba(11, 16, 32, 0.86); }
+
+:root[data-theme="light"] .topbar {
+  background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.94), rgba(247, 248, 250, 0.94));
+  border-bottom-color: rgba(11, 149, 176, 0.32);
+  color: rgba(11, 16, 32, 0.92);
+}
+
+:root[data-theme="light"] .topbar-brand,
+:root[data-theme="light"] .topbar .pronunciation,
+:root[data-theme="light"] .topbar .tagline,
+:root[data-theme="light"] .topbar-menu a {
+  color: rgba(11, 16, 32, 0.92);
+}
+
+:root[data-theme="light"] .topbar-menu a { border-color: rgba(11, 16, 32, 0.18); }
+
+:root[data-theme="light"] .topbar-menu a:hover {
+  background: rgba(11, 149, 176, 0.10);
+  border-color: rgba(11, 149, 176, 0.55);
+  color: rgba(11, 16, 32, 0.92);
+}
+
+:root[data-theme="light"] .topbar-menu a.is-current {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #0B95B0, #5E36CC);
+}
+
+/* The brand mark is a single plate-less SVG (img/causl-mark.svg) —
+   Async Cyan + Rollback Red read on both dark and light surfaces
+   per Causl Brand Specification §11, so no theme-swap is needed.
+   Earlier revisions toggled `content: url(...)`; that rule was
+   silently ignored by Safari < 17.4 (#1259 review) and is gone. */
+
+:root[data-theme="light"] .card {
+  background: linear-gradient(180deg, #FFFFFF, #F7F8FA);
+  border-color: rgba(11, 16, 32, 0.10);
+  color: rgba(11, 16, 32, 0.92);
+  box-shadow: 0 8px 24px rgba(11, 16, 32, 0.06);
+}
+
+:root[data-theme="light"] .card h3 { color: rgba(11, 16, 32, 0.92); }
+:root[data-theme="light"] .card p  { color: rgba(11, 16, 32, 0.86); }
+
+:root[data-theme="light"] pre.codeblock {
+  background: linear-gradient(180deg, #0B1118, #070A0F);
+  color: #D7E6EA;
+  border-color: rgba(11, 149, 176, 0.22);
+}
+
+:root[data-theme="light"] pre.codeblock .tok-kw  { color: #B59BFF; }
+:root[data-theme="light"] pre.codeblock .tok-fn  { color: #4FE4FF; }
+:root[data-theme="light"] pre.codeblock .tok-str { color: #FFB347; }
+:root[data-theme="light"] pre.codeblock .tok-num { color: #A7FF18; }
+:root[data-theme="light"] pre.codeblock .tok-com { color: #8FA2AA; }
+:root[data-theme="light"] pre.codeblock .tok-typ { color: #FFB347; }
+
+:root[data-theme="light"] .table-wrap {
+  background: #FFFFFF;
+  border-color: rgba(11, 16, 32, 0.10);
+}
+
+:root[data-theme="light"] table.compare th {
+  background: #F0F2F5;
+  color: rgba(11, 16, 32, 0.92);
+  border-bottom-color: rgba(11, 149, 176, 0.28);
+}
+
+:root[data-theme="light"] table.compare td:first-child { color: rgba(11, 16, 32, 0.92); }
+:root[data-theme="light"] table.compare td,
+:root[data-theme="light"] table.compare th { border-bottom-color: rgba(11, 16, 32, 0.10); }
+
+:root[data-theme="light"] table.compare th.col-causl { color: #0B95B0; }
+:root[data-theme="light"] table.compare td.col-causl {
+  background: rgba(11, 149, 176, 0.10);
+  color: rgba(11, 16, 32, 0.92);
+}
+
+:root[data-theme="light"] .button.primary { color: #FFFFFF; }
+:root[data-theme="light"] .button.primary:hover { color: #FFFFFF; }
+:root[data-theme="light"] .button.ghost {
+  background: rgba(11, 16, 32, 0.04);
+  border-color: rgba(11, 16, 32, 0.18);
+  color: rgba(11, 16, 32, 0.92);
+}
+:root[data-theme="light"] .button.ghost:hover {
+  background: rgba(11, 149, 176, 0.10);
+  border-color: rgba(11, 149, 176, 0.55);
+  color: rgba(11, 16, 32, 0.92);
+}
+
+:root[data-theme="light"] .cta-strip,
+:root[data-theme="light"] .cta-strip p,
+:root[data-theme="light"] .cta-strip h2,
+:root[data-theme="light"] .cta-strip h3 { color: rgba(11, 16, 32, 0.92); }
+
+:root[data-theme="light"] .site-footer {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(11, 149, 176, 0.14),
+                    transparent 24rem),
+    #FFFFFF;
+  border-top-color: rgba(11, 16, 32, 0.10);
+}
+
+:root[data-theme="light"] .site-footer p { color: rgba(11, 16, 32, 0.86); }
+:root[data-theme="light"] .site-footer .footer-links a { color: rgba(11, 16, 32, 0.92); }

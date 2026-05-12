@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Derived Nodes — Deep Dive — Causl</title>
+  <meta name="description" content="How derived() compute functions track dependencies, recompute through Phase D's Kahn topological sort, stay glitch-free, and stop propagating at the equality cutoff." />
+  <link rel="icon" href="../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../css/site.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: rgba(232, 238, 247, 0.86); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: rgba(11, 16, 32, 0.86); }
+  </style>
+</head>
+<body>
+  <header id="topbar" class="topbar">
+    <div class="topbar-content">
+      <a href="../../" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation"><span lang="en-fonipa">/ˈkɔː.zəl/</span> — like “causal”</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+    <button id="topbarBurger" class="topbar-burger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true" aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/">Tutorial</a>
+        <a href="/pages/documentation/usage/" class="is-current" aria-current="page">Usage Guide</a>
+        <a href="/pages/documentation/api/">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="/pages/brand/">Brand</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">☾</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="docs-content">
+    <h1>Derived Nodes — Deep Dive</h1>
+
+    <p>
+      A derived node is a value the engine recomputes for you whenever any of its inputs
+      change. This page works through how <code>derived()</code> does that in causl — the
+      dynamic dependency tracking inside your compute function, the Kahn topological
+      recompute that runs in <strong>Phase D</strong> of every commit, the glitch-freedom
+      guarantee it inherits from the four-line denotational equation in
+      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#3-denotational-semantics">SPEC §3</a>,
+      and the equality cutoff that lets long propagation chains short-circuit early.
+    </p>
+
+    <p>
+      If you have not yet read the
+      <a href="../getting-started/core-concepts.html">core concepts</a> page,
+      start there. This page assumes you know what <code>input()</code>,
+      <code>derived()</code>, and <code>graph.commit()</code> do at the API level
+      and goes after the mechanics underneath.
+    </p>
+
+    <h2>1. The four-line equation, restated</h2>
+
+    <p>
+      Every derived value in causl is a pure function of its inputs at the
+      <em>same logical time</em>. Concretely, if <code>d</code> is a derived built
+      from upstream behaviors <code>b₁ … bₙ</code>:
+    </p>
+
+    <pre><code>d(t) = f(b₁(t), b₂(t), …, bₙ(t))</code></pre>
+
+    <p>
+      The variable that does the work is <code>t</code>: the same <code>t</code> on the
+      left-hand side and every right-hand-side term. There is no intermediate moment in
+      which <code>b₁</code> is "already updated" but <code>b₂</code> "hasn't been notified
+      yet." Between commits the graph is read-only; inside a commit the engine recomputes
+      the affected sub-graph to a fixpoint before any subscriber observes anything.
+      Glitch-freedom in causl is not a heuristic, a debounce, or a settle-time — it falls
+      out of the SPEC §3 equation mechanically.
+    </p>
+
+    <h2>2. Writing a derived</h2>
+
+    <p>
+      A derived's compute function receives the graph and returns a value. It calls
+      <code>g.read(node)</code> for every input it depends on; the reads are how the
+      engine learns the dependency set. There is no manual dependency list, no
+      <code>useMemo</code>-style array of identities to keep in sync.
+    </p>
+
+    <pre><code>import { createCausl, input, derived } from '@causl/core';
+
+const graph = createCausl();
+
+const price    = input(graph, 100);
+const quantity = input(graph, 3);
+const taxRate  = input(graph, 0.08);
+
+const subtotal = derived(graph, (g) =&gt; g.read(price) * g.read(quantity));
+const total    = derived(graph, (g) =&gt; g.read(subtotal) * (1 + g.read(taxRate)));
+
+console.log(graph.read(total));  // 324
+
+graph.commit(() =&gt; {
+  graph.set(quantity, 5);
+});
+
+console.log(graph.read(total));  // 540</code></pre>
+
+    <p>
+      Two things happen at registration time. First, the engine evaluates the compute
+      eagerly — derived values are never <em>lazy</em> in causl; the value is real and
+      readable from the call site of <code>derived(...)</code>. Second, every
+      <code>g.read</code> call inside the compute is intercepted by a tracker that
+      records the dependency set. The four edges (<code>price → subtotal</code>,
+      <code>quantity → subtotal</code>, <code>subtotal → total</code>,
+      <code>taxRate → total</code>) are the graph the engine will walk.
+    </p>
+
+    <blockquote>
+      <strong>Detailed explanation — iterative, but still eager.</strong>
+      Through SPEC §5.1 Amendment 3 (PR&nbsp;#956) the registration-time evaluator walks
+      the dep graph with an explicit-stack driver rather than recursive function calls.
+      Every derived is still computed at registration time and every §3 / §5.1 invariant
+      holds byte-identically — but the depth ceiling on linear-chain registration lifts
+      past 12,000 nodes on Node 22+. An earlier attempt at a lazy default
+      (PR&nbsp;#946) broke 28 invariants and was reverted.
+    </blockquote>
+
+    <h2>3. Dynamic dependencies</h2>
+
+    <p>
+      The dependency set of a derived is not fixed at registration. Every recompute
+      re-runs the compute function from scratch, so a branch that <code>read</code>s
+      <code>quantity</code> on one tick and <code>g.read(quantity)</code> never again
+      on the next is a real, supported pattern:
+    </p>
+
+    <pre><code>const mode = input&lt;'tax' | 'discount'&gt;(graph, 'tax');
+const discount = input(graph, 0.1);
+
+const final = derived(graph, (g) =&gt; {
+  const base = g.read(subtotal);
+  if (g.read(mode) === 'tax') {
+    return base * (1 + g.read(taxRate));
+  }
+  return base * (1 - g.read(discount));
+});</code></pre>
+
+    <p>
+      While <code>mode === 'tax'</code>, the dep set of <code>final</code> is
+      <code>{ subtotal, mode, taxRate }</code>. Flip <code>mode</code> to
+      <code>'discount'</code> in a commit and the engine re-records the dep set to
+      <code>{ subtotal, mode, discount }</code>. A subsequent commit that writes
+      only <code>taxRate</code> will not dirty <code>final</code> at all — the engine
+      knows <code>final</code> no longer reads it, even though it did last commit.
+      This is what the SPEC means when it says causl tracks <em>dynamic</em>
+      dependencies rather than the static set you would get from a constructor
+      argument list.
+    </p>
+
+    <h3>3.1 Conditional dep growth and cycle detection</h3>
+
+    <p>
+      Because the dep set is recorded after each recompute, a conditional branch that
+      first reaches into a new upstream on commit&nbsp;N+1 may close a cycle the engine
+      could not have seen on commit&nbsp;N. Causl detects this at the first commit that
+      closes the cycle, not at registration time, by augmenting Phase D's Kahn pass with
+      a post-recompute back-edge probe (PRs&nbsp;#670 / #705) and throwing a structured
+      <code>CycleError</code>. The legacy <code>strictCycles</code> option is preserved
+      for backward compatibility but is a no-op.
+    </p>
+
+    <h2>4. Recursive derivations</h2>
+
+    <p>
+      A derived can read another derived. There is no API distinction — the read tracker
+      treats every node uniformly. Chains, fans, and diamonds are all just edges in a
+      DAG the engine will sort:
+    </p>
+
+    <pre><code>const a = input(graph, 1);
+
+const b = derived(graph, (g) =&gt; g.read(a) + 1);
+const c = derived(graph, (g) =&gt; g.read(a) * 2);
+const d = derived(graph, (g) =&gt; g.read(b) + g.read(c));  // diamond
+
+graph.commit(() =&gt; graph.set(a, 10));
+console.log(graph.read(d));  // 31, computed from b=11, c=20</code></pre>
+
+    <p>
+      In a less disciplined reactive library the diamond at <code>d</code> is the
+      canonical glitch source: <code>b</code> updates and notifies <code>d</code>;
+      <code>d</code> recomputes with the new <code>b</code> and the <em>old</em>
+      <code>c</code>; then <code>c</code> updates and <code>d</code> recomputes again.
+      Subscribers see two notifications and one arithmetically nonsensical
+      intermediate value. Causl does not have this state because between
+      Phase&nbsp;B and Phase&nbsp;E the graph is private to the engine. <code>d</code>
+      is dirtied once, ordered after <code>b</code> and <code>c</code> in the Kahn
+      topo, and recomputed exactly once against <code>b(t)</code> and <code>c(t)</code>
+      with the same <code>t</code>.
+    </p>
+
+    <h2>5. Phase D — the Kahn topological recompute</h2>
+
+    <p>
+      Phase D is where the headline recompute happens. The pipeline reaches it after
+      Phase A (preconditions), Phase B (input writes published, gated by
+      <code>Object.is</code>), Phase C (clock advance), and Phase C.5
+      (<code>lastWriteTime</code> stamp). Its job is to recompute every derived whose
+      value <em>might</em> have changed, in an order that visits each derived after all
+      of its dependencies.
+    </p>
+
+    <p>
+      The algorithm is textbook Kahn:
+    </p>
+
+    <ol>
+      <li>Seed a worklist with the affected sub-graph — every derived that transitively
+        depends on an input the commit just dirtied in Phase B.</li>
+      <li>Compute in-degrees over the affected sub-graph only. The unchanged remainder
+        of the DAG is not touched.</li>
+      <li>Pop a node with in-degree zero, recompute its value by re-running its compute
+        function under the read tracker, record its new dep set.</li>
+      <li>If the new value is <em>not</em> <code>Object.is</code>-equal to the previous
+        value, mark every dependent dirty and decrement their in-degrees; if it
+        <em>is</em> equal, do nothing — this is the equality cutoff (§6 below).</li>
+      <li>After each recompute, forward-walk the just-recorded deps along the live dep
+        graph; if the recomputed entry is reachable, throw <code>CycleError</code>
+        (the cycle-detection probe from PR&nbsp;#705).</li>
+      <li>Loop until the worklist is empty. A non-empty worklist with no in-degree-zero
+        node also indicates a cycle.</li>
+    </ol>
+
+    <p>
+      Every recompute is pure: same input snapshot at the same <code>GraphTime</code>,
+      same output value, full stop. That is SPEC §3 Theorem&nbsp;1 (determinism) and the
+      property the engine's replay-determinism contract is anchored to. The
+      <em>cost-of-commit headline</em> is that a commit producing <code>N</code> derived
+      recomputations runs in <code>O(N)</code>, not <code>O(graph size)</code>
+      — the affected sub-graph is the only thing Phase D walks.
+    </p>
+
+    <h2>6. The equality cutoff</h2>
+
+    <p>
+      The equality cutoff is the trick that makes large derived graphs cheap in
+      practice. After a recompute, the engine compares the new value to the previous
+      value with <code>Object.is</code>. If they are equal, downstream dependents are
+      <em>not</em> dirtied. Phase D stops walking that branch; Phase G never notifies
+      anyone tied to that node.
+    </p>
+
+    <pre><code>const x = input(graph, 5);
+const isPositive = derived(graph, (g) =&gt; g.read(x) &gt; 0);
+const sign       = derived(graph, (g) =&gt; g.read(isPositive) ? '+' : '-');
+
+let signNotifications = 0;
+graph.subscribe(sign, () =&gt; signNotifications++);
+
+graph.commit(() =&gt; graph.set(x, 7));   // isPositive: true -&gt; true, cutoff fires
+graph.commit(() =&gt; graph.set(x, 12));  // same, cutoff fires
+graph.commit(() =&gt; graph.set(x, -1));  // isPositive: true -&gt; false, propagates
+
+console.log(signNotifications);  // 1</code></pre>
+
+    <p>
+      <code>isPositive</code> is recomputed on every commit that writes <code>x</code>
+      — it is on the dirty path. But its value changes only when <code>x</code> crosses
+      zero, so <code>sign</code> is recomputed only then, and the subscriber fires only
+      then. This is the foundation of the <code>equality-cutoff × 10000</code> benchmark
+      cell and the reason large fan-out graphs of pure projections stay tractable.
+    </p>
+
+    <blockquote>
+      <strong>Detailed explanation — Object.is, not deep equality.</strong>
+      The cutoff is <code>Object.is</code>: <code>NaN</code> equals <code>NaN</code>,
+      <code>+0</code> does not equal <code>-0</code>, and objects compare by reference.
+      A derived that returns a fresh array each call —
+      <code>(g) =&gt; g.read(items).filter(p)</code> — will never trip the cutoff.
+      Cache the result with a stable identity (memoised projection, immutable
+      structure-shared value, reused TypedArray) if you want the cutoff to do work for
+      downstream nodes. <a href="../best-practices/stable-identity.html">Best practices
+      for stable identity</a> covers the patterns.
+    </blockquote>
+
+    <h2>7. Glitch-freedom in one paragraph</h2>
+
+    <p>
+      A "glitch" in reactive programming is an observed inconsistent intermediate state
+      — usually a downstream node that briefly reflects a mix of old and new upstream
+      values during propagation. Causl's glitch-freedom is structural: the user never
+      observes Phase D in motion, only Phase E's frozen result. The diamond from §4
+      cannot glitch because <code>d</code> is computed exactly once per commit, against
+      the topologically-ordered <code>b</code> and <code>c</code> values at the same
+      <code>t</code>. SPEC §3 Theorem&nbsp;2 names the property; SPEC §5 is the
+      implementation that satisfies it.
+    </p>
+
+    <h2>8. Performance trade-offs</h2>
+
+    <p>
+      What you get:
+    </p>
+    <ul>
+      <li><strong>O(affected sub-graph)</strong> recompute — a commit recomputes only
+        the transitive dependents of the inputs it dirtied, not the full graph.</li>
+      <li><strong>Equality cutoff</strong> stops propagation at any node whose value
+        survives the commit unchanged.</li>
+      <li><strong>Dynamic deps</strong> mean branches that read different upstreams on
+        different ticks adapt automatically; you never over-subscribe.</li>
+      <li><strong>One subscriber notification per actual value change</strong>, not per
+        dirty mark.</li>
+    </ul>
+
+    <p>
+      What you pay:
+    </p>
+    <ul>
+      <li><strong>Every recompute re-runs the whole compute function.</strong> There is
+        no incremental "only the part that changed" mode. Use intermediate derived
+        nodes to materialise expensive subcomputations and let the equality cutoff
+        guard them.</li>
+      <li><strong>Read tracking has per-call cost.</strong> A compute that calls
+        <code>g.read</code> a million times per recompute pays a Map probe each time.
+        Hoist reads out of inner loops.</li>
+      <li><strong>Identity, not structural equality.</strong> Computes that return fresh
+        objects defeat the cutoff. The fix is at the call site, not in the engine.</li>
+      <li><strong>Replay-determinism premium.</strong> Causl pays a ~3.5× factor over a
+        non-transactional reactive library on cutoff-bearing cells to ship
+        <code>commitLog</code> rebuild, <code>changedNodes</code> set construction,
+        <code>GraphTime</code> monotonicity, and <code>readAt</code> retention. SPEC
+        §17.5 documents the band; see
+        <a href="../../#where-causl-is-the-right-tool">where causl is and isn't the right tool</a>
+        if you do not need those four surfaces.</li>
+    </ul>
+
+    <h2>9. Reference identity is not a contract</h2>
+
+    <p>
+      One last hazard: <code>graph.read(node)</code> is not contractually required to
+      return the same JavaScript reference across calls. Reference identity is an
+      implementation detail of the current TypeScript engine; the day a Rust /
+      <code>wasmgc</code> backend lands per SPEC §17.6, <code>read()</code> for an
+      object-valued node will return a fresh deserialised reference each call.
+      Adopters who memoise on reference identity will silently re-render every commit
+      after migrating. The contractual surface is <em>value identity</em> via
+      <code>Object.is</code> at the same <code>GraphTime</code>. For memoisation keys
+      that survive a backend migration, key on <code>commit.time</code> or the per-node
+      version counter that <code>EngineTelemetry</code> exposes. SPEC §15.1 Amendment
+      (PR&nbsp;#1129) is the canonical reference;
+      <a href="../faq/reference-identity.html">the FAQ entry</a> walks through the
+      migration pitfalls.
+    </p>
+
+    <h2>10. What to read next</h2>
+
+    <ul>
+      <li><a href="commit-lifecycle.html">The commit lifecycle</a> — every phase from
+        A through H with the rollback story for each.</li>
+      <li><a href="subscribers.html">Subscribers and notifications</a> — how Phase G
+        dispatches per-node observers and how the equality cutoff propagates there.</li>
+      <li><a href="commit-metadata-derived.html">Commit-metadata deriveds</a> — the
+        Phase F.5 seam for derivations that read <code>graph.commitLog</code> and need
+        to see the commit they were produced by.</li>
+      <li><a href="../best-practices/derived-design.html">Best practices for derived
+        design</a> — when to split a compute, when to memoise, and when to drop down
+        to an input.</li>
+      <li><a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#5-commit-boundary">SPEC §5</a>
+        — the normative reference for Phase D, the eight named phases, and the
+        atomicity contract derived nodes inherit.</li>
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page">
+      <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="../../">Home</a>
+        <a href="../">Documentation</a>
+        <a href="../../benchmarks/">Benchmarks</a>
+        <a href="../../playground/">Playground</a>
+        <a href="../../spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../../../js/topbar.js" defer></script>
+</body>
+</html>
