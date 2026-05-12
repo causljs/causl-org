@@ -22,16 +22,19 @@
     .error-hero {
       max-width: 760px;
       margin: 0 auto;
-      padding: 18vh 1.2rem 6vh;
+      padding: 18vh var(--space-5) 6vh;
     }
 
+    /* Deliberately oversized "404" numeral (h1) — legitimate scoped
+       hero override so the page reads as a status page, not body
+       chrome. Kept after the #1265 sweep. */
     .error-numeral {
       font-size: clamp(7rem, 14vw, 13rem);
       font-weight: 800;
       letter-spacing: -0.04em;
       line-height: 1;
       color: var(--text-on-base);
-      margin: 0 0 0.5rem;
+      margin: 0 0 var(--space-2);
     }
 
     /* The single accent point — the middle "0" of 404 picks up the
@@ -44,7 +47,7 @@
       font-size: 0.85rem;
       color: var(--text-on-base-subtle);
       letter-spacing: 0.04em;
-      margin: 0 0 1rem;
+      margin: 0 0 var(--space-4);
       overflow-wrap: anywhere;
       /* Type-in animation — 600ms, one-shot, respects reduced motion. */
       overflow: hidden;
@@ -62,16 +65,19 @@
       height: 1px;
       background: var(--border-on-base);
       border: 0;
-      margin: 0 0 1.5rem;
+      margin: 0 0 var(--space-5);
       max-width: 18ch;
     }
 
+    /* The "Stale read." headline (h2) keeps its scoped clamp() so it
+       balances the oversized numeral above; site.css h2 would render
+       smaller than the visual hierarchy this page needs. */
     .error-headline {
       font-size: clamp(1.8rem, 4vw, 2.6rem);
       font-weight: 700;
       letter-spacing: -0.02em;
       color: var(--text-on-base);
-      margin: 0 0 1rem;
+      margin: 0 0 var(--space-4);
     }
 
     .error-body {
@@ -79,12 +85,12 @@
       line-height: 1.6;
       max-width: 44ch;
       color: var(--text-on-base-muted);
-      margin: 0 0 2rem;
+      margin: 0 0 var(--space-6);
     }
 
     .error-cta-row {
       display: flex;
-      gap: 1.2rem;
+      gap: var(--space-5);
       align-items: center;
       flex-wrap: wrap;
     }

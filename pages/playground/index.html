@@ -10,23 +10,25 @@
   <link rel="stylesheet" href="../../css/site.css" />
   <link rel="stylesheet" href="../../css/syntax.css" />
   <style>
+    /* Page-specific rules — spacing from --space-N grid, headings
+       inherit the unified site.css scale (#1265). */
     .hero {
-      padding-top: 2rem;
-      padding-bottom: 1.6rem;
+      padding-top: var(--space-6);
+      padding-bottom: var(--space-6);
     }
-    .hero h1 { margin-top: 1rem; }
+    .hero h1 { margin-top: var(--space-4); }
     .hero p.lede {
       font-size: 1.05rem;
       color: var(--text-on-base-muted);
       max-width: 720px;
-      margin: 1rem 0 1.4rem;
+      margin: var(--space-4) 0 var(--space-5);
     }
     :root[data-theme="light"] .hero p.lede { color: var(--text-on-base-muted); }
 
     #playground-root {
       max-width: var(--max-page);
       margin: 0 auto;
-      padding: 0 1.4rem 3rem;
+      padding: 0 var(--space-5) var(--space-7);
     }
 
     .toolbar {
