@@ -104,13 +104,26 @@
       are present in that state; the fifth (<code>idle</code>) carries nothing.
     </p>
 
-    <pre class="language-tsx"><code class="language-tsx">// from @causl/sync
+    <div class="codeblock-wrapper">
+    <pre class="language-tsx has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+    </aside>
+      <code class="language-tsx">// from @causl/sync
 type ResourceState&lt;T&gt; =
   | { state: 'idle' }
   | { state: 'loading';  origin: GraphTime; promise: Promise&lt;unknown&gt; }
   | { state: 'loaded';   value: T; origin: GraphTime; loadedAt: GraphTime }
   | { state: 'stale';    value: T; origin: GraphTime; loadedAt: GraphTime }
   | { state: 'errored';  error: unknown; origin: GraphTime; erroredAt: GraphTime }</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>The legal edges, taken straight from <code>docs/lifecycle.md</code> &sect;1:</p>
 
@@ -137,7 +150,25 @@ type ResourceState&lt;T&gt; =
 
     <h3>1. Register a resource</h3>
 
-    <pre class="language-typescript"><code class="language-typescript">import { createCausl } from '@causl/core';
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+    </aside>
+      <code class="language-typescript">import { createCausl } from '@causl/core';
 import { resource } from '@causl/sync';
 
 const graph = createCausl();
@@ -151,6 +182,8 @@ const user = resource(graph, 'user:42', {
 
 graph.read(user.node);
 // { state: 'idle' }</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       <code>resource()</code> allocates a single <code>Input&lt;ResourceState&lt;T&gt;&gt;</code>
@@ -161,7 +194,22 @@ graph.read(user.node);
 
     <h3>2. Drive the chart</h3>
 
-    <pre class="language-typescript"><code class="language-typescript">await user.fetch();
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+    </aside>
+      <code class="language-typescript">await user.fetch();
 graph.read(user.node);
 // { state: 'loaded', value: { id: 42, ... }, origin: 0, loadedAt: 1 }
 
@@ -172,6 +220,8 @@ graph.read(user.node);
 await user.fetch();
 graph.read(user.node);
 // { state: 'loaded', value: { id: 42, ... }, origin: 2, loadedAt: 3 }</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The handle is intentionally small: <code>fetch</code>, <code>invalidate</code>,
@@ -201,7 +251,25 @@ graph.read(user.node);
       <code>fetchOnce</code> runs:
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">function fetchOnce() {
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+    </aside>
+      <code class="language-typescript">function fetchOnce() {
   const origin = graph.now;             // GraphTime at fetch issue
   const loaderPromise = loader(origin);
   applyEvent('fetch:start', { kind: 'fetch-start', origin, promise });
@@ -215,6 +283,8 @@ graph.read(user.node);
     return value;
   });
 }</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The guard is the equality check, full stop. There is no debounce, no exponential
@@ -241,7 +311,22 @@ graph.read(user.node);
       late resolution would overwrite a state the host has already abandoned.
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">const r = resource(graph, 'feed', { loader: slowFetch });
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+    </aside>
+      <code class="language-typescript">const r = resource(graph, 'feed', { loader: slowFetch });
 
 const first = r.fetch();          // GraphTime 0 -&gt; 1, origin = 0
 r.fail(new Error('aborted'));     // GraphTime 1 -&gt; 2; state: 'errored'
@@ -252,6 +337,8 @@ const second = r.fetch();         // GraphTime 2 -&gt; 3; new origin = 2
 await first;
 graph.read(r.node);
 // { state: 'loaded', ... } from the second fetch, NOT the first.</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       No new mechanism is required: the row-6 staleness guard already covers this case
@@ -274,7 +361,20 @@ graph.read(r.node);
       the engine and must not silently commit against a node the host has parked.
     </p>
 
-    <pre class="language-tsx"><code class="language-tsx">// React component using the resource
+    <div class="codeblock-wrapper">
+    <pre class="language-tsx has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+    </aside>
+      <code class="language-tsx">// React component using the resource
 function Profile({ userId }: { userId: string }) {
   const handle = useCauslResource(graph, `user:${userId}`, {
     loader: (origin) =&gt; fetchUser(userId),
@@ -283,6 +383,8 @@ function Profile({ userId }: { userId: string }) {
   if (handle.state === 'errored') throw handle.error;
   return &lt;UserView user={handle.value} /&gt;;
 }</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       When <code>userId</code> changes from <code>'42'</code> to <code>'43'</code>
@@ -320,7 +422,20 @@ function Profile({ userId }: { userId: string }) {
       all from <code>open</code>; the other three are terminal.
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">import { createConflictRegistry } from '@causl/sync';
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+    </aside>
+      <code class="language-typescript">import { createConflictRegistry } from '@causl/sync';
 
 const registry = createConflictRegistry(graph, {
   openSet: openConflictsDerived,   // Derived&lt;ConflictBase[]&gt;
@@ -329,6 +444,8 @@ const registry = createConflictRegistry(graph, {
 registry.resolve(graph, 'conflict:7', { winner: 'remote' });
 registry.ignore(graph, 'conflict:8');
 registry.supersede(graph, 'conflict:9', 'conflict:10');</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <h3>Single-writer resolution</h3>
 
@@ -369,11 +486,22 @@ registry.supersede(graph, 'conflict:9', 'conflict:10');</code></pre>
       <code>BackendEngine</code> interface:
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">// From @causl/core
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+    </aside>
+      <code class="language-typescript">// From @causl/core
 interface BackendEngine {
   // ...
   evaluateStatechart(input: StatechartInput): StatechartResult;
 }</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The default <code>JsBackend.evaluateStatechart</code> dispatches structurally

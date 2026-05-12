@@ -86,7 +86,32 @@
       The <code>resource()</code> binder allocates one <code>InputNode&lt;ResourceState&lt;T&gt;&gt;</code> in the <code>idle</code> state and returns a handle with imperative triggers — <code>fetch</code>, <code>invalidate</code>, <code>fail</code>. Each trigger calls the reducer to compute the next state, then commits exactly once.
     </p>
 
-    <pre class="language-tsx"><code class="language-tsx">import { createCausl } from '@causl/core';
+    <div class="codeblock-wrapper">
+    <pre class="language-tsx has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+      <span class="codeblock-gutter-line">16</span>
+      <span class="codeblock-gutter-line">17</span>
+      <span class="codeblock-gutter-line">18</span>
+      <span class="codeblock-gutter-line">19</span>
+      <span class="codeblock-gutter-line">20</span>
+      <span class="codeblock-gutter-line">21</span>
+    </aside>
+      <code class="language-tsx">import { createCausl } from '@causl/core';
 import { resource } from '@causl/sync';
 
 interface User { id: number; name: string }
@@ -107,6 +132,8 @@ await user.fetch();
 
 graph.read(user.node);
 // =&gt; { state: 'loaded', value: { id: 42, name: ... }, origin: 1, loadedAt: 2 }</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Two things to notice. First, the loader receives the originating <code>GraphTime</code> as its argument — that's how the staleness guard later decides whether a slow resolve is still authoritative. Second, the value carried on the node is a tagged union; you never have to ask "is it loaded yet?" by checking for the presence of <code>value</code>. The <code>state</code> tag answers exhaustively.
@@ -118,12 +145,24 @@ graph.read(user.node);
       Here is the full <code>ResourceState&lt;T&gt;</code> type as it appears in <code>@causl/sync</code>:
     </p>
 
-    <pre class="language-tsx"><code class="language-tsx">type ResourceState&lt;T&gt; =
+    <div class="codeblock-wrapper">
+    <pre class="language-tsx has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+    </aside>
+      <code class="language-tsx">type ResourceState&lt;T&gt; =
   | { state: 'idle' }
   | { state: 'loading'; origin: GraphTime; promise: Promise&lt;unknown&gt; }
   | { state: 'loaded';  value: T; origin: GraphTime; loadedAt: GraphTime }
   | { state: 'stale';   value: T; origin: GraphTime; loadedAt: GraphTime }
   | { state: 'errored'; error: unknown; origin: GraphTime; erroredAt: GraphTime };</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Every "X may or may not have Y" optional is surfaced as a tag instead of being smuggled in as <code>undefined</code>. Reading <code>.value</code> on the <code>idle</code> tag is a compile-time error. Reading <code>.error</code> on the <code>loaded</code> tag is a compile-time error. The chart's edges are the only legal ways to move between tags.
@@ -161,7 +200,24 @@ graph.read(user.node);
       The decision logic — given a current state, an event, and a <code>GraphTime</code>, what is the next state? — is one pure function. The wiring shell (in <code>resource.ts</code>) reads the current node value, calls the reducer, and commits the result. The reducer never reads from the graph, never calls <code>graph.now</code>, never closures over engine handles. This is why a future Rust port of the engine can replace just the reducer without rewriting the adapter.
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">// Conceptual signature exposed via @causl/sync's BackendEngine seam.
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+    </aside>
+      <code class="language-typescript">// Conceptual signature exposed via @causl/sync's BackendEngine seam.
 // The structurally-equivalent core implementation lives at
 // packages/core/src/statechart-evaluator.ts.
 function evaluateStatechart(input: StatechartInput): StatechartResult;
@@ -174,6 +230,8 @@ type StatechartInput =
 type StatechartResult =
   | { kind: 'ok'; next: ResourceStateShape | ConflictRecord }
   | { kind: 'forbidden'; reason: ForbiddenStatechartTransition };</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       You will not normally call <code>evaluateStatechart</code> by hand — the <code>resource()</code> and <code>createConflictRegistry()</code> binders do that for you. But knowing the seam is there is what unlocks the next two patterns: <em>guards</em> and <em>race-row analysis</em>.
@@ -193,7 +251,25 @@ type StatechartResult =
       Without a guard, the older value clobbers the newer one. With the guard, the reducer checks <code>time &gt; event.loadingAt</code> and routes the late resolve to <code>stale</code> instead of <code>loaded</code> — the value is preserved (so callers that prefer stale-while-revalidate UX can show it), but the tag signals that the engine no longer considers it authoritative for <code>origin</code>.
     </p>
 
-    <pre class="language-tsx"><code class="language-tsx">// Two overlapping fetches, last-issued-wins via the staleness guard.
+    <div class="codeblock-wrapper">
+    <pre class="language-tsx has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+    </aside>
+      <code class="language-tsx">// Two overlapping fetches, last-issued-wins via the staleness guard.
 const u = resource&lt;User&gt;(graph, 'user:42', {
   loader: (origin) =&gt; slowFetch(origin),
 });
@@ -207,6 +283,8 @@ await Promise.allSettled([first, second]);
 // graph.now &gt; loadingAt and the reducer routes Loading → Stale.
 // The second resolve, arriving on a fresh loading episode at
 // graph.now === loadingAt, routes Loading → Loaded as normal.</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The <code>stalenessGuard</code> option defaults to <code>true</code>. Setting it to <code>false</code> opts into last-writer-wins semantics — late resolves clobber. The <code>@causl/checker</code> static lint flags this case explicitly because it is almost always a bug; the explicit opt-out exists for the rare adapter that needs it (e.g. a write-through cache with monotonic versioning of its own).
@@ -240,7 +318,26 @@ await Promise.allSettled([first, second]);
       A forbidden transition is what happens when the host tries to drive an edge the chart does not have. The reducer returns <code>{ kind: 'forbidden', reason: { region, from, to, id } }</code>; the wiring shell wraps that in <code>ForbiddenResourceTransitionError</code> and throws.
     </p>
 
-    <pre class="language-tsx"><code class="language-tsx">import { ForbiddenResourceTransitionError } from '@causl/sync';
+    <div class="codeblock-wrapper">
+    <pre class="language-tsx has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+    </aside>
+      <code class="language-tsx">import { ForbiddenResourceTransitionError } from '@causl/sync';
 
 const u = resource&lt;User&gt;(graph, 'user:42', { loader: fetchUser });
 
@@ -255,6 +352,8 @@ try {
     // the transition was refused.
   }
 }</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The forbidden-error class is a real safety net. It catches the "out-of-band websocket pushed an error for a resource we never fetched" mistake at the boundary — without it, the application would write the <code>errored</code> tag to an <code>idle</code> node and lose the precondition that <code>errored.origin</code> reflects an actual fetch. That precondition is what makes <code>whyUpdated()</code>'s per-edge classification work downstream.
@@ -266,7 +365,25 @@ try {
       <code>evaluateStatechart</code> dispatches on a <code>region</code> tag. The other implemented region is <code>ConflictRegistry</code> — a derived overlay onto an application-supplied open-set computation, with status arms <code>open</code>, <code>resolved</code>, <code>ignored</code>, <code>superseded</code>.
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">import { createConflictRegistry } from '@causl/sync';
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+    </aside>
+      <code class="language-typescript">import { createConflictRegistry } from '@causl/sync';
 
 const registry = createConflictRegistry(graph, {
   openSet: g =&gt; computeOpenConflicts(g),
@@ -280,6 +397,8 @@ registry.ignore(otherConflictId);
 
 registry.supersede(thirdId, { bySupersedingId: fourthId });
 // open → superseded; the chart has no edges out of any terminal</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The chart structure is similar — one source (<code>open</code>), three terminals, no edges back. The reducer rejects every <code>resolve</code> / <code>ignore</code> / <code>supersede</code> against a terminal as <code>ForbiddenConflictTransitionError</code>. Same machinery, different region. <code>evaluateStatechart</code>'s <code>region</code> dispatch is what keeps the two charts disjoint while sharing the seam.
@@ -291,7 +410,19 @@ registry.supersede(thirdId, { bySupersedingId: fourthId });
       Because the resource's state lives on a regular <code>InputNode</code>, every engine primitive composes unchanged. You can subscribe, you can derive over it, you can read at past <code>GraphTime</code> for time-travel debugging, and you can decode the transition reason from a commit with <code>whyUpdated()</code>.
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">import { whyUpdated } from '@causl/sync';
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+    </aside>
+      <code class="language-typescript">import { whyUpdated } from '@causl/sync';
 
 graph.subscribe(user.node, (next, prev, commit) =&gt; {
   const reason = whyUpdated(commit, prev, next);
@@ -299,6 +430,8 @@ graph.subscribe(user.node, (next, prev, commit) =&gt; {
   //       | 'fetch-reject' | 'invalidate' | 'fail' | 'evicted'
   console.log(`user:42: ${prev.state} → ${next.state} (${reason})`);
 });</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The seven <code>ResourceUpdateReason</code> arms are closed — adding a new reason is a SPEC-level change because every downstream consumer (devtools, persistence, the React adapter) exhaustively switches on the tag. That closedness is the same discipline as the chart itself: a finite, named set of legal transitions.

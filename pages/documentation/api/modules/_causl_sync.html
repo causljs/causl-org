@@ -63,11 +63,45 @@ ConflictRegistry sub-statechart whose states are
 <code>Open | Resolved | Ignored | Superseded</code>. Conflicts are not a node
 kind; they are a derived view of the engine's own lifecycle.</p>
 </blockquote>
-<a id="install" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><pre><code class="bash"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">add</span><span class="hl-1"> </span><span class="hl-3">@causl/sync</span><span class="hl-1"> </span><span class="hl-3">@causl/core</span>
-</code><button type="button">Copy</button></pre>
+<a id="install" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><div class="codeblock-wrapper">
+    <pre class="has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="bash"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">add</span><span class="hl-1"> </span><span class="hl-3">@causl/sync</span><span class="hl-1"> </span><span class="hl-3">@causl/core</span>
+</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
-<a id="resource" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Resource<a href="#resource" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><pre><code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createCausl</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/core&#39;</span><br/><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">resource</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/sync&#39;</span><br/><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()</span><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">items</span><span class="hl-1"> = </span><span class="hl-0">resource</span><span class="hl-1">&lt;</span><span class="hl-9">Item</span><span class="hl-1">[]&gt;(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-3">&#39;items&#39;</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-0">loader</span><span class="hl-5">:</span><span class="hl-1"> </span><span class="hl-2">async</span><span class="hl-1"> () </span><span class="hl-2">=&gt;</span><span class="hl-1"> </span><span class="hl-0">fetch</span><span class="hl-1">(</span><span class="hl-3">&#39;/api/items&#39;</span><span class="hl-1">).</span><span class="hl-0">then</span><span class="hl-1">((</span><span class="hl-5">r</span><span class="hl-1">) </span><span class="hl-2">=&gt;</span><span class="hl-1"> </span><span class="hl-5">r</span><span class="hl-1">.</span><span class="hl-0">json</span><span class="hl-1">()),</span><br/><span class="hl-1">})</span><br/><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">result</span><span class="hl-1"> = </span><span class="hl-8">await</span><span class="hl-1"> </span><span class="hl-5">items</span><span class="hl-1">.</span><span class="hl-0">fetch</span><span class="hl-1">()</span><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">state</span><span class="hl-1"> = </span><span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-5">items</span><span class="hl-1">.</span><span class="hl-5">node</span><span class="hl-1">)</span><br/><span class="hl-6">// state.state === &#39;idle&#39; | &#39;loading&#39; | &#39;loaded&#39; | &#39;stale&#39; | &#39;errored&#39;</span>
-</code><button type="button">Copy</button></pre>
+<a id="resource" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Resource<a href="#resource" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><div class="codeblock-wrapper">
+    <pre class="has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+    </aside>
+      <code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createCausl</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/core&#39;</span>
+<span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">resource</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/sync&#39;</span>
+
+<span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()</span>
+<span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">items</span><span class="hl-1"> = </span><span class="hl-0">resource</span><span class="hl-1">&lt;</span><span class="hl-9">Item</span><span class="hl-1">[]&gt;(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-3">&#39;items&#39;</span><span class="hl-1">, {</span>
+<span class="hl-1">  </span><span class="hl-0">loader</span><span class="hl-5">:</span><span class="hl-1"> </span><span class="hl-2">async</span><span class="hl-1"> () </span><span class="hl-2">=&gt;</span><span class="hl-1"> </span><span class="hl-0">fetch</span><span class="hl-1">(</span><span class="hl-3">&#39;/api/items&#39;</span><span class="hl-1">).</span><span class="hl-0">then</span><span class="hl-1">((</span><span class="hl-5">r</span><span class="hl-1">) </span><span class="hl-2">=&gt;</span><span class="hl-1"> </span><span class="hl-5">r</span><span class="hl-1">.</span><span class="hl-0">json</span><span class="hl-1">()),</span>
+<span class="hl-1">})</span>
+
+<span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">result</span><span class="hl-1"> = </span><span class="hl-8">await</span><span class="hl-1"> </span><span class="hl-5">items</span><span class="hl-1">.</span><span class="hl-0">fetch</span><span class="hl-1">()</span>
+<span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">state</span><span class="hl-1"> = </span><span class="hl-5">graph</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-5">items</span><span class="hl-1">.</span><span class="hl-5">node</span><span class="hl-1">)</span>
+<span class="hl-6">// state.state === &#39;idle&#39; | &#39;loading&#39; | &#39;loaded&#39; | &#39;stale&#39; | &#39;errored&#39;</span>
+</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
 <p><code>ResourceState&lt;T&gt;</code> is a SPEC §9 discriminated union (<code>idle</code>, <code>loading</code>,
 <code>loaded</code>, <code>stale</code>, <code>errored</code>) tagged on <code>state</code>. Reading <code>.value</code>
@@ -84,11 +118,63 @@ compares the originating <code>GraphTime</code> of the fetch to the current
 <code>GraphTime</code> at resolution; downstream consumers narrow on the tag
 before reading <code>.value</code>.</p>
 <p>Opt out per-resource for last-writer-wins:</p>
-<pre><code class="ts"><span class="hl-0">resource</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-3">&#39;items&#39;</span><span class="hl-1">, { </span><span class="hl-5">loader</span><span class="hl-1">, </span><span class="hl-5">stalenessGuard:</span><span class="hl-1"> </span><span class="hl-2">false</span><span class="hl-1"> })</span>
-</code><button type="button">Copy</button></pre>
+<div class="codeblock-wrapper">
+    <pre class="has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="ts"><span class="hl-0">resource</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-3">&#39;items&#39;</span><span class="hl-1">, { </span><span class="hl-5">loader</span><span class="hl-1">, </span><span class="hl-5">stalenessGuard:</span><span class="hl-1"> </span><span class="hl-2">false</span><span class="hl-1"> })</span>
+</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
-<a id="conflict-registry" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Conflict registry<a href="#conflict-registry" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><pre><code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createConflictRegistry</span><span class="hl-1">, </span><span class="hl-5">singleConflictWhen</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/sync&#39;</span><br/><br/><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">conflicts</span><span class="hl-1"> = </span><span class="hl-0">createConflictRegistry</span><span class="hl-1">&lt;</span><span class="hl-9">Item</span><span class="hl-1">[]&gt;(</span><span class="hl-5">graph</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-5">id:</span><span class="hl-1"> </span><span class="hl-3">&#39;conflicts&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-5">compute:</span><span class="hl-1"> </span><span class="hl-0">singleConflictWhen</span><span class="hl-1">(</span><br/><span class="hl-1">    </span><span class="hl-5">items</span><span class="hl-1">.</span><span class="hl-5">node</span><span class="hl-1">,</span><br/><span class="hl-1">    (</span><span class="hl-5">s</span><span class="hl-1">) </span><span class="hl-2">=&gt;</span><span class="hl-1"> </span><span class="hl-5">s</span><span class="hl-1">.</span><span class="hl-5">state</span><span class="hl-1"> === </span><span class="hl-3">&#39;errored&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">    () </span><span class="hl-2">=&gt;</span><span class="hl-1"> ({ </span><span class="hl-5">id:</span><span class="hl-1"> </span><span class="hl-3">&#39;items-errored&#39;</span><span class="hl-1">, </span><span class="hl-5">target:</span><span class="hl-1"> </span><span class="hl-5">items</span><span class="hl-1">.</span><span class="hl-5">key</span><span class="hl-1"> }),</span><br/><span class="hl-1">  ),</span><br/><span class="hl-1">})</span><br/><br/><span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">)</span><br/><span class="hl-6">// [{ kind: &#39;open&#39;, id: &#39;items-errored&#39;, target: &#39;items&#39;, value, raisedAt }]</span><br/><br/><span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">resolve</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-3">&#39;items-errored&#39;</span><span class="hl-1">, { </span><span class="hl-5">choice:</span><span class="hl-1"> </span><span class="hl-3">&#39;use-cache&#39;</span><span class="hl-1"> })</span><br/><span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">)</span><br/><span class="hl-6">// [{ kind: &#39;resolved&#39;, resolution: { choice: &#39;use-cache&#39; }, resolvedAt, ... }]</span><br/><br/><span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">ignore</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-3">&#39;items-errored&#39;</span><span class="hl-1">)      </span><span class="hl-6">// Open → Ignored</span><br/><span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">supersede</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-5">oldId</span><span class="hl-1">, </span><span class="hl-5">newId</span><span class="hl-1">)      </span><span class="hl-6">// Open → Superseded</span>
-</code><button type="button">Copy</button></pre>
+<a id="conflict-registry" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Conflict registry<a href="#conflict-registry" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><div class="codeblock-wrapper">
+    <pre class="has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+      <span class="codeblock-gutter-line">16</span>
+      <span class="codeblock-gutter-line">17</span>
+      <span class="codeblock-gutter-line">18</span>
+      <span class="codeblock-gutter-line">19</span>
+      <span class="codeblock-gutter-line">20</span>
+    </aside>
+      <code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createConflictRegistry</span><span class="hl-1">, </span><span class="hl-5">singleConflictWhen</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/sync&#39;</span>
+
+<span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">conflicts</span><span class="hl-1"> = </span><span class="hl-0">createConflictRegistry</span><span class="hl-1">&lt;</span><span class="hl-9">Item</span><span class="hl-1">[]&gt;(</span><span class="hl-5">graph</span><span class="hl-1">, {</span>
+<span class="hl-1">  </span><span class="hl-5">id:</span><span class="hl-1"> </span><span class="hl-3">&#39;conflicts&#39;</span><span class="hl-1">,</span>
+<span class="hl-1">  </span><span class="hl-5">compute:</span><span class="hl-1"> </span><span class="hl-0">singleConflictWhen</span><span class="hl-1">(</span>
+<span class="hl-1">    </span><span class="hl-5">items</span><span class="hl-1">.</span><span class="hl-5">node</span><span class="hl-1">,</span>
+<span class="hl-1">    (</span><span class="hl-5">s</span><span class="hl-1">) </span><span class="hl-2">=&gt;</span><span class="hl-1"> </span><span class="hl-5">s</span><span class="hl-1">.</span><span class="hl-5">state</span><span class="hl-1"> === </span><span class="hl-3">&#39;errored&#39;</span><span class="hl-1">,</span>
+<span class="hl-1">    () </span><span class="hl-2">=&gt;</span><span class="hl-1"> ({ </span><span class="hl-5">id:</span><span class="hl-1"> </span><span class="hl-3">&#39;items-errored&#39;</span><span class="hl-1">, </span><span class="hl-5">target:</span><span class="hl-1"> </span><span class="hl-5">items</span><span class="hl-1">.</span><span class="hl-5">key</span><span class="hl-1"> }),</span>
+<span class="hl-1">  ),</span>
+<span class="hl-1">})</span>
+
+<span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">)</span>
+<span class="hl-6">// [{ kind: &#39;open&#39;, id: &#39;items-errored&#39;, target: &#39;items&#39;, value, raisedAt }]</span>
+
+<span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">resolve</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-3">&#39;items-errored&#39;</span><span class="hl-1">, { </span><span class="hl-5">choice:</span><span class="hl-1"> </span><span class="hl-3">&#39;use-cache&#39;</span><span class="hl-1"> })</span>
+<span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">)</span>
+<span class="hl-6">// [{ kind: &#39;resolved&#39;, resolution: { choice: &#39;use-cache&#39; }, resolvedAt, ... }]</span>
+
+<span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">ignore</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-3">&#39;items-errored&#39;</span><span class="hl-1">)      </span><span class="hl-6">// Open → Ignored</span>
+<span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">supersede</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">, </span><span class="hl-5">oldId</span><span class="hl-1">, </span><span class="hl-5">newId</span><span class="hl-1">)      </span><span class="hl-6">// Open → Superseded</span>
+</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
 <a id="narrowing-on-kind" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Narrowing on <code>kind</code><a href="#narrowing-on-kind" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p><code>Conflict&lt;T&gt;</code> is the SPEC §9 discriminated union landed in #354 — the
 discriminator is <code>kind</code>, never <code>status</code>. Each variant carries exactly
@@ -96,8 +182,45 @@ the fields the ConflictRegistry sub-statechart guarantees in that
 state, so the <code>resolution</code>, <code>ignoredAt</code>, and <code>supersededBy</code> slots are
 not optionals on a single shape but per-variant fields the type system
 proves are reachable:</p>
-<pre><code class="ts"><span class="hl-8">for</span><span class="hl-1"> (</span><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">c</span><span class="hl-1"> </span><span class="hl-2">of</span><span class="hl-1"> </span><span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">)) {</span><br/><span class="hl-1">  </span><span class="hl-8">switch</span><span class="hl-1"> (</span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">kind</span><span class="hl-1">) {</span><br/><span class="hl-1">    </span><span class="hl-8">case</span><span class="hl-1"> </span><span class="hl-3">&#39;open&#39;</span><span class="hl-1">:</span><br/><span class="hl-1">      </span><span class="hl-5">ui</span><span class="hl-1">.</span><span class="hl-0">show</span><span class="hl-1">(</span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">target</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">value</span><span class="hl-1">)</span><br/><span class="hl-1">      </span><span class="hl-8">break</span><br/><span class="hl-1">    </span><span class="hl-8">case</span><span class="hl-1"> </span><span class="hl-3">&#39;resolved&#39;</span><span class="hl-1">:</span><br/><span class="hl-1">      </span><span class="hl-5">ui</span><span class="hl-1">.</span><span class="hl-0">audit</span><span class="hl-1">(</span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">id</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">resolution</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">resolvedAt</span><span class="hl-1">)</span><br/><span class="hl-1">      </span><span class="hl-8">break</span><br/><span class="hl-1">    </span><span class="hl-8">case</span><span class="hl-1"> </span><span class="hl-3">&#39;ignored&#39;</span><span class="hl-1">:</span><br/><span class="hl-1">      </span><span class="hl-5">ui</span><span class="hl-1">.</span><span class="hl-0">dim</span><span class="hl-1">(</span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">id</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">ignoredAt</span><span class="hl-1">)</span><br/><span class="hl-1">      </span><span class="hl-8">break</span><br/><span class="hl-1">    </span><span class="hl-8">case</span><span class="hl-1"> </span><span class="hl-3">&#39;superseded&#39;</span><span class="hl-1">:</span><br/><span class="hl-1">      </span><span class="hl-5">ui</span><span class="hl-1">.</span><span class="hl-0">link</span><span class="hl-1">(</span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">id</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">supersededBy</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">supersededAt</span><span class="hl-1">)</span><br/><span class="hl-1">      </span><span class="hl-8">break</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span>
-</code><button type="button">Copy</button></pre>
+<div class="codeblock-wrapper">
+    <pre class="has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+      <span class="codeblock-gutter-line">16</span>
+    </aside>
+      <code class="ts"><span class="hl-8">for</span><span class="hl-1"> (</span><span class="hl-2">const</span><span class="hl-1"> </span><span class="hl-4">c</span><span class="hl-1"> </span><span class="hl-2">of</span><span class="hl-1"> </span><span class="hl-5">conflicts</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-5">graph</span><span class="hl-1">)) {</span>
+<span class="hl-1">  </span><span class="hl-8">switch</span><span class="hl-1"> (</span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">kind</span><span class="hl-1">) {</span>
+<span class="hl-1">    </span><span class="hl-8">case</span><span class="hl-1"> </span><span class="hl-3">&#39;open&#39;</span><span class="hl-1">:</span>
+<span class="hl-1">      </span><span class="hl-5">ui</span><span class="hl-1">.</span><span class="hl-0">show</span><span class="hl-1">(</span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">target</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">value</span><span class="hl-1">)</span>
+<span class="hl-1">      </span><span class="hl-8">break</span>
+<span class="hl-1">    </span><span class="hl-8">case</span><span class="hl-1"> </span><span class="hl-3">&#39;resolved&#39;</span><span class="hl-1">:</span>
+<span class="hl-1">      </span><span class="hl-5">ui</span><span class="hl-1">.</span><span class="hl-0">audit</span><span class="hl-1">(</span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">id</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">resolution</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">resolvedAt</span><span class="hl-1">)</span>
+<span class="hl-1">      </span><span class="hl-8">break</span>
+<span class="hl-1">    </span><span class="hl-8">case</span><span class="hl-1"> </span><span class="hl-3">&#39;ignored&#39;</span><span class="hl-1">:</span>
+<span class="hl-1">      </span><span class="hl-5">ui</span><span class="hl-1">.</span><span class="hl-0">dim</span><span class="hl-1">(</span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">id</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">ignoredAt</span><span class="hl-1">)</span>
+<span class="hl-1">      </span><span class="hl-8">break</span>
+<span class="hl-1">    </span><span class="hl-8">case</span><span class="hl-1"> </span><span class="hl-3">&#39;superseded&#39;</span><span class="hl-1">:</span>
+<span class="hl-1">      </span><span class="hl-5">ui</span><span class="hl-1">.</span><span class="hl-0">link</span><span class="hl-1">(</span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">id</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">supersededBy</span><span class="hl-1">, </span><span class="hl-5">c</span><span class="hl-1">.</span><span class="hl-5">supersededAt</span><span class="hl-1">)</span>
+<span class="hl-1">      </span><span class="hl-8">break</span>
+<span class="hl-1">  }</span>
+<span class="hl-1">}</span>
+</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
 <p>The shape mirrors <code>docs/lifecycle.md</code> §1's ConflictRegistry chart:
 three legal transitions out of <code>Open</code> (<code>resolve</code>, <code>ignore</code>,
@@ -150,12 +273,26 @@ in the root <code>package.json</code>:</p>
 </tbody>
 </table>
 <p>Resource-only consumers:</p>
-<pre><code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">resource</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/sync/resource&#39;</span>
-</code><button type="button">Copy</button></pre>
+<div class="codeblock-wrapper">
+    <pre class="has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">resource</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/sync/resource&#39;</span>
+</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
 <p>Conflict-only consumers:</p>
-<pre><code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createConflictRegistry</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/sync/conflict&#39;</span>
-</code><button type="button">Copy</button></pre>
+<div class="codeblock-wrapper">
+    <pre class="has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="ts"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createConflictRegistry</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/sync/conflict&#39;</span>
+</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
 <p>The full barrel <code>@causl/sync</code> re-exports both surfaces. A PR that
 crosses one of the ceilings fails the <code>size — bundle-size gate</code> and

@@ -497,7 +497,21 @@
           <h3>Inter / Geist<br>IBM Plex Mono</h3>
           <p>Use a neutral sans serif for product and docs, paired with a crisp monospace for commits, IDs, graph terms, and package names.</p>
         </div>
-        <pre class="code-block"><code><span class="cyan">const</span> graph = createCausl()
+        <div class="codeblock-wrapper">
+    <pre class="code-block has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+    </aside>
+      <code><span class="cyan">const</span> graph = createCausl()
 <span class="cyan">const</span> total = graph.derived(<span class="amber">'total'</span>, get =&gt;
   get(quantity) * get(rate)
 )
@@ -507,6 +521,8 @@ graph.commit(<span class="amber">'update-rate'</span>, tx =&gt; {
 })
 
 <span class="blue">// subscribers see one committed snapshot</span></code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
       </div>
     </section>
 
