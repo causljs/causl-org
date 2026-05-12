@@ -69,7 +69,27 @@
 
     <h2>1. The basic shape</h2>
 
-    <pre class="language-typescript"><code class="language-typescript">import { createCausl, input } from '@causl/core';
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+      <span class="codeblock-gutter-line">16</span>
+    </aside>
+      <code class="language-typescript">import { createCausl, input } from '@causl/core';
 
 const graph = createCausl();
 const count = input(graph, 0);
@@ -85,6 +105,8 @@ graph.commit(() =&gt; {
 // fires from Phase G:   "count = 5 at 1"
 
 unsubscribe();</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Three things happen at <code>subscribe()</code>:
@@ -139,13 +161,26 @@ unsubscribe();</code></pre>
       Phase G's dispatch loop walks.
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">const log: string[] = [];
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+    </aside>
+      <code class="language-typescript">const log: string[] = [];
 graph.subscribe(count, v =&gt; log.push(`A:${v}`));
 graph.subscribe(count, v =&gt; log.push(`B:${v}`));
 graph.subscribe(count, v =&gt; log.push(`C:${v}`));
 
 graph.commit(() =&gt; { graph.set(count, 1) });
 // log[3..6] === ['A:1', 'B:1', 'C:1']</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Across <em>different</em> nodes within a single commit, the firing order is implementation-
@@ -187,7 +222,20 @@ graph.commit(() =&gt; { graph.set(count, 1) });
       because the in-flight commit has already published.
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">// WRONG — subscribes inside a compute. H3 hazard.
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+    </aside>
+      <code class="language-typescript">// WRONG — subscribes inside a compute. H3 hazard.
 const bad = derived(graph, g =&gt; {
   graph.subscribe(otherNode, v =&gt; console.log(v));  // do not do this
   return g.read(input1) * 2;
@@ -196,6 +244,8 @@ const bad = derived(graph, g =&gt; {
 // RIGHT — subscribe at the application boundary, read inside the compute.
 const good = derived(graph, g =&gt; g.read(input1) * 2);
 graph.subscribe(good, v =&gt; console.log(v));</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Calling <code>graph.commit()</code> from inside a derived compute is a related but stricter
@@ -230,13 +280,26 @@ graph.subscribe(good, v =&gt; console.log(v));</code></pre>
         throws <code>NodeDisposedError</code>.</li>
     </ul>
 
-    <pre class="language-typescript"><code class="language-typescript">const handle = graph.subscribe(count, observer);
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+    </aside>
+      <code class="language-typescript">const handle = graph.subscribe(count, observer);
 handle();   // observer detached
 handle();   // no-op, no double-decrement, no throw
 
 graph.dispose(count);
 // any retained handle is now a stale closure; calling it
 // is still a no-op, but you cannot resubscribe to `count`.</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <blockquote>
       <p><strong>Long-running processes and subscriber leaks.</strong> Every long-running causl
@@ -257,9 +320,18 @@ graph.dispose(count);
       shape:
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">graph.subscribe(loading, (v, t) =&gt; {
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+    </aside>
+      <code class="language-typescript">graph.subscribe(loading, (v, t) =&gt; {
   if (v === false) console.log(`finished loading at ${t}`);
 }, { transient: true });</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The transient flag changes the lifecycle, not the semantics:
@@ -312,7 +384,20 @@ graph.dispose(count);
       <li>Dispatch continues with the next observer.</li>
     </ol>
 
-    <pre class="language-typescript"><code class="language-typescript">import { createCausl } from '@causl/core';
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+    </aside>
+      <code class="language-typescript">import { createCausl } from '@causl/core';
 
 const graph = createCausl({
   onObserverError(error, ctx) {
@@ -321,6 +406,8 @@ const graph = createCausl({
     metrics.increment('causl.observer_error', { source: ctx.source });
   },
 });</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The <code>ObserverErrorContext.source</code> tag is a closed discriminated union. There are

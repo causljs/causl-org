@@ -87,7 +87,30 @@
       propagations, no other phase begins.
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">import { createCausl } from '@causl/core'
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+      <span class="codeblock-gutter-line">16</span>
+      <span class="codeblock-gutter-line">17</span>
+      <span class="codeblock-gutter-line">18</span>
+      <span class="codeblock-gutter-line">19</span>
+    </aside>
+      <code class="language-typescript">import { createCausl } from '@causl/core'
 
 const graph = createCausl()
 const a = graph.input('a', 1)
@@ -106,6 +129,8 @@ graph.commit('bump-both', tx =&gt; {
   tx.set(b, 200)
 })
 // 301 — exactly one notification, not two</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Four invariants live in that snippet: atomic commit (the
@@ -143,9 +168,18 @@ graph.commit('bump-both', tx =&gt; {
       order —
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">useEffect(() =&gt; { setHighlights(deriveFromSelection(selection, plan)) }, [selection, plan])
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+    </aside>
+      <code class="language-typescript">useEffect(() =&gt; { setHighlights(deriveFromSelection(selection, plan)) }, [selection, plan])
 useEffect(() =&gt; { setActiveAttachments(forSelection(selection)) }, [selection])
 useEffect(() =&gt; { setPlanPings(forHighlights(highlights)) }, [highlights])</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       — you have hit the wall causl is built for. The wall is not "we need a
@@ -183,9 +217,18 @@ useEffect(() =&gt; { setPlanPings(forHighlights(highlights)) }, [highlights])</c
 
     <h3>1. Create the graph</h3>
 
-    <pre class="language-typescript"><code class="language-typescript">import { createCausl } from '@causl/core'
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+    </aside>
+      <code class="language-typescript">import { createCausl } from '@causl/core'
 
 const graph = createCausl()</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       <code>createCausl()</code> returns the seven-method canonical API:
@@ -202,9 +245,18 @@ const graph = createCausl()</code></pre>
 
     <h3>2. Register inputs and derivations</h3>
 
-    <pre class="language-typescript"><code class="language-typescript">const count = graph.input('count', 0)
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+    </aside>
+      <code class="language-typescript">const count = graph.input('count', 0)
 const doubled = graph.derived('doubled', g =&gt; g(count) * 2)
 const label   = graph.derived('label', g =&gt; `count is ${g(count)} (×2 = ${g(doubled)})`)</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Names are not cosmetic. They appear in <code>graph.explain</code> output,
@@ -216,11 +268,22 @@ const label   = graph.derived('label', g =&gt; `count is ${g(count)} (×2 = ${g(
 
     <h3>3. Commit to mutate</h3>
 
-    <pre class="language-typescript"><code class="language-typescript">graph.commit('bump', tx =&gt; {
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+    </aside>
+      <code class="language-typescript">graph.commit('bump', tx =&gt; {
   tx.set(count, 42)
 })
 
 console.log(graph.read(label))  // "count is 42 (×2 = 84)"</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Writes happen only inside <code>graph.commit(intent, tx =&gt; …)</code>.
@@ -232,7 +295,19 @@ console.log(graph.read(label))  // "count is 42 (×2 = 84)"</code></pre>
 
     <h3>4. Subscribe to observe</h3>
 
-    <pre class="language-typescript"><code class="language-typescript">const unsubscribe = graph.subscribe(label, next =&gt; {
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+    </aside>
+      <code class="language-typescript">const unsubscribe = graph.subscribe(label, next =&gt; {
   console.log('label changed:', next)
 })
 
@@ -240,6 +315,8 @@ graph.commit('bump-again', tx =&gt; tx.set(count, 7))
 // "label changed: count is 7 (×2 = 14)"
 
 unsubscribe()</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Subscribers fire in Phase&nbsp;G, after the <code>Commit</code> is frozen
@@ -251,7 +328,14 @@ unsubscribe()</code></pre>
 
     <h3>5. Read on demand</h3>
 
-    <pre class="language-typescript"><code class="language-typescript">const current = graph.read(doubled)  // 14</code></pre>
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="language-typescript">const current = graph.read(doubled)  // 14</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <blockquote>
       <strong>Detailed explanation — reference identity.</strong>

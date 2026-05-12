@@ -68,7 +68,14 @@
 
     <p>SPEC §17.5 commits to a measurable, bounded cost for those surfaces. On three contract-bearing benchmark cells — <code>equality-cutoff &times; 10000</code>, <code>equality-cutoff-fanout-10k &times; 10000</code>, and <code>spreadsheet-100x100 &times; 10000</code> — the engine guarantees:</p>
 
-    <pre class="language-typescript"><code class="language-typescript">mobx_median &times; 3.0  &le;  causl_median  &le;  mobx_median &times; 8.0</code></pre>
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="language-typescript">mobx_median &times; 3.0  &le;  causl_median  &le;  mobx_median &times; 8.0</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>The band has two boundaries that mean different things:</p>
 
@@ -95,13 +102,27 @@
 
     <h3>Quick run</h3>
 
-    <pre class="language-bash"><code class="language-bash">pnpm bench</code></pre>
+    <div class="codeblock-wrapper">
+    <pre class="language-bash has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="language-bash">pnpm bench</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>This drives <code>packages/bench/src/run.ts</code> with the default profile, sweeping the seven canonical cells (<code>diamond</code>, <code>scrolling-viewport</code>, <code>dynamic-deps</code>, <code>async-race</code>, <code>batch-commit</code>, <code>equality-cutoff</code>, <code>large-fanout</code>) at the production scales and printing wall-clock medians per library per cell. Use it in development to spot order-of-magnitude regressions in the inner loop you are working on.</p>
 
     <h3>Full report</h3>
 
-    <pre class="language-bash"><code class="language-bash">pnpm bench:report</code></pre>
+    <div class="codeblock-wrapper">
+    <pre class="language-bash has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="language-bash">pnpm bench:report</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>This drives <code>src/report.ts</code>, writes <code>report/benchmark_results.json</code> and <code>report/benchmark_history.json</code>, and emits a Markdown table with median &Delta;%, p95 &Delta;%, CoV, and per-cell win/loss attribution. The same JSON shape feeds the regression-gate (<code>pnpm bench:gate</code>) and the hypothesis-catalogue check (<code>pnpm bench:check-hypotheses</code>). Run this when you want a number to put in a PR body.</p>
 
@@ -115,7 +136,14 @@
 
     <p>For PR-sized investigations the focused driver runs only the three SPEC §17.5 cells in seconds rather than the 30+ minutes a full sweep takes:</p>
 
-    <pre class="language-bash"><code class="language-bash">pnpm --filter @causl/bench bench --scenarios equality-cutoff,equality-cutoff-fanout-10k,spreadsheet-100x100 --scale 10000</code></pre>
+    <div class="codeblock-wrapper">
+    <pre class="language-bash has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="language-bash">pnpm --filter @causl/bench bench --scenarios equality-cutoff,equality-cutoff-fanout-10k,spreadsheet-100x100 --scale 10000</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>The full audit driver is <code>packages/bench/src/freeze-impact-cli.ts</code>; the smaller-cell entry points share the same harness so the numbers compose with the full report.</p>
 
@@ -125,7 +153,21 @@
 
     <p>This sounds obvious; the consequence is not. In a derived graph where a single input writes its dependent column on every commit, the equality cutoff turns a topological-recompute-of-everything into a topological-recompute-of-nothing. The <code>equality-cutoff &times; 10000</code> cell is named after exactly this scenario: 10,000 derived nodes fanning out from one input that is written to with a value that compares equal to its current value.</p>
 
-    <pre class="language-typescript"><code class="language-typescript">import { createCausl, input, derived } from '@causl/core';
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+    </aside>
+      <code class="language-typescript">import { createCausl, input, derived } from '@causl/core';
 
 const graph = createCausl();
 const source = input(graph, { count: 0 });
@@ -135,6 +177,8 @@ graph.commit(() =&gt; {
   // Same value: equality cutoff drops the write, doubled is NOT recomputed.
   graph.set(source, { count: 0 });
 });</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>Two things are worth knowing about this:</p>
 
@@ -163,7 +207,24 @@ graph.commit(() =&gt; {
 
     <p>The adapter heuristic lets adopters opt in to <em>auto-adaption</em>: causl probes the host, picks the highest available bridge tier (<code>wasmgc-builtins</code> &gt; <code>wasmgc-classic</code> &gt; <code>serde-json</code>), and falls back to the TS engine when no tier is available. The default is the TS engine; <code>WasmBackend</code> is opt-in even when the host supports it.</p>
 
-    <pre class="language-typescript"><code class="language-typescript">import { createCausl } from '@causl/core';
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+    </aside>
+      <code class="language-typescript">import { createCausl } from '@causl/core';
 import { loadWasmBackend, WasmBackendUnavailableError } from '@causl/core/wasm';
 
 async function chooseBackend() {
@@ -176,6 +237,8 @@ async function chooseBackend() {
 }
 
 const graph = createCausl({ backend: await chooseBackend() });</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>The structured-code fallback chain (<code>CAUSL_WASM_NOT_BUILT</code>, <code>CAUSL_WASM_UNAVAILABLE</code>, <code>CAUSL_WASM_CSP_BLOCKED</code>, <code>CAUSL_WASM_BRIDGE_UNAVAILABLE</code>) means a single try/catch covers every host where WASM is not viable — CSP without <code>'wasm-unsafe-eval'</code>, embedded runtimes with WASM stripped, hosts where <code>WebAssembly.Module</code> is undefined.</p>
 

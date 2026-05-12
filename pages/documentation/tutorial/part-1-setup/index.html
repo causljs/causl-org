@@ -86,9 +86,18 @@
 
     <p>Open a terminal and run:</p>
 
-    <pre class="language-bash"><code class="language-bash">pnpm create vite@latest incident-tracker --template react-ts
+    <div class="codeblock-wrapper">
+    <pre class="language-bash has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+    </aside>
+      <code class="language-bash">pnpm create vite@latest incident-tracker --template react-ts
 cd incident-tracker
 pnpm install</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       If you prefer npm or yarn, the equivalents are <code>npm create vite@latest …</code>
@@ -113,7 +122,14 @@ pnpm install</code></pre>
       to follow Parts 1 through 4:
     </p>
 
-    <pre class="language-bash"><code class="language-bash">pnpm add @causl/core</code></pre>
+    <div class="codeblock-wrapper">
+    <pre class="language-bash has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="language-bash">pnpm add @causl/core</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The remaining packages are introduced as the tutorial needs them. For reference,
@@ -146,7 +162,19 @@ pnpm install</code></pre>
       applications. Replace Vite's <code>src/</code> with the following structure:
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">src/
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+    </aside>
+      <code class="language-typescript">src/
 ├── main.tsx              # React entry point (added in Part 5)
 ├── App.tsx               # Root component (added in Part 5)
 └── state/
@@ -154,6 +182,8 @@ pnpm install</code></pre>
     ├── inputs.ts         # graph.input(...) declarations
     ├── derived.ts        # graph.derived(...) declarations
     └── actions.ts        # functions that wrap graph.commit(...)</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       The split matters for two reasons. First, it keeps the <em>shape</em> of your state
@@ -171,10 +201,20 @@ pnpm install</code></pre>
       Open <code>src/state/graph.ts</code> and replace its contents with this:
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">// src/state/graph.ts
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+    </aside>
+      <code class="language-typescript">// src/state/graph.ts
 import { createCausl } from '@causl/core'
 
 export const graph = createCausl()</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       That's the whole entry point. <code>createCausl()</code> returns a fresh
@@ -201,18 +241,39 @@ export const graph = createCausl()</code></pre>
       <code>src/state/inputs.ts</code>:
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">// src/state/inputs.ts
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+    </aside>
+      <code class="language-typescript">// src/state/inputs.ts
 import { graph } from './graph'
 
 export const count = graph.input('count', 0)</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>And <code>src/state/derived.ts</code>:</p>
 
-    <pre class="language-typescript"><code class="language-typescript">// src/state/derived.ts
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+    </aside>
+      <code class="language-typescript">// src/state/derived.ts
 import { graph } from './graph'
 import { count } from './inputs'
 
 export const doubled = graph.derived('doubled', g =&gt; g(count) * 2)</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Two things are worth pausing on. First, both <code>graph.input()</code> and
@@ -240,7 +301,20 @@ export const doubled = graph.derived('doubled', g =&gt; g(count) * 2)</code></pr
       <code>graph.commit()</code>. Add <code>src/state/actions.ts</code>:
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">// src/state/actions.ts
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+    </aside>
+      <code class="language-typescript">// src/state/actions.ts
 import { graph } from './graph'
 import { count } from './inputs'
 
@@ -249,13 +323,34 @@ export function increment(): void {
     tx.set(count, graph.read(count) + 1)
   })
 }</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       And finally, a throwaway script to prove the pieces fit together. Edit Vite's
       generated <code>src/main.tsx</code> down to just this for now:
     </p>
 
-    <pre class="language-typescript"><code class="language-typescript">// src/main.tsx
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+    </aside>
+      <code class="language-typescript">// src/main.tsx
 import { graph } from './state/graph'
 import { count } from './state/inputs'
 import { doubled } from './state/derived'
@@ -270,6 +365,8 @@ increment()
 
 console.log('count   ', graph.read(count))     // 3
 console.log('doubled ', graph.read(doubled))   // 6</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>
       Run <code>pnpm dev</code>, open the browser console, and you should see exactly

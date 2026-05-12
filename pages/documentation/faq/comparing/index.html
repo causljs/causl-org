@@ -280,7 +280,14 @@
 
     <p>It would be dishonest to end this page without naming the cost. Causl's <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#175-commitment-13-the-capability-cost-residual-amendment-1005">SPEC &sect;17.5 commitment 13</a> binds the engine to a measurable band against MobX on three contract-bearing benchmark cells:</p>
 
-    <pre class="language-typescript"><code class="language-typescript">mobx_median &times; 3.0  &le;  causl_median  &le;  mobx_median &times; 8.0</code></pre>
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+    </aside>
+      <code class="language-typescript">mobx_median &times; 3.0  &le;  causl_median  &le;  mobx_median &times; 8.0</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>The post-wave anchor is <strong>6.4&times;</strong>, decomposed as <strong>1.84&times; engine baseline &times; 3.5&times; replay-determinism contract premium</strong>. The 1.84&times; is the honest engine-on-engine cost &mdash; what causl pays purely to be causl, before any contract surface enters the picture. The 3.5&times; is what causl pays for the four contract surfaces MobX does not ship:</p>
 
@@ -303,17 +310,42 @@
 
     <p><strong>MobX:</strong></p>
 
-    <pre class="language-typescript"><code class="language-typescript">import { observable, computed, runInAction } from 'mobx'
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+    </aside>
+      <code class="language-typescript">import { observable, computed, runInAction } from 'mobx'
 
 const store = observable({ count: 0 })
 const doubled = computed(() =&gt; store.count * 2)
 
 runInAction(() =&gt; { store.count = 5 })
 console.log(doubled.get())  // 10</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p><strong>Jotai:</strong></p>
 
-    <pre class="language-typescript"><code class="language-typescript">import { atom, getDefaultStore } from 'jotai'
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+    </aside>
+      <code class="language-typescript">import { atom, getDefaultStore } from 'jotai'
 
 const countAtom = atom(0)
 const doubledAtom = atom((get) =&gt; get(countAtom) * 2)
@@ -321,10 +353,24 @@ const doubledAtom = atom((get) =&gt; get(countAtom) * 2)
 const store = getDefaultStore()
 store.set(countAtom, 5)
 console.log(store.get(doubledAtom))  // 10</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p><strong>Causl:</strong></p>
 
-    <pre class="language-typescript"><code class="language-typescript">import { createCausl } from '@causl/core'
+    <div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+    </aside>
+      <code class="language-typescript">import { createCausl } from '@causl/core'
 
 const graph = createCausl()
 const count = graph.input('count', 0)
@@ -332,6 +378,8 @@ const doubled = graph.derived('doubled', g =&gt; g(count) * 2)
 
 graph.commit('set-count', tx =&gt; { tx.set(count, 5) })
 console.log(graph.read(doubled))  // 10</code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <p>For the counter alone, MobX and Jotai are smaller and faster. Causl's shape pays off when the next user action has to set <code>count</code>, <code>label</code>, and <code>color</code> at once &mdash; one commit, one subscriber dispatch, one frozen <code>Commit</code> in the log, atomic-or-nothing if anything throws.</p>
 

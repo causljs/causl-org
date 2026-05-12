@@ -60,7 +60,33 @@
     <p>
       Every error the engine itself throws extends <code>CauslError</code>. That gives you one <code>instanceof</code> check to distinguish engine-emitted failures from host-thrown errors that surfaced through observers or user computes:
     </p>
-<pre class="language-typescript"><code class="language-typescript">import {
+<div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+      <span class="codeblock-gutter-line">16</span>
+      <span class="codeblock-gutter-line">17</span>
+      <span class="codeblock-gutter-line">18</span>
+      <span class="codeblock-gutter-line">19</span>
+      <span class="codeblock-gutter-line">20</span>
+      <span class="codeblock-gutter-line">21</span>
+      <span class="codeblock-gutter-line">22</span>
+    </aside>
+      <code class="language-typescript">import {
   CauslError,
   NodeDisposedError,
   CycleError,
@@ -83,6 +109,8 @@ try {
   }
 }
 </code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
     <p>
       Sub-classes that participate in a discriminated union also carry a <code>readonly kind</code> string tag — <code>'NodeDisposed'</code>, <code>'HydrationSchema'</code>, <code>'NonDeterministicCompute'</code>, etc. — so an exhaustive <code>switch (err.kind)</code> narrows correctly.
     </p>
@@ -91,7 +119,30 @@ try {
     <p>
       A <code>derived(graph, compute)</code> body is a pure function: it reads upstream values through the tracked <code>get</code> accessor and returns a new value. The engine invokes it during Phase B, Phase D (the Kahn topological recompute fixpoint), and Phase F.5. A throw from any of these calls is a <em>compute failure</em>: the engine catches it, restores the graph to its pre-commit state (see §3), then re-throws the original exception to the <code>graph.commit(...)</code> caller. You see exactly the value your derive threw, not a wrapper:
     </p>
-<pre class="language-typescript"><code class="language-typescript">import { createCausl, input, derived } from '@causl/core'
+<div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+      <span class="codeblock-gutter-line">16</span>
+      <span class="codeblock-gutter-line">17</span>
+      <span class="codeblock-gutter-line">18</span>
+      <span class="codeblock-gutter-line">19</span>
+    </aside>
+      <code class="language-typescript">import { createCausl, input, derived } from '@causl/core'
 
 const graph = createCausl()
 const denominator = input(graph, 1)
@@ -111,6 +162,8 @@ try {
   console.log(graph.read(reciprocal))  // 1 — rolled back
 }
 </code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
     <p>
       Common shapes a compute body can throw: <strong>domain validation</strong> (preconditions that must hold for the derive to be meaningful — denominator non-zero, lookup key present); <strong><code>NonDeterministicComputeError</code></strong> raised by the engine itself when <code>experimentalFlags: { assertDeterministicCompute: true }</code> detects that a compute returned a different value on a second invocation against the same dep snapshot (SPEC §15.1 — a dev gate, production leaves it off); and <strong><code>DerivedRegistrationStackOverflowError</code></strong>, a defensive guard for stack exhaustion that remains as residual coverage alongside the iterative registration driver.
     </p>
@@ -122,7 +175,33 @@ try {
     <p>
       After the catch arm runs, <strong>no subscriber has fired</strong>. Phases G and H sit <em>outside</em> the try-catch's mutation envelope, so they never execute on the failure path. From the perspective of every external observer, the failed commit never happened:
     </p>
-<pre class="language-typescript"><code class="language-typescript">const graph = createCausl()
+<div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+      <span class="codeblock-gutter-line">16</span>
+      <span class="codeblock-gutter-line">17</span>
+      <span class="codeblock-gutter-line">18</span>
+      <span class="codeblock-gutter-line">19</span>
+      <span class="codeblock-gutter-line">20</span>
+      <span class="codeblock-gutter-line">21</span>
+      <span class="codeblock-gutter-line">22</span>
+    </aside>
+      <code class="language-typescript">const graph = createCausl()
 const a = input(graph, 1)
 const b = input(graph, 2)
 
@@ -145,6 +224,8 @@ try {
   console.log(callsToObserver) // [1] (only the initial fire, no commit-time fire)
 }
 </code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
 
     <blockquote>
       <strong>What's <em>not</em> in scope.</strong> There is no out-of-band rollback API. The team rejected <code>graph.discardCommit(handle)</code> in SPEC §5.6 because a fractional time would already be observer-visible by the time the caller asked to discard it — Phases G and H would have fired. The only way to <em>not</em> commit is to throw inside <code>run</code>. The only way to ask "what would happen if I committed?" is <a href="../testing/"><code>graph.simulate</code></a>, which runs Phases A&ndash;E only and unconditionally restores the prefix.
@@ -162,7 +243,27 @@ try {
     <p>
       A subsequent <code>read</code>, <code>subscribe</code>, or <code>tx.set</code> through the disposed handle surfaces <code>NodeDisposedError</code>:
     </p>
-<pre class="language-jsx"><code class="language-jsx">import { NodeDisposedError } from '@causl/core'
+<div class="codeblock-wrapper">
+    <pre class="language-jsx has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+      <span class="codeblock-gutter-line">16</span>
+    </aside>
+      <code class="language-jsx">import { NodeDisposedError } from '@causl/core'
 import { dispose } from '@causl/core/internal' // adapter-only
 
 const row = input(graph, { id: 1, label: 'first' })
@@ -179,6 +280,8 @@ try {
   }
 }
 </code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
     <p>
       The discriminator matters: <code>NodeDisposedError</code> tells you "this id was registered and then released," distinct from <code>UnknownNodeError</code> which says "this id was never registered on this graph." Adapter authors should branch on the tag rather than collapse both to one message — debugging family-keyed lifecycle leaks depends on knowing which arm fired.
     </p>
@@ -203,7 +306,33 @@ try {
     <p>
       The split between <code>'migrate-threw'</code> and <code>'migrate-missing'</code> is deliberate — earlier drafts encoded both as the presence/absence of an optional <code>cause?</code>, which was the §17.4 "X may or may not have Y" anti-pattern.
     </p>
-<pre class="language-typescript"><code class="language-typescript">import { persistedInput, localStorageAdapter } from '@causl/persistence'
+<div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+      <span class="codeblock-gutter-line">16</span>
+      <span class="codeblock-gutter-line">17</span>
+      <span class="codeblock-gutter-line">18</span>
+      <span class="codeblock-gutter-line">19</span>
+      <span class="codeblock-gutter-line">20</span>
+      <span class="codeblock-gutter-line">21</span>
+      <span class="codeblock-gutter-line">22</span>
+    </aside>
+      <code class="language-typescript">import { persistedInput, localStorageAdapter } from '@causl/persistence'
 import type { PersistenceError } from '@causl/persistence'
 
 const handle = persistedInput(graph, {
@@ -226,6 +355,8 @@ const handle = persistedInput(graph, {
   },
 })
 </code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
     <p>
       The handler is the only error surface. The in-memory input falls back to <code>initial</code> on any failure; with <code>preserveOnError: true</code> (the default) the on-disk envelope is left in place so a future deploy with a correct <code>migrate</code> can still recover the user's data.
     </p>
@@ -234,7 +365,26 @@ const handle = persistedInput(graph, {
     <p>
       Subscribers are not part of the commit's atomic envelope. They fire in Phase G (per-node) and Phase H (per-commit), <em>after</em> the catch arm's mutation window has closed — by design, so a subscriber throw cannot tear engine state. The engine wraps every observer call in a defensive <code>try/catch</code> and routes the error to <code>createCausl({ onObserverError })</code>:
     </p>
-<pre class="language-typescript"><code class="language-typescript">import { createCausl } from '@causl/core'
+<div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+      <span class="codeblock-gutter-line">9</span>
+      <span class="codeblock-gutter-line">10</span>
+      <span class="codeblock-gutter-line">11</span>
+      <span class="codeblock-gutter-line">12</span>
+      <span class="codeblock-gutter-line">13</span>
+      <span class="codeblock-gutter-line">14</span>
+      <span class="codeblock-gutter-line">15</span>
+    </aside>
+      <code class="language-typescript">import { createCausl } from '@causl/core'
 import type { ObserverErrorContext } from '@causl/core'
 
 const graph = createCausl({
@@ -250,6 +400,8 @@ const graph = createCausl({
   },
 })
 </code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
     <p>
       The <code>source</code> tag is the call-site label on the edge leaving Engine <code>Publishing</code> (SPEC §5.3) — not a state the engine occupies, but enough information to attribute the failure to a specific subscription path. <code>'subscribe-initial'</code> covers the synchronous initial fire at subscription time; <code>'subscribe-reads-projection'</code> covers projection-closure throws during a <code>subscribeReads</code> re-run, and the registration is preserved so the next commit retries. Default behaviour is <code>console.error</code>; passing a no-op silences it. If your handler itself throws, the engine catches that and falls back to a one-line <code>console.error</code> so dispatch cannot livelock.
     </p>
@@ -261,7 +413,19 @@ const graph = createCausl({
     <p>
       The narrowing has two enforcement layers. At compile time, the return type is <code>ReadOnlyGraph = Pick&lt;Graph, 'read' | 'subscribe' | 'subscribeCommits' | 'now'&gt;</code>, so a selector that tries to spell <code>narrowed.commit(...)</code> fails <code>tsc</code> before the code runs. At runtime, a <code>Proxy</code> traps every other property access and throws <code>CapabilityViolation</code>:
     </p>
-<pre class="language-typescript"><code class="language-typescript">// Inside a misbehaving selector:
+<div class="codeblock-wrapper">
+    <pre class="language-typescript has-gutter" data-enhanced="true">
+      <aside class="codeblock-gutter" aria-hidden="true">
+      <span class="codeblock-gutter-line">1</span>
+      <span class="codeblock-gutter-line">2</span>
+      <span class="codeblock-gutter-line">3</span>
+      <span class="codeblock-gutter-line">4</span>
+      <span class="codeblock-gutter-line">5</span>
+      <span class="codeblock-gutter-line">6</span>
+      <span class="codeblock-gutter-line">7</span>
+      <span class="codeblock-gutter-line">8</span>
+    </aside>
+      <code class="language-typescript">// Inside a misbehaving selector:
 useCauslNode(graph, someNode, (cap) =&gt; {
   // TypeScript already rejects this; if the caller silenced the type error
   // with `as any` or `as Graph`, the runtime Proxy fires:
@@ -270,6 +434,8 @@ useCauslNode(graph, someNode, (cap) =&gt; {
   //                on a narrowed ReadOnlyGraph.
 })
 </code></pre>
+    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
+  </div>
     <p>
       <code>CapabilityViolation</code> is an internal class — adapter test suites assert on the class name string, but application code should not import it directly. If your selector or listener needs authority over the engine, accept a full <code>Graph</code> parameter at the call site explicitly rather than reach for ambient capability through a coerced cast. SPEC §12.3 explains why the primitive is internal-only: applications should not be in the business of inventing their own capability slices.
     </p>
