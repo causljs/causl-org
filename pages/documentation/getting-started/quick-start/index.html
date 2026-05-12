@@ -73,17 +73,17 @@
       hundred kilobytes.
     </p>
 
-<code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span></span><span class="codeblock-source language-bash">mkdir causl-quick-start &amp;&amp; cd causl-quick-start
+<code class="codeblock-source" data-lang="bash">mkdir causl-quick-start &amp;&amp; cd causl-quick-start
 npm init -y
 npm install @causl/core
-npm install -D typescript tsx @types/node</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+npm install -D typescript tsx @types/node</code>
 
     <p>
       Add a minimal <code>tsconfig.json</code> so <code>tsx</code> is
       happy with the ESM exports:
     </p>
 
-<code class="codeblock" data-lang="json" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span></span><span class="codeblock-source language-json">{
+<code class="codeblock-source" data-lang="json">{
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
@@ -92,7 +92,7 @@ npm install -D typescript tsx @types/node</span><button type="button" class="cod
     "esModuleInterop": true,
     "skipLibCheck": true
   }
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <p>
       Then set <code>"type": "module"</code> in
@@ -163,7 +163,7 @@ console.log(`final subtotal: ${graph.read(subtotal).toFixed(2)}`);</textarea>
 
     <h2><span class="step-pill">Step 3</span> Run it</h2>
 
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span></span><span class="codeblock-source language-typescript">npx tsx quick-start.ts</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+<code class="codeblock-source" data-lang="typescript">npx tsx quick-start.ts</code>
 
     <div class="output-block">subtotal -&gt; 37.50
 subtotal -&gt; 60.00
@@ -327,6 +327,6 @@ final subtotal: 60.00</div>
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>

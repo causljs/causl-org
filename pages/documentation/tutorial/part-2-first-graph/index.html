@@ -126,9 +126,9 @@ console.log('initial value:', graph.read(ready))</textarea>
       An <em>input</em> is a writable cell whose value can change across
       commits. You declare one with <code>graph.input(id, initial)</code>:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span></span><span class="codeblock-source language-typescript">const balance      = graph.input('account:balance', 1000)
+<code class="codeblock-source" data-lang="typescript">const balance      = graph.input('account:balance', 1000)
 const interestRate = graph.input('account:rate', 0.05)
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       The first argument is a stable, graph-unique string identifier from
       your information-model namespace; the second is the value at
@@ -157,7 +157,7 @@ const interestRate = graph.input('account:rate', 0.05)
       receives a tracked accessor (we bind it to <code>g</code> below — any
       name works, but the single-letter form is idiomatic for inline arrows):
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-typescript">const nextStatement = graph.derived(
+<code class="codeblock-source" data-lang="typescript">const nextStatement = graph.derived(
   'account:nextStatement',
   g => {
     const b = g(balance)
@@ -165,7 +165,7 @@ const interestRate = graph.input('account:rate', 0.05)
     return b * (1 + r)
   },
 )
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       Two things happen on this line. First, causl runs your compute once,
       synchronously, against the current values of <code>balance</code> and
@@ -193,14 +193,14 @@ const interestRate = graph.input('account:rate', 0.05)
       Outside a commit, the graph is read-only. The way you observe a value
       is <code>graph.read(node)</code>:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span></span><span class="codeblock-source language-typescript">console.log(graph.read(balance))        // 1000
+<code class="codeblock-source" data-lang="typescript">console.log(graph.read(balance))        // 1000
 console.log(graph.read(nextStatement))  // 1050
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       To change anything, you open a transaction with
       <code>graph.commit(intent, run)</code>:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span></span><span class="codeblock-source language-typescript">const c = graph.commit('apply-rate-bump', tx => {
+<code class="codeblock-source" data-lang="typescript">const c = graph.commit('apply-rate-bump', tx => {
   tx.set(interestRate, 0.07)
 })
 
@@ -210,7 +210,7 @@ console.log(c.changedNodes)             // ['account:rate', 'account:nextStateme
 
 console.log(graph.read(interestRate))   // 0.07
 console.log(graph.read(nextStatement))  // 1070
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       That is the entire mutation surface of the engine. There is no
       <code>graph.set</code>, no <code>graph.update</code>, no
@@ -313,7 +313,7 @@ console.log(graph.read(nextStatement))  // 1070
       derivation accidentally pushes a value through a buggy validator
       that throws:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span></span><span class="codeblock-source language-typescript">const guarded = graph.derived('account:guarded', g => {
+<code class="codeblock-source" data-lang="typescript">const guarded = graph.derived('account:guarded', g => {
   const r = g(interestRate)
   if (r > 0.5) throw new Error('rate out of range')
   return r * 100
@@ -329,7 +329,7 @@ try {
 
 console.log(graph.read(interestRate))   // still 0.07 — Phase B was rolled back
 console.log(graph.read(nextStatement))  // still 1070 — Phase D was rolled back
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       No subscriber fired. <code>graph.now</code> did not advance.
       <code>graph.commitLog</code> has no record of the attempted commit.
@@ -360,7 +360,7 @@ console.log(graph.read(nextStatement))  // still 1070 — Phase D was rolled bac
       every downstream derivation sees a self-consistent slice of input
       values:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-typescript">graph.commit('apply-month-end', tx => {
+<code class="codeblock-source" data-lang="typescript">graph.commit('apply-month-end', tx => {
   tx.set(balance, graph.read(nextStatement))
   tx.set(interestRate, 0.06)
 })
@@ -368,7 +368,7 @@ console.log(graph.read(nextStatement))  // still 1070 — Phase D was rolled bac
 console.log(graph.read(balance))         // 1070  (post-rollover)
 console.log(graph.read(interestRate))    // 0.06
 console.log(graph.read(nextStatement))   // 1134.2 (1070 * 1.06)
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       Notice the <code>graph.read(nextStatement)</code> inside the
       callback. Reads are still safe during a commit — they observe the
@@ -472,6 +472,6 @@ console.log(graph.read(nextStatement))   // 1134.2 (1070 * 1.06)
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>

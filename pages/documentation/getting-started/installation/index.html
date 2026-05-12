@@ -103,16 +103,16 @@
       transactional commit, the deterministic recompute pipeline. Every other package depends
       on it. Start here; install nothing else until you need it.
     </p>
-    <code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-bash"># npm
+    <code class="codeblock-source" data-lang="bash"># npm
 npm install @causl/core
 
 # pnpm
 pnpm add @causl/core
 
 # yarn
-yarn add @causl/core</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+yarn add @causl/core</code>
     <p>That gives you the canonical primitives:</p>
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span></span><span class="codeblock-source language-typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
 
 const graph = createCausl();
 const count = input(graph, 0);
@@ -122,7 +122,7 @@ graph.commit(() =&gt; {
   graph.set(count, 5);
 });
 
-console.log(graph.read(doubled));  // 10</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+console.log(graph.read(doubled));  // 10</code>
     <p>
       <code>@causl/core</code> has zero runtime dependencies. The only declared peer dependency
       is <code>fast-check</code>, and it is marked optional — it is pulled in only by the
@@ -137,21 +137,21 @@ console.log(graph.read(doubled));  // 10</span><button type="button" class="code
       <code>useCauslShallow</code>, <code>useCauslFamily</code>, <code>useCauslSuspense</code>,
       and a <code>&lt;Hydrate&gt;</code> SSR boundary alongside it.
     </p>
-    <code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-bash"># npm
+    <code class="codeblock-source" data-lang="bash"># npm
 npm install @causl/core @causl/react react
 
 # pnpm
 pnpm add @causl/core @causl/react react
 
 # yarn
-yarn add @causl/core @causl/react react</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+yarn add @causl/core @causl/react react</code>
     <p>
       React is a peer dependency at <code>^18.3.0 || ^19.0.0</code>; install it alongside if it
       is not already in your dependency graph. <code>@causl/react</code> also pulls
       <code>@causl/sync</code> transitively so you can use <code>useCauslSuspense</code> against
       async resources without installing the sync package by hand.
     </p>
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span></span><span class="codeblock-source language-typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
 import { useCauslNode } from '@causl/react';
 
 const graph = createCausl();
@@ -161,7 +161,7 @@ const doubled = derived(graph, g =&gt; g.read(count) * 2);
 export function Counter() {
   const value = useCauslNode(graph, doubled);
   return &lt;output&gt;{value}&lt;/output&gt;;
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <h2 id="sync">@causl/sync</h2>
     <p>
@@ -170,14 +170,14 @@ export function Counter() {
       keep concurrent network calls from corrupting derived state. Install it when you have
       data that lives outside the graph — HTTP, IndexedDB, WebSocket, etc.
     </p>
-    <code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-bash"># npm
+    <code class="codeblock-source" data-lang="bash"># npm
 npm install @causl/core @causl/sync
 
 # pnpm
 pnpm add @causl/core @causl/sync
 
 # yarn
-yarn add @causl/core @causl/sync</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+yarn add @causl/core @causl/sync</code>
     <p>
       <code>@causl/sync</code> declares <code>@causl/core</code> as a runtime dependency, so
       package managers will resolve a matching version automatically. If you also use
@@ -192,14 +192,14 @@ yarn add @causl/core @causl/sync</span><button type="button" class="codeblock-bt
       <em>protocol</em> ships in core; the <em>concrete adapters</em> live here so
       cores stays small.
     </p>
-    <code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-bash"># npm
+    <code class="codeblock-source" data-lang="bash"># npm
 npm install @causl/core @causl/persistence
 
 # pnpm
 pnpm add @causl/core @causl/persistence
 
 # yarn
-yarn add @causl/core @causl/persistence</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+yarn add @causl/core @causl/persistence</code>
 
     <h2 id="checker">@causl/checker</h2>
     <p>
@@ -208,14 +208,14 @@ yarn add @causl/core @causl/persistence</span><button type="button" class="codeb
       hazards, missing capability scopes, and unreachable derivations. It is a build-time
       tool — install it as a dev dependency.
     </p>
-    <code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-bash"># npm
+    <code class="codeblock-source" data-lang="bash"># npm
 npm install --save-dev @causl/checker
 
 # pnpm
 pnpm add -D @causl/checker
 
 # yarn
-yarn add --dev @causl/checker</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+yarn add --dev @causl/checker</code>
     <p>
       The checker ships precompiled native binaries (<code>@causl/checker-darwin-arm64</code>,
       <code>-linux-x64</code>, <code>-win32-x64</code>, etc.) selected by the optional-deps
@@ -230,14 +230,14 @@ yarn add --dev @causl/checker</span><button type="button" class="codeblock-btn c
       behaviour (loading / loaded / error machines, multi-step forms, document edit states)
       that you want expressed as charts rather than re-encoded as ad-hoc boolean derivations.
     </p>
-    <code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-bash"># npm
+    <code class="codeblock-source" data-lang="bash"># npm
 npm install @causl/core @causl/formula
 
 # pnpm
 pnpm add @causl/core @causl/formula
 
 # yarn
-yarn add @causl/core @causl/formula</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+yarn add @causl/core @causl/formula</code>
 
     <h2 id="devtools">@causl/devtools</h2>
     <p>
@@ -245,14 +245,14 @@ yarn add @causl/core @causl/formula</span><button type="button" class="codeblock
       live derived inspection, batched <code>replaceMany</code> edits during development.
       It pairs with the browser extension and is a dev-only dependency.
     </p>
-    <code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-bash"># npm
+    <code class="codeblock-source" data-lang="bash"># npm
 npm install --save-dev @causl/devtools
 
 # pnpm
 pnpm add -D @causl/devtools
 
 # yarn
-yarn add --dev @causl/devtools</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+yarn add --dev @causl/devtools</code>
     <p>
       The wiring itself is in <code>@causl/core</code> behind a one-line opt-in:
       <code>createCausl({ devtools: true })</code> dead-code-eliminates in production builds.
@@ -266,7 +266,7 @@ yarn add --dev @causl/devtools</span><button type="button" class="codeblock-btn 
       It is bundled with <code>@causl/core</code> — no extra <code>npm install</code> step —
       and is loaded only if you call <code>loadWasmBackend()</code>.
     </p>
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span></span><span class="codeblock-source language-typescript">import { createCausl } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
 import { loadWasmBackend, WasmBackendUnavailableError } from '@causl/core/wasm';
 
 async function makeGraph() {
@@ -280,7 +280,7 @@ async function makeGraph() {
     }
     throw err;
   }
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <blockquote>
       <strong>Current state.</strong> As of <code>v0.9.0</code> the WASM backend is a
@@ -312,7 +312,7 @@ async function makeGraph() {
       All <code>@causl/*</code> packages ship <code>.d.ts</code> files. The minimum
       <code>tsconfig.json</code> for an application consuming causl looks like this:
     </p>
-    <code class="codeblock" data-lang="json" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span></span><span class="codeblock-source language-json">{
+    <code class="codeblock-source" data-lang="json">{
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
@@ -323,7 +323,7 @@ async function makeGraph() {
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   }
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
     <p>
       <strong>Module resolution.</strong> Causl is ESM-only and uses package <code>exports</code>
       subpaths (<code>@causl/core/wasm</code>, <code>@causl/core/testing</code>, etc.). You need
@@ -458,6 +458,6 @@ async function makeGraph() {
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>

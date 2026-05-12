@@ -1749,30 +1749,30 @@
 }
 
 /* =====================================================================
- * #1294 — defeat TypeDoc's residual <pre>/<code> backgrounds.
+ * #1295 — TypeDoc <pre>/<code> background reset.
  *
  * TypeDoc's own assets/style.css (the @layer typedoc above) paints
- * <pre> and <code> with --color-code-background, which we re-mapped to
- * --surface-elevated via the pair-token bridge. That's fine for the
- * code-block surface IN THEORY — but our codeblock component (#1294)
- * is now a single <code class="codeblock"> element, and TypeDoc's
- * generic `code, pre { padding, border-radius, font-size }` rules can
- * still leak in and fight the pair-token contract on .codeblock.
+ * <pre> and <code> with --color-code-background. We re-mapped that
+ * variable to --surface-elevated via the pair-token bridge so it
+ * flips correctly between themes, but the generic <pre>/<code>
+ * selectors still leak into prose <code> and any non-component
+ * <pre>. Zero out backgrounds on those so only the explicit
+ * .codeblock-source component owns its surface.
  *
- * Strategy: zero out TypeDoc's <pre>/<code> backgrounds entirely, then
- * re-assert the pair-token contract on .codeblock with !important.
- * Inline <code> in prose still works — site.css's syntax.css block
- * gives it its own (transparent) surface.
+ * No !important on .codeblock-source — the runtime contrast audit
+ * in codeblock.js catches any cascade losers by applying inline
+ * corrective `color` styles where needed.
  * ===================================================================== */
 pre,
-code:not(.codeblock) {
-    background: transparent !important;
+code:not(.codeblock-source) {
+    background: transparent;
 }
 
-.codeblock {
-    /* Pair-token contract, re-asserted to win the cascade fight against
-     * any TypeDoc selector that might otherwise paint the element. */
-    background: var(--surface-elevated) !important;
-    color: var(--text-on-elevated) !important;
+.codeblock-source {
+    /* Pair-token contract: bg + foreground flip together. In light
+     * mode --surface-elevated resolves to #F4F6F9 (light gray, same
+     * as Getting Started surfaces). */
+    background: var(--surface-elevated);
+    color: var(--text-on-elevated);
 }
 
