@@ -392,15 +392,23 @@ function Chart() {
     <code>commit.time</code> (a <code>GraphTime</code> exposed on the
     <code>Commit</code> object) or the per-node version counter that
     <code>EngineTelemetry</code> surfaces. The version counter is the cheaper option in
-    a tight loop, and there is a one-liner helper hook in
-    <code>@causl/react</code>:</p>
+    a tight loop &mdash; <strong>PR&nbsp;#1242</strong> promoted it from an inline test
+    oracle to the public accessor
+    <code>engine.stats().nodeVersion(node)</code>. Pinning a downstream cache key to that
+    integer gives you a stable memoisation surface that survives the engine's per-read
+    <code>structuredClone</code> boundary, with byte-identical behaviour across the TS
+    engine and the Phase-1 WasmBackend wrapper for the same commit sequence.</p>
 
     <pre><code>// RIGHT &mdash; key memoisation on the per-node version, not the reference.
-import { useCauslNode, useNodeVersion } from '@causl/react';
+import { useCausl, useCauslNode } from '@causl/react';
 
 function Chart() {
   const data = useCauslNode(seriesNode);
-  const version = useNodeVersion(seriesNode);
+  // `engine.stats().nodeVersion(node)` increments by exactly 1 each
+  // commit where the node's value changed (per SPEC §15.1's
+  // `!Object.is` cutoff) and stays unchanged otherwise &mdash; a
+  // no-op write or sibling write does not bump the counter.
+  const version = useCausl((g) =&gt; g.stats().nodeVersion(seriesNode));
   const transformed = useMemo(() =&gt; transform(data), [version]);
   return &lt;Plot data={transformed} /&gt;;
 }</code></pre>
@@ -453,7 +461,7 @@ function Chart() {
 
     <h3>Read a value that crosses the FFI boundary</h3>
     <pre><code>const data = useCauslNode(bigArrayNode);
-const version = useNodeVersion(bigArrayNode);
+const version = useCausl((g) =&gt; g.stats().nodeVersion(bigArrayNode));
 const sorted = useMemo(() =&gt; data.slice().sort(), [version]);</code></pre>
     <p>Key the <code>useMemo</code> on the per-node version, not the value reference.
     See <a href="#h1-hazard">section 9</a>.</p>
