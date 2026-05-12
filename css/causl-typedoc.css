@@ -92,6 +92,32 @@
   --border-on-elevated:       rgba(143, 162, 170, 0.25);
   --border-on-overlay:        rgba(143, 162, 170, 0.18);
   --border-emphasis:          var(--causl-async-cyan);
+
+  /* State tokens — mirrors css/site.css §8.2 (#1266). Defined here
+     so the TypeDoc overlay resolves state tokens even when site.css
+     is not loaded on a generated page. Light-theme overrides for
+     these tokens are inside :root[data-theme="light"] below. */
+  --state-hover-bg:        rgba(17, 217, 255, 0.08);
+  --state-hover-fg:        var(--causl-async-cyan);
+  --state-focus-outline:   var(--causl-async-cyan);
+  --state-focus-ring:      0 0 0 3px rgba(17, 217, 255, 0.4);
+  --state-active-bg:       var(--causl-async-cyan);
+  --state-active-fg:       var(--causl-void);
+  --state-pressed-bg:      rgba(17, 217, 255, 0.16);
+  --state-disabled-bg:     var(--causl-graphite);
+  --state-disabled-fg:     var(--causl-ash);
+  --state-error-bg:        rgba(255, 77, 94, 0.08);
+  --state-error-fg:        var(--causl-rollback-red);
+  --state-error-border:    var(--causl-rollback-red);
+  --state-warning-bg:      rgba(255, 176, 32, 0.08);
+  --state-warning-fg:      var(--causl-conflict-amber);
+  --state-warning-border:  var(--causl-conflict-amber);
+  --state-success-bg:      rgba(167, 255, 24, 0.08);
+  --state-success-fg:      var(--causl-commit-green);
+  --state-success-border:  var(--causl-commit-green);
+  --state-info-bg:         rgba(17, 217, 255, 0.08);
+  --state-info-fg:         var(--causl-async-cyan);
+  --state-info-border:     var(--causl-async-cyan);
 }
 
 /* -- Dark theme palette overrides -------------------------------- */
@@ -100,15 +126,15 @@
 :root {
   --color-background:           var(--causl-ink);
   --color-background-secondary: var(--causl-slate);
-  --color-background-warning:   rgba(255, 176, 32, 0.12);
-  --color-warning-text:         var(--causl-conflict-amber);
+  --color-background-warning:   var(--state-warning-bg);
+  --color-warning-text:         var(--state-warning-fg);
   --color-icon-background:      #182032;
   --color-accent:               var(--causl-async-cyan);
-  --color-active-menu-item:     rgba(17, 217, 255, 0.12);
+  --color-active-menu-item:     var(--state-pressed-bg);
   --color-text:                 var(--causl-mist);
   --color-text-aside:           var(--causl-async-cyan);
   --color-link:                 var(--causl-async-cyan);
-  --color-focus-outline:        var(--causl-async-cyan);
+  --color-focus-outline:        var(--state-focus-outline);
   --color-hover-outline:        #4FE4FF;
   --color-ts-project:           var(--causl-mutation-violet);
   --color-ts-module:            var(--causl-mutation-violet);
@@ -141,8 +167,8 @@
   --color-text-aside:           #070A0F;
   --color-link:                 #0B95B0;
   --color-accent:               #0B95B0;
-  --color-active-menu-item:     rgba(11, 149, 176, 0.18);
-  --color-focus-outline:        #0B95B0;
+  --color-active-menu-item:     var(--state-pressed-bg);
+  --color-focus-outline:        var(--state-focus-outline);
   --color-hover-outline:        #070A0F;
 
   /* -- Contrast-pair tokens — light overrides (#1268). -- */
@@ -177,6 +203,30 @@
   --border-on-elevated:       rgba(11, 16, 32, 0.18);
   --border-on-overlay:        rgba(11, 16, 32, 0.12);
   --border-emphasis:          #0B95B0;
+
+  /* State tokens — light-theme overrides (#1266). Mirrors the same
+     block in css/site.css; fg colors use AA-on-white dimmed hues. */
+  --state-hover-bg:        rgba(11, 149, 176, 0.08);
+  --state-hover-fg:        #0B95B0;
+  --state-focus-outline:   #0B95B0;
+  --state-focus-ring:      0 0 0 3px rgba(11, 149, 176, 0.4);
+  --state-active-bg:       #0B95B0;
+  --state-active-fg:       #FFFFFF;
+  --state-pressed-bg:      rgba(11, 149, 176, 0.16);
+  --state-disabled-bg:     #DDE1E6;
+  --state-disabled-fg:     #5A6470;
+  --state-error-bg:        rgba(195, 42, 56, 0.08);
+  --state-error-fg:        #C32A38;
+  --state-error-border:    #C32A38;
+  --state-warning-bg:      rgba(181, 117, 0, 0.08);
+  --state-warning-fg:      #B57500;
+  --state-warning-border:  #B57500;
+  --state-success-bg:      rgba(74, 147, 0, 0.08);
+  --state-success-fg:      #4A9300;
+  --state-success-border:  #4A9300;
+  --state-info-bg:         rgba(11, 149, 176, 0.08);
+  --state-info-fg:         #0B95B0;
+  --state-info-border:     #0B95B0;
 }
 
 /* -- Body background + typography -------------------------------- */
@@ -258,7 +308,7 @@ code, kbd, samp, pre,
 }
 
 .tsd-page-toolbar .tsd-toolbar-contents a:hover {
-  color: var(--surface-emphasis);
+  color: var(--state-hover-fg);
 }
 
 /* -- Links + accents ------------------------------------------- */
@@ -309,14 +359,14 @@ a:hover {
 }
 
 .tsd-navigation a:hover {
-  background: rgba(17, 217, 255, 0.08);
-  color: var(--surface-emphasis);
+  background: var(--state-hover-bg);
+  color: var(--state-hover-fg);
 }
 
 .tsd-navigation a.current,
 .tsd-navigation .current > a {
-  background: rgba(17, 217, 255, 0.12);
-  color: var(--surface-emphasis);
+  background: var(--state-pressed-bg);
+  color: var(--state-hover-fg);
   border-left: 2px solid var(--border-emphasis);
 }
 
@@ -396,7 +446,7 @@ pre,
 
 code,
 .tsd-typography code {
-  background: rgba(17, 217, 255, 0.08);
+  background: var(--state-info-bg);
   border: 1px solid rgba(17, 217, 255, 0.2);
   color: var(--text-on-base);
   padding: 0.05em 0.4em;
@@ -407,7 +457,7 @@ code,
 :root[data-theme="light"] code,
 :root[data-theme="light"] .tsd-typography code {
   color: var(--text-on-base);
-  background: rgba(11, 149, 176, 0.12);
+  background: var(--state-pressed-bg);
   border-color: rgba(11, 149, 176, 0.32);
 }
 
@@ -424,9 +474,9 @@ pre code,
 
 .tsd-tag,
 .tsd-flag {
-  background: rgba(17, 217, 255, 0.12);
-  border: 1px solid rgba(17, 217, 255, 0.32);
-  color: var(--causl-async-cyan);
+  background: var(--state-pressed-bg);
+  border: 1px solid var(--state-info-border);
+  color: var(--state-info-fg);
   border-radius: 999px;
   font-family: var(--mono);
   font-size: 0.74rem;
@@ -441,7 +491,7 @@ pre code,
 }
 
 .tsd-breadcrumb a:hover {
-  color: var(--causl-async-cyan);
+  color: var(--state-hover-fg);
 }
 
 .tsd-generator {
@@ -479,7 +529,7 @@ pre code,
 
 #tsd-search .results li.current,
 #tsd-search .results li:hover {
-  background: rgba(17, 217, 255, 0.12);
+  background: var(--state-pressed-bg);
 }
 
 /* -- Tables ---------------------------------------------------- */

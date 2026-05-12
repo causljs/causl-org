@@ -26,7 +26,7 @@
 }
 
 .dashboard-error {
-  color: var(--surface-danger);
+  color: var(--state-error-fg);
 }
 
 :root[data-theme="light"] .dashboard-loading,
@@ -95,7 +95,7 @@
 }
 
 .filter-summary:focus-visible {
-  outline: 2px solid var(--causal-cyan);
+  outline: 2px solid var(--state-focus-outline);
   border-radius: 4px;
 }
 
@@ -146,11 +146,12 @@
 }
 
 .filter-chip:hover {
-  border-color: rgba(39, 211, 195, 0.5);
+  border-color: var(--state-hover-fg);
+  background: var(--state-hover-bg);
 }
 
 .filter-chip:focus-within {
-  outline: 2px solid var(--causal-cyan);
+  outline: 2px solid var(--state-focus-outline);
   outline-offset: 2px;
 }
 
@@ -190,11 +191,11 @@
 }
 
 .filter-action:hover {
-  background: rgba(39, 211, 195, 0.16);
+  background: var(--state-pressed-bg);
 }
 
 .filter-action:focus-visible {
-  outline: 2px solid var(--causal-cyan);
+  outline: 2px solid var(--state-focus-outline);
   outline-offset: 2px;
 }
 
@@ -499,14 +500,14 @@
 
 .bench-legend-profile-link:hover,
 .bench-legend-profile-link:focus-visible {
-  background: rgba(39, 211, 195, 0.16);
-  border-color: var(--causal-cyan);
+  background: var(--state-pressed-bg);
+  border-color: var(--state-hover-fg);
   text-decoration: none;
   outline: none;
 }
 
 .bench-legend-profile-link:focus-visible {
-  outline: 2px solid var(--causal-cyan);
+  outline: 2px solid var(--state-focus-outline);
   outline-offset: 2px;
 }
 
@@ -515,8 +516,8 @@
 .status-callout {
   margin: 1.2rem 0 1.6rem;
   padding: 0.9rem 1.1rem;
-  border: 1px dashed rgba(255, 179, 71, 0.36);
-  background: rgba(255, 179, 71, 0.06);
+  border: 1px dashed var(--state-warning-border);
+  background: var(--state-warning-bg);
   border-radius: var(--radius-md);
   font-size: 0.92rem;
 }
@@ -564,7 +565,7 @@ details.status-callout[open] > summary::before {
 }
 
 details.status-callout > summary:focus-visible {
-  outline: 2px solid var(--causal-cyan);
+  outline: 2px solid var(--state-focus-outline);
   border-radius: 4px;
 }
 

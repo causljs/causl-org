@@ -204,6 +204,47 @@
   --border-on-overlay:        rgba(143, 162, 170, 0.18);
   --border-emphasis:          var(--causl-async-cyan);
 
+  /* ============================================================
+     STATE TOKENS — interaction + status layer (§8.2, #1266).
+
+     Every interactive state (hover / focus / active / pressed /
+     disabled) and every status semantic (error / warning / success
+     / info) has a NAMED token here. Components MUST reference
+     these tokens — never inline rgba()/hex — so that the entire
+     state palette flips together in light theme below.
+
+     Naming convention: --state-<role>-<slot> where slot is one of
+     {bg, fg, border, outline, ring}. Every pair tracks WCAG AA
+     contrast on its target surface in both themes.
+     ============================================================ */
+
+  /* Interaction states */
+  --state-hover-bg:        rgba(17, 217, 255, 0.08);
+  --state-hover-fg:        var(--causl-async-cyan);
+  --state-focus-outline:   var(--causl-async-cyan);
+  --state-focus-ring:      0 0 0 3px rgba(17, 217, 255, 0.4);
+  --state-active-bg:       var(--causl-async-cyan);
+  --state-active-fg:       var(--causl-void);
+  --state-pressed-bg:      rgba(17, 217, 255, 0.16);
+  --state-disabled-bg:     var(--causl-graphite);
+  --state-disabled-fg:     var(--causl-ash);
+
+  /* Status states — bg is a tint at the same ~8% alpha as hover so
+     callouts and chips read as soft semantic surfaces; fg is the
+     full-strength hue token; border is the same full-strength hue. */
+  --state-error-bg:        rgba(255, 77, 94, 0.08);
+  --state-error-fg:        var(--causl-rollback-red);
+  --state-error-border:    var(--causl-rollback-red);
+  --state-warning-bg:      rgba(255, 176, 32, 0.08);
+  --state-warning-fg:      var(--causl-conflict-amber);
+  --state-warning-border:  var(--causl-conflict-amber);
+  --state-success-bg:      rgba(167, 255, 24, 0.08);
+  --state-success-fg:      var(--causl-commit-green);
+  --state-success-border:  var(--causl-commit-green);
+  --state-info-bg:         rgba(17, 217, 255, 0.08);
+  --state-info-fg:         var(--causl-async-cyan);
+  --state-info-border:     var(--causl-async-cyan);
+
   --radius-xl: 28px;
   --radius-lg: 20px;
   --radius-md: 14px;
@@ -304,7 +345,7 @@ code, kbd, samp, pre {
 }
 
 p code, li code, td code {
-  background: rgba(17, 217, 255, 0.08);
+  background: var(--state-info-bg);
   border: 1px solid rgba(17, 217, 255, 0.22);
   color: var(--text-on-base);
   padding: 0.05em 0.4em;
@@ -357,8 +398,8 @@ p code, li code, td code {
 
 .button.ghost:hover {
   border-color: var(--border-emphasis);
-  color: var(--surface-emphasis);
-  background: rgba(17, 217, 255, 0.08);
+  color: var(--state-hover-fg);
+  background: var(--state-hover-bg);
   text-decoration: none;
 }
 
@@ -613,6 +654,39 @@ table.compare tr:last-child td { border-bottom: none; }
   --border-on-elevated:       rgba(11, 16, 32, 0.18);
   --border-on-overlay:        rgba(11, 16, 32, 0.12);
   --border-emphasis:          #0B95B0;
+
+  /* ============================================================
+     State tokens — light-theme overrides (§8.2, #1266).
+
+     Each fg uses the AA-on-white dimmed hue
+     (cyan #0B95B0 ≥ 4.5:1, red #C32A38 ≥ 4.5:1,
+      amber #B57500 ≥ 4.5:1, green #4A9300 ≥ 4.5:1)
+     so the foreground stays legible on the soft 8% tint and on
+     plain white surfaces alike.
+     ============================================================ */
+
+  --state-hover-bg:        rgba(11, 149, 176, 0.08);
+  --state-hover-fg:        #0B95B0;
+  --state-focus-outline:   #0B95B0;
+  --state-focus-ring:      0 0 0 3px rgba(11, 149, 176, 0.4);
+  --state-active-bg:       #0B95B0;
+  --state-active-fg:       #FFFFFF;
+  --state-pressed-bg:      rgba(11, 149, 176, 0.16);
+  --state-disabled-bg:     #DDE1E6;
+  --state-disabled-fg:     #5A6470;
+
+  --state-error-bg:        rgba(195, 42, 56, 0.08);
+  --state-error-fg:        #C32A38;
+  --state-error-border:    #C32A38;
+  --state-warning-bg:      rgba(181, 117, 0, 0.08);
+  --state-warning-fg:      #B57500;
+  --state-warning-border:  #B57500;
+  --state-success-bg:      rgba(74, 147, 0, 0.08);
+  --state-success-fg:      #4A9300;
+  --state-success-border:  #4A9300;
+  --state-info-bg:         rgba(11, 149, 176, 0.08);
+  --state-info-fg:         #0B95B0;
+  --state-info-border:     #0B95B0;
 }
 
 :root[data-theme="light"] body {
@@ -646,7 +720,7 @@ table.compare tr:last-child td { border-bottom: none; }
 :root[data-theme="light"] .topbar-menu a { border-color: var(--border-on-overlay); }
 
 :root[data-theme="light"] .topbar-menu a:hover {
-  background: rgba(11, 149, 176, 0.10);
+  background: var(--state-hover-bg);
   border-color: rgba(11, 149, 176, 0.55);
   color: var(--text-on-overlay);
 }
@@ -715,7 +789,7 @@ table.compare tr:last-child td { border-bottom: none; }
   color: var(--text-on-base);
 }
 :root[data-theme="light"] .button.ghost:hover {
-  background: rgba(11, 149, 176, 0.10);
+  background: var(--state-hover-bg);
   border-color: rgba(11, 149, 176, 0.55);
   color: var(--text-on-base);
 }
