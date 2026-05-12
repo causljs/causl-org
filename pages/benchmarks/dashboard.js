@@ -186,6 +186,7 @@
    *      scenario, scale,
    *      runs:    [ { capturedAt, version }, … ]   // run order
    *      series:  Map<library, Array<{capturedAt, version, medianMs, p95Ms}>>
+   *      skipped: Map<library, { reason, capturedAt, version }>
    *    }
    *
    *  `runs` is the union of capturedAt timestamps across every
@@ -200,25 +201,40 @@
    *  library on every run, so all four series stay aligned. The
    *  union-of-timestamps approach handles the edge case where a
    *  library was added/removed mid-history without breaking the
-   *  shared-axis assumption. */
+   *  shared-axis assumption.
+   *
+   *  #1293: each HistoryEntry may also carry a `skipped` array of
+   *  (library × scenario × scale) cells the runner attempted but
+   *  couldn't measure (stack overflow, architectural gap, timeout).
+   *  We attach those to the matching section's `skipped` map keyed by
+   *  library so the legend chip can render a strikethrough + ✗ +
+   *  tooltip instead of silently dropping the framework from the
+   *  chart. The latest run's reason wins if multiple runs disagree —
+   *  consistent with how `series` values are appended chronologically
+   *  and the legend reads the latest sample. */
   function groupSections(history) {
     const sections = new Map()
     // Track unique runs per section so the x-axis can be shared.
     const runSetBySection = new Map()
+    const ensureSection = (scenario, scale) => {
+      const key = `${scenario}|${scale}`
+      let section = sections.get(key)
+      if (!section) {
+        section = {
+          scenario,
+          scale,
+          runs: [],
+          series: new Map(),
+          skipped: new Map(),
+        }
+        sections.set(key, section)
+        runSetBySection.set(key, new Set())
+      }
+      return { section, key }
+    }
     for (const entry of history) {
       for (const sample of entry.samples) {
-        const key = `${sample.scenario}|${sample.scale}`
-        let section = sections.get(key)
-        if (!section) {
-          section = {
-            scenario: sample.scenario,
-            scale: sample.scale,
-            runs: [],
-            series: new Map(),
-          }
-          sections.set(key, section)
-          runSetBySection.set(key, new Set())
-        }
+        const { section, key } = ensureSection(sample.scenario, sample.scale)
         const runSet = runSetBySection.get(key)
         if (!runSet.has(entry.capturedAt)) {
           runSet.add(entry.capturedAt)
@@ -237,6 +253,22 @@
           version: entry.version,
           medianMs: sample.medianMs,
           p95Ms: sample.p95Ms,
+        })
+      }
+      // Attach per-entry skipped cells to the matching section so the
+      // legend can mark the framework's chip with a strikethrough + ✗
+      // + tooltip carrying the reason (#1293). A skipped cell does NOT
+      // count as a run timestamp — the chart axis stays driven by the
+      // succeeded-cell runs to preserve x-axis stability.
+      const skipped = Array.isArray(entry.skipped) ? entry.skipped : []
+      for (const cell of skipped) {
+        const { section } = ensureSection(cell.scenario, cell.scale)
+        // Latest-wins so the freshest skip reason surfaces if a
+        // framework's failure mode changes between runs.
+        section.skipped.set(cell.library, {
+          reason: String(cell.reason ?? ''),
+          capturedAt: entry.capturedAt,
+          version: entry.version,
         })
       }
     }
@@ -683,13 +715,27 @@
     card.dataset.scenario = section.scenario
     card.dataset.scale = String(section.scale)
 
-    const libsToPlot = LIBRARY_ORDER
-      .filter((l) => section.series.has(l) && visibleLibraries.has(l))
-      .concat(
-        Array.from(section.series.keys())
-          .filter((l) => !LIBRARY_ORDER.includes(l) && visibleLibraries.has(l))
-          .sort(),
-      )
+    const skippedMap =
+      section.skipped instanceof Map ? section.skipped : new Map()
+
+    // Plot order is canonical first, then any unknown libraries
+    // alphabetically. Libraries with a `series` slot AND visible go
+    // first; libraries that are skipped at this (scenario × scale)
+    // *also* get a legend chip (rendered with strikethrough + ✗ +
+    // tooltip per #1293) so the reader never sees a cell that
+    // silently omitted a competitor.
+    const liveLibs = new Set()
+    for (const l of section.series.keys()) {
+      if (visibleLibraries.has(l)) liveLibs.add(l)
+    }
+    for (const l of skippedMap.keys()) {
+      if (visibleLibraries.has(l)) liveLibs.add(l)
+    }
+    const libsToPlot = LIBRARY_ORDER.filter((l) => liveLibs.has(l)).concat(
+      Array.from(liveLibs)
+        .filter((l) => !LIBRARY_ORDER.includes(l))
+        .sort(),
+    )
 
     // Header: scenario name + scale chip.
     const header = document.createElement('header')
@@ -710,20 +756,58 @@
     legend.className = 'bench-section-legend'
     legend.setAttribute('aria-label', 'Framework series legend with per-line verdicts')
     for (const lib of libsToPlot) {
-      const series = section.series.get(lib)
+      const series = section.series.get(lib) ?? []
+      const skipInfo = skippedMap.get(lib) ?? null
       const last = series.length > 0 ? series[series.length - 1] : null
-      const verdict = computeVerdict(series)
       const color = LIBRARY_COLOR[lib] ?? '#A9B5C9'
-      const verdictColor = VERDICT_COLOR[verdict.kind] ?? VERDICT_COLOR.unknown
-      const lastMedian = last ? formatNumber(last.medianMs) : 'n/a'
-      const lastP95 = last ? formatNumber(last.p95Ms) : 'n/a'
       const profileUrl = profileUrlFor(lib, section.scenario, section.scale)
 
       const item = document.createElement('li')
       item.className = 'bench-legend-item'
       item.dataset.library = lib
-      item.dataset.verdict = verdict.kind
       item.style.setProperty('--lib-color', color)
+
+      // #1293 — if this library has no data point but IS in the
+      // skipped payload for this (scenario × scale), render the chip
+      // with a strikethrough on the library name, a small ✗ badge in
+      // the verdict slot, and the runner's reason as a tooltip on
+      // both the chip and the badge. The chip stays in canonical
+      // order so the reader sees ALL four libraries even when one
+      // can't run the workload at all.
+      if (!last && skipInfo) {
+        item.classList.add('bench-legend-item--skipped')
+        item.dataset.skipped = 'true'
+        item.dataset.verdict = 'skipped'
+        item.style.setProperty('--verdict-color', VERDICT_COLOR.unknown)
+        const reason = skipInfo.reason || 'skipped — no reason recorded'
+        const reasonAttr = escapeHtml(reason)
+        item.innerHTML =
+          `<span class="bench-legend-swatch" aria-hidden="true"></span>` +
+          `<span class="bench-legend-lib bench-legend-lib--strike" ` +
+          `title="${reasonAttr}">` +
+          `<s>${escapeHtml(lib)}</s>` +
+          `</span>` +
+          `<span class="bench-legend-stats bench-legend-stats--muted">` +
+          `<span class="bench-legend-median">— ms</span>` +
+          `<span class="bench-legend-p95">p95 —</span>` +
+          `</span>` +
+          `<span class="bench-legend-verdict bench-legend-verdict--skipped" ` +
+          `title="${reasonAttr}" aria-label="skipped — ${reasonAttr}">` +
+          `<span class="bench-legend-verdict-badge" aria-hidden="true">✗</span>` +
+          `<span class="bench-legend-verdict-label">skipped</span>` +
+          `</span>` +
+          `<a class="bench-legend-profile-link" href="${profileUrl}" rel="noopener" ` +
+          `aria-label="Profile artifacts for ${escapeHtml(lib)} ${escapeHtml(section.scenario)} at scale ${section.scale} (skipped — see legend tooltip)" ` +
+          `title="${reasonAttr}">⌕</a>`
+        legend.appendChild(item)
+        continue
+      }
+
+      const verdict = computeVerdict(series)
+      const verdictColor = VERDICT_COLOR[verdict.kind] ?? VERDICT_COLOR.unknown
+      const lastMedian = last ? formatNumber(last.medianMs) : 'n/a'
+      const lastP95 = last ? formatNumber(last.p95Ms) : 'n/a'
+      item.dataset.verdict = verdict.kind
       item.style.setProperty('--verdict-color', verdictColor)
       item.innerHTML =
         `<span class="bench-legend-swatch" aria-hidden="true"></span>` +
@@ -775,6 +859,13 @@
       allScenarios.add(s.scenario)
       allScales.add(s.scale)
       for (const lib of s.series.keys()) allLibs.add(lib)
+      // #1293 — skipped libraries also count toward the universe so
+      // the filter UI offers a checkbox for them (a framework that's
+      // ONLY ever skipped at the visible scales would otherwise be
+      // unreachable from the filter strip).
+      if (s.skipped instanceof Map) {
+        for (const lib of s.skipped.keys()) allLibs.add(lib)
+      }
     }
 
     // Defaults: causl + mobx (where present), 10000 scale, all
