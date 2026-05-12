@@ -84,7 +84,7 @@
 } from '@causl/core'
 
 try {
-  graph.commit('user-action', (tx) =&gt; {
+  graph.commit('user-action', tx =&gt; {
     tx.set(someInput, nextValue)
   })
 } catch (err) {
@@ -109,14 +109,14 @@ try {
 
 const graph = createCausl()
 const denominator = input(graph, 1)
-const reciprocal = derived(graph, (g) =&gt; {
+const reciprocal = derived(graph, g =&gt; {
   const d = g.read(denominator)
   if (d === 0) throw new Error('divide by zero')
   return 1 / d
 })
 
 try {
-  graph.commit('zero', (tx) =&gt; {
+  graph.commit('zero', tx =&gt; {
     tx.set(denominator, 0)
   })
 } catch (err) {
@@ -141,12 +141,12 @@ const a = input(graph, 1)
 const b = input(graph, 2)
 
 const callsToObserver: number[] = []
-graph.subscribe(a, (v) =&gt; callsToObserver.push(v))
+graph.subscribe(a, v =&gt; callsToObserver.push(v))
 
 const before = graph.now
 
 try {
-  graph.commit('mixed-write-throw', (tx) =&gt; {
+  graph.commit('mixed-write-throw', tx =&gt; {
     tx.set(a, 10)        // staged; would have changed
     tx.set(b, 20)
     throw new Error('user aborts')

@@ -103,7 +103,7 @@
 
 const graph = createCausl();
 const scrollY = input(graph, 0);
-const visibleSection = derived(graph, (g) =&gt; sectionAt(g.read(scrollY)));
+const visibleSection = derived(graph, g =&gt; sectionAt(g.read(scrollY)));
 
 // Fired on every scroll event; identical Y values short-circuit at Phase B.
 window.addEventListener('scroll', () =&gt; {
@@ -209,14 +209,14 @@ graph.commit(() =&gt; {
 <pre class="language-typescript"><code class="language-typescript">// Anti-pattern: 10k cells each reading the same big input.
 const sheet = input(graph, bigGrid);
 const cells = grid.cells.map((c) =&gt;
-  derived(graph, (g) =&gt; evaluate(c, g.read(sheet)))
+  derived(graph, g =&gt; evaluate(c, g.read(sheet)))
 );
 
 // Better: one summarising derived, downstream cells project from it.
 const sheet = input(graph, bigGrid);
-const evaluated = derived(graph, (g) =&gt; evaluateAll(g.read(sheet)));
+const evaluated = derived(graph, g =&gt; evaluateAll(g.read(sheet)));
 const cells = grid.cells.map((c) =&gt;
-  derived(graph, (g) =&gt; g.read(evaluated)[c.id])
+  derived(graph, g =&gt; g.read(evaluated)[c.id])
 );
 </code></pre>
     <p>

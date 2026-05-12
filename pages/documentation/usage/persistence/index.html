@@ -139,7 +139,7 @@ const columnWidth = persistedInput(
 )
 
 // Use it like any other InputNode.
-graph.commit('drag-resize', (tx) => {
+graph.commit('drag-resize', tx => {
   tx.set(columnWidth, 240)
 })
 </code></pre>
@@ -251,8 +251,8 @@ const columnWidth = persistedInput(graph, 'colWidth', 200, {
 })
 
 // 4. Mirror writes back to IndexedDB out-of-band.
-graph.subscribeCommits((commit) =&gt; {
-  for (const id of commit.changedNodes) {
+graph.subscribeCommits(c =&gt; {
+  for (const id of c.changedNodes) {
     const value = hotCache[/* derive key from id */]
     if (value !== undefined) db.put('prefs', { key, value })
   }

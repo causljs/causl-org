@@ -111,7 +111,7 @@ import { CauslProvider } from '@causl/react';
 
 const graph = createCausl();
 const count = input(graph, 0);
-const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+const doubled = derived(graph, g =&gt; g.read(count) * 2);
 
 export function App() {
   return (
@@ -174,7 +174,7 @@ function Counter() {
     <pre class="language-typescript"><code class="language-typescript">import { useCausl } from '@causl/react';
 
 function Stats() {
-  const { total, count } = useCausl((g) =&gt; ({
+  const { total, count } = useCausl(g =&gt; ({
     total: g.read(sumNode),
     count: g.read(countNode),
   }));
@@ -198,7 +198,7 @@ function Stats() {
 
     <pre class="language-typescript"><code class="language-typescript">import { useCauslShallow } from '@causl/react';
 
-const stats = useCauslShallow((g) =&gt; ({
+const stats = useCauslShallow(g =&gt; ({
   total: g.read(sumNode),
   count: g.read(countNode),
 }));</code></pre>
@@ -221,7 +221,7 @@ function Row({ rowId }: { rowId: string }) {
   const node = useCauslFamily(`row:${rowId}`, (graph, key) =&gt;
     graph.input(key, defaultRow),
   );
-  const value = useCausl((g) =&gt; g.read(node));
+  const value = useCausl(g =&gt; g.read(node));
   return &lt;tr&gt;&lt;td&gt;{value.title}&lt;/td&gt;&lt;/tr&gt;;
 }</code></pre>
 
@@ -257,7 +257,7 @@ function Row({ rowId }: { rowId: string }) {
 import type { ResourceState } from '@causl/sync';
 
 function Profile() {
-  const user = useCauslSuspense&lt;User&gt;((g) =&gt; g.read(userResource));
+  const user = useCauslSuspense&lt;User&gt;(g =&gt; g.read(userResource));
   return &lt;h1&gt;{user.name}&lt;/h1&gt;;
 }
 
@@ -381,7 +381,7 @@ return (
 
     <pre class="language-jsx"><code class="language-jsx">// WRONG &mdash; reference may change on every commit after WASM migration.
 function Chart() {
-  const data = useCausl((g) =&gt; g.read(seriesNode));
+  const data = useCausl(g =&gt; g.read(seriesNode));
   const transformed = useMemo(() =&gt; transform(data), [data]);
   return &lt;Plot data={transformed} /&gt;;
 }</code></pre>
@@ -406,7 +406,7 @@ function Chart() {
   // commit where the node's value changed (per SPEC §15.1's
   // `!Object.is` cutoff) and stays unchanged otherwise &mdash; a
   // no-op write or sibling write does not bump the counter.
-  const version = useCausl((g) =&gt; g.stats().nodeVersion(seriesNode));
+  const version = useCausl(g =&gt; g.stats().nodeVersion(seriesNode));
   const transformed = useMemo(() =&gt; transform(data), [version]);
   return &lt;Plot data={transformed} /&gt;;
 }</code></pre>
@@ -443,7 +443,7 @@ function Chart() {
     any selector dedup, and the API is the smallest possible.</p>
 
     <h3>Read N nodes into a tuple or object</h3>
-    <pre class="language-typescript"><code class="language-typescript">const { a, b } = useCauslShallow((g) =&gt; ({
+    <pre class="language-typescript"><code class="language-typescript">const { a, b } = useCauslShallow(g =&gt; ({
   a: g.read(aNode),
   b: g.read(bNode),
 }));</code></pre>
@@ -451,7 +451,7 @@ function Chart() {
     selector returns a fresh literal. Otherwise every commit causes a re-render.</p>
 
     <h3>Derive a scalar from N nodes</h3>
-    <pre class="language-typescript"><code class="language-typescript">const ratio = useCausl((g) =&gt;
+    <pre class="language-typescript"><code class="language-typescript">const ratio = useCausl(g =&gt;
   g.read(numerator) / Math.max(1, g.read(denominator)),
 );</code></pre>
     <p>Plain <code>useCausl</code> is correct because <code>Object.is</code> on two
@@ -459,7 +459,7 @@ function Chart() {
 
     <h3>Read a value that crosses the FFI boundary</h3>
     <pre class="language-typescript"><code class="language-typescript">const data = useCauslNode(bigArrayNode);
-const version = useCausl((g) =&gt; g.stats().nodeVersion(bigArrayNode));
+const version = useCausl(g =&gt; g.stats().nodeVersion(bigArrayNode));
 const sorted = useMemo(() =&gt; data.slice().sort(), [version]);</code></pre>
     <p>Key the <code>useMemo</code> on the per-node version, not the value reference.
     See <a href="#h1-hazard">section 9</a>.</p>
