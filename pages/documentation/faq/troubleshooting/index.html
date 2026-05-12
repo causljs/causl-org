@@ -203,7 +203,7 @@ function ProfileView() {
 
 const graph    = createCausl();
 const items    = input(graph, [] as readonly Item[]);
-const totalUSD = derived(graph, (g) =&gt; {
+const totalUSD = derived(graph, g =&gt; {
   const list = g.read(items);
   // Bug: list[0] is undefined when items is empty.
   return list[0].price * list.length;
@@ -274,7 +274,7 @@ graph.subscribe(orders, () =&gt; {
 
 // (b) Better: encode the dependency as a derived node so the engine
 // handles it inside the same commit.
-const notified = derived(graph, (g) =&gt; g.read(orders).length &gt; 0);</code></pre>
+const notified = derived(graph, g =&gt; g.read(orders).length &gt; 0);</code></pre>
     <p>
       Shape (b) is almost always the right answer. A subscriber-driven commit
       means the second commit's <code>changedNodes</code> is morally part of
@@ -291,15 +291,15 @@ const notified = derived(graph, (g) =&gt; g.read(orders).length &gt; 0);</code><
       <code>tx.set</code>.
     </p>
     <pre><code class="lang-ts">// WRONG — tx is captured and used after run returned.
-graph.commit((tx) =&gt; {
-  fetch('/api/profile').then((res) =&gt; {
+graph.commit(tx =&gt; {
+  fetch('/api/profile').then(res =&gt; {
     tx.set(name, res.name); // throws StaleTxError
   });
 });
 
 // RIGHT — fetch first, then commit.
-const res = await fetch('/api/profile').then((r) =&gt; r.json());
-graph.commit((tx) =&gt; { tx.set(name, res.name); });</code></pre>
+const res = await fetch('/api/profile').then(r =&gt; r.json());
+graph.commit(tx =&gt; { tx.set(name, res.name); });</code></pre>
     <p>
       If you have async resource state to manage, register it as a Resource
       via <code>@causl/sync</code> rather than reaching back into a stale

@@ -102,11 +102,11 @@ const todos = graph.input&lt;Todo[]&gt;('todos', []);
 const filter = graph.input&lt;'all' | 'active' | 'done'&gt;('filter', 'all');
 
 // Selector — the only thing your component reads.
-const visibleTodos = graph.derived('visibleTodos', (get) =&gt; {
-  const items = get(todos);
-  switch (get(filter)) {
-    case 'active': return items.filter((t) =&gt; !t.done);
-    case 'done':   return items.filter((t) =&gt;  t.done);
+const visibleTodos = graph.derived('visibleTodos', g =&gt; {
+  const items = g(todos);
+  switch (g(filter)) {
+    case 'active': return items.filter(t =&gt; !t.done);
+    case 'done':   return items.filter(t =&gt;  t.done);
     case 'all':    return items;
   }
 });
@@ -130,6 +130,26 @@ const visibleTodos = graph.derived('visibleTodos', (get) =&gt; {
       <code>useMemo</code> dependency arrays — wrap the selector with
       <code>useCauslShallow</code> from <code>@causl/react</code> or memoise
       explicitly inside the compute function.
+    </blockquote>
+
+    <blockquote>
+      <strong>Why single-letter params?</strong>
+      Examples on this site write derived computes as
+      <code>g =&gt; g(node)</code> rather than
+      <code>(get) =&gt; get(node)</code>, and commits as
+      <code>tx =&gt; tx.set(...)</code> rather than
+      <code>(tx) =&gt; tx.set(...)</code>. The engine accepts any name —
+      these are just function parameters — but the parens-less single-letter
+      form is idiomatic JavaScript for inline arrows and shortens read sites
+      noticeably:
+      <code>g(count) * g(step)</code> versus
+      <code>get(count) * get(step)</code>. The boilerplate of the longer form
+      is real; an arrow wrapper is unavoidable (the expression must be
+      deferred to be re-runnable, so
+      <code>graph.derived('x', g(a) * g(b))</code> can't work in JS), but the
+      single-letter alias is the practical floor. Use whatever names you find
+      clearer in your own code — the convention is a style nudge, not a
+      contract.
     </blockquote>
 
     <h2>2. Lazy expansion</h2>
@@ -160,7 +180,7 @@ function cellFactory(graph: FamilyGraph, key: string) {
 
 function Cell({ id }: { id: string }) {
   const node = useCauslFamily(id, cellFactory);
-  const value = useCausl((g) =&gt; g.read(node));
+  const value = useCausl(g =&gt; g.read(node));
   return &lt;span&gt;{value}&lt;/span&gt;;
 }
 </code></pre>
@@ -193,11 +213,11 @@ function Cell({ id }: { id: string }) {
     </p>
 
     <pre class="language-typescript"><code class="language-typescript">const useMetric = graph.input&lt;'mean' | 'median'&gt;('useMetric', 'mean');
-const mean = graph.derived('mean', (get) =&gt; computeMean(get(samples)));
-const median = graph.derived('median', (get) =&gt; computeMedian(get(samples)));
+const mean = graph.derived('mean', g =&gt; computeMean(g(samples)));
+const median = graph.derived('median', g =&gt; computeMedian(g(samples)));
 
-const summary = graph.derived('summary', (get) =&gt; {
-  return get(useMetric) === 'mean' ? get(mean) : get(median);
+const summary = graph.derived('summary', g =&gt; {
+  return g(useMetric) === 'mean' ? g(mean) : g(median);
 });
 </code></pre>
 
@@ -227,8 +247,8 @@ const summary = graph.derived('summary', (get) =&gt; {
 
 const userId = graph.input&lt;Maybe&lt;string&gt;&gt;('userId', { present: false });
 
-const greeting = graph.derived('greeting', (get) =&gt; {
-  const u = get(userId);
+const greeting = graph.derived('greeting', g =&gt; {
+  const u = g(userId);
   return u.present ? `Hello, ${u.value}` : 'Sign in to continue';
 });
 </code></pre>
@@ -256,15 +276,15 @@ const greeting = graph.derived('greeting', (get) =&gt; {
 
     <pre class="language-typescript"><code class="language-typescript">const price = graph.input&lt;number&gt;('price', 100);
 
-const withTax     = graph.derived('withTax',     (g) =&gt; g.read(price) * 1.08);
-const withTip     = graph.derived('withTip',     (g) =&gt; g.read(price) * 1.18);
-const withDiscount = graph.derived('withDiscount', (g) =&gt; g.read(price) * 0.85);
-const formatted   = graph.derived('formatted',   (g) =&gt; `$${g.read(price).toFixed(2)}`);
+const withTax     = graph.derived('withTax',     g =&gt; g.read(price) * 1.08);
+const withTip     = graph.derived('withTip',     g =&gt; g.read(price) * 1.18);
+const withDiscount = graph.derived('withDiscount', g =&gt; g.read(price) * 0.85);
+const formatted   = graph.derived('formatted',   g =&gt; `$${g.read(price).toFixed(2)}`);
 
-graph.subscribe(withTax,      (v) =&gt; renderTax(v));
-graph.subscribe(withTip,      (v) =&gt; renderTip(v));
-graph.subscribe(withDiscount, (v) =&gt; renderDiscount(v));
-graph.subscribe(formatted,    (v) =&gt; renderLabel(v));
+graph.subscribe(withTax,      v =&gt; renderTax(v));
+graph.subscribe(withTip,      v =&gt; renderTip(v));
+graph.subscribe(withDiscount, v =&gt; renderDiscount(v));
+graph.subscribe(formatted,    v =&gt; renderLabel(v));
 </code></pre>
 
     <p>
@@ -299,12 +319,12 @@ graph.subscribe(formatted,    (v) =&gt; renderLabel(v));
   graph.input&lt;number&gt;(`item:${i}`, 0),
 );
 
-const subtotal = graph.derived('subtotal', (get) =&gt;
-  lineItems.reduce((sum, n) =&gt; sum + get(n), 0),
+const subtotal = graph.derived('subtotal', g =&gt;
+  lineItems.reduce((sum, n) =&gt; sum + g(n), 0),
 );
 
-const allValid = graph.derived('allValid', (get) =&gt;
-  lineItems.every((n) =&gt; get(n) &gt;= 0),
+const allValid = graph.derived('allValid', g =&gt;
+  lineItems.every(n =&gt; g(n) &gt;= 0),
 );
 </code></pre>
 
@@ -340,7 +360,7 @@ const allValid = graph.derived('allValid', (get) =&gt;
 
     <pre class="language-typescript"><code class="language-typescript">graph.subscribe(
   hydrated,
-  (v) =&gt; {
+  v =&gt; {
     if (v) startBackgroundSync();
   },
   { transient: true },
@@ -378,7 +398,7 @@ const userResource = resource(graph, 'user', async (id: string) =&gt; {
 });
 
 function UserPanel({ id }: { id: string }) {
-  const user = useCauslSuspense((g) =&gt; userResource.state(g, id));
+  const user = useCauslSuspense(g =&gt; userResource.state(g, id));
   return &lt;h1&gt;{user.name}&lt;/h1&gt;;
 }
 

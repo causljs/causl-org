@@ -121,7 +121,7 @@ describe('counter graph', () => {
   it('derives doubled from count', () =&gt; {
     const graph = createCausl()
     const count = input(graph, 0)
-    const doubled = derived(graph, (g) =&gt; g.read(count) * 2)
+    const doubled = derived(graph, g =&gt; g.read(count) * 2)
 
     graph.commit(() =&gt; {
       graph.set(count, 5)
@@ -157,7 +157,7 @@ describe('doubled is a function of count', () =&gt; {
       fc.property(fc.integer(), (n) =&gt; {
         const graph = createCausl()
         const count = input(graph, 0)
-        const doubled = derived(graph, (g) =&gt; g.read(count) * 2)
+        const doubled = derived(graph, g =&gt; g.read(count) * 2)
         graph.commit(() =&gt; graph.set(count, n))
         expect(graph.read(doubled)).toBe(n * 2)
       }),
@@ -255,7 +255,7 @@ import { createCausl, input, derived } from '@causl/core'
 
 const graph = createCausl()
 const a = input(graph, 0)
-const b = derived(graph, (g) =&gt; g.read(a) + 1)
+const b = derived(graph, g =&gt; g.read(a) + 1)
 
 const model = graph.exportModel()
 const report = await runChecker(model, { maxNodes: 100, maxCommits: 500 })
@@ -348,7 +348,7 @@ import { createCausl, input, derived } from '@causl/core'
 it('handles no-op writes (regression)', () =&gt; {
   const graph = createCausl()
   const count = input(graph, 0)
-  const doubled = derived(graph, (g) =&gt; g.read(count) * 2)
+  const doubled = derived(graph, g =&gt; g.read(count) * 2)
   graph.commit(() =&gt; graph.set(count, 0))
   expect(graph.read(doubled)).toBe(0)
 })</code></pre>
