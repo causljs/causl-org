@@ -1748,3 +1748,31 @@
     }
 }
 
+/* =====================================================================
+ * #1294 — defeat TypeDoc's residual <pre>/<code> backgrounds.
+ *
+ * TypeDoc's own assets/style.css (the @layer typedoc above) paints
+ * <pre> and <code> with --color-code-background, which we re-mapped to
+ * --surface-elevated via the pair-token bridge. That's fine for the
+ * code-block surface IN THEORY — but our codeblock component (#1294)
+ * is now a single <code class="codeblock"> element, and TypeDoc's
+ * generic `code, pre { padding, border-radius, font-size }` rules can
+ * still leak in and fight the pair-token contract on .codeblock.
+ *
+ * Strategy: zero out TypeDoc's <pre>/<code> backgrounds entirely, then
+ * re-assert the pair-token contract on .codeblock with !important.
+ * Inline <code> in prose still works — site.css's syntax.css block
+ * gives it its own (transparent) surface.
+ * ===================================================================== */
+pre,
+code:not(.codeblock) {
+    background: transparent !important;
+}
+
+.codeblock {
+    /* Pair-token contract, re-asserted to win the cascade fight against
+     * any TypeDoc selector that might otherwise paint the element. */
+    background: var(--surface-elevated) !important;
+    color: var(--text-on-elevated) !important;
+}
+

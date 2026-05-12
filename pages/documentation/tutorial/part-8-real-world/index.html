@@ -96,55 +96,7 @@
       and the SPEC §13 boundary discipline.
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-tsx has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-      <span class="codeblock-gutter-line">19</span>
-      <span class="codeblock-gutter-line">20</span>
-      <span class="codeblock-gutter-line">21</span>
-      <span class="codeblock-gutter-line">22</span>
-      <span class="codeblock-gutter-line">23</span>
-      <span class="codeblock-gutter-line">24</span>
-      <span class="codeblock-gutter-line">25</span>
-      <span class="codeblock-gutter-line">26</span>
-      <span class="codeblock-gutter-line">27</span>
-      <span class="codeblock-gutter-line">28</span>
-      <span class="codeblock-gutter-line">29</span>
-      <span class="codeblock-gutter-line">30</span>
-      <span class="codeblock-gutter-line">31</span>
-      <span class="codeblock-gutter-line">32</span>
-      <span class="codeblock-gutter-line">33</span>
-      <span class="codeblock-gutter-line">34</span>
-      <span class="codeblock-gutter-line">35</span>
-      <span class="codeblock-gutter-line">36</span>
-      <span class="codeblock-gutter-line">37</span>
-      <span class="codeblock-gutter-line">38</span>
-      <span class="codeblock-gutter-line">39</span>
-      <span class="codeblock-gutter-line">40</span>
-      <span class="codeblock-gutter-line">41</span>
-      <span class="codeblock-gutter-line">42</span>
-      <span class="codeblock-gutter-line">43</span>
-      <span class="codeblock-gutter-line">44</span>
-    </aside>
-      <code class="language-tsx">// graph.ts
+    <code class="codeblock" data-lang="tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span><span class="codeblock-gutter-line">24</span><span class="codeblock-gutter-line">25</span><span class="codeblock-gutter-line">26</span><span class="codeblock-gutter-line">27</span><span class="codeblock-gutter-line">28</span><span class="codeblock-gutter-line">29</span><span class="codeblock-gutter-line">30</span><span class="codeblock-gutter-line">31</span><span class="codeblock-gutter-line">32</span><span class="codeblock-gutter-line">33</span><span class="codeblock-gutter-line">34</span><span class="codeblock-gutter-line">35</span><span class="codeblock-gutter-line">36</span><span class="codeblock-gutter-line">37</span><span class="codeblock-gutter-line">38</span><span class="codeblock-gutter-line">39</span><span class="codeblock-gutter-line">40</span><span class="codeblock-gutter-line">41</span><span class="codeblock-gutter-line">42</span><span class="codeblock-gutter-line">43</span><span class="codeblock-gutter-line">44</span></span><span class="codeblock-source language-tsx">// graph.ts
 import { createCausl, type InputNode, type Graph } from '@causl/core'
 import { persistedInput, localStorageAdapter } from '@causl/persistence'
 
@@ -188,9 +140,7 @@ export function buildGraph(): { graph: Graph; nodes: AppNodes } {
 
   return { graph, nodes: { notes, selectedId, draftDirty } }
 }
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <blockquote>
       <strong>Detailed explanation: why <code>persistedInput</code> is restricted to inputs.</strong>
@@ -213,47 +163,7 @@ export function buildGraph(): { graph: Graph; nodes: AppNodes } {
       and not stored on disk.
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-tsx has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-      <span class="codeblock-gutter-line">19</span>
-      <span class="codeblock-gutter-line">20</span>
-      <span class="codeblock-gutter-line">21</span>
-      <span class="codeblock-gutter-line">22</span>
-      <span class="codeblock-gutter-line">23</span>
-      <span class="codeblock-gutter-line">24</span>
-      <span class="codeblock-gutter-line">25</span>
-      <span class="codeblock-gutter-line">26</span>
-      <span class="codeblock-gutter-line">27</span>
-      <span class="codeblock-gutter-line">28</span>
-      <span class="codeblock-gutter-line">29</span>
-      <span class="codeblock-gutter-line">30</span>
-      <span class="codeblock-gutter-line">31</span>
-      <span class="codeblock-gutter-line">32</span>
-      <span class="codeblock-gutter-line">33</span>
-      <span class="codeblock-gutter-line">34</span>
-      <span class="codeblock-gutter-line">35</span>
-      <span class="codeblock-gutter-line">36</span>
-    </aside>
-      <code class="language-tsx">// projections.ts
+    <code class="codeblock" data-lang="tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span><span class="codeblock-gutter-line">24</span><span class="codeblock-gutter-line">25</span><span class="codeblock-gutter-line">26</span><span class="codeblock-gutter-line">27</span><span class="codeblock-gutter-line">28</span><span class="codeblock-gutter-line">29</span><span class="codeblock-gutter-line">30</span><span class="codeblock-gutter-line">31</span><span class="codeblock-gutter-line">32</span><span class="codeblock-gutter-line">33</span><span class="codeblock-gutter-line">34</span><span class="codeblock-gutter-line">35</span><span class="codeblock-gutter-line">36</span></span><span class="codeblock-source language-tsx">// projections.ts
 import type { Graph, DerivedNode } from '@causl/core'
 import type { AppNodes, Note } from './graph.js'
 
@@ -289,9 +199,7 @@ export function buildProjections(graph: Graph, nodes: AppNodes): AppProjections 
 
   return { sortedNotes, activeNote, wordCount, noteCount }
 }
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <p>
       Notice that <code>wordCount</code> reads <code>activeNote</code>, not
@@ -312,25 +220,7 @@ export function buildProjections(graph: Graph, nodes: AppNodes): AppProjections 
       handler.
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-    </aside>
-      <code class="language-typescript">// messages.ts
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span></span><span class="codeblock-source language-typescript">// messages.ts
 import { defineMsgs, payload, type MsgOf } from '@causl/react'
 
 export const msg = defineMsgs({
@@ -344,78 +234,9 @@ export const msg = defineMsgs({
 })
 
 export type AppMsg = MsgOf&lt;typeof msg&gt;
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-tsx has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-      <span class="codeblock-gutter-line">19</span>
-      <span class="codeblock-gutter-line">20</span>
-      <span class="codeblock-gutter-line">21</span>
-      <span class="codeblock-gutter-line">22</span>
-      <span class="codeblock-gutter-line">23</span>
-      <span class="codeblock-gutter-line">24</span>
-      <span class="codeblock-gutter-line">25</span>
-      <span class="codeblock-gutter-line">26</span>
-      <span class="codeblock-gutter-line">27</span>
-      <span class="codeblock-gutter-line">28</span>
-      <span class="codeblock-gutter-line">29</span>
-      <span class="codeblock-gutter-line">30</span>
-      <span class="codeblock-gutter-line">31</span>
-      <span class="codeblock-gutter-line">32</span>
-      <span class="codeblock-gutter-line">33</span>
-      <span class="codeblock-gutter-line">34</span>
-      <span class="codeblock-gutter-line">35</span>
-      <span class="codeblock-gutter-line">36</span>
-      <span class="codeblock-gutter-line">37</span>
-      <span class="codeblock-gutter-line">38</span>
-      <span class="codeblock-gutter-line">39</span>
-      <span class="codeblock-gutter-line">40</span>
-      <span class="codeblock-gutter-line">41</span>
-      <span class="codeblock-gutter-line">42</span>
-      <span class="codeblock-gutter-line">43</span>
-      <span class="codeblock-gutter-line">44</span>
-      <span class="codeblock-gutter-line">45</span>
-      <span class="codeblock-gutter-line">46</span>
-      <span class="codeblock-gutter-line">47</span>
-      <span class="codeblock-gutter-line">48</span>
-      <span class="codeblock-gutter-line">49</span>
-      <span class="codeblock-gutter-line">50</span>
-      <span class="codeblock-gutter-line">51</span>
-      <span class="codeblock-gutter-line">52</span>
-      <span class="codeblock-gutter-line">53</span>
-      <span class="codeblock-gutter-line">54</span>
-      <span class="codeblock-gutter-line">55</span>
-      <span class="codeblock-gutter-line">56</span>
-      <span class="codeblock-gutter-line">57</span>
-      <span class="codeblock-gutter-line">58</span>
-      <span class="codeblock-gutter-line">59</span>
-      <span class="codeblock-gutter-line">60</span>
-      <span class="codeblock-gutter-line">61</span>
-      <span class="codeblock-gutter-line">62</span>
-      <span class="codeblock-gutter-line">63</span>
-    </aside>
-      <code class="language-tsx">// update.ts
+    <code class="codeblock" data-lang="tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span><span class="codeblock-gutter-line">24</span><span class="codeblock-gutter-line">25</span><span class="codeblock-gutter-line">26</span><span class="codeblock-gutter-line">27</span><span class="codeblock-gutter-line">28</span><span class="codeblock-gutter-line">29</span><span class="codeblock-gutter-line">30</span><span class="codeblock-gutter-line">31</span><span class="codeblock-gutter-line">32</span><span class="codeblock-gutter-line">33</span><span class="codeblock-gutter-line">34</span><span class="codeblock-gutter-line">35</span><span class="codeblock-gutter-line">36</span><span class="codeblock-gutter-line">37</span><span class="codeblock-gutter-line">38</span><span class="codeblock-gutter-line">39</span><span class="codeblock-gutter-line">40</span><span class="codeblock-gutter-line">41</span><span class="codeblock-gutter-line">42</span><span class="codeblock-gutter-line">43</span><span class="codeblock-gutter-line">44</span><span class="codeblock-gutter-line">45</span><span class="codeblock-gutter-line">46</span><span class="codeblock-gutter-line">47</span><span class="codeblock-gutter-line">48</span><span class="codeblock-gutter-line">49</span><span class="codeblock-gutter-line">50</span><span class="codeblock-gutter-line">51</span><span class="codeblock-gutter-line">52</span><span class="codeblock-gutter-line">53</span><span class="codeblock-gutter-line">54</span><span class="codeblock-gutter-line">55</span><span class="codeblock-gutter-line">56</span><span class="codeblock-gutter-line">57</span><span class="codeblock-gutter-line">58</span><span class="codeblock-gutter-line">59</span><span class="codeblock-gutter-line">60</span><span class="codeblock-gutter-line">61</span><span class="codeblock-gutter-line">62</span><span class="codeblock-gutter-line">63</span></span><span class="codeblock-source language-tsx">// update.ts
 import { createUpdate } from '@causl/react'
 import type { Graph } from '@causl/core'
 import type { AppMsg } from './messages.js'
@@ -478,9 +299,7 @@ export function buildUpdate(nodes: AppNodes) {
     'sync/resolve-conflict': (_m, g) =&gt; { /* wired in the next section */ },
   })
 }
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <p>
       Two things to note. First, every handler ends in exactly one
@@ -504,50 +323,7 @@ export function buildUpdate(nodes: AppNodes) {
       reading it.
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-      <span class="codeblock-gutter-line">19</span>
-      <span class="codeblock-gutter-line">20</span>
-      <span class="codeblock-gutter-line">21</span>
-      <span class="codeblock-gutter-line">22</span>
-      <span class="codeblock-gutter-line">23</span>
-      <span class="codeblock-gutter-line">24</span>
-      <span class="codeblock-gutter-line">25</span>
-      <span class="codeblock-gutter-line">26</span>
-      <span class="codeblock-gutter-line">27</span>
-      <span class="codeblock-gutter-line">28</span>
-      <span class="codeblock-gutter-line">29</span>
-      <span class="codeblock-gutter-line">30</span>
-      <span class="codeblock-gutter-line">31</span>
-      <span class="codeblock-gutter-line">32</span>
-      <span class="codeblock-gutter-line">33</span>
-      <span class="codeblock-gutter-line">34</span>
-      <span class="codeblock-gutter-line">35</span>
-      <span class="codeblock-gutter-line">36</span>
-      <span class="codeblock-gutter-line">37</span>
-      <span class="codeblock-gutter-line">38</span>
-      <span class="codeblock-gutter-line">39</span>
-    </aside>
-      <code class="language-typescript">// sync.ts
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span><span class="codeblock-gutter-line">24</span><span class="codeblock-gutter-line">25</span><span class="codeblock-gutter-line">26</span><span class="codeblock-gutter-line">27</span><span class="codeblock-gutter-line">28</span><span class="codeblock-gutter-line">29</span><span class="codeblock-gutter-line">30</span><span class="codeblock-gutter-line">31</span><span class="codeblock-gutter-line">32</span><span class="codeblock-gutter-line">33</span><span class="codeblock-gutter-line">34</span><span class="codeblock-gutter-line">35</span><span class="codeblock-gutter-line">36</span><span class="codeblock-gutter-line">37</span><span class="codeblock-gutter-line">38</span><span class="codeblock-gutter-line">39</span></span><span class="codeblock-source language-typescript">// sync.ts
 import type { Graph } from '@causl/core'
 import { resource, createConflictRegistry } from '@causl/sync'
 import type { AppNodes, Note, NoteMap } from './graph.js'
@@ -586,34 +362,13 @@ export function buildSync(graph: Graph, nodes: AppNodes) {
 
   return { pullResource, conflicts }
 }
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <p>
       Now we can wire the two sync messages in <code>update.ts</code>:
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-typescript has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-    </aside>
-      <code class="language-typescript">// update.ts (excerpt — replacing the two stubs)
+    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span></span><span class="codeblock-source language-typescript">// update.ts (excerpt — replacing the two stubs)
 'sync/pull': (_m, g) =&gt; {
   // resource.refresh() is itself a commit; no extra g.commit() needed.
   void sync.pullResource.refresh()
@@ -628,9 +383,7 @@ export function buildSync(graph: Graph, nodes: AppNodes) {
   })
   sync.conflicts.resolve(m.id)
 },
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <blockquote>
       <strong>Detailed explanation: why conflicts live in the graph.</strong>
@@ -655,102 +408,7 @@ export function buildSync(graph: Graph, nodes: AppNodes) {
       reducer outside the runner.
     </p>
 
-    <div class="codeblock-wrapper">
-    <pre class="language-tsx has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-      <span class="codeblock-gutter-line">19</span>
-      <span class="codeblock-gutter-line">20</span>
-      <span class="codeblock-gutter-line">21</span>
-      <span class="codeblock-gutter-line">22</span>
-      <span class="codeblock-gutter-line">23</span>
-      <span class="codeblock-gutter-line">24</span>
-      <span class="codeblock-gutter-line">25</span>
-      <span class="codeblock-gutter-line">26</span>
-      <span class="codeblock-gutter-line">27</span>
-      <span class="codeblock-gutter-line">28</span>
-      <span class="codeblock-gutter-line">29</span>
-      <span class="codeblock-gutter-line">30</span>
-      <span class="codeblock-gutter-line">31</span>
-      <span class="codeblock-gutter-line">32</span>
-      <span class="codeblock-gutter-line">33</span>
-      <span class="codeblock-gutter-line">34</span>
-      <span class="codeblock-gutter-line">35</span>
-      <span class="codeblock-gutter-line">36</span>
-      <span class="codeblock-gutter-line">37</span>
-      <span class="codeblock-gutter-line">38</span>
-      <span class="codeblock-gutter-line">39</span>
-      <span class="codeblock-gutter-line">40</span>
-      <span class="codeblock-gutter-line">41</span>
-      <span class="codeblock-gutter-line">42</span>
-      <span class="codeblock-gutter-line">43</span>
-      <span class="codeblock-gutter-line">44</span>
-      <span class="codeblock-gutter-line">45</span>
-      <span class="codeblock-gutter-line">46</span>
-      <span class="codeblock-gutter-line">47</span>
-      <span class="codeblock-gutter-line">48</span>
-      <span class="codeblock-gutter-line">49</span>
-      <span class="codeblock-gutter-line">50</span>
-      <span class="codeblock-gutter-line">51</span>
-      <span class="codeblock-gutter-line">52</span>
-      <span class="codeblock-gutter-line">53</span>
-      <span class="codeblock-gutter-line">54</span>
-      <span class="codeblock-gutter-line">55</span>
-      <span class="codeblock-gutter-line">56</span>
-      <span class="codeblock-gutter-line">57</span>
-      <span class="codeblock-gutter-line">58</span>
-      <span class="codeblock-gutter-line">59</span>
-      <span class="codeblock-gutter-line">60</span>
-      <span class="codeblock-gutter-line">61</span>
-      <span class="codeblock-gutter-line">62</span>
-      <span class="codeblock-gutter-line">63</span>
-      <span class="codeblock-gutter-line">64</span>
-      <span class="codeblock-gutter-line">65</span>
-      <span class="codeblock-gutter-line">66</span>
-      <span class="codeblock-gutter-line">67</span>
-      <span class="codeblock-gutter-line">68</span>
-      <span class="codeblock-gutter-line">69</span>
-      <span class="codeblock-gutter-line">70</span>
-      <span class="codeblock-gutter-line">71</span>
-      <span class="codeblock-gutter-line">72</span>
-      <span class="codeblock-gutter-line">73</span>
-      <span class="codeblock-gutter-line">74</span>
-      <span class="codeblock-gutter-line">75</span>
-      <span class="codeblock-gutter-line">76</span>
-      <span class="codeblock-gutter-line">77</span>
-      <span class="codeblock-gutter-line">78</span>
-      <span class="codeblock-gutter-line">79</span>
-      <span class="codeblock-gutter-line">80</span>
-      <span class="codeblock-gutter-line">81</span>
-      <span class="codeblock-gutter-line">82</span>
-      <span class="codeblock-gutter-line">83</span>
-      <span class="codeblock-gutter-line">84</span>
-      <span class="codeblock-gutter-line">85</span>
-      <span class="codeblock-gutter-line">86</span>
-      <span class="codeblock-gutter-line">87</span>
-      <span class="codeblock-gutter-line">88</span>
-      <span class="codeblock-gutter-line">89</span>
-      <span class="codeblock-gutter-line">90</span>
-      <span class="codeblock-gutter-line">91</span>
-    </aside>
-      <code class="language-tsx">// App.tsx
+    <code class="codeblock" data-lang="tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span><span class="codeblock-gutter-line">24</span><span class="codeblock-gutter-line">25</span><span class="codeblock-gutter-line">26</span><span class="codeblock-gutter-line">27</span><span class="codeblock-gutter-line">28</span><span class="codeblock-gutter-line">29</span><span class="codeblock-gutter-line">30</span><span class="codeblock-gutter-line">31</span><span class="codeblock-gutter-line">32</span><span class="codeblock-gutter-line">33</span><span class="codeblock-gutter-line">34</span><span class="codeblock-gutter-line">35</span><span class="codeblock-gutter-line">36</span><span class="codeblock-gutter-line">37</span><span class="codeblock-gutter-line">38</span><span class="codeblock-gutter-line">39</span><span class="codeblock-gutter-line">40</span><span class="codeblock-gutter-line">41</span><span class="codeblock-gutter-line">42</span><span class="codeblock-gutter-line">43</span><span class="codeblock-gutter-line">44</span><span class="codeblock-gutter-line">45</span><span class="codeblock-gutter-line">46</span><span class="codeblock-gutter-line">47</span><span class="codeblock-gutter-line">48</span><span class="codeblock-gutter-line">49</span><span class="codeblock-gutter-line">50</span><span class="codeblock-gutter-line">51</span><span class="codeblock-gutter-line">52</span><span class="codeblock-gutter-line">53</span><span class="codeblock-gutter-line">54</span><span class="codeblock-gutter-line">55</span><span class="codeblock-gutter-line">56</span><span class="codeblock-gutter-line">57</span><span class="codeblock-gutter-line">58</span><span class="codeblock-gutter-line">59</span><span class="codeblock-gutter-line">60</span><span class="codeblock-gutter-line">61</span><span class="codeblock-gutter-line">62</span><span class="codeblock-gutter-line">63</span><span class="codeblock-gutter-line">64</span><span class="codeblock-gutter-line">65</span><span class="codeblock-gutter-line">66</span><span class="codeblock-gutter-line">67</span><span class="codeblock-gutter-line">68</span><span class="codeblock-gutter-line">69</span><span class="codeblock-gutter-line">70</span><span class="codeblock-gutter-line">71</span><span class="codeblock-gutter-line">72</span><span class="codeblock-gutter-line">73</span><span class="codeblock-gutter-line">74</span><span class="codeblock-gutter-line">75</span><span class="codeblock-gutter-line">76</span><span class="codeblock-gutter-line">77</span><span class="codeblock-gutter-line">78</span><span class="codeblock-gutter-line">79</span><span class="codeblock-gutter-line">80</span><span class="codeblock-gutter-line">81</span><span class="codeblock-gutter-line">82</span><span class="codeblock-gutter-line">83</span><span class="codeblock-gutter-line">84</span><span class="codeblock-gutter-line">85</span><span class="codeblock-gutter-line">86</span><span class="codeblock-gutter-line">87</span><span class="codeblock-gutter-line">88</span><span class="codeblock-gutter-line">89</span><span class="codeblock-gutter-line">90</span><span class="codeblock-gutter-line">91</span></span><span class="codeblock-source language-tsx">// App.tsx
 import { CauslProvider, useCausl, useCauslNode, useDispatch } from '@causl/react'
 import { buildGraph } from './graph.js'
 import { buildProjections } from './projections.js'
@@ -841,9 +499,7 @@ function StatusBar() {
     &lt;/footer&gt;
   )
 }
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <p>
       Three different React hooks appear here, each for a reason worth

@@ -12,33 +12,41 @@
    themselves automatically in light mode (site.css #1268).
    ============================================================= */
 
-/* Base typographic rules for ANY <pre> or <code> block that ships
-   inside our wrapper component (or carries language-X / has-gutter
-   via Prism / our pre-render sweep). The selector chain is
-   intentionally broad: three different code-block emitters live in
-   this repo and we want one CSS contract for all of them.
+/* -------------------------------------------------------------
+   Single-root codeblock (#1294)
+   -------------------------------------------------------------
+   The read-only code-block component is a SINGLE <code class="codeblock">
+   element that owns BOTH the surface background AND the foreground
+   colour. The old <div class="codeblock-wrapper"><pre><code> stack from
+   #1280/#1292 was depth 4 and lost the cascade fight against TypeDoc's
+   own <pre> styling on API pages.
 
-     1. Tutorial pages — Prism convention. <pre class="language-X">
-        <code class="language-X">.  Selector [class*="language-"] catches it.
+   Three emitters all produce the same structure now:
+     1. Tutorial pages — Prism convention. Pre-render sweep maps
+        <pre class="language-X"><code class="language-X"> to
+        <code class="codeblock" data-lang="X">.
      2. Homepage — hand-coded with custom <span class="tok-*">.
-        <pre class="codeblock has-gutter"><code>.  No language class.
-        Caught via .has-gutter and the .codeblock-wrapper > pre rules below.
-     3. TypeDoc API — generator-emitted. <pre class="has-gutter">
-        <code class="js"> (note: "js", not "language-js"). Same.
+        Pre-render sweep maps <pre class="codeblock has-gutter"><code> to
+        <code class="codeblock"> (no data-lang).
+     3. TypeDoc API — generator-emitted. Pre-render sweep maps
+        <pre class="has-gutter"><code class="js"> to
+        <code class="codeblock" data-lang="js">.
 
    The pair-token system (#1268) flips --surface-elevated and
    --text-on-elevated automatically in light mode via site.css, so a
    single selector contract serves both themes by inheritance. */
-pre[class*="language-"],
-code[class*="language-"],
-.codeblock-wrapper > pre,
-.codeblock-wrapper > pre > code {
-  color: var(--text-on-elevated);
-  font-family: var(--mono);
-  font-size: 0.875rem;
-  line-height: 1.6;
-  text-align: left;
+
+.codeblock {
+  /* Two-column grid: gutter (auto) + source (1fr). The copy button
+     escapes the grid via position: absolute. */
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto;
+  gap: 0 0.9rem;
+
+  /* Pre-formatted: preserve newlines + indentation. */
   white-space: pre;
+  text-align: left;
   word-spacing: normal;
   word-break: normal;
   word-wrap: normal;
@@ -49,68 +57,24 @@ code[class*="language-"],
   -moz-hyphens: none;
   -ms-hyphens: none;
   hyphens: none;
-}
 
-pre[class*="language-"],
-.codeblock-wrapper > pre {
-  background: var(--surface-elevated);
+  /* Pair-token contract: <code class="codeblock"> writes BOTH bg AND
+     colour on itself. Descendants inherit. !important is defensive —
+     TypeDoc's own assets/style.css paints <code> with a dark
+     --color-code-background, which we explicitly defeat below in the
+     TypeDoc bridge file too. */
+  background: var(--surface-elevated) !important;
+  color: var(--text-on-elevated) !important;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+
   border-radius: 8px;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--space-5) var(--space-4) 0.6rem;
   margin: var(--space-4) 0;
-  overflow-x: auto;
-}
 
-/* Inline code inside running prose: just the mono font, no pill.
-   The previous background+padding "pill" treatment was removed for
-   #1280 — inline code now reads as part of the sentence and inherits
-   the surrounding paragraph color via --text-on-elevated. */
-:not(pre) > code[class*="language-"] {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  font-size: 0.92em;
-  white-space: normal;
-}
-
-/* =============================================================
-   Code-block enhancements (#1280) — line-number gutter,
-   copy / run buttons, and slide-out terminal. Driven by
-   causl-org/js/codeblock-enhance.js. The script wraps every
-   highlighted <pre> in <div class="codeblock-wrapper"> and
-   injects the gutter / buttons / terminal at runtime.
-   ============================================================= */
-
-.codeblock-wrapper {
   position: relative;
-  margin: 1rem 0;
-}
-
-/* The wrapper owns the outer margin now; the <pre> inside it should
-   not double-stack. Applies to EVERY pre in a wrapper, regardless of
-   class — covers Prism-styled (.language-X), homepage (.codeblock),
-   and TypeDoc API (.has-gutter only) blocks alike. */
-.codeblock-wrapper > pre {
-  margin: 0;
-}
-
-/* Two-column layout when a gutter is present. The gutter is a flex
-   item sitting before <code> inside the <pre>. */
-.codeblock-wrapper > pre.has-gutter {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.9rem;
-  padding-left: 0.6rem;
-}
-
-/* Any <code> inside the gutter'd pre stretches to fill the remaining
-   row — Prism's language-X code, homepage's class-less <code>, and
-   TypeDoc's class="js" code all match. */
-.codeblock-wrapper > pre.has-gutter > code {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: block;
   overflow-x: auto;
-  background: transparent;
 }
 
 .codeblock-gutter {
@@ -129,7 +93,6 @@ pre[class*="language-"],
   -ms-user-select: none;
   user-select: none;
   pointer-events: none;
-  flex: 0 0 auto;
 }
 
 .codeblock-gutter-line {
@@ -141,7 +104,35 @@ pre[class*="language-"],
   line-height: inherit;
 }
 
-/* ---------- Buttons ---------- */
+.codeblock-source {
+  display: block;
+  white-space: pre;
+  overflow-x: auto;
+  /* Inherit the colour contract from .codeblock so token spans without
+     an explicit colour fall back to the pair-token foreground. */
+  background: transparent;
+  color: inherit;
+  min-width: 0;
+}
+
+/* Inline code inside running prose: just the mono font, no pill.
+   The background+padding "pill" treatment was removed for #1280 —
+   inline code now reads as part of the sentence and inherits the
+   surrounding paragraph color via --text-on-elevated.
+
+   We explicitly scope this to <code> that is NOT itself a .codeblock,
+   so the inline reset can't fight the block-level surface contract on
+   the new flat <code class="codeblock"> root (#1294). */
+code:not(.codeblock),
+:not(pre) > code[class*="language-"] {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.92em;
+  white-space: normal;
+}
+
+/* ---------- Copy button ---------- */
 
 .codeblock-btn {
   position: absolute;

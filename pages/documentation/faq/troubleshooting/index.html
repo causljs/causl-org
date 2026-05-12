@@ -113,26 +113,13 @@
       will silently re-render every commit after <code>migrate('wasm')</code>.
     </p>
     <p>This is the H1 hazard from the WASM adopter audit. The fix is mechanical:</p>
-    <div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-    </aside>
-      <code class="lang-ts">// WRONG — memoises on a reference the contract does not preserve.
+    <code class="codeblock" data-lang="lang-ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span></span><span class="codeblock-source">// WRONG — memoises on a reference the contract does not preserve.
 const view = useMemo(() =&gt; transform(graph.read(profile)), [graph.read(profile)]);
 
 // RIGHT — memoise on commit.time (the GraphTime the value belongs to).
 const value = graph.read(profile);
 const time  = graph.now();
-const view  = useMemo(() =&gt; transform(value), [time]);</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+const view  = useMemo(() =&gt; transform(value), [time]);</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <blockquote>
       Detailed explanation. <code>EngineTelemetry</code> also exposes a per-node
       version counter that increments each commit a node changed. Use it when
@@ -149,23 +136,7 @@ const view  = useMemo(() =&gt; transform(value), [time]);</code></pre>
       render. Once you wire that against any backend that does not preserve
       identity across commits, the memo always misses.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-    </aside>
-      <code class="lang-tsx">import { useCauslNode } from '@causl/react';
+    <code class="codeblock" data-lang="lang-tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span></span><span class="codeblock-source">import { useCauslNode } from '@causl/react';
 
 // WRONG — Card re-renders every commit on the WASM backend because the
 // `profile` prop is a fresh reference each time even when its value is equal.
@@ -176,28 +147,9 @@ const Card = React.memo(function Card({ profile }: { profile: Profile }) {
 function ProfileView() {
   const profile = useCauslNode(graph, profileNode);
   return &lt;Card profile={profile} /&gt;;
-}</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>Two correct shapes, depending on what you actually want to gate on:</p>
-    <div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-    </aside>
-      <code class="lang-tsx">// (a) Compare by value identity.
+    <code class="codeblock" data-lang="lang-tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span></span><span class="codeblock-source">// (a) Compare by value identity.
 const Card = React.memo(
   function Card({ profile }: { profile: Profile }) { /* ... */ },
   (prev, next) =&gt; prev.profile.id === next.profile.id &amp;&amp; prev.profile.name === next.profile.name,
@@ -209,9 +161,7 @@ function ProfileView() {
   const profile = useCauslNode(graph, profileNode);
   const version = useCauslNodeVersion(graph, profileNode);
   return &lt;Card profile={profile} key={version} /&gt;;
-}</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       <code>useCauslNode</code> itself is fine — it subscribes via
       <code>subscribeReads</code> (SPEC §11.1) and only fires when the
@@ -235,31 +185,7 @@ function ProfileView() {
       (Atomicity). No partial commit reaches Phase E. The whole transaction is
       reported as failed.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-      <span class="codeblock-gutter-line">19</span>
-      <span class="codeblock-gutter-line">20</span>
-    </aside>
-      <code class="lang-ts">import { createCausl, input, derived, ComputeFailure } from '@causl/core';
+    <code class="codeblock" data-lang="lang-ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span></span><span class="codeblock-source">import { createCausl, input, derived, ComputeFailure } from '@causl/core';
 
 const graph    = createCausl();
 const items    = input(graph, [] as readonly Item[]);
@@ -278,9 +204,7 @@ try {
     console.error('original:', err.cause?.error);
   }
   throw err;
-}</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       <strong>Fixes, in order of preference:</strong>
     </p>
@@ -300,21 +224,7 @@ try {
       <li><strong>Use-after-dispose on a family-keyed node.</strong> Family-keyed nodes (statechart regions, per-row cells in a spreadsheet) tombstone when their parent scope disposes. Holding a stale <code>NodeId</code> from before the dispose and reading it after surfaces this error. Per SPEC §9.1 row 11, the tombstone lookup is exhaustive.</li>
       <li><strong>Generational <code>NodeId</code> mismatch.</strong> Each <code>NodeId</code> now carries a generation tag. A node registered, disposed, and re-registered at the same index has a different generation; any stale handle from the first lifetime throws <code>NodeDisposedError</code> rather than silently aliasing the new node. This is the v1.x replacement for the ABA hazard the earlier non-generational design carried.</li>
     </ol>
-    <div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-    </aside>
-      <code class="lang-ts">// Wrong — holds the id across a family dispose.
+    <code class="codeblock" data-lang="lang-ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span></span><span class="codeblock-source">// Wrong — holds the id across a family dispose.
 let row = familyRegister(graph, rows, 'r-42');
 familyDispose(graph, rows, 'r-42');
 graph.read(row);              // throws NodeDisposedError
@@ -323,9 +233,7 @@ graph.read(row);              // still throws — generation has bumped
 
 // Right — re-derive the id after re-registration, or guard on isDisposed.
 let row2 = familyRegister(graph, rows, 'r-42');
-graph.read(row2);             // ok</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+graph.read(row2);             // ok</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       The runtime guard is intentional. SPEC §13.4 considered promoting
       disposal to a compile-time discriminator (<code>Node&lt;T&gt; = Live&lt;T&gt; | Disposed</code>)
@@ -343,21 +251,7 @@ graph.read(row2);             // ok</code></pre>
       by design (race-class row 7, commit-inside-subscribe reentry).
     </p>
     <p>The two correct shapes:</p>
-    <div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-    </aside>
-      <code class="lang-ts">// (a) Defer to a microtask if you genuinely need to chain a commit.
+    <code class="codeblock" data-lang="lang-ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span></span><span class="codeblock-source">// (a) Defer to a microtask if you genuinely need to chain a commit.
 graph.subscribe(orders, () =&gt; {
   queueMicrotask(() =&gt; {
     graph.commit(() =&gt; graph.set(notified, true));
@@ -366,9 +260,7 @@ graph.subscribe(orders, () =&gt; {
 
 // (b) Better: encode the dependency as a derived node so the engine
 // handles it inside the same commit.
-const notified = derived(graph, g =&gt; g.read(orders).length &gt; 0);</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+const notified = derived(graph, g =&gt; g.read(orders).length &gt; 0);</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       Shape (b) is almost always the right answer. A subscriber-driven commit
       means the second commit's <code>changedNodes</code> is morally part of
@@ -384,21 +276,7 @@ const notified = derived(graph, g =&gt; g.read(orders).length &gt; 0);</code></p
       handler — throws <code>StaleTxError</code> on the deferred
       <code>tx.set</code>.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-    </aside>
-      <code class="lang-ts">// WRONG — tx is captured and used after run returned.
+    <code class="codeblock" data-lang="lang-ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span></span><span class="codeblock-source">// WRONG — tx is captured and used after run returned.
 graph.commit(tx =&gt; {
   fetch('/api/profile').then(res =&gt; {
     tx.set(name, res.name); // throws StaleTxError
@@ -407,9 +285,7 @@ graph.commit(tx =&gt; {
 
 // RIGHT — fetch first, then commit.
 const res = await fetch('/api/profile').then(r =&gt; r.json());
-graph.commit(tx =&gt; { tx.set(name, res.name); });</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+graph.commit(tx =&gt; { tx.set(name, res.name); });</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
     <p>
       If you have async resource state to manage, register it as a Resource
       via <code>@causl/sync</code> rather than reaching back into a stale
@@ -432,20 +308,10 @@ graph.commit(tx =&gt; { tx.set(name, res.name); });</code></pre>
       the first commit that walks the SCC, not at the closing
       <code>derived()</code> call.
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-    </aside>
-      <code class="lang-ts">// strictCycles remains accepted on createCausl({ strictCycles }) for one
+    <code class="codeblock" data-lang="lang-ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span></span><span class="codeblock-source">// strictCycles remains accepted on createCausl({ strictCycles }) for one
 // major version for ergonomic compatibility, but both true and false
 // produce identical first-commit-time semantics today. Do not gate logic
-// on the option; treat CycleError as the contract.</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+// on the option; treat CycleError as the contract.</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <h2 id="evicted-read"><a class="qa-anchor" href="#evicted-read"><code>readAt</code> returns the <code>evicted</code> arm</a></h2>
     <p>
@@ -460,24 +326,12 @@ graph.commit(tx =&gt; { tx.set(name, res.name); });</code></pre>
       "never defined." SPEC §3 covers both the input and derived branches.
       The recovery breadcrumb is the field you should branch on:
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-    </aside>
-      <code class="lang-ts">const result = graph.readAt(quote, t);
+    <code class="codeblock" data-lang="lang-ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span></span><span class="codeblock-source">const result = graph.readAt(quote, t);
 if (result.status === 'evicted') {
   console.warn('earliest available:', result.oldestRetainedTime);
   return null;
 }
-return result.value;</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+return result.value;</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <h2 id="wasm-bundle"><a class="qa-anchor" href="#wasm-bundle">WASM backend bundle-size warning in CI</a></h2>
     <p>
@@ -584,23 +438,7 @@ return result.value;</code></pre>
       Snapshot v1 (schema 1) and v2 (schema 2) have both been retired.
       Migration adapters live in <code>@causl/persistence/migrate</code>:
     </p>
-    <div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-    </aside>
-      <code class="lang-ts">import { hydrate } from '@causl/persistence';
+    <code class="codeblock" data-lang="lang-ts" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span></span><span class="codeblock-source">import { hydrate } from '@causl/persistence';
 import { migrateToV3 } from '@causl/persistence/migrate';
 
 try {
@@ -611,9 +449,7 @@ try {
   } else {
     throw err;
   }
-}</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
     <h2 id="capability-violation"><a class="qa-anchor" href="#capability-violation"><code>CapabilityViolation</code> in a scoped subgraph</a></h2>
     <p>

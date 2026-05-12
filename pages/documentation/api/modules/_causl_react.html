@@ -67,64 +67,10 @@ need their own hooks.</p>
 </div><div class="tsd-comment tsd-typography"></div></section><section class="tsd-panel tsd-typography"><a id="causlreact" class="tsd-anchor"></a><h1 class="tsd-anchor-link">@causl/react<a href="#causlreact" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h1><blockquote>
 <p>React 18+ bindings for <a href="../core/">@causl/core</a>.</p>
 </blockquote>
-<a id="install" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-    </aside>
-      <code class="bash"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">add</span><span class="hl-1"> </span><span class="hl-3">@causl/react</span><span class="hl-1"> </span><span class="hl-3">@causl/core</span><span class="hl-1"> </span><span class="hl-3">react</span><span class="hl-1"> </span><span class="hl-3">react-dom</span>
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+<a id="install" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span></span><span class="codeblock-source"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-3">add</span><span class="hl-1"> </span><span class="hl-3">@causl/react</span><span class="hl-1"> </span><span class="hl-3">@causl/core</span><span class="hl-1"> </span><span class="hl-3">react</span><span class="hl-1"> </span><span class="hl-3">react-dom</span>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
-<a id="provider--hooks" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Provider + hooks<a href="#provider--hooks" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><div class="codeblock-wrapper">
-    <pre class="has-gutter" data-enhanced="true">
-      <aside class="codeblock-gutter" aria-hidden="true">
-      <span class="codeblock-gutter-line">1</span>
-      <span class="codeblock-gutter-line">2</span>
-      <span class="codeblock-gutter-line">3</span>
-      <span class="codeblock-gutter-line">4</span>
-      <span class="codeblock-gutter-line">5</span>
-      <span class="codeblock-gutter-line">6</span>
-      <span class="codeblock-gutter-line">7</span>
-      <span class="codeblock-gutter-line">8</span>
-      <span class="codeblock-gutter-line">9</span>
-      <span class="codeblock-gutter-line">10</span>
-      <span class="codeblock-gutter-line">11</span>
-      <span class="codeblock-gutter-line">12</span>
-      <span class="codeblock-gutter-line">13</span>
-      <span class="codeblock-gutter-line">14</span>
-      <span class="codeblock-gutter-line">15</span>
-      <span class="codeblock-gutter-line">16</span>
-      <span class="codeblock-gutter-line">17</span>
-      <span class="codeblock-gutter-line">18</span>
-      <span class="codeblock-gutter-line">19</span>
-      <span class="codeblock-gutter-line">20</span>
-      <span class="codeblock-gutter-line">21</span>
-      <span class="codeblock-gutter-line">22</span>
-      <span class="codeblock-gutter-line">23</span>
-      <span class="codeblock-gutter-line">24</span>
-      <span class="codeblock-gutter-line">25</span>
-      <span class="codeblock-gutter-line">26</span>
-      <span class="codeblock-gutter-line">27</span>
-      <span class="codeblock-gutter-line">28</span>
-      <span class="codeblock-gutter-line">29</span>
-      <span class="codeblock-gutter-line">30</span>
-      <span class="codeblock-gutter-line">31</span>
-      <span class="codeblock-gutter-line">32</span>
-      <span class="codeblock-gutter-line">33</span>
-      <span class="codeblock-gutter-line">34</span>
-      <span class="codeblock-gutter-line">35</span>
-      <span class="codeblock-gutter-line">36</span>
-      <span class="codeblock-gutter-line">37</span>
-      <span class="codeblock-gutter-line">38</span>
-      <span class="codeblock-gutter-line">39</span>
-      <span class="codeblock-gutter-line">40</span>
-      <span class="codeblock-gutter-line">41</span>
-      <span class="codeblock-gutter-line">42</span>
-      <span class="codeblock-gutter-line">43</span>
-    </aside>
-      <code class="tsx"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createCausl</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/core&#39;</span>
+<a id="provider--hooks" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Provider + hooks<a href="#provider--hooks" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><code class="codeblock" data-lang="tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span><span class="codeblock-gutter-line">24</span><span class="codeblock-gutter-line">25</span><span class="codeblock-gutter-line">26</span><span class="codeblock-gutter-line">27</span><span class="codeblock-gutter-line">28</span><span class="codeblock-gutter-line">29</span><span class="codeblock-gutter-line">30</span><span class="codeblock-gutter-line">31</span><span class="codeblock-gutter-line">32</span><span class="codeblock-gutter-line">33</span><span class="codeblock-gutter-line">34</span><span class="codeblock-gutter-line">35</span><span class="codeblock-gutter-line">36</span><span class="codeblock-gutter-line">37</span><span class="codeblock-gutter-line">38</span><span class="codeblock-gutter-line">39</span><span class="codeblock-gutter-line">40</span><span class="codeblock-gutter-line">41</span><span class="codeblock-gutter-line">42</span><span class="codeblock-gutter-line">43</span></span><span class="codeblock-source"><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-5">createCausl</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@causl/core&#39;</span>
 <span class="hl-8">import</span><span class="hl-1"> {</span>
 <span class="hl-1">  </span><span class="hl-5">CauslProvider</span><span class="hl-1">,</span>
 <span class="hl-1">  </span><span class="hl-5">createUpdate</span><span class="hl-1">,</span>
@@ -167,9 +113,7 @@ need their own hooks.</p>
 <span class="hl-1">    </span><span class="hl-10">&lt;</span><span class="hl-9">Counter</span><span class="hl-1"> </span><span class="hl-10">/&gt;</span>
 <span class="hl-1">  </span><span class="hl-10">&lt;/</span><span class="hl-9">CauslProvider</span><span class="hl-10">&gt;</span>
 <span class="hl-1">)</span>
-</code></pre>
-    <button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button>
-  </div>
+</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
 
 <a id="typed-msg-helper" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Typed <code>Msg</code> helper<a href="#typed-msg-helper" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The §8 MVU surface is the application boundary where &quot;make
 impossible states impossible&quot; applies — messages are the front
