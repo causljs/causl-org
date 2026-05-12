@@ -10,10 +10,21 @@
    The burger button on the right opens a drawer that holds every
    nav link plus the light/dark mode toggle.
 
-   THIS FILE IS A VERBATIM RE-PORT of libviprs-org/topbar.css (the
-   canonical source-of-truth, see #1272). Three classes of patch
-   were applied on top of the literal copy, and only these three:
+   HISTORY:
+     - Originally a verbatim port of libviprs-org/topbar.css (#1272).
+     - #1289 removed the discrete `.collapsed` class flip (which
+       used to toggle `position: fixed` and a `body:has(...)
+       padding-top` reservation) because the up/down boundary at the
+       collapse threshold produced a scroll-flicker loop (see the
+       #1277 diagnostic trace). The bar now stays `position: sticky`
+       at every scroll position and only the `--p1/--p2/--p3`
+       custom properties change. JS quantizes the scrollY → p
+       mapping into 5 discrete steps so each scroll event either
+       leaves the layout untouched or moves it through a single
+       deterministic transition — never up *and* down across the
+       same threshold on consecutive frames.
 
+   The causl-specific patches on top of the libviprs port:
      1. Colour values → causl pair-tokens
           background  →  var(--surface-overlay) family
           text colour →  var(--text-on-overlay)
@@ -24,33 +35,24 @@
           .topbar-brand img is functionally identical, and the
           two-class wrapper continues to point at img/causl-mark.svg
           per the brand spec §11 — one plate-less mark on every theme.)
-
-   The CSS variable NAMES (--p1, --p2, --p3) and the JS scroll-stage
-   thresholds (0→0.02, 0.02→0.04, 0.04→0.06) are kept exactly to
-   eliminate the scroll-up-near-page-top jitter regression (#1272,
-   originally surfaced in #1250).
    ============================================================ */
 
 :root {
   --topbar-zindex: 1100;
-  /* Height of the bar in its fully-collapsed shape. Used as
-     scroll-margin for hash anchors so deep links don't end up
-     under the bar. The hero state is taller and laid out in flow,
-     so it doesn't need a separate offset. */
-  --topbar-collapsed-height: 3.6rem;
 }
 
 .topbar {
   /* Defaults are the *collapsed* values — inner pages render that
-     way without any JS. .is-hero overrides them to start at 0. */
+     way without any JS. .is-hero overrides them to start at 0 and
+     JS interpolates them back toward 1 on scroll. */
   --p1: 1;  /* fades pronunciation/tagline/badges */
   --p2: 1;  /* shrinks logo + brand name */
-  --p3: 1;  /* shrinks padding; controls collapse layout flip */
+  --p3: 1;  /* shrinks padding */
 
-  /* `sticky` is the default; once .collapsed is added, `fixed` (rule
-     below) pins the bar to the viewport top reliably across browsers
-     — iOS Safari has long-running quirks with sticky on dynamically
-     resizing elements that are easier to dodge than to debug. */
+  /* Sticky at every scroll position; never switches to fixed. The
+     previous `.collapsed { position: fixed }` flip combined with a
+     `body:has(...)` padding-top reservation to produce the #1289
+     scroll-flicker loop, so both were removed. */
   position: -webkit-sticky;
   position: sticky;
   top: 0;
@@ -65,46 +67,22 @@
            calc(0.5rem + 2rem * (1 - var(--p3)));
   font-family: var(--sans);
   text-align: center;
-  /* Top-level flex container so brand (in hero) and inline nav (on
-     desktop) can sit side-by-side when collapsed. */
+  /* Top-level flex container. Bar stays in column layout at every
+     scroll position; the hero content (pronunciation/tagline/badges)
+     fades to opacity:0 + max-height:0 + overflow:hidden via --p1, so
+     the visible "collapsed" state is just brand + nav stacked tightly
+     under the small padding driven by --p3. */
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0;
 }
 
-.topbar.collapsed {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-4);
-  text-align: left;
-  /* Pin the collapsed bar to the viewport top regardless of scroll
-     position. body:has(.topbar.collapsed) (rule below) reserves the
-     vertical space the bar no longer occupies in flow. */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Defensive: let flex children shrink when the bar is narrow.
-   Without this, a long brand name or ribbon can force the row to
-   grow past the viewport edge. */
-.topbar.collapsed > * { min-width: 0; }
-
-/* :has() is supported in every 2026 browser baseline. */
-body:has(.topbar.collapsed) {
-  padding-top: var(--topbar-collapsed-height);
-}
-
 /* Kill horizontal overflow at the document root so a stray wide
    element (long code block, wide table, oversized image) can't
    force the page wider than the viewport on mobile. `clip` is used
    instead of `hidden` because `clip` doesn't create a new scrolling
-   container — `position: sticky` on the topbar (hero state) and
-   anchor scroll-margin still work. */
+   container — `position: sticky` on the topbar still works. */
 html, body {
   overflow-x: clip;
   max-width: 100%;
@@ -116,9 +94,11 @@ html, body {
   --p3: 0;
 }
 
-/* In hero state .topbar-content stacks vertically and centres; in
-   collapsed state it flips to a horizontal row with brand left,
-   burger right. */
+/* .topbar-content stacks brand + hero block + nav vertically at
+   every scroll position, centred horizontally. The hero block
+   (pronunciation/tagline/badges) collapses to zero height via --p1,
+   the brand mark + name shrink via --p2, and the outer padding
+   tightens via --p3 — three independent dials, no class flip. */
 .topbar-content {
   max-width: var(--max-width, 1100px);
   margin: 0 auto;
@@ -128,14 +108,9 @@ html, body {
   gap: 0;
 }
 
-.topbar.collapsed .topbar-content {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-4);
-  text-align: left;
-}
-
-/* Brand: logo + project name. Always links to the site root. */
+/* Brand: logo + project name. Always links to the site root.
+   margin-bottom is driven by --p2 directly: 1rem in hero (p2=0) →
+   0 in collapsed (p2=1), so no class-flip rule is needed. */
 .topbar-brand {
   display: inline-flex;
   align-items: center;
@@ -148,20 +123,18 @@ html, body {
   flex-shrink: 0;
 }
 
-.topbar.collapsed .topbar-brand { margin-bottom: 0; }
-
 /* Brand mark: <img src="img/causl-mark.svg"> — plate-less per the
-   brand spec §11 so the same asset works on both themes. */
+   brand spec §11 so the same asset works on both themes. The
+   drop-shadow opacity is driven off --p2 so the shadow fades out as
+   the mark shrinks — replaces the old `.collapsed { filter: none }`
+   flip. */
 .topbar-brand img,
 .topbar-brand .topbar-brand-img {
   width: calc(28px + 52px * (1 - var(--p2)));
   height: auto;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, calc(0.3 * (1 - var(--p2)))));
   transition: filter 0.2s;
 }
-
-.topbar.collapsed .topbar-brand img,
-.topbar.collapsed .topbar-brand .topbar-brand-img { filter: none; }
 
 .topbar-brand .brand-name {
   font-size: calc(1.1rem + 1.7rem * (1 - var(--p2)));
@@ -186,20 +159,17 @@ html, body {
 }
 
 /* Hero-only content: pronunciation + tagline + badges. They fade
-   away (opacity + max-height + margin) under --p1 control, then
-   the .collapsed flip removes them entirely so they don't take
-   any layout space. */
+   away (opacity + max-height + margin) under --p1 control. At p1=1
+   opacity is 0, max-height is 0, margin is 0 and overflow:hidden
+   clips any leftover content — so they take no visible space on
+   inner pages or on the home page once fully scrolled. The previous
+   `.topbar.collapsed { display: none }` flip is gone, since it
+   contributed to the #1289 layout-shift flicker. */
 .topbar .pronunciation,
 .topbar .tagline,
 .topbar .badges {
   opacity: calc(1 - var(--p1));
   overflow: hidden;
-}
-
-.topbar.collapsed .pronunciation,
-.topbar.collapsed .tagline,
-.topbar.collapsed .badges {
-  display: none;
 }
 
 .topbar .pronunciation {
@@ -235,14 +205,20 @@ html, body {
 
 .topbar .badges img { height: 20px; }
 
-/* Burger toggle — fixed top-right of the bar in every state.
-   Visible at every viewport width; this is the primary nav. */
+/* Burger toggle — absolutely positioned in the top-right of the bar
+   at every scroll position. (The previous `.topbar.collapsed` rule
+   that flipped it to `position: static` in a flex row was removed
+   with the rest of the collapse-flip — keeping it absolute in every
+   state means the burger sits in the same on-screen spot regardless
+   of scroll, which is what users have effectively been seeing once
+   the JS settles past the threshold.) Sized and offset directly off
+   --p2 so it shrinks slightly along with the brand. */
 .topbar-burger {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  width: 2.4rem;
-  height: 2.4rem;
+  top: calc(0.45rem + 0.4rem * (1 - var(--p2)));
+  right: calc(0.5rem + 0.35rem * (1 - var(--p2)));
+  width: calc(2rem + 0.4rem * (1 - var(--p2)));
+  height: calc(2rem + 0.4rem * (1 - var(--p2)));
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: var(--text-on-overlay);
@@ -252,20 +228,8 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, top 0.2s, right 0.2s;
+  transition: background 0.2s, top 0.2s, right 0.2s, width 0.2s, height 0.2s;
   z-index: calc(var(--topbar-zindex) + 1);
-}
-
-.topbar.collapsed .topbar-burger {
-  /* In hero state the burger sits absolute-positioned in the corner;
-     in collapsed state it joins the flex row at the far right. */
-  position: static;
-  top: auto;
-  right: auto;
-  width: 2rem;
-  height: 2rem;
-  margin-left: auto;
-  flex-shrink: 0;
 }
 
 .topbar-burger:hover { background: var(--state-hover-bg); }
@@ -370,25 +334,17 @@ html, body {
   }
 }
 
-/* Phone-sized collapsed bar: tighter padding + gap so the brand
-   sits comfortably on the left and the burger on the right with
-   nothing pushed off-viewport. The breakpoint is 700 px to match
-   the desktop/mobile divide used for the burger and inline nav. */
+/* Phone-sized collapse: tighter horizontal padding once the bar is
+   shrunk, so the brand and burger don't feel cramped. Driven off
+   --p3 instead of a class flip — at p3=1 (collapsed/inner pages)
+   horizontal padding lands at 0.65rem; at p3=0 (hero) it lands at
+   the desktop default 1.25rem. */
 @media (max-width: 700px) {
-  .topbar.collapsed {
-    padding: var(--space-2) var(--space-3);
-    gap: var(--space-2);
+  .topbar {
+    padding: calc(0.45rem + 2.55rem * (1 - var(--p3)))
+             calc(0.65rem + 0.6rem * (1 - var(--p3)))
+             calc(0.45rem + 2.05rem * (1 - var(--p3)));
   }
-
-  /* Cluster brand tightly to the left so the row reads as one
-     unit on the left side of the bar. */
-  .topbar.collapsed .topbar-content { margin-right: var(--space-2); }
-}
-
-.topbar.collapsed .topbar-content {
-  margin: 0;          /* override default `margin: 0 auto`, which would
-                         expand the brand block inside the flex row. */
-  flex: 0 0 auto;
 }
 
 /* ============================================================
@@ -454,23 +410,15 @@ html, body {
   /* The mobile-only divider has no purpose in the inline strip. */
   .topbar-menu .menu-divider { display: none; }
 
-  /* Collapsed state on desktop: brand on the left, inline nav on the
-     right. */
-  .topbar.collapsed .topbar-content {
-    flex: 0 0 auto;
-  }
-
-  .topbar.collapsed .topbar-menu {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin: 0;
-  }
-
-  /* Hero state on desktop: nav strip sits in flow below the badges. */
-  .topbar.is-hero:not(.collapsed) .topbar-menu {
-    margin-top: var(--space-2);
-    padding-bottom: var(--space-2);
+  /* Nav strip sits in flow below the brand in every state. Margin is
+     driven off --p1 so it tightens up slightly as the bar collapses,
+     without a discrete class flip. Previously (before #1289) this
+     also right-aligned the nav in collapsed state via a flex-row
+     flip on the bar; the row-flip was removed to eliminate the
+     scroll-flicker boundary, so the inline strip now stays centred
+     in every state. */
+  .topbar .topbar-menu {
+    margin-top: calc(0.5rem * (1 - var(--p1)));
+    padding-bottom: calc(0.5rem * (1 - var(--p1)));
   }
 }
