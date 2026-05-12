@@ -6,6 +6,17 @@
   <title>Causl — Transactional state for tangled dependency graphs</title>
   <meta name="description" content="Causl is a state engine for applications whose model is a live graph of facts whose derivations cascade. Atomic commits, automatic dependency tracking, glitch-free diamonds, and pre-runtime race detection." />
   <link rel="icon" href="img/causl-mark.svg" type="image/svg+xml" />
+  <!-- Preload the most-used brand-typeface weights so first-paint text
+       does not have to wait on the CSS to parse before the font GET
+       fires. The remaining weights (Inter Medium/Bold/Black, IBM Plex
+       Mono Medium/Bold) load on-demand via @font-face in site.css.
+       Issue #1262. -->
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="fonts/Inter-Regular.woff2" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="fonts/Inter-SemiBold.woff2" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="fonts/IBMPlexMono-Regular.woff2" />
   <link rel="stylesheet" href="css/topbar.css" />
   <link rel="stylesheet" href="css/site.css" />
   <link rel="stylesheet" href="css/syntax.css" />
