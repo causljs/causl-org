@@ -79,7 +79,7 @@
       engine takes care of caching and change-tracking.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span></span><span class="codeblock-source language-typescript">import { createCausl } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
 
 const graph = createCausl();
 
@@ -96,7 +96,7 @@ const visibleTodos = graph.derived('visibleTodos', g =&gt; {
     case 'all':    return items;
   }
 });
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       The payoff is that <code>visibleTodos</code> recomputes only when one of
@@ -157,7 +157,7 @@ const visibleTodos = graph.derived('visibleTodos', g =&gt; {
       to zero.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span></span><span class="codeblock-source language-typescript">import { useCauslFamily, useCausl } from '@causl/react';
+    <code class="codeblock-source" data-lang="typescript">import { useCauslFamily, useCausl } from '@causl/react';
 import type { FamilyGraph } from '@causl/react';
 
 function cellFactory(graph: FamilyGraph, key: string) {
@@ -169,7 +169,7 @@ function Cell({ id }: { id: string }) {
   const value = useCausl(g =&gt; g.read(node));
   return &lt;span&gt;{value}&lt;/span&gt;;
 }
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       Because the registration capability passed to a family factory is the
@@ -198,14 +198,14 @@ function Cell({ id }: { id: string }) {
       sources without re-registering.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span></span><span class="codeblock-source language-typescript">const useMetric = graph.input&lt;'mean' | 'median'&gt;('useMetric', 'mean');
+    <code class="codeblock-source" data-lang="typescript">const useMetric = graph.input&lt;'mean' | 'median'&gt;('useMetric', 'mean');
 const mean = graph.derived('mean', g =&gt; computeMean(g(samples)));
 const median = graph.derived('median', g =&gt; computeMedian(g(samples)));
 
 const summary = graph.derived('summary', g =&gt; {
   return g(useMetric) === 'mean' ? g(mean) : g(median);
 });
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       The first time <code>summary</code> evaluates with <code>useMetric ===
@@ -229,7 +229,7 @@ const summary = graph.derived('summary', g =&gt; {
       missing case.
     </p>
 
-    <code class="codeblock" data-lang="jsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-jsx">type Maybe&lt;T&gt; = { present: false } | { present: true; value: T };
+    <code class="codeblock-source" data-lang="jsx">type Maybe&lt;T&gt; = { present: false } | { present: true; value: T };
 
 const userId = graph.input&lt;Maybe&lt;string&gt;&gt;('userId', { present: false });
 
@@ -237,7 +237,7 @@ const greeting = graph.derived('greeting', g =&gt; {
   const u = g(userId);
   return u.present ? `Hello, ${u.value}` : 'Sign in to continue';
 });
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       The <code>Maybe</code> wrapper costs you nothing at runtime, but it
@@ -260,7 +260,7 @@ const greeting = graph.derived('greeting', g =&gt; {
       actually change.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span></span><span class="codeblock-source language-typescript">const price = graph.input&lt;number&gt;('price', 100);
+    <code class="codeblock-source" data-lang="typescript">const price = graph.input&lt;number&gt;('price', 100);
 
 const withTax     = graph.derived('withTax',     g =&gt; g.read(price) * 1.08);
 const withTip     = graph.derived('withTip',     g =&gt; g.read(price) * 1.18);
@@ -271,7 +271,7 @@ graph.subscribe(withTax,      v =&gt; renderTax(v));
 graph.subscribe(withTip,      v =&gt; renderTip(v));
 graph.subscribe(withDiscount, v =&gt; renderDiscount(v));
 graph.subscribe(formatted,    v =&gt; renderLabel(v));
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       One <code>graph.commit('update', tx =&gt; tx.set(price, 200))</code> walks
@@ -301,7 +301,7 @@ graph.subscribe(formatted,    v =&gt; renderLabel(v));
       implementation if profiling demands it.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span></span><span class="codeblock-source language-typescript">const lineItems = Array.from({ length: 12 }, (_, i) =&gt;
+    <code class="codeblock-source" data-lang="typescript">const lineItems = Array.from({ length: 12 }, (_, i) =&gt;
   graph.input&lt;number&gt;(`item:${i}`, 0),
 );
 
@@ -312,7 +312,7 @@ const subtotal = graph.derived('subtotal', g =&gt;
 const allValid = graph.derived('allValid', g =&gt;
   lineItems.every(n =&gt; g(n) &gt;= 0),
 );
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       For larger fan-ins (thousands of leaves), prefer a tree-shaped
@@ -344,14 +344,14 @@ const allValid = graph.derived('allValid', g =&gt;
       callback, which is easy to forget and noisy at the call site.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span></span><span class="codeblock-source language-typescript">graph.subscribe(
+    <code class="codeblock-source" data-lang="typescript">graph.subscribe(
   hydrated,
   v =&gt; {
     if (v) startBackgroundSync();
   },
   { transient: true },
 );
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       The synchronous initial fire that <code>graph.subscribe</code> always
@@ -375,7 +375,7 @@ const allValid = graph.derived('allValid', g =&gt;
       <code>useCauslSuspense</code>:
     </p>
 
-    <code class="codeblock" data-lang="tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span></span><span class="codeblock-source language-tsx">import { resource } from '@causl/sync';
+    <code class="codeblock-source" data-lang="tsx">import { resource } from '@causl/sync';
 import { useCauslSuspense } from '@causl/react';
 
 const userResource = resource(graph, 'user', async (id: string) =&gt; {
@@ -394,7 +394,7 @@ function UserPanel({ id }: { id: string }) {
     &lt;UserPanel id="42" /&gt;
   &lt;/ErrorBoundary&gt;
 &lt;/Suspense&gt;
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       The selector returns a <code>ResourceState&lt;T&gt;</code>; the hook
@@ -425,26 +425,26 @@ function UserPanel({ id }: { id: string }) {
       <code>@causl/devtools</code> into a UI-friendly buffer.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span></span><span class="codeblock-source language-typescript">import { commitLog, exportSnapshot, importSnapshot } from '@causl/devtools';
+    <code class="codeblock-source" data-lang="typescript">import { commitLog, exportSnapshot, importSnapshot } from '@causl/devtools';
 
 const logNode = commitLog(graph, { capacity: 200 });
 
 graph.subscribe(logNode, (commits) =&gt; {
   renderTimeline(commits); // most-recent-first
 });
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       To rewind to an earlier state, capture a snapshot at the commit you
       want to inspect and re-apply it:
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span></span><span class="codeblock-source language-typescript">const snap = exportSnapshot(graph, { at: someEarlierCommit });
+    <code class="codeblock-source" data-lang="typescript">const snap = exportSnapshot(graph, { at: someEarlierCommit });
 
 // Later, in a fresh graph or a sandboxed replay:
 const replay = createCausl();
 importSnapshot(replay, snap);
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       Snapshots are deterministic re-applications of input state — they replay
@@ -456,7 +456,7 @@ importSnapshot(replay, snap);
       pretending the data is still there.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span></span><span class="codeblock-source language-typescript">import { whyUpdated, whyNotUpdated, renderWhy } from '@causl/devtools';
+    <code class="codeblock-source" data-lang="typescript">import { whyUpdated, whyNotUpdated, renderWhy } from '@causl/devtools';
 
 // "Why did this derivation fire on the most recent commit?"
 const reason = whyUpdated(graph, summary);
@@ -465,7 +465,7 @@ graph.subscribe(reason, (r) =&gt; console.log(renderWhy(r)));
 // "Why did this derivation NOT fire when I expected it to?"
 const noReason = whyNotUpdated(graph, summary);
 graph.subscribe(noReason, (r) =&gt; console.log(renderWhy(r)));
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       These lineage explainers return <em>derived nodes</em>, not plain
@@ -537,6 +537,6 @@ graph.subscribe(noReason, (r) =&gt; console.log(renderWhy(r)));
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>

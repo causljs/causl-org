@@ -99,7 +99,7 @@
       TypeScript library — there is no special test runner.
     </p>
 
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span></span><span class="codeblock-source language-typescript">// graph.test.ts
+<code class="codeblock-source" data-lang="typescript">// graph.test.ts
 import { describe, it, expect } from 'vitest'
 import { createCausl, input, derived } from '@causl/core'
 
@@ -115,7 +115,7 @@ describe('counter graph', () => {
 
     expect(graph.read(doubled)).toBe(10)
   })
-})</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+})</code>
 
     <p>
       The pattern: build a graph in the test body, run one or more commits, read the
@@ -132,7 +132,7 @@ describe('counter graph', () => {
       <code>n</code>s.
     </p>
 
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span></span><span class="codeblock-source language-typescript">import { describe, it, expect } from 'vitest'
+<code class="codeblock-source" data-lang="typescript">import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
 import { createCausl, input, derived } from '@causl/core'
 import { propertyTrials } from '@causl/core/testing'
@@ -150,7 +150,7 @@ describe('doubled is a function of count', () =&gt; {
       propertyTrials('counter-doubled'),
     )
   })
-})</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+})</code>
 
     <p>
       Three things to notice. The arbitrary (<code>fc.integer()</code>) defines the input
@@ -178,7 +178,7 @@ describe('doubled is a function of count', () =&gt; {
       that routes a single property through all three.
     </p>
 
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span></span><span class="codeblock-source language-typescript">import { tieredPropertyTrials } from '@causl/core/testing'
+<code class="codeblock-source" data-lang="typescript">import { tieredPropertyTrials } from '@causl/core/testing'
 
 it('any commit sequence preserves the invariant', () =&gt; {
   fc.assert(
@@ -188,7 +188,7 @@ it('any commit sequence preserves the invariant', () =&gt; {
     }),
     tieredPropertyTrials('commit-invariant'),
   )
-})</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+})</code>
 
     <p>
       The helper resolves the active tier from <code>CAUSL_FUZZ_TIER</code> and selects
@@ -236,7 +236,7 @@ it('any commit sequence preserves the invariant', () =&gt; {
       passes.
     </p>
 
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span></span><span class="codeblock-source language-typescript">import { runChecker } from '@causl/checker'
+<code class="codeblock-source" data-lang="typescript">import { runChecker } from '@causl/checker'
 import { createCausl, input, derived } from '@causl/core'
 
 const graph = createCausl()
@@ -251,14 +251,14 @@ if (report.violations.length &gt; 0) {
     console.error(`[${v.ruleId}] ${v.node}: ${v.message}`)
   }
   process.exit(1)
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <p>
       Or as a CLI step in CI:
     </p>
 
-<code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span></span><span class="codeblock-source language-bash">$ pnpm causl-check &lt; model.json
-$ pnpm causl-check --input model.json --max-nodes 100</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+<code class="codeblock-source" data-lang="bash">$ pnpm causl-check &lt; model.json
+$ pnpm causl-check --input model.json --max-nodes 100</code>
 
     <p>
       The <code>--replay &lt;report-path&gt;</code> flag is the verdict-determinism gate:
@@ -326,7 +326,7 @@ $ pnpm causl-check --input model.json --max-nodes 100</span><button type="button
       explicitly even if the random seed never visits that input again.
     </p>
 
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span></span><span class="codeblock-source language-typescript">import { describe, it, expect } from 'vitest'
+<code class="codeblock-source" data-lang="typescript">import { describe, it, expect } from 'vitest'
 import { createCausl, input, derived } from '@causl/core'
 
 // Regression: fast-check shrunk to this on seed=1709234182, label=counter-doubled.
@@ -337,7 +337,7 @@ it('handles no-op writes (regression)', () =&gt; {
   const doubled = derived(graph, g =&gt; g.read(count) * 2)
   graph.commit(() =&gt; graph.set(count, 0))
   expect(graph.read(doubled)).toBe(0)
-})</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+})</code>
 
     <p>
       Comment the seed and the label. Six months from now, the bug recurs and the
@@ -391,6 +391,6 @@ it('handles no-op writes (regression)', () =&gt; {
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>

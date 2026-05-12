@@ -92,7 +92,7 @@
     the graph &mdash; lifecycle, disposal, and replacement remain with the host &mdash;
     so React mounting and unmounting cannot lose engine state.</p>
 
-    <code class="codeblock" data-lang="jsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span></span><span class="codeblock-source language-jsx">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock-source" data-lang="jsx">import { createCausl, input, derived } from '@causl/core';
 import { CauslProvider } from '@causl/react';
 
 const graph = createCausl();
@@ -105,7 +105,7 @@ export function App() {
       &lt;Counter /&gt;
     &lt;/CauslProvider&gt;
   );
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <p>The context value is memoised on <code>graph</code> identity, so consumer hooks
     do not re-subscribe on every render. A second provider further down the tree creates
@@ -121,7 +121,7 @@ export function App() {
     <code>onChange</code> never fires for commits that do not touch the subscribed node
     &mdash; unrelated work in the same transaction does not provoke a re-render.</p>
 
-    <code class="codeblock" data-lang="jsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span></span><span class="codeblock-source language-jsx">import { useCauslNode, useDispatch } from '@causl/react';
+    <code class="codeblock-source" data-lang="jsx">import { useCauslNode, useDispatch } from '@causl/react';
 
 function Counter() {
   const value = useCauslNode(doubled);
@@ -131,7 +131,7 @@ function Counter() {
       Doubled: {value}
     &lt;/button&gt;
   );
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <blockquote>
       <strong>Detailed explanation &mdash; why per-node beats per-commit for hot leaves.</strong>
@@ -157,7 +157,7 @@ function Counter() {
     <code>exportModel</code>) and must return a value derived purely from
     <code>graph.read</code> calls.</p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span></span><span class="codeblock-source language-typescript">import { useCausl } from '@causl/react';
+    <code class="codeblock-source" data-lang="typescript">import { useCausl } from '@causl/react';
 
 function Stats() {
   const { total, count } = useCausl(g =&gt; ({
@@ -165,7 +165,7 @@ function Stats() {
     count: g.read(countNode),
   }));
   return &lt;span&gt;{count} items, total {total}&lt;/span&gt;;
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <p>The selector runs once per commit; the return is compared to the previous return
     with <code>Object.is</code>. If equal, the component does not re-render. The
@@ -182,12 +182,12 @@ function Stats() {
     <code>useCauslShallow</code> when the selector returns a fresh object or array
     literal:</p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span></span><span class="codeblock-source language-typescript">import { useCauslShallow } from '@causl/react';
+    <code class="codeblock-source" data-lang="typescript">import { useCauslShallow } from '@causl/react';
 
 const stats = useCauslShallow(g =&gt; ({
   total: g.read(sumNode),
   count: g.read(countNode),
-}));</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}));</code>
 
     <p><code>useCauslShallow</code> swaps the equality predicate for a one-level shallow
     compare of object keys / array elements. Two structurally equal returns are treated
@@ -201,7 +201,7 @@ const stats = useCauslShallow(g =&gt; ({
     mount of a key invokes a factory; subsequent mounts return the cached handle;
     refcounting tracks live consumers; the last unmount schedules disposal.</p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span></span><span class="codeblock-source language-typescript">import { useCausl, useCauslFamily } from '@causl/react';
+    <code class="codeblock-source" data-lang="typescript">import { useCausl, useCauslFamily } from '@causl/react';
 
 function Row({ rowId }: { rowId: string }) {
   const node = useCauslFamily(`row:${rowId}`, (graph, key) =&gt;
@@ -209,7 +209,7 @@ function Row({ rowId }: { rowId: string }) {
   );
   const value = useCausl(g =&gt; g.read(node));
   return &lt;tr&gt;&lt;td&gt;{value.title}&lt;/td&gt;&lt;/tr&gt;;
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <p>Three properties make this hook safe in real-world apps:</p>
 
@@ -239,7 +239,7 @@ function Row({ rowId }: { rowId: string }) {
     tagged-union state into either a resolved <code>T</code>, a thrown Promise (caught
     by <code>&lt;Suspense&gt;</code>), or a thrown error (caught by an error boundary):</p>
 
-    <code class="codeblock" data-lang="tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span></span><span class="codeblock-source language-tsx">import { useCauslSuspense } from '@causl/react';
+    <code class="codeblock-source" data-lang="tsx">import { useCauslSuspense } from '@causl/react';
 import type { ResourceState } from '@causl/sync';
 
 function Profile() {
@@ -253,7 +253,7 @@ function Page() {
       &lt;ErrorBoundary&gt;&lt;Profile /&gt;&lt;/ErrorBoundary&gt;
     &lt;/Suspense&gt;
   );
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <p>The state-to-Suspense mapping is:</p>
 
@@ -282,7 +282,7 @@ function Page() {
     its hydrated values. Reads under the provider then see the persisted values from
     the very first render &mdash; no flash of empty state.</p>
 
-    <code class="codeblock" data-lang="jsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span></span><span class="codeblock-source language-jsx">import { createCausl } from '@causl/core';
+    <code class="codeblock-source" data-lang="jsx">import { createCausl } from '@causl/core';
 import { createPersistedGraph } from '@causl/persistence';
 import { CauslProvider } from '@causl/react';
 
@@ -295,7 +295,7 @@ await ready;  // Wait for restore before mounting.
 
 createRoot(document.getElementById('root')!).render(
   &lt;CauslProvider graph={graph}&gt;&lt;App /&gt;&lt;/CauslProvider&gt;,
-);</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+);</code>
 
     <p>If you cannot await before render (for example, when persistence is best-effort
     and the app should boot from defaults if storage is slow), wrap the provider's
@@ -311,7 +311,7 @@ createRoot(document.getElementById('root')!).render(
     and the first client paint observe the same hydrated values, while render bodies stay
     pure.</p>
 
-    <code class="codeblock" data-lang="jsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span></span><span class="codeblock-source language-jsx">// app/page.tsx (Next.js server component)
+    <code class="codeblock-source" data-lang="jsx">// app/page.tsx (Next.js server component)
 const graph = createCausl();
 bootGraphFromDb(graph);
 const snapshot = graph.snapshot();
@@ -322,7 +322,7 @@ return (
       &lt;App /&gt;
     &lt;/Hydrate&gt;
   &lt;/CauslProvider&gt;
-);</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+);</code>
 
     <p><code>Hydrate</code> keys on graph identity, not on snapshot prop identity. A
     module-scoped <code>WeakMap&lt;Graph, GraphSnapshot&gt;</code> records "applied"
@@ -365,12 +365,12 @@ return (
     arrays off the return reference will silently re-compute every commit after
     <code>migrate('wasm')</code>:</p>
 
-    <code class="codeblock" data-lang="jsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span></span><span class="codeblock-source language-jsx">// WRONG &mdash; reference may change on every commit after WASM migration.
+    <code class="codeblock-source" data-lang="jsx">// WRONG &mdash; reference may change on every commit after WASM migration.
 function Chart() {
   const data = useCausl(g =&gt; g.read(seriesNode));
   const transformed = useMemo(() =&gt; transform(data), [data]);
   return &lt;Plot data={transformed} /&gt;;
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <p>The fix is to key memoisation on a stable identity that the engine
     <strong>does</strong> guarantee. SPEC §15.1 amendment names two: the
@@ -383,7 +383,7 @@ function Chart() {
     <code>structuredClone</code> boundary, with byte-identical behaviour across the TS
     engine and the Phase-1 WasmBackend wrapper for the same commit sequence.</p>
 
-    <code class="codeblock" data-lang="jsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span></span><span class="codeblock-source language-jsx">// RIGHT &mdash; key memoisation on the per-node version, not the reference.
+    <code class="codeblock-source" data-lang="jsx">// RIGHT &mdash; key memoisation on the per-node version, not the reference.
 import { useCausl, useCauslNode } from '@causl/react';
 
 function Chart() {
@@ -395,7 +395,7 @@ function Chart() {
   const version = useCausl(g =&gt; g.stats().nodeVersion(seriesNode));
   const transformed = useMemo(() =&gt; transform(data), [version]);
   return &lt;Plot data={transformed} /&gt;;
-}</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}</code>
 
     <p>The contractual identity surface is <strong>value identity at a fixed
     <code>GraphTime</code></strong>: <code>Object.is(read(node)@t, read(node)@t)</code>
@@ -424,36 +424,36 @@ function Chart() {
     <p>A small set of patterns covers the vast majority of components.</p>
 
     <h3>Read one node</h3>
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span></span><span class="codeblock-source language-typescript">const value = useCauslNode(node);</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+    <code class="codeblock-source" data-lang="typescript">const value = useCauslNode(node);</code>
     <p>Use <code>useCauslNode</code> &mdash; the engine-level dedup is cheaper than
     any selector dedup, and the API is the smallest possible.</p>
 
     <h3>Read N nodes into a tuple or object</h3>
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span></span><span class="codeblock-source language-typescript">const { a, b } = useCauslShallow(g =&gt; ({
+    <code class="codeblock-source" data-lang="typescript">const { a, b } = useCauslShallow(g =&gt; ({
   a: g.read(aNode),
   b: g.read(bNode),
-}));</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+}));</code>
     <p>Use <code>useCauslShallow</code>, never plain <code>useCausl</code>, when the
     selector returns a fresh literal. Otherwise every commit causes a re-render.</p>
 
     <h3>Derive a scalar from N nodes</h3>
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span></span><span class="codeblock-source language-typescript">const ratio = useCausl(g =&gt;
+    <code class="codeblock-source" data-lang="typescript">const ratio = useCausl(g =&gt;
   g.read(numerator) / Math.max(1, g.read(denominator)),
-);</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+);</code>
     <p>Plain <code>useCausl</code> is correct because <code>Object.is</code> on two
     equal numbers is <code>true</code>.</p>
 
     <h3>Read a value that crosses the FFI boundary</h3>
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span></span><span class="codeblock-source language-typescript">const data = useCauslNode(bigArrayNode);
+    <code class="codeblock-source" data-lang="typescript">const data = useCauslNode(bigArrayNode);
 const version = useCausl(g =&gt; g.stats().nodeVersion(bigArrayNode));
-const sorted = useMemo(() =&gt; data.slice().sort(), [version]);</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+const sorted = useMemo(() =&gt; data.slice().sort(), [version]);</code>
     <p>Key the <code>useMemo</code> on the per-node version, not the value reference.
     See <a href="#h1-hazard">section 9</a>.</p>
 
     <h3>Read bulk numeric data</h3>
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span></span><span class="codeblock-source language-typescript">import { useCauslTypedArrayNode } from '@causl/react';
+    <code class="codeblock-source" data-lang="typescript">import { useCauslTypedArrayNode } from '@causl/react';
 
-const view = useCauslTypedArrayNode(weightsNode, Float64Array);</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+const view = useCauslTypedArrayNode(weightsNode, Float64Array);</code>
     <p>Returns a typed-array view stable across renders until the next commit. Designed
     to become zero-copy once the WASM backend lands; falls back to a coerced view of the
     JS-engine value with the same stability contract, so adopters can program against
@@ -501,6 +501,6 @@ const view = useCauslTypedArrayNode(weightsNode, Float64Array);</span><button ty
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>

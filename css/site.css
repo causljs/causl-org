@@ -466,27 +466,10 @@ p code, li code, td code {
 
 /* -- Code blocks -------------------------------------------------- */
 
-/* Code block — paired with --surface-overlay (deep terminal surface). */
-pre.codeblock {
-  background: linear-gradient(180deg,
-    rgba(11, 17, 24, 0.95), rgba(7, 10, 15, 0.95));
-  border: 1px solid rgba(17, 217, 255, 0.20);
-  border-radius: var(--radius-md);
-  padding: var(--space-4) var(--space-5);
-  overflow-x: auto;
-  font-size: 0.88rem;
-  line-height: 1.55;
-  color: var(--text-on-overlay);
-  box-shadow: var(--shadow-soft);
-}
-
-pre.codeblock code {
-  background: transparent;
-  border: none;
-  padding: 0;
-  color: inherit;
-  font-size: inherit;
-}
+/* Code-block surface + foreground live in syntax.css (#1295) — that
+ * file owns the .codeblock-source pair-token contract for every
+ * theme. site.css only defines the per-language tok-* and brand-hue
+ * palette that paints token spans inside any code block. */
 
 .tok-kw { color: var(--causl-violet); }
 .tok-fn { color: var(--causl-cyan); }
@@ -774,32 +757,16 @@ table.compare tr:last-child td { border-bottom: none; }
 :root[data-theme="light"] .card h3 { color: var(--text-on-elevated); }
 :root[data-theme="light"] .card p  { color: var(--text-on-elevated-muted); }
 
-/* #1294 — homepage / brand hero codeblocks are intentionally kept
- * "always dark" even in light mode so the marketing surface preserves
- * its terminal aesthetic.
- *
- * The targeting trick: homepage hand-authored blocks have NO data-lang
- * attribute (they use the local tok-* class system, not a recognized
- * language grammar). Tutorial blocks carry data-lang="bash"/"typescript"
- * (Prism) and API blocks carry data-lang="ts"/"js" (TypeDoc). So
- * `code.codeblock:not([data-lang])` cleanly selects only the
- * marketing-style blocks while leaving tutorial + API blocks on the
- * pair-token contract from syntax.css. !important is required to
- * defeat syntax.css's pair-token contract, which is itself flagged
- * !important to win against TypeDoc's residual <pre>/<code>
- * backgrounds on API pages. */
-:root[data-theme="light"] code.codeblock:not([data-lang]) {
-  background: linear-gradient(180deg, #0B1118, #070A0F) !important;
-  color: #D7E6EA !important;
-  border-color: rgba(11, 149, 176, 0.22);
-}
-
-:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-kw  { color: #B59BFF; }
-:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-fn  { color: #4FE4FF; }
-:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-str { color: #FFB347; }
-:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-num { color: #A7FF18; }
-:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-com { color: #8FA2AA; }
-:root[data-theme="light"] code.codeblock:not([data-lang]) .tok-typ { color: #FFB347; }
+/* #1295 — the previous "always dark" override that forced
+ * homepage codeblocks to a dark gradient in light mode was removed.
+ * Code blocks on EVERY page now share the same pair-token contract
+ * as the rest of the site: --surface-elevated (light gray in light
+ * mode, slate in dark mode) for the surface, --text-on-elevated for
+ * the foreground. The runtime contrast audit in
+ * causl-org/js/codeblock.js applies corrective inline colours to
+ * any tok-* / hl-N / token spans that fall below WCAG AA on the
+ * resolved surface, so brand tokens that read fine on dark stay
+ * legible on the light gray surface too. */
 
 :root[data-theme="light"] .table-wrap {
   background: var(--surface-base);

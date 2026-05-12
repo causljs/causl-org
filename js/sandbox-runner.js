@@ -44,12 +44,12 @@
       if (s.indexOf('sandbox-runner.js') !== -1) { src = s; break; }
     }
     if (!src) {
-      // Fall back to the location of any codeblock-enhance.js script,
-      // which historically lived alongside the sandbox runner. This
-      // covers loaders that strip the explicit src attribute.
+      // Fall back to the location of any codeblock.js script, which
+      // lives alongside the sandbox runner. This covers loaders that
+      // strip the explicit src attribute.
       for (var k = 0; k < scripts.length; k++) {
         var t = scripts[k].src || '';
-        if (t.indexOf('codeblock-enhance.js') !== -1 ||
+        if (t.indexOf('codeblock.js') !== -1 ||
             t.indexOf('playground.js') !== -1) { src = t; break; }
       }
     }

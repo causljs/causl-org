@@ -94,7 +94,7 @@
       to <code>{ state: 'idle' }</code> and returns a handle that drives transitions
       through one-shot commits.
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span></span><span class="codeblock-source language-typescript">import { createCausl } from '@causl/core';
+<code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
 import { resource } from '@causl/sync';
 
 const graph = createCausl();
@@ -105,7 +105,7 @@ const items = resource&lt;Item[]&gt;(graph, 'items', {
 const data = await items.fetch();
 const snapshot = graph.read(items.node);
 // snapshot.state is one of: 'idle' | 'loading' | 'loaded' | 'stale' | 'errored'
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       The five state tags correspond to the ResourceFleet sub-statechart inside
       Causl's composite lifecycle (SPEC.async &sect;6). Every transition lands
@@ -122,7 +122,7 @@ const snapshot = graph.read(items.node);
       <code>.state</code> first &mdash; the type system rejects code that tries
       to read the value before the loader resolved.
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span></span><span class="codeblock-source language-typescript">const s = graph.read(items.node);
+<code class="codeblock-source" data-lang="typescript">const s = graph.read(items.node);
 switch (s.state) {
   case 'idle':
     return ui.placeholder();
@@ -135,7 +135,7 @@ switch (s.state) {
   case 'errored':
     return ui.error(s.error);
 }
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <blockquote>
       <strong>Detailed explanation: why tags instead of optional fields.</strong>
       Every &ldquo;X may or may not have Y&rdquo; field is a state machine in
@@ -185,19 +185,19 @@ switch (s.state) {
       committed in the meantime, the transition is Loading &rarr; Stale, not
       Loading &rarr; Loaded:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span></span><span class="codeblock-source language-typescript">const a = items.fetch();        // origin = T0, state: 'loading'
+<code class="codeblock-source" data-lang="typescript">const a = items.fetch();        // origin = T0, state: 'loading'
 graph.commit('unrelated', tx =&gt; tx.set(otherInput, 7));
 await a;
 graph.read(items.node);
 // { state: 'stale', value: ..., origin: T0, loadedAt: T2 }
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       The same shape covers a fetch that resolved after a later fetch already
       finished &mdash; the older origin is no longer authoritative. Opt out
       per-resource for last-writer-wins semantics:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span></span><span class="codeblock-source language-typescript">resource(graph, 'items', { loader, stalenessGuard: false });
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+<code class="codeblock-source" data-lang="typescript">resource(graph, 'items', { loader, stalenessGuard: false });
+</code>
     <p>
       This is <strong>race row S-1</strong> from <code>SPEC.async</code>
       &sect;9.1.1: stale-async resolution. The witness is at
@@ -256,7 +256,7 @@ graph.read(items.node);
       The exported registry is itself a derived node that overlays the resolution
       map onto the open set:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span></span><span class="codeblock-source language-typescript">import { createConflictRegistry, singleConflictWhen } from '@causl/sync';
+<code class="codeblock-source" data-lang="typescript">import { createConflictRegistry, singleConflictWhen } from '@causl/sync';
 
 const conflicts = createConflictRegistry&lt;Item[]&gt;(graph, {
   id: 'conflicts',
@@ -275,7 +275,7 @@ for (const c of conflicts.read(graph)) {
     case 'superseded': ui.link(c.id, c.supersededBy, c.supersededAt); break;
   }
 }
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       The discriminator is <code>kind</code> &mdash; the open arm carries
       <code>value</code> and <code>raisedAt</code>, the resolved arm carries
@@ -291,10 +291,10 @@ for (const c of conflicts.read(graph)) {
       The states are <code>Open | Resolved | Ignored | Superseded</code>; the
       latter three are terminal. The mutators each commit one tick:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span></span><span class="codeblock-source language-typescript">conflicts.resolve(graph, 'items-errored', { choice: 'use-cache' });
+<code class="codeblock-source" data-lang="typescript">conflicts.resolve(graph, 'items-errored', { choice: 'use-cache' });
 conflicts.ignore(graph, 'items-errored');
 conflicts.supersede(graph, oldId, newId);
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       Targeting a non-Open conflict throws
       <code>ForbiddenConflictTransitionError</code>. Shipping a transition that
@@ -350,7 +350,7 @@ conflicts.supersede(graph, oldId, newId);
       are accepted in the signature so a future schema bump that needs cross-arm
       disambiguation does not break adopter call sites.
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-typescript">import { whyUpdated } from '@causl/sync';
+<code class="codeblock-source" data-lang="typescript">import { whyUpdated } from '@causl/sync';
 
 graph.subscribe(items.node, (next, prev, commit) =&gt; {
   const reason = whyUpdated(commit, prev, next);
@@ -358,7 +358,7 @@ graph.subscribe(items.node, (next, prev, commit) =&gt; {
   // | 'invalidated' | 'failed' | 'dep-changed'
   telemetry.record({ key: items.key, reason });
 });
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       The runtime tuple <code>RESOURCE_UPDATE_REASONS</code> is the value-level
       dual: TypeScript erases types at runtime, so a devtools panel that wants
@@ -377,7 +377,7 @@ graph.subscribe(items.node, (next, prev, commit) =&gt; {
       <li><code>'object-is-deduped'</code> &mdash; <code>prev</code> and <code>next</code> are <code>Object.is</code>-equal. The engine&apos;s Phase B equality cutoff suppressed the dispatch.</li>
       <li><code>'no-dep-overlap'</code> &mdash; structurally identical states with different references. The commit&apos;s <code>changedNodes</code> set did not include this resource&apos;s node.</li>
     </ul>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-typescript">import { whyNotUpdated } from '@causl/sync';
+<code class="codeblock-source" data-lang="typescript">import { whyNotUpdated } from '@causl/sync';
 
 const before = graph.read(items.node);
 graph.commit('unrelated', tx =&gt; tx.set(otherInput, 7));
@@ -385,7 +385,7 @@ const after = graph.read(items.node);
 
 whyNotUpdated(before, after);
 // 'no-dep-overlap' &mdash; the commit didn't touch items.node
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       Both decoders are pure: same inputs produce same outputs, no graph reads,
       no side effects. They compose with <code>subscribeCommits</code> or
@@ -408,9 +408,9 @@ whyNotUpdated(before, after);
         <tr><td><code>@causl/sync/conflict</code></td><td>8 KB</td></tr>
       </tbody>
     </table>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span></span><span class="codeblock-source language-typescript">import { resource } from '@causl/sync/resource';
+<code class="codeblock-source" data-lang="typescript">import { resource } from '@causl/sync/resource';
 import { createConflictRegistry } from '@causl/sync/conflict';
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       A PR that crosses a ceiling fails the bundle-size gate. The &sect;14.2
       narrative pins the trade-off: a smaller bundle buys a smaller install
@@ -469,6 +469,6 @@ import { createConflictRegistry } from '@causl/sync/conflict';
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>

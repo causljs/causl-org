@@ -115,7 +115,7 @@
       track reads.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span></span><span class="codeblock-source language-typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
 
 const graph = createCausl();
 
@@ -128,7 +128,7 @@ const total = derived(graph, g =&gt;
   (g.read(withTax) + g.read(withDiscount)) / 2,
 );
 
-console.log(graph.read(total));  // 99.0  ((108 + 90) / 2)</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+console.log(graph.read(total));  // 99.0  ((108 + 90) / 2)</code>
 
     <p>
       Every <code>g.read(...)</code> inside a derivation body is tracked: the engine records the
@@ -146,7 +146,7 @@ console.log(graph.read(total));  // 99.0  ((108 + 90) / 2)</span><button type="b
       not equal the consistent recomputation. Neither happens here.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span></span><span class="codeblock-source language-typescript">const log: Array&lt;{ node: string; value: number }&gt; = [];
+    <code class="codeblock-source" data-lang="typescript">const log: Array&lt;{ node: string; value: number }&gt; = [];
 
 graph.subscribe(price,        v =&gt; log.push({ node: 'price',        value: v }));
 graph.subscribe(withTax,      v =&gt; log.push({ node: 'withTax',      value: v }));
@@ -163,7 +163,7 @@ console.log(log);
 //   { node: 'withTax',      value: 216 },
 //   { node: 'withDiscount', value: 180 },
 //   { node: 'total',        value: 198 },
-// ]</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+// ]</code>
 
     <p>
       Each subscriber fires <strong>exactly once</strong>, with the post-commit value. There is no
@@ -286,7 +286,7 @@ console.log(log);
       grand total:
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span><span class="codeblock-gutter-line">24</span><span class="codeblock-gutter-line">25</span><span class="codeblock-gutter-line">26</span></span><span class="codeblock-source language-typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
 
 const graph = createCausl();
 
@@ -311,7 +311,7 @@ graph.commit(() =&gt; {
 // grandTotal = 800
 //   subtotalAB = 100 + 200 = 300
 //   subtotalBC = 200 + 300 = 500
-//   grandTotal = 300 + 500 = 800</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+//   grandTotal = 300 + 500 = 800</code>
 
     <p>
       <code>lineB</code> is the shared ancestor of both subtotals — the same role
@@ -377,6 +377,6 @@ graph.commit(() =&gt; {
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>

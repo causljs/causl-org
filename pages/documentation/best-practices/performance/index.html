@@ -85,7 +85,7 @@
       it. You do not need a hand-rolled "did this change?" guard at the call
       site.
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span></span><span class="codeblock-source language-typescript">import { createCausl, input, derived } from '@causl/core';
+<code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
 
 const graph = createCausl();
 const scrollY = input(graph, 0);
@@ -97,7 +97,7 @@ window.addEventListener('scroll', () =&gt; {
     graph.set(scrollY, window.scrollY);
   });
 });
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       Where it stops being free is at object-valued inputs and derived
       outputs. <code>Object.is</code> is reference-comparison for objects,
@@ -142,7 +142,7 @@ window.addEventListener('scroll', () =&gt; {
       <em>per-commit</em>, not per-write. Ten writes inside one commit run
       one envelope; ten commits with one write each run ten.
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span></span><span class="codeblock-source language-typescript">// Slow — ten envelopes.
+<code class="codeblock-source" data-lang="typescript">// Slow — ten envelopes.
 for (const cell of cells) {
   graph.commit(() =&gt; { graph.set(cell.input, cell.value); });
 }
@@ -153,7 +153,7 @@ graph.commit(() =&gt; {
     graph.set(cell.input, cell.value);
   }
 });
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       The rule of thumb: <strong>commit at the boundary of a user-intent
       unit</strong>. One keystroke, one tick, one frame, one network reply
@@ -192,7 +192,7 @@ graph.commit(() =&gt; {
       route through one intermediate derived that does the work once and
       exposes a structurally smaller value downstream:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span></span><span class="codeblock-source language-typescript">// Anti-pattern: 10k cells each reading the same big input.
+<code class="codeblock-source" data-lang="typescript">// Anti-pattern: 10k cells each reading the same big input.
 const sheet = input(graph, bigGrid);
 const cells = grid.cells.map((c) =&gt;
   derived(graph, g =&gt; evaluate(c, g.read(sheet)))
@@ -204,7 +204,7 @@ const evaluated = derived(graph, g =&gt; evaluateAll(g.read(sheet)));
 const cells = grid.cells.map((c) =&gt;
   derived(graph, g =&gt; g.read(evaluated)[c.id])
 );
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       The pipeline form pays the evaluation cost once per commit and lets
       each leaf derived short-circuit on <code>Object.is</code> against the
@@ -255,7 +255,7 @@ const cells = grid.cells.map((c) =&gt;
       real workload — not synthetic benchmarks. The standard adoption
       pattern is the one in <code>docs/wasm-adoption-guide.md</code>:
     </p>
-<code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span></span><span class="codeblock-source language-typescript">import { createCausl } from '@causl/core';
+<code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
 import { loadWasmBackend, WasmBackendUnavailableError } from '@causl/core/wasm';
 
 async function tryWasmBackend() {
@@ -271,7 +271,7 @@ const graph = createCausl({
   backend: await tryWasmBackend(),
   commitHistoryCap: 1000,
 });
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <blockquote>
       <strong>H1 hazard for adopters.</strong> Per the SPEC §15.1 amendment,
@@ -294,7 +294,7 @@ const graph = createCausl({
       bench harness lives in <code>packages/bench/</code> and the canonical
       local-validation flow is three commands:
     </p>
-<code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span></span><span class="codeblock-source language-bash"># Run the full canonical scale set, write packages/bench/report/.
+<code class="codeblock-source" data-lang="bash"># Run the full canonical scale set, write packages/bench/report/.
 pnpm --filter @causl/bench bench:report
 
 # Diff this run against the locked baseline.
@@ -302,7 +302,7 @@ pnpm --filter @causl/bench bench:diff
 
 # Gate: fail if any contract-bearing cell falls outside the §17.5 band.
 pnpm --filter @causl/bench bench:gate
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
     <p>
       For day-to-day sub-second iteration, use <code>pnpm bench</code> with
       a profile flag — the tolerant-mode harness (<code>run-tolerant.ts</code>)
@@ -411,6 +411,6 @@ pnpm --filter @causl/bench bench:gate
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>

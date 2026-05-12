@@ -108,7 +108,7 @@
       and writes the value back on every commit that actually changes it.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span></span><span class="codeblock-source language-typescript">import { createCausl } from '@causl/core'
+    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core'
 import { persistedInput, localStorageAdapter } from '@causl/persistence'
 
 const graph = createCausl()
@@ -128,7 +128,7 @@ const columnWidth = persistedInput(
 graph.commit('drag-resize', tx => {
   tx.set(columnWidth, 240)
 })
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       The <code>key</code> is what gets used in the storage adapter; the
@@ -160,12 +160,12 @@ graph.commit('drag-resize', tx => {
       <code>chrome.storage</code> takes about a dozen lines.
     </p>
 
-    <code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span></span><span class="codeblock-source language-bash">export interface StorageAdapter {
+    <code class="codeblock-source" data-lang="bash">export interface StorageAdapter {
   get(key: string): string | null
   set(key: string, value: string): void
   delete(key: string): void
 }
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <h3><code>localStorageAdapter()</code></h3>
 
@@ -189,7 +189,7 @@ graph.commit('drag-resize', tx => {
       testing the hydration path:
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span></span><span class="codeblock-source language-typescript">import { memoryAdapter } from '@causl/persistence'
+    <code class="codeblock-source" data-lang="typescript">import { memoryAdapter } from '@causl/persistence'
 
 const storage = memoryAdapter({
   'xldatagrid:col-width': JSON.stringify({ version: 1, value: 320 }),
@@ -202,7 +202,7 @@ const columnWidth = persistedInput(graph, 'colWidth', 200, {
 })
 
 console.log(graph.read(columnWidth))  // 320 — hydrated from storage
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <h3>IndexedDB and other async stores</h3>
 
@@ -222,7 +222,7 @@ console.log(graph.read(columnWidth))  // 320 — hydrated from storage
       the hot cache through the synchronous adapter interface:
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span></span><span class="codeblock-source language-typescript">// 1. Hydrate the hot cache asynchronously, before graph construction.
+    <code class="codeblock-source" data-lang="typescript">// 1. Hydrate the hot cache asynchronously, before graph construction.
 const hotCache: Record&lt;string, string&gt; = {}
 const keys = await db.getAll('prefs')
 for (const { key, value } of keys) hotCache[key] = value
@@ -243,7 +243,7 @@ graph.subscribeCommits(c =&gt; {
     if (value !== undefined) db.put('prefs', { key, value })
   }
 })
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <h2>3. Boot-write skip — why cold starts don't round-trip</h2>
 
@@ -282,7 +282,7 @@ graph.subscribeCommits(c =&gt; {
       as-is. If they differ, the optional <code>migrate</code> callback runs:
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span></span><span class="codeblock-source language-typescript">const columnWidth = persistedInput(
+    <code class="codeblock-source" data-lang="typescript">const columnWidth = persistedInput(
   graph,
   'colWidth',
   { pixels: 200, locked: false },
@@ -299,7 +299,7 @@ graph.subscribeCommits(c =&gt; {
     },
   },
 )
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       If <code>migrate</code> is absent and the version differs, the in-memory
@@ -339,7 +339,7 @@ graph.subscribeCommits(c =&gt; {
       </tbody>
     </table>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span></span><span class="codeblock-source language-typescript">import type { PersistenceError } from '@causl/persistence'
+    <code class="codeblock-source" data-lang="typescript">import type { PersistenceError } from '@causl/persistence'
 
 function handler(err: PersistenceError) {
   switch (err.kind) {
@@ -362,7 +362,7 @@ function handler(err: PersistenceError) {
       return
   }
 }
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <blockquote>
       <p>
@@ -389,7 +389,7 @@ function handler(err: PersistenceError) {
       <code>@causl/devtools</code>:
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span></span><span class="codeblock-source language-typescript">import { exportSnapshot, importSnapshot } from '@causl/devtools'
+    <code class="codeblock-source" data-lang="typescript">import { exportSnapshot, importSnapshot } from '@causl/devtools'
 
 const snap = exportSnapshot(graph, {
   inputs: [columnWidth, activeFilter, cursorPos],
@@ -404,7 +404,7 @@ importSnapshot(freshGraph, snap, {
     [cursorPos.id, freshCursorPos],
   ]),
 })
-</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+</code>
 
     <p>
       The export captures every requested input value at the current
@@ -490,6 +490,6 @@ importSnapshot(freshGraph, snap, {
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>

@@ -74,7 +74,7 @@
       no setup or teardown, no module-level state. A graph is just a value.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span><span class="codeblock-gutter-line">24</span><span class="codeblock-gutter-line">25</span><span class="codeblock-gutter-line">26</span><span class="codeblock-gutter-line">27</span><span class="codeblock-gutter-line">28</span><span class="codeblock-gutter-line">29</span><span class="codeblock-gutter-line">30</span></span><span class="codeblock-source language-typescript">import { describe, it, expect } from 'vitest';
+    <code class="codeblock-source" data-lang="typescript">import { describe, it, expect } from 'vitest';
 import { createCausl, input, derived } from '@causl/core';
 
 describe('counter graph', () =&gt; {
@@ -103,7 +103,7 @@ describe('counter graph', () =&gt; {
 
     expect(graph.read(count)).toBe(0);
   });
-});</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+});</code>
 
     <p>
       Two things to notice. First, every assertion runs against
@@ -132,7 +132,7 @@ describe('counter graph', () =&gt; {
       node was recomputed (which the engine is free to elide).
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span></span><span class="codeblock-source language-typescript">import { vi } from 'vitest';
+    <code class="codeblock-source" data-lang="typescript">import { vi } from 'vitest';
 
 it('notifies subscribers on commit', () =&gt; {
   const graph = createCausl();
@@ -147,7 +147,7 @@ it('notifies subscribers on commit', () =&gt; {
 
   expect(cb).toHaveBeenCalledTimes(2);
   expect(cb).toHaveBeenLastCalledWith(2);
-});</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+});</code>
 
     <h2>2. Property-based fuzz with fast-check</h2>
 
@@ -167,7 +167,7 @@ it('notifies subscribers on commit', () =&gt; {
       <code>CAUSL_FUZZ_TIER</code> env-var so CI can scale fuzz on different lanes.
     </p>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span></span><span class="codeblock-source language-typescript">import fc from 'fast-check';
+    <code class="codeblock-source" data-lang="typescript">import fc from 'fast-check';
 import { describe, it } from 'vitest';
 import { createCausl, input, derived } from '@causl/core';
 import { tieredPropertyTrials } from '@causl/core/testing';
@@ -189,7 +189,7 @@ describe('doubled is always 2x count', () =&gt; {
       tieredPropertyTrials('doubled-invariant'),
     );
   });
-});</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+});</code>
 
     <p>
       The string label (<code>'doubled-invariant'</code>) is folded into failure logs and seed
@@ -258,7 +258,7 @@ describe('doubled is always 2x count', () =&gt; {
       <code>CAUSL_FUZZ_TRIALS</code> override, then the default floor. A typical CI workflow:
     </p>
 
-    <code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span></span><span class="codeblock-source language-bash"># .github/workflows/pr.yml
+    <code class="codeblock-source" data-lang="bash"># .github/workflows/pr.yml
 - name: Run PR fuzz tier
   run: pnpm test:run
   env:
@@ -268,15 +268,15 @@ describe('doubled is always 2x count', () =&gt; {
 - name: Run nightly fuzz tier
   run: pnpm test:run
   env:
-    CAUSL_FUZZ_TIER: nightly</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+    CAUSL_FUZZ_TIER: nightly</code>
 
     <p>
       For a local "bump the budget for an afternoon" run, set the env-var inline:
     </p>
 
-    <code class="codeblock" data-lang="bash" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span></span><span class="codeblock-source language-bash">CAUSL_FUZZ_TIER=pr pnpm test:run
+    <code class="codeblock-source" data-lang="bash">CAUSL_FUZZ_TIER=pr pnpm test:run
 # or, for an ad-hoc custom budget:
-CAUSL_FUZZ_TRIALS=20000 pnpm test:run</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+CAUSL_FUZZ_TRIALS=20000 pnpm test:run</code>
 
     <blockquote>
       <strong>Detailed explanation &mdash; why the floor is a structural check.</strong>
@@ -306,7 +306,7 @@ CAUSL_FUZZ_TRIALS=20000 pnpm test:run</span><button type="button" class="codeblo
       derived view.
     </p>
 
-    <code class="codeblock" data-lang="tsx" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span><span class="codeblock-gutter-line">11</span><span class="codeblock-gutter-line">12</span><span class="codeblock-gutter-line">13</span><span class="codeblock-gutter-line">14</span><span class="codeblock-gutter-line">15</span><span class="codeblock-gutter-line">16</span><span class="codeblock-gutter-line">17</span><span class="codeblock-gutter-line">18</span><span class="codeblock-gutter-line">19</span><span class="codeblock-gutter-line">20</span><span class="codeblock-gutter-line">21</span><span class="codeblock-gutter-line">22</span><span class="codeblock-gutter-line">23</span><span class="codeblock-gutter-line">24</span><span class="codeblock-gutter-line">25</span><span class="codeblock-gutter-line">26</span><span class="codeblock-gutter-line">27</span><span class="codeblock-gutter-line">28</span><span class="codeblock-gutter-line">29</span><span class="codeblock-gutter-line">30</span></span><span class="codeblock-source language-tsx">import fc from 'fast-check';
+    <code class="codeblock-source" data-lang="tsx">import fc from 'fast-check';
 import { describe, it } from 'vitest';
 import { tieredPropertyTrials } from '@causl/core/testing';
 import { reduxOracle, causlMigrated } from './oracle';
@@ -335,7 +335,7 @@ describe('redux ↔ causl parity', () =&gt; {
       tieredPropertyTrials('redux-causl-parity'),
     );
   });
-});</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+});</code>
 
     <p>
       The two encodings are <em>structurally distinct</em> &mdash; mutation-on-state vs. graph commit
@@ -384,7 +384,7 @@ describe('redux ↔ causl parity', () =&gt; {
 
     <h3>A minimal vitest.config.ts</h3>
 
-    <code class="codeblock" data-lang="typescript" data-enhanced="true"><span class="codeblock-gutter" aria-hidden="true"><span class="codeblock-gutter-line">1</span><span class="codeblock-gutter-line">2</span><span class="codeblock-gutter-line">3</span><span class="codeblock-gutter-line">4</span><span class="codeblock-gutter-line">5</span><span class="codeblock-gutter-line">6</span><span class="codeblock-gutter-line">7</span><span class="codeblock-gutter-line">8</span><span class="codeblock-gutter-line">9</span><span class="codeblock-gutter-line">10</span></span><span class="codeblock-source language-typescript">import { defineConfig } from 'vitest/config';
+    <code class="codeblock-source" data-lang="typescript">import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -393,7 +393,7 @@ export default defineConfig({
     // Property tests log the seed on failure; let vitest pass stdout through.
     silent: false,
   },
-});</span><button type="button" class="codeblock-btn codeblock-copy" aria-label="Copy code to clipboard"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 12V3a1 1 0 0 1 1-1h7"/></svg><span class="codeblock-btn-tooltip">Copy</span></button></code>
+});</code>
 
     <h2>What this guide does <em>not</em> cover</h2>
 
@@ -462,6 +462,6 @@ export default defineConfig({
   <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
   <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
-  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock-enhance.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
 </body>
 </html>
