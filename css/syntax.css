@@ -12,8 +12,27 @@
    themselves automatically in light mode (site.css #1268).
    ============================================================= */
 
+/* Base typographic rules for ANY <pre> or <code> block that ships
+   inside our wrapper component (or carries language-X / has-gutter
+   via Prism / our pre-render sweep). The selector chain is
+   intentionally broad: three different code-block emitters live in
+   this repo and we want one CSS contract for all of them.
+
+     1. Tutorial pages — Prism convention. <pre class="language-X">
+        <code class="language-X">.  Selector [class*="language-"] catches it.
+     2. Homepage — hand-coded with custom <span class="tok-*">.
+        <pre class="codeblock has-gutter"><code>.  No language class.
+        Caught via .has-gutter and the .codeblock-wrapper > pre rules below.
+     3. TypeDoc API — generator-emitted. <pre class="has-gutter">
+        <code class="js"> (note: "js", not "language-js"). Same.
+
+   The pair-token system (#1268) flips --surface-elevated and
+   --text-on-elevated automatically in light mode via site.css, so a
+   single selector contract serves both themes by inheritance. */
 pre[class*="language-"],
-code[class*="language-"] {
+code[class*="language-"],
+.codeblock-wrapper > pre,
+.codeblock-wrapper > pre > code {
   color: var(--text-on-elevated);
   font-family: var(--mono);
   font-size: 0.875rem;
@@ -32,7 +51,8 @@ code[class*="language-"] {
   hyphens: none;
 }
 
-pre[class*="language-"] {
+pre[class*="language-"],
+.codeblock-wrapper > pre {
   background: var(--surface-elevated);
   border-radius: 8px;
   padding: var(--space-4) var(--space-5);
@@ -66,8 +86,10 @@ pre[class*="language-"] {
 }
 
 /* The wrapper owns the outer margin now; the <pre> inside it should
-   not double-stack. */
-.codeblock-wrapper > pre[class*="language-"] {
+   not double-stack. Applies to EVERY pre in a wrapper, regardless of
+   class — covers Prism-styled (.language-X), homepage (.codeblock),
+   and TypeDoc API (.has-gutter only) blocks alike. */
+.codeblock-wrapper > pre {
   margin: 0;
 }
 
@@ -80,11 +102,15 @@ pre[class*="language-"] {
   padding-left: 0.6rem;
 }
 
-.codeblock-wrapper > pre.has-gutter > code[class*="language-"] {
+/* Any <code> inside the gutter'd pre stretches to fill the remaining
+   row — Prism's language-X code, homepage's class-less <code>, and
+   TypeDoc's class="js" code all match. */
+.codeblock-wrapper > pre.has-gutter > code {
   flex: 1 1 auto;
   min-width: 0;
   display: block;
   overflow-x: auto;
+  background: transparent;
 }
 
 .codeblock-gutter {
