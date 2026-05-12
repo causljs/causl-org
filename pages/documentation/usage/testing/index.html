@@ -95,7 +95,7 @@ describe('counter graph', () =&gt; {
   it('doubles the input', () =&gt; {
     const graph = createCausl();
     const count = input(graph, 0);
-    const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+    const doubled = derived(graph, g =&gt; g.read(count) * 2);
 
     graph.commit(() =&gt; {
       graph.set(count, 5);
@@ -192,7 +192,7 @@ describe('doubled is always 2x count', () =&gt; {
       fc.property(fc.array(fc.integer()), (writes) =&gt; {
         const graph = createCausl();
         const count = input(graph, 0);
-        const doubled = derived(graph, (g) =&gt; g.read(count) * 2);
+        const doubled = derived(graph, g =&gt; g.read(count) * 2);
 
         for (const v of writes) {
           graph.commit(() =&gt; graph.set(count, v));
@@ -334,8 +334,8 @@ type Msg =
 const arbMsg: fc.Arbitrary&lt;Msg&gt; = fc.oneof(
   fc.constant({ kind: 'inc' } as const),
   fc.constant({ kind: 'dec' } as const),
-  fc.integer().map((value) =&gt; ({ kind: 'set', value } as const)),
-  fc.string().map((text) =&gt; ({ kind: 'addTodo', text } as const)),
+  fc.integer().map(value =&gt; ({ kind: 'set', value } as const)),
+  fc.string().map(text =&gt; ({ kind: 'addTodo', text } as const)),
 );
 
 describe('redux ↔ causl parity', () =&gt; {

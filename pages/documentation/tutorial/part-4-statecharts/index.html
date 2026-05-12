@@ -283,7 +283,7 @@ try {
     <pre class="language-typescript"><code class="language-typescript">import { createConflictRegistry } from '@causl/sync';
 
 const registry = createConflictRegistry(graph, {
-  openSet: (g) =&gt; computeOpenConflicts(g),
+  openSet: g =&gt; computeOpenConflicts(g),
 });
 
 registry.resolve(conflictId, { pick: 'theirs' });

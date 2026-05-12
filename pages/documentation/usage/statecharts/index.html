@@ -222,7 +222,7 @@ graph.read(user.node);
 
   const loadingAt = graph.now;          // GraphTime immediately after the loading commit
 
-  return loaderPromise.then((value) =&gt; {
+  return loaderPromise.then(value =&gt; {
     // The reducer compares loadingAt against graph.now at resolve.
     // If anything advanced GraphTime in between, route to 'stale'.
     applyEvent('fetch:settle', { kind: 'fetch-resolve', value, loadingAt, ... });

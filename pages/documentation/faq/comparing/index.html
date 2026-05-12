@@ -342,9 +342,9 @@ console.log(store.get(doubledAtom))  // 10</code></pre>
 
 const graph = createCausl()
 const count = graph.input('count', 0)
-const doubled = graph.derived('doubled', (get) =&gt; get(count) * 2)
+const doubled = graph.derived('doubled', g =&gt; g(count) * 2)
 
-graph.commit('set-count', (tx) =&gt; { tx.set(count, 5) })
+graph.commit('set-count', tx =&gt; { tx.set(count, 5) })
 console.log(graph.read(doubled))  // 10</code></pre>
 
     <p>For the counter alone, MobX and Jotai are smaller and faster. Causl's shape pays off when the next user action has to set <code>count</code>, <code>label</code>, and <code>color</code> at once &mdash; one commit, one subscriber dispatch, one frozen <code>Commit</code> in the log, atomic-or-nothing if anything throws.</p>

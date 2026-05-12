@@ -135,10 +135,10 @@ const graph = createCausl();
 
 const price = input(graph, 100);
 
-const withTax = derived(graph, (g) =&gt; g.read(price) * 1.08);
-const withDiscount = derived(graph, (g) =&gt; g.read(price) * 0.90);
+const withTax = derived(graph, g =&gt; g.read(price) * 1.08);
+const withDiscount = derived(graph, g =&gt; g.read(price) * 0.90);
 
-const total = derived(graph, (g) =&gt;
+const total = derived(graph, g =&gt;
   (g.read(withTax) + g.read(withDiscount)) / 2,
 );
 
@@ -162,10 +162,10 @@ console.log(graph.read(total));  // 99.0  ((108 + 90) / 2)</code></pre>
 
     <pre class="language-typescript"><code class="language-typescript">const log: Array&lt;{ node: string; value: number }&gt; = [];
 
-graph.subscribe(price,        (v) =&gt; log.push({ node: 'price',        value: v }));
-graph.subscribe(withTax,      (v) =&gt; log.push({ node: 'withTax',      value: v }));
-graph.subscribe(withDiscount, (v) =&gt; log.push({ node: 'withDiscount', value: v }));
-graph.subscribe(total,        (v) =&gt; log.push({ node: 'total',        value: v }));
+graph.subscribe(price,        v =&gt; log.push({ node: 'price',        value: v }));
+graph.subscribe(withTax,      v =&gt; log.push({ node: 'withTax',      value: v }));
+graph.subscribe(withDiscount, v =&gt; log.push({ node: 'withDiscount', value: v }));
+graph.subscribe(total,        v =&gt; log.push({ node: 'total',        value: v }));
 
 graph.commit(() =&gt; {
   graph.set(price, 200);
@@ -308,14 +308,14 @@ const lineA = input(graph, 10);
 const lineB = input(graph, 20);
 const lineC = input(graph, 30);
 
-const subtotalAB = derived(graph, (g) =&gt; g.read(lineA) + g.read(lineB));
-const subtotalBC = derived(graph, (g) =&gt; g.read(lineB) + g.read(lineC));
+const subtotalAB = derived(graph, g =&gt; g.read(lineA) + g.read(lineB));
+const subtotalBC = derived(graph, g =&gt; g.read(lineB) + g.read(lineC));
 
-const grandTotal = derived(graph, (g) =&gt;
+const grandTotal = derived(graph, g =&gt;
   g.read(subtotalAB) + g.read(subtotalBC),
 );
 
-graph.subscribe(grandTotal, (v) =&gt; console.log('grandTotal =', v));
+graph.subscribe(grandTotal, v =&gt; console.log('grandTotal =', v));
 
 graph.commit(() =&gt; {
   graph.set(lineA, 100);

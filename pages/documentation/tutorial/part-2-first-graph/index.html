@@ -151,13 +151,14 @@ const interestRate = graph.input('account:rate', 0.05)
       A <em>derived</em> is a read-only cell whose value is a pure function
       of other cells. You declare one with
       <code>graph.derived(id, compute)</code>, where <code>compute</code>
-      receives a tracked <code>get</code> accessor:
+      receives a tracked accessor (we bind it to <code>g</code> below — any
+      name works, but the single-letter form is idiomatic for inline arrows):
     </p>
 <pre class="language-typescript"><code class="language-typescript">const nextStatement = graph.derived(
   'account:nextStatement',
-  (get) => {
-    const b = get(balance)
-    const r = get(interestRate)
+  g => {
+    const b = g(balance)
+    const r = g(interestRate)
     return b * (1 + r)
   },
 )
@@ -166,7 +167,7 @@ const interestRate = graph.input('account:rate', 0.05)
       Two things happen on this line. First, causl runs your compute once,
       synchronously, against the current values of <code>balance</code> and
       <code>interestRate</code> — so the node has a real value the moment it
-      is registered. Second, the calls to <code>get</code> are
+      is registered. Second, the calls to the tracked accessor are
       <em>tracked</em>: causl records that <code>nextStatement</code> depends
       on <code>balance</code> and <code>interestRate</code>. You do not
       declare those edges by hand and you do not pass an array of deps.
@@ -196,7 +197,7 @@ console.log(graph.read(nextStatement))  // 1050
       To change anything, you open a transaction with
       <code>graph.commit(intent, run)</code>:
     </p>
-<pre class="language-typescript"><code class="language-typescript">const c = graph.commit('apply-rate-bump', (tx) => {
+<pre class="language-typescript"><code class="language-typescript">const c = graph.commit('apply-rate-bump', tx => {
   tx.set(interestRate, 0.07)
 })
 
@@ -309,14 +310,14 @@ console.log(graph.read(nextStatement))  // 1070
       derivation accidentally pushes a value through a buggy validator
       that throws:
     </p>
-<pre class="language-typescript"><code class="language-typescript">const guarded = graph.derived('account:guarded', (get) => {
-  const r = get(interestRate)
+<pre class="language-typescript"><code class="language-typescript">const guarded = graph.derived('account:guarded', g => {
+  const r = g(interestRate)
   if (r > 0.5) throw new Error('rate out of range')
   return r * 100
 })
 
 try {
-  graph.commit('try-bad-rate', (tx) => {
+  graph.commit('try-bad-rate', tx => {
     tx.set(interestRate, 0.9)
   })
 } catch (e) {
@@ -356,7 +357,7 @@ console.log(graph.read(nextStatement))  // still 1070 — Phase D was rolled bac
       every downstream derivation sees a self-consistent slice of input
       values:
     </p>
-<pre class="language-typescript"><code class="language-typescript">graph.commit('apply-month-end', (tx) => {
+<pre class="language-typescript"><code class="language-typescript">graph.commit('apply-month-end', tx => {
   tx.set(balance, graph.read(nextStatement))
   tx.set(interestRate, 0.06)
 })

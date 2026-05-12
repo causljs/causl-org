@@ -111,9 +111,9 @@
 
 const graph = createCausl();
 const count   = input(graph, 0, { id: 'count' });
-const doubled = derived(graph, (g) =&gt; g.read(count) * 2, { id: 'doubled' });
+const doubled = derived(graph, g =&gt; g.read(count) * 2, { id: 'doubled' });
 
-graph.commit((tx) =&gt; tx.set(count, 5));
+graph.commit(tx =&gt; tx.set(count, 5));
 
 const envelope = graph.snapshot();
 // {
@@ -133,7 +133,7 @@ localStorage.setItem('myapp.graph', JSON.stringify(envelope));
 
 const graph = createCausl();
 const count   = input(graph, 0, { id: 'count' });
-const doubled = derived(graph, (g) =&gt; g.read(count) * 2, { id: 'doubled' });
+const doubled = derived(graph, g =&gt; g.read(count) * 2, { id: 'doubled' });
 
 const raw = localStorage.getItem('myapp.graph');
 if (raw) {
@@ -190,7 +190,7 @@ const theme = persistedInput&lt;'light' | 'dark'&gt;(graph, 'ui.theme', 'dark', 
   version: 1,
 });
 
-graph.commit((tx) =&gt; tx.set(theme, 'light'));
+graph.commit(tx =&gt; tx.set(theme, 'light'));
 // localStorage now holds: { "version": 1, "value": "light" }
 </code></pre>
     <p>

@@ -261,10 +261,10 @@
 const graph = createCausl()
 const a = graph.input('a', 1)
 const b = graph.input('b', 2)
-const sum = graph.derived('sum', (get) => get(a) + get(b))
-const sumPlusOne = graph.derived('sumPlusOne', (get) => get(sum) + 1)
+const sum = graph.derived('sum', g => g(a) + g(b))
+const sumPlusOne = graph.derived('sumPlusOne', g => g(sum) + 1)
 
-graph.subscribe(sumPlusOne, (v) => console.log(v))
+graph.subscribe(sumPlusOne, v => console.log(v))
 
 graph.commit('bump-a', tx => tx.set(a, 10))
 
