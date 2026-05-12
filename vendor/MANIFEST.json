@@ -1,0 +1,100 @@
+{
+  "@causl/core": {
+    "version": "0.0.0",
+    "source": "packages/core/dist/",
+    "files": [
+      "chunk-6AT5T6LD.js",
+      "chunk-6AT5T6LD.js.map",
+      "chunk-IYUJL32F.js",
+      "chunk-IYUJL32F.js.map",
+      "chunk-NZKNVSHZ.js",
+      "chunk-NZKNVSHZ.js.map",
+      "index.js",
+      "index.js.map",
+      "internal.js",
+      "internal.js.map",
+      "testing.js",
+      "testing.js.map",
+      "wasm.js",
+      "wasm.js.map"
+    ],
+    "sha256": {
+      "chunk-6AT5T6LD.js": "da894f48da6916592c6846bf6ee10c759499c94c4d750267148423379fa3a08d",
+      "chunk-6AT5T6LD.js.map": "40a52c1ac987f86715a2b109c50acedbcd9c6c4d706d29c1011457da95032b4c",
+      "chunk-IYUJL32F.js": "51f96635341666edea47b047659312e623a475bbe6bdd49e2dcc622bef9fe757",
+      "chunk-IYUJL32F.js.map": "4c6b8433489548062743a5e9f36b6618bdd0a8289dc52f2362ec949ef1ede5a4",
+      "chunk-NZKNVSHZ.js": "56f5f823b87eb719b5cccbe3af05dbedc3e8fd7267e577f4140742bf56abbd05",
+      "chunk-NZKNVSHZ.js.map": "77600ff05c3d47b68ced3166c53812be173397f3a4c3b073d2f95ad2d681a4c3",
+      "index.js": "8aff4262fe84fd831bdee8bd1b1b991d7b5690028c39ddea14af70a8c19126bf",
+      "index.js.map": "cba81f7ad4d5b1b629bf43823f1082e73a10d0c3114c937515e7f8c1047629b3",
+      "internal.js": "403c5f7cbaa2b5d30e90fa295d50a8eab32fce11115cbfc0cd4c48ba581851eb",
+      "internal.js.map": "cba81f7ad4d5b1b629bf43823f1082e73a10d0c3114c937515e7f8c1047629b3",
+      "testing.js": "0dc20f01c6c2ce7871392567a244836e3102a1872e4006c4c67f13644647e09f",
+      "testing.js.map": "8a37dcea23ac52a8040b53f8a06ec9b09e983d119fdebba80a7619afcfb8a28a",
+      "wasm.js": "e1469f253cdc919230ae89dfd82f07ce521991e283f58d2ac7e2e1c7e41215ef",
+      "wasm.js.map": "63fd2aea93b2fb641b5ce4d84763fea41592089891fc76d931579d1a56308ccb"
+    },
+    "generatedAt": "2026-05-12T00:00:00Z",
+    "generatedFrom": "8392d014e0e279f7d2716124d7171bf55146785f"
+  },
+  "@causl/devtools": {
+    "version": "0.0.0",
+    "source": "packages/devtools/dist/",
+    "files": [
+      "index.js",
+      "index.js.map"
+    ],
+    "sha256": {
+      "index.js": "f889c7d38384908dfedd906e13dcc5f2f6233c9ed26ee209e6eef43acc386d96",
+      "index.js.map": "6d8adecdb0550d4f5003939816b32aa0c654b524a0859201e2d3493f9c347a1e"
+    },
+    "generatedAt": "2026-05-12T00:00:00Z",
+    "generatedFrom": "8392d014e0e279f7d2716124d7171bf55146785f"
+  },
+  "@causl/formula": {
+    "version": "0.1.0",
+    "source": "packages/formula/dist/",
+    "files": [
+      "index.js",
+      "index.js.map"
+    ],
+    "sha256": {
+      "index.js": "74b8107c49a34404180df5c3c7ad364c187d08fe943e11db88c3469207effa6a",
+      "index.js.map": "efb579b6f654eba335968354b44a63ebcb5807d6d82e505da519319df462679e"
+    },
+    "generatedAt": "2026-05-12T00:00:00Z",
+    "generatedFrom": "8392d014e0e279f7d2716124d7171bf55146785f"
+  },
+  "prismjs": {
+    "version": "1.30.0",
+    "source": "https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/",
+    "files": [
+      "prism-bash.min.js",
+      "prism-clike.min.js",
+      "prism-core.min.js",
+      "prism-css.min.js",
+      "prism-javascript.min.js",
+      "prism-json.min.js",
+      "prism-jsx.min.js",
+      "prism-markup.min.js",
+      "prism-rust.min.js",
+      "prism-tsx.min.js",
+      "prism-typescript.min.js"
+    ],
+    "sha256": {
+      "prism-bash.min.js": "6260814110e5182f2956e3bd257429548d9dbf2a9b66a63719b26cf9fac966a7",
+      "prism-clike.min.js": "c76ba4e240932bdc75546be30e550f5ba5e13815ff71511c76e9e27ac3072444",
+      "prism-core.min.js": "6caad316dd991f24f8004e0b9c19c055cb5829ff65e973fbee406f96d81b8e7e",
+      "prism-css.min.js": "8c9760dba7f26ea842016919544dd9b73a78a36d5b07a1e9842c333ed18ab6ae",
+      "prism-javascript.min.js": "0345ea83e12b7b974e953c79a64dea35a40308309449db70b82020fb688ac321",
+      "prism-json.min.js": "956d86baa5ae7ec4106758f354ac2d140bdcd7fc103dece02f73ed12b8d663e4",
+      "prism-jsx.min.js": "0c8b80e4d98f6813ef95fd0e7ae2862cc0804ec305e0ad1f99c0a4bb7c28f865",
+      "prism-markup.min.js": "879fc9d256c352d980e053857fa707330853b8bfb67ce284ea661a24dec5756e",
+      "prism-rust.min.js": "8ca261bb964333c717703059de8ff81e80a75d52c637913ef6f982da1ee82acb",
+      "prism-tsx.min.js": "752c15ed4ff1d03e042b407b332892e1097d5f5e348861e2e26db20d71b349bf",
+      "prism-typescript.min.js": "852f5513bb9ca9db247f86ecfce74acc91c541749d34929157240518fef8152a"
+    },
+    "generatedAt": "2026-05-12T00:00:00Z",
+    "generatedFrom": "8392d014e0e279f7d2716124d7171bf55146785f"
+  }
+}
