@@ -1,0 +1,204 @@
+/* =============================================================
+   playground.css — interactive (editable) code-block component.
+   Companion to causl-org/js/playground.js. Mirrors the visual
+   language of .codeblock-wrapper (same surface + text pair
+   tokens from #1268) so the read-only and editable blocks read
+   as members of the same family, but adds an "editable" cue
+   (caret, focus border, EDITABLE badge) so users know the box
+   talks back.
+   ============================================================= */
+
+.playground-wrapper {
+  position: relative;
+  margin: 1rem 0;
+  border-radius: 8px;
+  background: var(--surface-elevated);
+  color: var(--text-on-elevated);
+  border: 1px solid rgba(143, 162, 170, 0.18);
+  /* Subtle "I am interactive" cue: a slightly stronger left edge in
+     the brand cyan, echoing the slide-out terminal accent. */
+  border-left: 3px solid var(--causl-async-cyan);
+  overflow: hidden;
+}
+
+.playground-wrapper::before {
+  /* Top-right corner badge so users see at a glance this is editable.
+     Lives in CSS so the markup stays semantic. */
+  content: 'EDITABLE';
+  position: absolute;
+  top: 0.45rem;
+  right: 0.5rem;
+  z-index: 1;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: var(--causl-async-cyan);
+  background: rgba(11, 17, 24, 0.55);
+  border: 1px solid rgba(143, 162, 170, 0.22);
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
+.playground-editor-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.9rem;
+  padding: 0.6rem 0.6rem 0.4rem;
+}
+
+.playground-gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0.55rem 0.4rem 0.4rem 0.1rem;
+  border-right: 1px solid rgba(143, 162, 170, 0.18);
+  color: var(--text-on-elevated-subtle);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  pointer-events: none;
+  flex: 0 0 auto;
+  /* Match the textarea's intrinsic line-height & padding so numbers
+     line up with their corresponding source lines. */
+}
+
+.playground-gutter-line {
+  display: block;
+  text-align: right;
+  min-width: 1.4em;
+  line-height: inherit;
+}
+
+.playground-source {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.55rem 0.4rem;
+  background: transparent;
+  color: var(--text-on-elevated);
+  border: 0;
+  outline: 0;
+  resize: vertical;
+  /* Match the codeblock font so editable + read-only share
+     metrics. */
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  white-space: pre;
+  overflow-wrap: normal;
+  /* Caret cue: a slightly brighter caret signals "you can type here"
+     without changing the layout. */
+  caret-color: var(--causl-async-cyan);
+  tab-size: 2;
+  -moz-tab-size: 2;
+  /* Sensible default height; users can drag the resizer downward. */
+  min-height: 6.5rem;
+}
+
+.playground-source:focus,
+.playground-source:focus-visible {
+  outline: none;
+  /* Ring is on the wrapper so it doesn't clip the editor's resize
+     grip. */
+}
+
+.playground-wrapper:focus-within {
+  box-shadow: 0 0 0 2px var(--causl-async-cyan);
+}
+
+/* ---------- Toolbar ---------- */
+
+.playground-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.6rem 0.6rem;
+}
+
+.playground-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid rgba(215, 230, 234, 0.22);
+  background: rgba(11, 17, 24, 0.45);
+  color: var(--text-on-elevated-muted);
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.playground-btn svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.playground-btn:hover,
+.playground-btn:focus-visible {
+  background: var(--surface-overlay);
+  color: var(--text-on-overlay, var(--text-on-elevated));
+  border-color: rgba(215, 230, 234, 0.35);
+  outline: none;
+}
+
+.playground-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--causl-async-cyan);
+}
+
+.playground-run {
+  /* The primary action gets a brand accent so it pops out of the
+     toolbar without needing a colour swap on click. */
+  border-color: var(--causl-async-cyan);
+  color: var(--causl-async-cyan);
+}
+
+.playground-run:hover,
+.playground-run:focus-visible {
+  background: rgba(78, 168, 222, 0.12);
+  color: var(--causl-async-cyan);
+  border-color: var(--causl-async-cyan);
+}
+
+/* ---------- Slide-out terminal ---------- */
+
+.playground-terminal {
+  margin: 0;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  background: var(--surface-overlay);
+  color: var(--text-on-overlay, var(--text-on-elevated));
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  border-radius: 0 0 5px 5px;
+  border-top: 1px solid rgba(143, 162, 170, 0.18);
+  transition: max-height 250ms ease, padding 250ms ease;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.playground-terminal.is-open {
+  max-height: 240px;
+  overflow: auto;
+  padding: 0.6rem 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playground-terminal {
+    transition: none;
+  }
+}
