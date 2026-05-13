@@ -190,6 +190,16 @@
     if (!lang) return;
     if (typeof window === 'undefined' || !window.Prism) return;
     if (typeof window.Prism.highlightElement !== 'function') return;
+    // If the source already carries TypeDoc-baked syntax tokens
+    // (`.hl-0`..`.hl-13`), DO NOT re-tokenize. Prism would clobber the
+    // dense, pre-rendered colouring with its own sparser tokenization
+    // (e.g. bare identifiers like `myObject`, `Error` lose their
+    // highlight entirely under Prism's JS grammar) — and the result
+    // looks essentially unhighlighted to the reader (#1318). TypeDoc's
+    // tokens are already correct and have their own colour palette in
+    // pages/documentation/api/assets/highlight.css; leaving them
+    // untouched preserves API-page highlighting end-to-end.
+    if (textSpan.querySelector('[class^="hl-"], [class*=" hl-"]')) return;
     // Move the language class onto the text span so Prism's selector
     // (`code[class*="language-"]`) doesn't re-tokenize the outer
     // <code> (which would clobber the gutter + button on innerHTML
@@ -197,8 +207,14 @@
     var langClass = 'language-' + lang;
     if (textSpan.classList.contains(langClass)) return;
     textSpan.classList.add(langClass);
-    try { window.Prism.highlightElement(textSpan); }
-    catch (_) { /* unknown grammar; leave plain text */ }
+    try {
+      window.Prism.highlightElement(textSpan);
+    } catch (err) {
+      // Surface the error so future regressions don't go silent, but
+      // keep the textSpan's original content as a graceful fallback.
+      // eslint-disable-next-line no-console
+      console.warn('[codeblock] Prism.highlightElement threw — leaving source untokenized', { lang: lang, error: err });
+    }
   }
 
   // ============================================================
