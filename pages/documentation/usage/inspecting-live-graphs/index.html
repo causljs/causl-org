@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inspecting Live Graphs — Causl</title>
+  <meta name="description" content="How to introspect a running causl graph in production: graph.explain(node), the live edit-and-replay affordance, snapshotAt time-travel, and the @causl/devtools-bridge zero-cost Redux DevTools protocol." />
+  <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../../css/site.css" />
+  <link rel="stylesheet" href="../../../../css/syntax.css" /><link rel="stylesheet" href="../../../../css/playground.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: var(--text-on-base-muted); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: var(--text-on-base-muted); }
+  </style>
+</head>
+<body>
+    <!-- Topbar host — js/topbar.js replaces this with the canonical
+       <header id="topbar"> element. The fallback links inside the
+       <noscript> block keep nav usable for crawlers and no-JS users. -->
+  <div id="topbar-host" data-current="usage">
+    <noscript>
+      <nav class="topbar-fallback" aria-label="Site navigation">
+      <a href="/">Home</a>
+      <a href="/pages/documentation/">Documentation</a>
+      <a href="/pages/documentation/getting-started/">Getting Started</a>
+      <a href="/pages/documentation/tutorial/">Tutorial</a>
+      <a href="/pages/documentation/usage/">Usage Guide</a>
+      <a href="/pages/documentation/api/">API</a>
+      <a href="/pages/documentation/faq/">FAQ</a>
+      <a href="/pages/documentation/best-practices/">Best Practices</a>
+      <a href="/pages/benchmarks/">Benchmarks</a>
+      <a href="/pages/playground/">Playground</a>
+      <a href="/pages/spreadsheet/">Spreadsheet</a>
+      <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </nav>
+    </noscript>
+  </div>
+
+  <main class="docs-content">
+    <h1>Inspecting Live Graphs</h1>
+
+    <p>A causl graph is inspectable in its own vocabulary. Instead of bolting a parallel mirror state onto the side of the engine, every introspection question — <em>why does this node have this value? which inputs contributed? when did each contribution land? what depends on this transitively?</em> — is answered by an engine primitive that is itself a derived node, subscribable, composable, and replayable. Devtools become ordinary consumers of the graph, not a separate system that has to be kept in sync.</p>
+
+    <p>This page covers the four production-grade introspection surfaces: <code>graph.explain(node)</code> for lineage, the <code>'live'</code> explanation variant for edit-and-replay derivations, <code>graph.snapshotAt(t)</code> for time travel, and <code>@causl/devtools-bridge</code> for the Redux DevTools Extension wire protocol. All four are designed to be safe on a 10,000-node production graph: they read, they don't rebuild.</p>
+
+    <h2>1. <code>graph.explain(node)</code> — lineage as a derived node</h2>
+
+    <p>The simplest question is <em>why does this node have this value?</em> <code>graph.explain</code> answers it by handing back a <code>DerivedNode&lt;Explanation&gt;</code> — a regular subscribable node whose value is the structured lineage of the target.</p>
+
+    <code class="codeblock-source" data-lang="ts">import { createCausl } from '@causl/core'
+
+const g = createCausl()
+const a = g.input('a', 1)
+const b = g.input('b', 2)
+const sum = g.derived('sum', (read) =&gt; read(a) + read(b))
+
+const lineage = g.explain(sum)
+console.log(g.read(lineage))
+// {
+//   via: 'derived',
+//   node: 'sum',
+//   value: 3,
+//   computedAt: 1,
+//   deps: [
+//     { node: 'a', contributedAt: 1, explanation: { via: 'input', value: 1, computedAt: 1, deps: [] } },
+//     { node: 'b', contributedAt: 1, explanation: { via: 'input', value: 2, computedAt: 1, deps: [] } },
+//   ],
+// }</code>
+
+    <p>Three properties make the handle useful in production:</p>
+
+    <ul>
+      <li><strong>Memoised.</strong> Two calls to <code>explain</code> with the same target return the same <code>DerivedNode&lt;Explanation&gt;</code> reference. A devtools UI can use object identity to cache panel state across re-mounts.</li>
+      <li><strong>Subscribable.</strong> The handle is a derived node. <code>g.subscribe(lineage, render)</code> fires whenever any node in the transitive lineage changes value — the explainer's dep set tracks every visited node, so any upstream commit refreshes the panel.</li>
+      <li><strong>Bounded.</strong> The walker uses an explicit visited-set stack to detect cycles. A re-entered node yields a <code>{ via: 'cycle', cycleBackTo }</code> marker instead of recursing. Stack overflow is not a failure mode.</li>
+    </ul>
+
+    <h2>2. The <code>Explanation</code> discriminated union</h2>
+
+    <p>An <code>Explanation</code> is one of four shapes, tagged by the <code>via</code> discriminator. A devtools UI can <code>switch</code> on it directly with no <code>typeof</code> guards:</p>
+
+    <table>
+      <thead><tr><th><code>via</code></th><th>Shape</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>'input'</code></td><td><code>InputExplanation</code></td><td>Leaf — an input cell. <code>deps</code> is always <code>readonly []</code>. <code>computedAt</code> is the <code>GraphTime</code> of the last write.</td></tr>
+        <tr><td><code>'derived'</code></td><td><code>DerivedExplanation</code></td><td>Internal node from a vanilla <code>derived</code> registration. <code>deps</code> carries one <code>DepFrame</code> per direct dep, each with its own recursive <code>explanation</code>.</td></tr>
+        <tr><td><code>'live'</code></td><td><code>LiveExplanation</code></td><td>Same shape as <code>'derived'</code>, but the engine commits to the edit-live affordance: the derivation can be replaced while it is running and the change propagates without a graph rebuild. See §3.</td></tr>
+        <tr><td><code>'cycle'</code></td><td><code>CycleExplanation</code></td><td>Defensive frame emitted when the walker re-enters a node already on the traversal stack. Carries <code>cycleBackTo</code> so the UI can render the loop without recursing.</td></tr>
+      </tbody>
+    </table>
+
+    <p>Every value-bearing variant carries <code>node</code>, <code>value</code>, <code>computedAt</code>, and <code>deps</code>. The recursive <code>deps[i].explanation</code> is what lets a panel render a tree of the entire upstream lineage on demand — the engine produces the structure; the UI decides how deep to render.</p>
+
+    <h2>3. Live materialisation — edit a derivation while it runs</h2>
+
+    <p>A REPL connected to a running graph can mutate, replace, and replay derivations without restarting the host process. This is the same property that lets a devtools panel offer "edit this compute function" as an inline affordance: the engine treats a re-registered derivation as a new revision of the same identity, not as a separate node, and Phase D propagates the change exactly like any other commit. The <code>via: 'live'</code> tag in an explanation is the signal a UI uses to render the edit-live affordance for that specific node.</p>
+
+    <p>The practical workflow:</p>
+
+    <ol>
+      <li>Inspect <code>g.read(g.explain(node))</code> to confirm the current value and lineage.</li>
+      <li>Replace the derivation's compute function via <code>g.derived(id, newCompute)</code> — same id, new body.</li>
+      <li>The next commit runs the new compute through the full Phase A–H pipeline. <code>changedNodes</code> in the published <code>Commit</code> records the propagation; subscribers fire exactly once per affected node, in topological order.</li>
+    </ol>
+
+    <p>No graph rebuild. No subscription leakage. The historical record in <code>commitLog</code> retains the prior compute's outputs at their original <code>GraphTime</code> — time travel against those commits still produces the values they originally produced.</p>
+
+    <h2>4. Time travel — <code>graph.snapshotAt(t)</code></h2>
+
+    <p>The denotational rule the engine enforces is precise: <code>derived(t) = f(b₁(t), ..., bₙ(t))</code>. A derived value at time <code>t</code> is a pure function of its inputs at the same <code>t</code>. The only way <code>GraphTime</code> advances is one new commit per <code>graph.commit</code>. That contract is what makes <code>snapshotAt(t)</code> a safe operation in production: it projects the historical state by reading the bounded retention window, never by replaying commits forward.</p>
+
+    <code class="codeblock-source" data-lang="ts">const past = g.snapshotAt(t - 3)
+// past.inputs is a frozen map of every input's value at GraphTime (t - 3)
+// past.schemaHash anchors the snapshot to the schema version that produced it
+console.log(past.inputs.get('a'))</code>
+
+    <p>The retention window is bounded by <code>commitHistoryCap</code>. SPEC §5.1 Phase F.5 makes the trade-off explicit: the engine keeps the most recent <em>N</em> commits in <code>commitLog</code>, where <em>N</em> is configurable per <code>createCausl</code>. Reads against a <code>GraphTime</code> older than the retained window throw <code>RetentionExpiredError</code> — a typed failure, not silent stale data.</p>
+
+    <h2>5. <code>@causl/devtools-bridge</code> — Redux DevTools wire protocol</h2>
+
+    <p>For teams that already use the Redux DevTools Extension, <code>@causl/devtools-bridge</code> exposes a graph through the same monitor protocol. Each causl <code>Commit</code> forwards to the panel as a Redux action of the form <code>{ type: intent, payload: { changedNodes } }</code> paired with a <code>graph.snapshot()</code> for state inspection. The bridge is zero-cost when the extension is absent — it short-circuits before allocating any subscription, mock, or observer.</p>
+
+    <code class="codeblock-source" data-lang="ts">import { connectDevtools, isExtensionAvailable } from '@causl/devtools-bridge'
+
+if (isExtensionAvailable()) {
+  const disconnect = connectDevtools(g, { name: 'my-app' })
+  // …later, on unmount or HMR teardown
+  disconnect()
+}</code>
+
+    <p>The reverse path — the panel sending <code>JUMP_TO_STATE</code>, <code>JUMP_TO_ACTION</code>, <code>IMPORT_STATE</code>, <code>ROLLBACK</code>, and seven other monitor messages — is implemented as a frozen handler table, one closure per message. Each handler is individually tested. Time-travel handlers project state via <code>graph.snapshotAt(t)</code> rather than mutating the live graph: a panel-driven mutation would forge a fractional or out-of-order <code>GraphTime</code>, which the engine refuses to admit. The host's live subscribers stay anchored at the present commit; the panel receives a re-init carrying the historical projection.</p>
+
+    <h3>Capability narrowing — the bridge cannot mutate</h3>
+
+    <p>The bridge accepts a <code>BridgeGraph</code>, a structural narrowing of <code>Graph</code> that exposes exactly four methods: <code>subscribeCommits</code>, <code>snapshot</code>, <code>snapshotAt</code>, and <code>now</code>. A real <code>Graph</code> is still assignable, so the call site keeps working — but the discipline is enforced at compile time inside the implementation. A future bridge author cannot accidentally call <code>g.commit(...)</code>, <code>g.input(...)</code>, <code>g.hydrate(...)</code>, or <code>g.derived(...)</code>; those methods are not on the type. The principle of least authority is enforced by the language, not by a code-review comment.</p>
+
+    <code class="codeblock-source" data-lang="ts">export type BridgeGraph = Pick&lt;Graph, 'subscribeCommits' | 'snapshot' | 'snapshotAt' | 'now'&gt;</code>
+
+    <h2>6. Production patterns for a 10,000-node graph</h2>
+
+    <p>At ten-thousand-node scale the question is not whether <code>explain</code> can produce the structure — the walker is bounded and the handle is memoised — but how much of the structure a panel should render at once. A few patterns the team uses internally:</p>
+
+    <ul>
+      <li><strong>Lazy depth.</strong> Subscribe to the top-level explanation; render <code>deps[0..k]</code> with a "show more" affordance per depth level. The explanation is precomputed; only the rendered subtree pays UI cost.</li>
+      <li><strong>Pinned subscriptions.</strong> A devtools panel that follows a specific node attaches one subscriber to <code>g.explain(node)</code>. The explainer's dep set is the transitive lineage, so the panel refreshes only when something on that lineage changes — not on every unrelated commit.</li>
+      <li><strong>Bounded retention.</strong> Configure <code>commitHistoryCap</code> in <code>createCausl</code> based on memory budget and the deepest time-travel the panel needs to support. Each retained commit holds frozen <code>changedNodes</code> plus the inputs it modified; the cost is linear in <em>N</em>.</li>
+      <li><strong>Zero-cost in production.</strong> Wrap the <code>connectDevtools</code> call in <code>if (isExtensionAvailable())</code>. The extension is browser-injected; production deployments without it pay nothing — no allocation, no observer registration, no <code>subscribeCommits</code> call.</li>
+    </ul>
+
+    <h2>7. SPEC anchors</h2>
+
+    <p>The introspection surfaces above are SPEC commitments, not implementation conveniences. The relevant sections of <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md">SPEC.md</a>:</p>
+
+    <ul>
+      <li><strong>§11 Liveness / inspection primitives</strong> — the contract that inspection is composable through engine primitives.</li>
+      <li><strong>§12.3 Capability narrowing</strong> — the rule that <code>BridgeGraph</code> realises via <code>Pick</code>.</li>
+      <li><strong>§5.1 Phase F.5 retention bookkeeping</strong> — the bounded <code>commitLog</code> that <code>snapshotAt</code> reads from.</li>
+      <li><strong>§13 Deferred / out of scope</strong> — the explicit deferral of "devtools as a shippable product"; <code>@causl/devtools-bridge</code> stays private until either a downstream UI earns its place or §13 is amended.</li>
+    </ul>
+
+    <h2>Related reading</h2>
+
+    <ul>
+      <li><a href="../testing/">Testing Strategies</a> — <code>graph.simulate</code>, snapshot comparison, the <code>@causl/checker</code> CI gate.</li>
+      <li><a href="../structuring-graphs/">Structuring Graphs</a> — how to compose nodes so <code>explain</code> output is useful at scale.</li>
+      <li><a href="../performance/">Performance</a> — what <code>snapshotAt</code> costs, the retention-window memory trade-off.</li>
+      <li><a href="../../api/">API Reference</a> — full type signatures for <code>Explanation</code>, <code>DepFrame</code>, <code>BridgeGraph</code>, and <code>DispatchEvent</code>.</li>
+    </ul>
+  </main>
+
+    <!-- Footer host — js/footer.js replaces this with the canonical
+       <footer class="site-footer"> element. -->
+  <div id="footer-host">
+    <noscript>
+      <footer class="site-footer">
+        <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </footer>
+    </noscript>
+  </div>
+  <script src="../../../../js/footer.js" defer></script>
+  <script src="../../../../js/topbar.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
+</body>
+</html>
