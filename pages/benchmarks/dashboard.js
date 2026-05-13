@@ -140,6 +140,56 @@
   }
 
   /** ----------------------------------------------------------------
+   *  Skip-reason classification (#1304 — task 18).
+   *
+   *  Companion to the #1302 section-level "Library limitations" text
+   *  block: the dashboard chart itself renders an in-place .skip-box
+   *  for every (scenario × library × scale) cell the runner couldn't
+   *  measure, so an adopter scanning a chart for "where is library X?"
+   *  gets an immediate, in-context answer instead of a silent gap.
+   *
+   *  `classifySkip(reason)` collapses the runner's free-form reason
+   *  string into a 1-3-word taxonomy label + a CSS class. The lookup
+   *  is intentionally small (3 buckets + a catch-all) so the badge
+   *  reads as a label, not a sentence. The matchers are case-
+   *  insensitive substrings keyed on the exact phrasing the runner
+   *  emits (see `packages/bench/src/libraries/_expansion-stub.ts` —
+   *  `ExpansionScenarioNotImplementedError`) plus the V8 stack-
+   *  overflow message produced by `_stack-overflow-stub.ts`. New
+   *  reasons fall through to the `library limit` catch-all so the
+   *  box still renders, just with the generic label.
+   *  ---------------------------------------------------------------- */
+  const SKIP_TAXONOMY = [
+    {
+      match: (r) => /stack/i.test(r) || /v8 call stack/i.test(r),
+      label: 'stack overflow',
+      cls: 'stack-overflow',
+    },
+    {
+      match: (r) => /wasm/i.test(r) && /boundary|only/i.test(r),
+      label: 'WASM-only',
+      cls: 'wasm-only',
+    },
+    {
+      match: (r) =>
+        /not architecturally meaningful/i.test(r) ||
+        /not expressible/i.test(r) ||
+        /public-api gap/i.test(r) ||
+        /acceptance gate/i.test(r),
+      label: 'API not expressible',
+      cls: 'api-gap',
+    },
+  ]
+
+  function classifySkip(reason) {
+    const r = String(reason ?? '')
+    for (const bucket of SKIP_TAXONOMY) {
+      if (bucket.match(r)) return { label: bucket.label, cls: bucket.cls }
+    }
+    return { label: 'library limit', cls: 'library-limit' }
+  }
+
+  /** ----------------------------------------------------------------
    *  Filter state — managed as a single mutable object that the
    *  filter UI mutates and the renderer reads. Re-renders are
    *  triggered by `applyFilters()`.
@@ -749,6 +799,65 @@
     const chartWrap = document.createElement('div')
     chartWrap.className = 'bench-section-chart'
     chartWrap.innerHTML = renderSectionChart(section, visibleLibraries)
+
+    // #1304 — in-place skip boxes. For every visible library that
+    // has no measured points in this section but DOES appear in
+    // the section's skipped map, append a horizontal .skip-box
+    // strip *inside the chart wrap* so the missing-data row is
+    // visible at the exact point the eye expects a bar/line.
+    //
+    // The chart itself is a smoothed time-series line per library;
+    // there is no per-library "bar slot" on the x-axis. The boxes
+    // therefore span the chart's full width (the run timeline) and
+    // stack vertically, one per skipped library, in canonical order.
+    // Each box is fixed-height (28 px) — independent of the y-axis
+    // domain — so adding/removing skipped libraries does not
+    // re-scale the chart.
+    //
+    // Width matches the chart-area so the strip reads as "the cell
+    // this framework would occupy if it had measurements"; the
+    // chart's left padding (axis labels) is left clear.
+    const skipBoxList = document.createElement('ul')
+    skipBoxList.className = 'bench-section-skip-boxes'
+    skipBoxList.setAttribute(
+      'aria-label',
+      `Libraries skipped at ${section.scenario} scale ${section.scale}`,
+    )
+    let renderedSkipBoxes = 0
+    for (const lib of libsToPlot) {
+      const skipInfo = skippedMap.get(lib)
+      if (!skipInfo) continue
+      // A skip box is rendered for EVERY (library × scenario × scale)
+      // cell the runner couldn't measure on the latest run — even if
+      // the series has historical measured points (which still draw as
+      // a line on the chart above). The chart shows the *trend*; the
+      // box surfaces the latest miss + the runner's reason at the
+      // exact point an adopter scans for "where is this library at
+      // this scale?". The two affordances complement each other.
+      const reason = skipInfo.reason || 'skipped — no reason recorded'
+      const { label, cls } = classifySkip(reason)
+      const color = LIBRARY_COLOR[lib] ?? '#A9B5C9'
+      const reasonAttr = escapeHtml(reason)
+      const li = document.createElement('li')
+      li.className = `skip-box skip-class-${cls}`
+      li.dataset.library = lib
+      li.dataset.skipClass = cls
+      li.setAttribute('role', 'img')
+      li.setAttribute('tabindex', '0')
+      li.setAttribute(
+        'aria-label',
+        `${lib} skipped at ${section.scenario} scale ${section.scale}: ${reason}`,
+      )
+      li.title = reason
+      li.style.setProperty('--lib-color', color)
+      li.innerHTML =
+        `<span class="skip-box-lib" aria-hidden="true">${escapeHtml(lib)}</span>` +
+        `<span class="skip-box-label" aria-hidden="true">${escapeHtml(label)}</span>`
+      skipBoxList.appendChild(li)
+      renderedSkipBoxes += 1
+    }
+    if (renderedSkipBoxes > 0) chartWrap.appendChild(skipBoxList)
+
     card.appendChild(chartWrap)
 
     // Legend strip — one chip per framework currently visible.
