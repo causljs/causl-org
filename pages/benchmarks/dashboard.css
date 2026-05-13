@@ -633,6 +633,67 @@ details.status-callout > summary:focus-visible {
   }
 }
 
+/* -- Library limitations section (#1302) ---------------------- */
+
+/* Each `.skip-class` is one bucket card. Visually distinct from
+   a `.card` (which sits in a `.grid-3` row) so the buckets stack
+   vertically and read like a legend rather than a feature grid.
+   Border + spacing reuse the same tokens as `.status-callout` but
+   without the warning palette — these are explanatory, not alerts. */
+
+.skip-class {
+  margin: var(--space-5) 0;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid rgba(39, 211, 195, 0.18);
+  background: rgba(39, 211, 195, 0.04);
+  border-radius: var(--radius-md);
+}
+
+.skip-class .mono-label {
+  /* Inherits brand kicker styling from site.css; nudge the
+     letter-spacing tighter so the longer "Class N · Title"
+     strings sit on one line at mobile widths. */
+  letter-spacing: 0.06em;
+}
+
+.skip-class h3 {
+  margin: var(--space-2) 0 var(--space-3);
+  font-size: 1.05rem;
+}
+
+.skip-class p {
+  margin: var(--space-2) 0;
+  color: var(--text-on-base-muted);
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+:root[data-theme="light"] .skip-class p {
+  color: var(--text-on-base);
+}
+
+.skip-class p strong {
+  color: var(--text-on-base);
+  font-weight: 600;
+}
+
+.skip-class code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+}
+
+.skip-class-footer {
+  margin: var(--space-5) 0 var(--space-4);
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  font-size: 0.88rem;
+  color: var(--text-on-base-subtle);
+}
+
+:root[data-theme="light"] .skip-class-footer {
+  color: var(--text-on-base-muted);
+}
+
 /* -- prefers-reduced-motion: drop all transitions ------------- */
 
 @media (prefers-reduced-motion: reduce) {
