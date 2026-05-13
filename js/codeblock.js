@@ -244,6 +244,25 @@
       // Use the small-text threshold by default; the gutter / source
       // are 0.875rem so always "normal" text under WCAG.
       if (ratio >= WCAG_AA_NORMAL) return;
+
+      // Skip syntax-highlight tokens — their colors are intentional
+      // design choices (Prism .token.*, TypeDoc .hl-N, homepage .tok-*).
+      // Overriding them with the muted body-text token flattens all
+      // syntax color into one grey blob, defeating highlighting entirely.
+      // Apply the "large/decorative" WCAG threshold (3:1) for tokens
+      // instead of body text's 4.5:1 — and even then, log-only, no fix.
+      if (isSyntaxToken(el)) {
+        if (ratio < WCAG_AA_LARGE) {
+          // eslint-disable-next-line no-console
+          console.warn('[codeblock] syntax token under 3:1 — left as-is to preserve highlighting', {
+            element: el,
+            color: cssColorString(fg),
+            background: cssColorString(bgInfo.color),
+            ratio: round2(ratio),
+          });
+        }
+        return;
+      }
       // Try to repair. Prefer --text-on-elevated, fall back to --text-
       // on-base — whichever clears the threshold on this surface.
       var fix = pickReadable(bgInfo.color, [
@@ -270,6 +289,20 @@
         });
       }
     });
+  }
+
+  // True if the element's class list marks it as a syntax-highlight
+  // token from any of the three emitters we ship:
+  //   - Prism:   .token, .token.<name>
+  //   - TypeDoc: .hl-0 ... .hl-13
+  //   - Homepage hand-coded: .tok-fn, .tok-com, .tok-cyan, .tok-amber, etc.
+  // The audit must NOT auto-correct these — their colors are intentional
+  // and a 4.5:1 override flattens all syntax color to muted body text.
+  function isSyntaxToken(el) {
+    if (!el || !el.classList) return false;
+    var cn = el.className;
+    if (typeof cn !== 'string') return false;
+    return /(?:^|\s)(?:token(?:\s|$)|hl-\d|tok-)/.test(cn);
   }
 
   // Does this element have any directly-owned non-whitespace text?
