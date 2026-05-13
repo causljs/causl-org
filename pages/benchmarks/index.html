@@ -166,6 +166,142 @@
   </section>
 
   <!-- ============================================================
+       Library limitations — adopter-facing legend for the
+       (scenario × library) cells absent from the comparison table.
+       Rendered statically so it is visible before dashboard.js
+       loads and independent of the per-cell history feed; the
+       dashboard JS does not read this section.
+
+       Each skip-class entry below maps back to either a real
+       `skipped` entry in `packages/bench/report/fair-fight-results.json`
+       or to a `SkippedComparisonRow` emitted by `chart.ts` and
+       persisted into `packages/bench/report/comparison_table.md`
+       after #1293's render-the-skip-row-explicitly fix.
+
+       Tone: factual, not defensive. The absence of bars in a
+       comparison chart could look like cherry-picking; this
+       section addresses that directly by classifying every absent
+       cell against one of three structural buckets and linking
+       the fairness-audit discipline doc for depth.
+       ============================================================ -->
+  <section class="page section" id="library-limitations" aria-labelledby="library-limitations-title">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">Library limitations</div>
+        <h2 id="library-limitations-title">Why some (scenario &times; library) cells are absent.</h2>
+      </div>
+      <p class="lead">
+        Some cells in the comparison table are absent because of
+        structural limits in the comparator library, not because
+        the scenario was selected to disadvantage it. Where a
+        comparator can run a cell, its result is published as-is;
+        where it cannot, the structural reason is stated and the
+        cell renders as <em>(skipped &mdash; &hellip;)</em> with a
+        reason string after <a href="https://github.com/iasbuilt/causl/pull/1293" rel="noopener">#1293</a>.
+        The fairness-audit discipline
+        (<a href="https://github.com/iasbuilt/causl/blob/main/docs/bench/2026-05-12-fairness-audit.md" rel="noopener"><code>docs/bench/2026-05-12-fairness-audit.md</code></a>)
+        classifies every skip into one of the three buckets below.
+      </p>
+    </div>
+
+    <div class="skip-class">
+      <div class="mono-label">Class 1 &middot; Stack overflow at chain depth</div>
+      <h3>Recursive read-path overflows V8 at <code>linear-chain &times; 10000</code>.</h3>
+      <p>
+        <strong>Affected cells:</strong> <code>linear-chain &times; 10000</code> for
+        <code>jotai</code>, <code>mobx</code>, <code>redux-toolkit</code>.
+        Causl reports a real median here post-<a href="https://github.com/iasbuilt/causl/pull/956" rel="noopener">#956</a>.
+      </p>
+      <p>
+        Each comparator's read path evaluates the chain via mutual
+        recursion through its track/get entry point, so the V8 call
+        stack overflows at depth 10&thinsp;000. The harnesses throw
+        a typed <code>RecursiveEvalStackOverflowError</code>
+        up-front (see <a href="https://github.com/iasbuilt/causl/blob/main/packages/bench/src/libraries/_expansion-stub.ts" rel="noopener"><code>packages/bench/src/libraries/_expansion-stub.ts</code></a>)
+        so the doomed setup never runs and the tolerant runner
+        records a clean skip with the per-cell reason string.
+      </p>
+      <p>
+        Causl's Phase-D driver is iterative end-to-end after
+        <a href="https://github.com/iasbuilt/causl/pull/956" rel="noopener">#956</a>:
+        the registration walk and the commit-time fix-point both run
+        through an explicit <code>StackFrame[]</code> rather than
+        recursive calls. SPEC &sect;5.1 Amendment 3 pins this as an
+        implementation-detail trail with no contract change &mdash;
+        every &sect;3 atomicity and &sect;5.1 phase invariant is
+        preserved byte-identically; only the depth ceiling moves.
+        The asymmetry is structural to the JS engine shape, not the
+        workload, and tracked under
+        <a href="https://github.com/iasbuilt/causl/issues/721" rel="noopener">#721 part 3</a>
+        (mobx investigation) /
+        <a href="https://github.com/iasbuilt/causl/issues/798" rel="noopener">#798</a> /
+        <a href="https://github.com/iasbuilt/causl/issues/922" rel="noopener">#922</a> /
+        <a href="https://github.com/iasbuilt/causl/issues/926" rel="noopener">#926</a>.
+      </p>
+    </div>
+
+    <div class="skip-class">
+      <div class="mono-label">Class 2 &middot; No public API expressible</div>
+      <h3>Scenario's acceptance gate cannot be expressed in the comparator's public surface.</h3>
+      <p>
+        <strong>Affected cells:</strong>
+        <code>commit-firehose-1000-subs</code>,
+        <code>multi-fetch-race-N10</code>,
+        and <code>op-wasm-boundary-1k</code> &mdash; each skipped for
+        <code>jotai</code>, <code>mobx</code>, <code>redux-toolkit</code>.
+      </p>
+      <p>
+        These scenarios require commit-metadata semantics
+        (<code>subscribeReads</code> vs <code>subscribeCommits</code>
+        split &mdash; SPEC &sect;5.1 Phase F),
+        staleness-aware async (a commit-seq surface so a late fetch
+        result can detect that a newer write has landed &mdash; see
+        <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.async.md" rel="noopener"><code>SPEC.async.md</code></a>),
+        or the WASM-FFI boundary contract (SPEC &sect;17.6).
+        None of the three comparator libraries have an equivalent
+        public-API surface, so the cell's acceptance gate is not
+        architecturally expressible.
+      </p>
+      <p>
+        The harness throws a typed
+        <code>ExpansionScenarioNotImplementedError</code> with a
+        reason string identifying the public-API gap &mdash; deferred
+        explicitly under <a href="https://github.com/iasbuilt/causl/issues/843" rel="noopener">#843</a>
+        rather than implementing a cell that runs but cannot answer
+        the question the scenario was constructed to ask
+        (the &ldquo;loud silence&rdquo; failure mode).
+      </p>
+    </div>
+
+    <div class="skip-class">
+      <div class="mono-label">Class 3 &middot; Expansion not implemented</div>
+      <h3>Catch-all for typed skips that fall outside Classes 1 and 2.</h3>
+      <p>
+        Any cell where the harness throws
+        <code>ExpansionScenarioNotImplementedError</code> for a
+        per-cell reason that does not reduce to a structural stack
+        overflow or to a public-API gap. None are currently active
+        in the published comparison table &mdash; every entry today
+        falls into Class 1 or Class 2 &mdash; but the bucket exists
+        so future expansion scenarios with library-specific gaps
+        have a documented home rather than appearing as a silent
+        drop. The per-cell reason string in
+        <code>comparison_table.md</code> always names the gap; this
+        class is the residual category.
+      </p>
+    </div>
+
+    <p class="skip-class-footer">
+      The raw per-cell skip records live in
+      <a href="https://github.com/iasbuilt/causl/blob/main/packages/bench/report/fair-fight-results.json" rel="noopener"><code>packages/bench/report/fair-fight-results.json</code></a>;
+      the rendered table with inline skip rows is at
+      <a href="https://github.com/iasbuilt/causl/blob/main/packages/bench/report/comparison_table.md" rel="noopener"><code>packages/bench/report/comparison_table.md</code></a>.
+      Adopters who want the methodology depth behind these classifications should read the
+      <a href="https://github.com/iasbuilt/causl/blob/main/docs/bench/2026-05-12-fairness-audit.md" rel="noopener">fairness-audit discipline doc</a>.
+    </p>
+  </section>
+
+  <!-- ============================================================
        What we measure (kept from the previous stub — unchanged
        prose, useful context for first-time visitors).
        ============================================================ -->
