@@ -122,6 +122,26 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
 }
 
+/* Page title block. Long CamelCase identifiers like
+   `MissingBundleTableMarkersError` are single unbreakable words at
+   the browser's default `overflow-wrap`, so on narrower viewports
+   they push the column past its grid-cell boundary and visually
+   collide with `.col-sidebar`. Constrain the title to its column
+   and let very long identifiers break mid-word as a last resort. */
+.tsd-page-title {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.tsd-page-title h1 {
+  font-size: clamp(1.5rem, 2.4vw + 0.6rem, 1.875rem);
+  margin: 0.5rem 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+}
+
 code, kbd, samp, pre,
 .tsd-signature,
 .tsd-kind-icon + span,
@@ -257,21 +277,19 @@ a:hover {
 
 /* -- Signatures + code blocks ---------------------------------- */
 
+/* Signature wrappers — paired with the same `--surface-elevated`
+   pair token as `.codeblock-source`, so they render identically:
+   light gray (#F4F6F9) in light mode, terminal dark in dark mode.
+   The previous hard-coded dark gradient (including the explicit
+   `:root[data-theme="light"]` override below) painted a black slab
+   even in light mode. */
 .tsd-signature,
 .tsd-signatures .tsd-signature {
-  background: linear-gradient(180deg,
-    rgba(11, 16, 32, 0.92), rgba(7, 11, 22, 0.92));
-  border: 1px solid rgba(39, 211, 195, 0.18);
+  background: var(--surface-elevated);
+  color: var(--text-on-elevated);
+  border: 1px solid var(--night-line);
   border-radius: 10px;
   padding: 0.8rem 1rem;
-  color: var(--mist);
-}
-
-:root[data-theme="light"] .tsd-signature,
-:root[data-theme="light"] .tsd-signatures .tsd-signature {
-  background: linear-gradient(180deg, #0B1020, #070B16);
-  color: var(--mist);
-  border-color: rgba(39, 211, 195, 0.32);
 }
 
 pre,
