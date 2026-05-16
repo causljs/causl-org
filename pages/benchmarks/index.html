@@ -154,6 +154,49 @@
       </p>
     </details>
 
+    <!-- ============================================================
+         HONEST #1133 / #1525 annotation (#1536).
+
+         Rendered statically, BEFORE #dashboard-root, so it is
+         visible on load adjacent to the median chart and is NOT a
+         buried footnote. The median chart shows causl-wasm at its
+         REAL ~85–390× slower values (as-is, no massaging); a median
+         chart structurally cannot show causl-wasm's actual value
+         axis (large-tree GC-survival, #1525), so the bars would tell
+         a misleading-by-omission story without this callout.
+         ============================================================ -->
+    <div class="bench-honest-callout" role="note"
+         aria-label="causl-wasm median-latency honest framing (#1133 / #1525)">
+      <strong>Read this before the causl-wasm bars</strong>
+      <p>
+        <a href="https://github.com/iasbuilt/causl/issues/1133" rel="noopener">#1133</a>
+        median-latency falsification <strong>STANDS</strong>:
+        <code>causl-wasm</code> is <strong>~85&ndash;390&times; slower</strong>
+        than <code>causl-ts</code> on median commit &mdash;
+        <em>by design, not a regression to fix</em>. The bars below
+        plot those real, un-massaged numbers.
+      </p>
+      <p>
+        <code>causl-wasm</code>'s value axis is large-tree
+        <strong>GC-survival</strong>
+        (<a href="https://github.com/iasbuilt/causl/issues/1525" rel="noopener">#1525</a>),
+        which a median chart <em>structurally cannot show</em>: at
+        50k nodes <code>causl-ts</code> GC-livelocks to process death
+        (p50&nbsp;15.5&nbsp;ms, 43 major-GC pauses) while
+        <code>causl-wasm</code> survives (p50&nbsp;1.73&nbsp;ms,
+        1 pause, ~16.6&times; p99.9 flattening, transient-not-&approx;0
+        allocation). A reader who concludes &ldquo;causl-wasm is
+        slow, therefore worse&rdquo; has read only the axis a median
+        chart can draw.
+      </p>
+      <p class="bench-honest-callout-refs">
+        References:
+        <a href="https://github.com/iasbuilt/causl/issues/1133" rel="noopener">#1133 (median-latency falsification — STANDS)</a>
+        &middot;
+        <a href="https://github.com/iasbuilt/causl/issues/1525" rel="noopener">#1525 (large-tree GC-survival — the real value axis)</a>
+      </p>
+    </div>
+
     <div id="dashboard-root" aria-live="polite" aria-busy="true">
       <noscript>
         <p class="dashboard-error">
