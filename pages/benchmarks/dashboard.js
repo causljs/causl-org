@@ -66,10 +66,10 @@
    Filters at the top let the user toggle which libraries +
    scenarios + scales appear. The library filter now hides
    individual series within a section (rather than hiding whole
-   cards). The default view is the headline "causl + best
-   competitor at the 10k scale": only causl + mobx at scale 10000,
-   the cells the regression-gate watches most closely. Toggling
-   re-renders the grid in place.
+   cards). The default view is the headline "causl engines + best
+   competitor at the 10k scale": causl-ts + causl-wasm + mobx at
+   scale 10000, the cells the regression-gate watches most closely.
+   Toggling re-renders the grid in place.
 
    The script first attempts ./history.json; if that 404s it falls
    back to ./history.sample.json (a checked-in sample so the page
@@ -82,8 +82,19 @@
   const HISTORY_URL = './history.json'
   const SAMPLE_URL = './history.sample.json'
 
-  /** Canonical library order — mirrors packages/bench/src/chart.ts. */
-  const LIBRARY_ORDER = ['causl', 'jotai', 'redux-toolkit', 'mobx']
+  /** Canonical library order — mirrors packages/bench/src/chart.ts.
+   *  `causl-ts` is the production TypeScript engine (the rich history
+   *  formerly labelled `causl`, renamed in #1538); `causl-wasm` is the
+   *  REAL serde-wasm Rust engine (#1536/#1538) — ~85–390× slower on
+   *  median by design (#1133 STANDS), kept adjacent so the honest
+   *  #1133/#1525 callout sits next to its bars. */
+  const LIBRARY_ORDER = [
+    'causl-ts',
+    'causl-wasm',
+    'jotai',
+    'redux-toolkit',
+    'mobx',
+  ]
 
   /** Library colours — competitor identity colours, NOT state
    *  semantics. The brand palette in css/site.css reserves Async
@@ -103,25 +114,28 @@
    *  pass WCAG 4.5:1 by inspection on `#070A0F` (the spec floor).
    */
   const LIBRARY_COLOR = {
-    causl: '#11D9FF',          // Async Cyan — brand owner.
+    'causl-ts': '#11D9FF',     // Async Cyan — brand owner (TS engine).
+    'causl-wasm': '#5EE6A8',   // Commit-mint — the real Rust engine
+                               //   axis; distinct from causl-ts so the
+                               //   ~85–390× slower bars read as a
+                               //   separate series (#1133/#1525).
     jotai: '#C8743D',          // Copper Wire — neutral identity.
     'redux-toolkit': '#7C4DFF', // Mutation Violet — neutral identity.
     mobx: '#8FA2AA',           // Trace Ash — neutral identity.
   }
 
-  /** Default-view filter: the headline "causl vs best competitor"
-   *  cells at the 10k scale per the issue spec, PLUS the two causl
-   *  engine axes (#1536) so `causl-wasm`/`causl-ts` are visible on
-   *  the median chart on load — the adjacent #1133/#1525 honest
+  /** Default-view filter: the two causl engine axes (`causl-ts` +
+   *  `causl-wasm`, #1536/#1538) plus the best competitor (`mobx`) at
+   *  the 10k scale per the issue spec, so `causl-wasm`/`causl-ts` are
+   *  visible on the median chart on load — the adjacent #1133/#1525
    *  callout exists precisely because `causl-wasm`'s ~85–390× slower
    *  bars would otherwise tell a misleading-by-omission story, so
    *  the bars MUST be on screen for the callout to do its job.
    *  Users can still toggle any library via the filter UI. */
   const DEFAULT_LIBRARIES = new Set([
-    'causl',
-    'mobx',
-    'causl-wasm',
     'causl-ts',
+    'causl-wasm',
+    'mobx',
   ])
   const DEFAULT_SCALES = new Set([10000])
 
@@ -987,9 +1001,9 @@
       }
     }
 
-    // Defaults: causl + mobx (where present), 10000 scale, all
-    // scenarios on. Fall back gracefully if the universe is smaller
-    // than the spec defaults (e.g. a fixture without a 10k scale).
+    // Defaults: causl-ts + causl-wasm + mobx (where present), 10000
+    // scale, all scenarios on. Fall back gracefully if the universe
+    // is smaller than the spec defaults (e.g. no 10k-scale fixture).
     const defaultLibs = new Set(
       [...DEFAULT_LIBRARIES].filter((l) => allLibs.has(l)),
     )
@@ -1128,10 +1142,10 @@
     const defaultBtn = document.createElement('button')
     defaultBtn.type = 'button'
     defaultBtn.className = 'filter-action'
-    defaultBtn.textContent = 'Default view (causl + mobx @ 10k)'
+    defaultBtn.textContent = 'Default view (causl-ts + causl-wasm + mobx @ 10k)'
     defaultBtn.setAttribute(
       'aria-label',
-      'Restore the default view: causl and mobx at scale 10000',
+      'Restore the default view: causl-ts, causl-wasm and mobx at scale 10000',
     )
     defaultBtn.addEventListener('click', () => {
       filterState.libraries = new Set(
