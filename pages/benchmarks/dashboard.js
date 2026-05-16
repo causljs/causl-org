@@ -520,6 +520,22 @@
    *  series + their p95 envelopes so every line fits in the
    *  drawable area.
    *  ---------------------------------------------------------------- */
+  /** Per-section Y-axis fill fraction. `DEFAULT_FILL` places the
+   *  highest plotted value at 80% of the chart's drawable height
+   *  (20% headroom so the peak label is not jammed against the
+   *  frame) and stretches the rest of the series across the lower
+   *  80% — instead of squishing everything into a sliver with empty
+   *  whitespace above. Mouse-drag (see renderSectionCard) mutates
+   *  this per chart: drag up → larger fill (expand/zoom in), drag
+   *  down → smaller fill (shrink/zoom out); double-click resets. */
+  const DEFAULT_FILL = 0.8
+  const MIN_FILL = 0.08
+  const MAX_FILL = 6
+  const Y_FILL = new Map()
+  const sectionKey = (s) => `${s.scenario}|${s.scale}`
+  const clampFill = (f) => Math.min(MAX_FILL, Math.max(MIN_FILL, f))
+  const yFillFor = (s) => Y_FILL.get(sectionKey(s)) ?? DEFAULT_FILL
+
   function renderSectionChart(section, visibleLibraries) {
     const W = 640
     const H = 220
@@ -598,10 +614,19 @@
       if (runs.length === 1) return PAD_L + innerW / 2
       return PAD_L + (innerW * i) / (runs.length - 1)
     }
+    // Auto-adaptive Y: `fill` maps the data peak (t = 1) to
+    // `fill` × innerH of vertical travel. At the 0.8 default the
+    // highest value sits at 80% of the chart height (20% headroom)
+    // and the rest of the series fills the lower 80% instead of
+    // being squished into a sliver. Mouse-drag rescales `fill` per
+    // section; values are NOT clamped into the box — dragging to
+    // expand intentionally lets the peak run past the top (the
+    // viewBox clips it) so low-magnitude series can be zoomed into.
+    const fill = clampFill(yFillFor(section))
     const yAt = (v) => {
       if (!Number.isFinite(v)) return PAD_T + innerH
       const t = (v - yMin) / (yMax - yMin)
-      return PAD_T + innerH * (1 - t)
+      return PAD_T + innerH * (1 - t * fill)
     }
 
     // Y-axis ticks — drawn first so series lines sit on top.
@@ -823,6 +848,66 @@
     const chartWrap = document.createElement('div')
     chartWrap.className = 'bench-section-chart'
     chartWrap.innerHTML = renderSectionChart(section, visibleLibraries)
+
+    // Auto-adaptive Y-axis + mouse-drag rescale. The fill fraction
+    // lives in Y_FILL keyed by section; pointer-drag mutates it
+    // (multiplicative so the feel is even across the scale range)
+    // and re-renders only this chart's SVG. Listeners sit on the
+    // stable chartWrap div (not the SVG, which the re-render
+    // replaces), so a drag survives every redraw. Redraw is
+    // synchronous: the SVG is a small string and rebuilding it per
+    // pointermove is cheap — and it avoids requestAnimationFrame
+    // throttling on a backgrounded/headless tab that would silently
+    // drop the rescale. Double-click resets to the 0.8 auto-fit.
+    {
+      let dragging = false
+      let startY = 0
+      let startFill = DEFAULT_FILL
+      const rerender = () => {
+        chartWrap.innerHTML = renderSectionChart(
+          section,
+          visibleLibraries,
+        )
+      }
+      chartWrap.addEventListener('pointerdown', (e) => {
+        dragging = true
+        startY = e.clientY
+        startFill = clampFill(yFillFor(section))
+        chartWrap.classList.add('is-rescaling')
+        try {
+          chartWrap.setPointerCapture?.(e.pointerId)
+        } catch {
+          /* synthetic/invalid pointerId — capture is best-effort */
+        }
+        e.preventDefault()
+      })
+      chartWrap.addEventListener('pointermove', (e) => {
+        if (!dragging) return
+        // Drag UP (clientY decreases) → expand (larger fill);
+        // DOWN → shrink. Multiplicative: ~150 px ≈ e¹ ≈ 2.7×.
+        const next = clampFill(
+          startFill * Math.exp((startY - e.clientY) / 150),
+        )
+        Y_FILL.set(sectionKey(section), next)
+        rerender()
+      })
+      const endDrag = (e) => {
+        if (!dragging) return
+        dragging = false
+        chartWrap.classList.remove('is-rescaling')
+        try {
+          chartWrap.releasePointerCapture?.(e.pointerId)
+        } catch {
+          /* best-effort */
+        }
+      }
+      chartWrap.addEventListener('pointerup', endDrag)
+      chartWrap.addEventListener('pointercancel', endDrag)
+      chartWrap.addEventListener('dblclick', () => {
+        Y_FILL.delete(sectionKey(section))
+        rerender()
+      })
+    }
 
     // #1304 — in-place skip boxes. For every visible library that
     // has no measured points in this section but DOES appear in
