@@ -357,6 +357,21 @@
 .bench-section-chart {
   /* 0.1rem — sub-pixel chart bleed, sub-grid; keep literal. */
   margin: 0.1rem -0.1rem 0;
+  /* Auto-adaptive Y-axis is drag-rescalable: the vertical-resize
+     cursor advertises the affordance; touch-action / user-select
+     off so a pointer drag rescales instead of scrolling or
+     selecting text. */
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Active drag — keep the resize cursor even over the help-cursor
+   hit-rects so the gesture reads consistently while rescaling. */
+.bench-section-chart.is-rescaling,
+.bench-section-chart.is-rescaling svg rect[pointer-events="all"] {
+  cursor: ns-resize;
 }
 
 .bench-section-chart svg {
