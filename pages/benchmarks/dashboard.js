@@ -520,14 +520,14 @@
    *  series + their p95 envelopes so every line fits in the
    *  drawable area.
    *  ---------------------------------------------------------------- */
-  /** Per-section Y-axis fill fraction. `DEFAULT_FILL` places the
-   *  highest plotted value at 80% of the chart's drawable height
-   *  (20% headroom so the peak label is not jammed against the
-   *  frame) and stretches the rest of the series across the lower
-   *  80% — instead of squishing everything into a sliver with empty
-   *  whitespace above. Mouse-drag (see renderSectionCard) mutates
-   *  this per chart: drag up → larger fill (expand/zoom in), drag
-   *  down → smaller fill (shrink/zoom out); double-click resets. */
+  /** Per-section Y-axis fill fraction (zoom). `DEFAULT_FILL` places
+   *  the highest plotted value at 80% of the chart's drawable height
+   *  (20% headroom so the peak label is not jammed against the frame)
+   *  and stretches the rest of the series across the lower 80% —
+   *  instead of squishing everything into a sliver with empty
+   *  whitespace above. Mouse-WHEEL over a chart mutates this per
+   *  section (wheel up → larger fill / zoom in, wheel down → zoom
+   *  out); double-click resets. */
   const DEFAULT_FILL = 0.8
   const MIN_FILL = 0.08
   const MAX_FILL = 6
@@ -535,6 +535,16 @@
   const sectionKey = (s) => `${s.scenario}|${s.scale}`
   const clampFill = (f) => Math.min(MAX_FILL, Math.max(MIN_FILL, f))
   const yFillFor = (s) => Y_FILL.get(sectionKey(s)) ?? DEFAULT_FILL
+
+  /** Per-section vertical pan offset, in SVG pixels (+down / −up).
+   *  Pointer-DRAG on a chart mutates this so the whole plot — every
+   *  series line AND the y-axis ticks/labels, since both go through
+   *  `yAt` — translates together. Its purpose: lift a line that hugs
+   *  the 0 baseline up off the chart floor for a closer look. Not
+   *  clamped (drag as far as you like; the viewBox clips); double-
+   *  click resets it. */
+  const Y_OFFSET = new Map()
+  const yOffsetFor = (s) => Y_OFFSET.get(sectionKey(s)) ?? 0
 
   function renderSectionChart(section, visibleLibraries) {
     const W = 640
@@ -581,31 +591,24 @@
       )
     }
 
-    // Y-domain: include every visible series' median AND p95 so the
-    // bands fit without clipping.
-    let yMin = Number.POSITIVE_INFINITY
+    // Y-domain is anchored at 0 — every chart shares the same floor.
+    // We deliberately do NOT auto-fit the bottom to the data minimum:
+    // that glued the fastest library to the chart floor and made a
+    // "12 ms" line on one chart look the same height as a "0.4 ms"
+    // line on another. With a fixed 0 baseline a fast library reads
+    // as a genuinely low line and cross-chart heights are comparable.
+    // Only the top (yMax, across every visible median + p95 envelope)
+    // is data-driven; the fill headroom below keeps the peak off the
+    // frame, and the pan offset lets you lift a floor-hugging line up.
+    const yMin = 0
     let yMax = Number.NEGATIVE_INFINITY
     for (const lib of libsToPlot) {
       for (const p of section.series.get(lib)) {
-        if (Number.isFinite(p.medianMs)) {
-          yMin = Math.min(yMin, p.medianMs)
-          yMax = Math.max(yMax, p.medianMs)
-        }
-        if (Number.isFinite(p.p95Ms)) {
-          yMin = Math.min(yMin, p.p95Ms)
-          yMax = Math.max(yMax, p.p95Ms)
-        }
+        if (Number.isFinite(p.medianMs)) yMax = Math.max(yMax, p.medianMs)
+        if (Number.isFinite(p.p95Ms)) yMax = Math.max(yMax, p.p95Ms)
       }
     }
-    if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) {
-      yMin = 0
-      yMax = 1
-    }
-    if (yMin === yMax) {
-      const eps = Math.max(yMax * 0.05, 0.001)
-      yMin -= eps
-      yMax += eps
-    }
+    if (!Number.isFinite(yMax) || yMax <= 0) yMax = 1
 
     const innerW = W - PAD_L - PAD_R
     const innerH = H - PAD_T - PAD_B
@@ -614,19 +617,22 @@
       if (runs.length === 1) return PAD_L + innerW / 2
       return PAD_L + (innerW * i) / (runs.length - 1)
     }
-    // Auto-adaptive Y: `fill` maps the data peak (t = 1) to
-    // `fill` × innerH of vertical travel. At the 0.8 default the
-    // highest value sits at 80% of the chart height (20% headroom)
-    // and the rest of the series fills the lower 80% instead of
-    // being squished into a sliver. Mouse-drag rescales `fill` per
-    // section; values are NOT clamped into the box — dragging to
-    // expand intentionally lets the peak run past the top (the
-    // viewBox clips it) so low-magnitude series can be zoomed into.
+    // y = baseline(0) at PAD_T+innerH, scaled by `fill` (wheel-zoom)
+    // and then translated by `panY` (drag-pan). `t` is the fraction
+    // of the 0→yMax domain; at the 0.8 default fill the peak sits at
+    // 80% height (20% headroom) and 0 sits exactly on the chart
+    // floor. Neither term is clamped into the box — zooming/panning
+    // intentionally lets data run past the frame (the viewBox clips)
+    // so a floor-hugging line can be lifted up for inspection.
+    // `panY` is added last and unconditionally (even for the
+    // non-finite fallback) so the gridlines/labels — which also call
+    // yAt — pan in lockstep with the series.
     const fill = clampFill(yFillFor(section))
+    const panY = yOffsetFor(section)
     const yAt = (v) => {
-      if (!Number.isFinite(v)) return PAD_T + innerH
+      if (!Number.isFinite(v)) return PAD_T + innerH + panY
       const t = (v - yMin) / (yMax - yMin)
-      return PAD_T + innerH * (1 - t * fill)
+      return PAD_T + innerH * (1 - t * fill) + panY
     }
 
     // Y-axis ticks — drawn first so series lines sit on top.
@@ -849,20 +855,21 @@
     chartWrap.className = 'bench-section-chart'
     chartWrap.innerHTML = renderSectionChart(section, visibleLibraries)
 
-    // Auto-adaptive Y-axis + mouse-drag rescale. The fill fraction
-    // lives in Y_FILL keyed by section; pointer-drag mutates it
-    // (multiplicative so the feel is even across the scale range)
-    // and re-renders only this chart's SVG. Listeners sit on the
-    // stable chartWrap div (not the SVG, which the re-render
-    // replaces), so a drag survives every redraw. Redraw is
+    // Pan (pointer-drag) + zoom (wheel) on the chart. Pan lives in
+    // Y_OFFSET, zoom in Y_FILL, both keyed by section. A drag
+    // anywhere on the card — empty space OR directly on a series
+    // line — pans the whole plot (lines and y-axis ticks move
+    // together because both resolve through yAt). Listeners sit on
+    // the stable chartWrap div (not the SVG, which the re-render
+    // replaces) so a gesture survives every redraw. Redraw is
     // synchronous: the SVG is a small string and rebuilding it per
-    // pointermove is cheap — and it avoids requestAnimationFrame
-    // throttling on a backgrounded/headless tab that would silently
-    // drop the rescale. Double-click resets to the 0.8 auto-fit.
+    // pointermove/wheel is cheap and avoids requestAnimationFrame
+    // throttling on a backgrounded tab that would drop updates.
+    // Double-click resets pan AND zoom to the auto-fit default.
     {
       let dragging = false
       let startY = 0
-      let startFill = DEFAULT_FILL
+      let startOffset = 0
       const rerender = () => {
         chartWrap.innerHTML = renderSectionChart(
           section,
@@ -872,8 +879,8 @@
       chartWrap.addEventListener('pointerdown', (e) => {
         dragging = true
         startY = e.clientY
-        startFill = clampFill(yFillFor(section))
-        chartWrap.classList.add('is-rescaling')
+        startOffset = yOffsetFor(section)
+        chartWrap.classList.add('is-panning')
         try {
           chartWrap.setPointerCapture?.(e.pointerId)
         } catch {
@@ -883,18 +890,19 @@
       })
       chartWrap.addEventListener('pointermove', (e) => {
         if (!dragging) return
-        // Drag UP (clientY decreases) → expand (larger fill);
-        // DOWN → shrink. Multiplicative: ~150 px ≈ e¹ ≈ 2.7×.
-        const next = clampFill(
-          startFill * Math.exp((startY - e.clientY) / 150),
+        // 1:1 with the pointer: drag UP (clientY decreases) moves the
+        // plot UP (negative SVG-y offset); DOWN moves it down. Not
+        // clamped — pan a floor-hugging line as far up as you want.
+        Y_OFFSET.set(
+          sectionKey(section),
+          startOffset + (e.clientY - startY),
         )
-        Y_FILL.set(sectionKey(section), next)
         rerender()
       })
       const endDrag = (e) => {
         if (!dragging) return
         dragging = false
-        chartWrap.classList.remove('is-rescaling')
+        chartWrap.classList.remove('is-panning')
         try {
           chartWrap.releasePointerCapture?.(e.pointerId)
         } catch {
@@ -903,8 +911,25 @@
       }
       chartWrap.addEventListener('pointerup', endDrag)
       chartWrap.addEventListener('pointercancel', endDrag)
+      // Wheel = zoom. Multiplicative so the feel is even across the
+      // scale range (~530 px of wheel ≈ e¹ ≈ 2.7×). Non-passive: we
+      // preventDefault so the page doesn't scroll while zooming a
+      // chart under the cursor.
+      chartWrap.addEventListener(
+        'wheel',
+        (e) => {
+          e.preventDefault()
+          const next = clampFill(
+            clampFill(yFillFor(section)) * Math.exp(-e.deltaY / 530),
+          )
+          Y_FILL.set(sectionKey(section), next)
+          rerender()
+        },
+        { passive: false },
+      )
       chartWrap.addEventListener('dblclick', () => {
         Y_FILL.delete(sectionKey(section))
+        Y_OFFSET.delete(sectionKey(section))
         rerender()
       })
     }
