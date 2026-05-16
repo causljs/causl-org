@@ -784,6 +784,64 @@ details.status-callout > summary:focus-visible {
   }
 }
 
+/* -- Honest #1133 / #1525 callout (#1536) ---------------------
+
+   Deliberately the loudest non-error element on the page: it sits
+   directly above the median chart and must be impossible to miss,
+   because the chart itself plots causl-wasm at its real ~85–390×
+   slower values and a median chart structurally cannot show
+   causl-wasm's actual value axis (large-tree GC-survival, #1525).
+   Coral (not the muted amber of .status-callout) + a solid 3px
+   left rule + elevated surface give it visual primacy on load. */
+.bench-honest-callout {
+  margin: var(--space-5) 0 var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--conflict-coral);
+  border-left: 3px solid var(--conflict-coral);
+  background: var(--surface-elevated);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+}
+
+.bench-honest-callout > strong:first-child {
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--conflict-coral);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.bench-honest-callout p {
+  margin: var(--space-2) 0 0;
+  color: var(--text-on-base);
+  line-height: 1.55;
+}
+
+.bench-honest-callout strong {
+  color: var(--text-on-base);
+}
+
+.bench-honest-callout code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+}
+
+.bench-honest-callout a {
+  color: var(--conflict-coral);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.bench-honest-callout .bench-honest-callout-refs {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--conflict-coral);
+  font-size: 0.86rem;
+  color: var(--text-on-base-muted);
+}
+
 /* -- Library limitations section (#1302) ---------------------- */
 
 /* Each `.skip-class` is one bucket card. Visually distinct from
