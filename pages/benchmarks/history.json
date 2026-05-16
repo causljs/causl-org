@@ -52280,5 +52280,122 @@
         "reason": "mobx: scenario \"op-wasm-boundary-1k\" not architecturally meaningful for this library — see per-harness docstring for the public-API gap that prevents the cell's acceptance gate from being expressible (#843)."
       }
     ]
+  },
+  {
+    "capturedAt": "2026-05-15T21:53:03.258Z",
+    "version": "0.0.0+local",
+    "samples": [
+      {
+        "library": "causl-ts",
+        "scenario": "equality-cutoff",
+        "scale": 10000,
+        "medianMs": 1.887125,
+        "p95Ms": 1.891583,
+        "peakHeapMb": 0.0001,
+        "throughput": 529.9066039610519,
+        "efficiency": 5299066.039610519,
+        "resourceCost": 1.887125e-7
+      },
+      {
+        "library": "causl-wasm",
+        "scenario": "equality-cutoff",
+        "scale": 10000,
+        "medianMs": 732.895824999995,
+        "p95Ms": 788.791669999977,
+        "peakHeapMb": 0.0001,
+        "throughput": 1.3644503978447506,
+        "efficiency": 13644.503978447507,
+        "resourceCost": 0.00007328958249999951
+      },
+      {
+        "library": "causl-ts",
+        "scenario": "spreadsheet-100x100",
+        "scale": 10000,
+        "medianMs": 0.326166,
+        "p95Ms": 0.328625,
+        "peakHeapMb": 0.0001,
+        "throughput": 3065.923486813463,
+        "efficiency": 30659234.86813463,
+        "resourceCost": 3.2616600000000005e-8
+      },
+      {
+        "library": "causl-wasm",
+        "scenario": "spreadsheet-100x100",
+        "scale": 10000,
+        "medianMs": 722.4352099999986,
+        "p95Ms": 724.6731249999756,
+        "peakHeapMb": 0.0001,
+        "throughput": 1.3842071734017531,
+        "efficiency": 13842.07173401753,
+        "resourceCost": 0.00007224352099999988
+      },
+      {
+        "library": "causl-ts",
+        "scenario": "scrolling-viewport",
+        "scale": 10000,
+        "medianMs": 0.1095,
+        "p95Ms": 0.113,
+        "peakHeapMb": 0.0001,
+        "throughput": 9132.4200913242,
+        "efficiency": 91324200.913242,
+        "resourceCost": 1.095e-8
+      },
+      {
+        "library": "causl-wasm",
+        "scenario": "scrolling-viewport",
+        "scale": 10000,
+        "medianMs": 720.1547949999981,
+        "p95Ms": 729.6772999999997,
+        "peakHeapMb": 0.0001,
+        "throughput": 1.3885903516062859,
+        "efficiency": 13885.903516062857,
+        "resourceCost": 0.00007201547949999981
+      },
+      {
+        "library": "causl-ts",
+        "scenario": "batch-commit",
+        "scale": 10000,
+        "medianMs": 2.137042,
+        "p95Ms": 2.150125,
+        "peakHeapMb": 0.0001,
+        "throughput": 467.93652160322534,
+        "efficiency": 4679365.216032254,
+        "resourceCost": 2.137042e-7
+      },
+      {
+        "library": "causl-wasm",
+        "scenario": "batch-commit",
+        "scale": 10000,
+        "medianMs": 715.4827049999857,
+        "p95Ms": 720.6600049999984,
+        "peakHeapMb": 0.0001,
+        "throughput": 1.3976578231894787,
+        "efficiency": 13976.578231894786,
+        "resourceCost": 0.00007154827049999857
+      },
+      {
+        "library": "causl-ts",
+        "scenario": "linear-chain",
+        "scale": 10000,
+        "medianMs": 5.797125,
+        "p95Ms": 5.882375,
+        "peakHeapMb": 0.0001,
+        "throughput": 172.4992992215969,
+        "efficiency": 1724992.9922159691,
+        "resourceCost": 5.797125000000001e-7
+      },
+      {
+        "library": "causl-wasm",
+        "scenario": "linear-chain",
+        "scale": 10000,
+        "medianMs": 720.2937500000081,
+        "p95Ms": 721.0170749999999,
+        "peakHeapMb": 0.0001,
+        "throughput": 1.388322472602308,
+        "efficiency": 13883.22472602308,
+        "resourceCost": 0.00007202937500000082
+      }
+    ],
+    "skipped": []
   }
 ]

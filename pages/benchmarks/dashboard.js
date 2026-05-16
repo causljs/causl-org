@@ -110,9 +110,19 @@
   }
 
   /** Default-view filter: the headline "causl vs best competitor"
-   *  cells at the 10k scale per the issue spec. Users can toggle
-   *  any other library/scenario/scale via the filter UI. */
-  const DEFAULT_LIBRARIES = new Set(['causl', 'mobx'])
+   *  cells at the 10k scale per the issue spec, PLUS the two causl
+   *  engine axes (#1536) so `causl-wasm`/`causl-ts` are visible on
+   *  the median chart on load — the adjacent #1133/#1525 honest
+   *  callout exists precisely because `causl-wasm`'s ~85–390× slower
+   *  bars would otherwise tell a misleading-by-omission story, so
+   *  the bars MUST be on screen for the callout to do its job.
+   *  Users can still toggle any library via the filter UI. */
+  const DEFAULT_LIBRARIES = new Set([
+    'causl',
+    'mobx',
+    'causl-wasm',
+    'causl-ts',
+  ])
   const DEFAULT_SCALES = new Set([10000])
 
   /** Verdict thresholds — match the spec in #707. */
