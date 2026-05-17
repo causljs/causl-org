@@ -132,7 +132,7 @@
       <a href="/pages/benchmarks/">Benchmarks</a>
       <a href="/pages/playground/">Playground</a>
       <a href="/pages/spreadsheet/">Spreadsheet</a>
-      <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </nav>
     </noscript>
   </div>
@@ -173,12 +173,12 @@
     <code class="codeblock-source" data-lang="bash">pnpm --filter @causl/bench run bench:report</code>
 
     <p>
-      The runner exercises four libraries &mdash; <a href="https://github.com/iasbuilt/causl" rel="noopener"><code>@causl/core</code></a> (v0.9.0), MobX 6.13, Jotai 2.10, and Redux Toolkit 2.4 &mdash; across 28 canonical scenarios at three scales (100, 1,000, and 10,000 nodes). Each cell is sampled <code>N&nbsp;=&nbsp;15</code> times with a coefficient&#8209;of&#8209;variance acceptance gate of CoV&nbsp;&le;&nbsp;0.10; cells that exceed the gate are re&#8209;sampled and, if still noisy, surfaced in <code>engine-status.md</code> rather than the public table. A quiescent&#8209;machine guard fires <code>--prof</code> on the warm&#8209;up trace and refuses to publish a run if background CPU pressure crossed the noise floor while the bench was live.
+      The runner exercises four libraries &mdash; <a href="https://github.com/causljs/causl-ts" rel="noopener"><code>@causl/core</code></a> (v0.9.0), MobX 6.13, Jotai 2.10, and Redux Toolkit 2.4 &mdash; across 28 canonical scenarios at three scales (100, 1,000, and 10,000 nodes). Each cell is sampled <code>N&nbsp;=&nbsp;15</code> times with a coefficient&#8209;of&#8209;variance acceptance gate of CoV&nbsp;&le;&nbsp;0.10; cells that exceed the gate are re&#8209;sampled and, if still noisy, surfaced in <code>engine-status.md</code> rather than the public table. A quiescent&#8209;machine guard fires <code>--prof</code> on the warm&#8209;up trace and refuses to publish a run if background CPU pressure crossed the noise floor while the bench was live.
     </p>
 
     <p>
-      Two protocols govern what we publish. The <strong>fairness protocol</strong> (<a href="https://github.com/iasbuilt/causl/blob/main/docs/bench-fairness.md" rel="noopener"><code>docs/bench-fairness.md</code></a>) requires every cell to either run an apples&#8209;to&#8209;apples shape across all four libraries or carry an explicit harness&#8209;asymmetry footnote on the result. The most prominent example: <code>op-tx-shadow-read-1k</code> on mobx reads 143&nbsp;ns/op vs causl 1,539&nbsp;ns/op, but mobx&apos;s in&#8209;action read has no shadow&#8209;Map probe to pay for &mdash; the cell is a methodology baseline, not a parity claim. The footnote ships in <code>microbench_table.md</code> right next to the number.
-      The <strong>benchmark protocol</strong> (<a href="https://github.com/iasbuilt/causl/blob/main/docs/benchmark.md" rel="noopener"><code>docs/benchmark.md</code></a>) defines the scenarios, the scales, the CoV gate, and which cells must hold a SPEC&nbsp;&sect;17 commitment band.
+      Two protocols govern what we publish. The <strong>fairness protocol</strong> (<a href="https://github.com/causljs/causl-ts/blob/main/docs/bench-fairness.md" rel="noopener"><code>docs/bench-fairness.md</code></a>) requires every cell to either run an apples&#8209;to&#8209;apples shape across all four libraries or carry an explicit harness&#8209;asymmetry footnote on the result. The most prominent example: <code>op-tx-shadow-read-1k</code> on mobx reads 143&nbsp;ns/op vs causl 1,539&nbsp;ns/op, but mobx&apos;s in&#8209;action read has no shadow&#8209;Map probe to pay for &mdash; the cell is a methodology baseline, not a parity claim. The footnote ships in <code>microbench_table.md</code> right next to the number.
+      The <strong>benchmark protocol</strong> (<a href="https://github.com/causljs/causl-ts/blob/main/docs/benchmark.md" rel="noopener"><code>docs/benchmark.md</code></a>) defines the scenarios, the scales, the CoV gate, and which cells must hold a SPEC&nbsp;&sect;17 commitment band.
     </p>
 
     <p>
@@ -244,7 +244,7 @@
     <h3>1. Fast-path cells: linear chains and diamonds</h3>
 
     <p>
-      The <code>diamond</code> scenario is the shape causl was built to make correct: two derived nodes that depend on a common input, both feeding a third. The glitch&#8209;free invariant (<a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#3-glitch-freedom" rel="noopener">SPEC&nbsp;&sect;3</a>) says the third node must observe the diamond settling exactly once, never with an intermediate stale read. All four libraries observe the invariant; the cost question is what the engine pays to do so. At 10k nodes, causl runs the diamond in 0.01&nbsp;ms median (165k commits/s), in front of mobx (153k), redux&#8209;toolkit (138k), and jotai (89k). Phase&nbsp;D&apos;s Kahn topological recompute walks each derived node exactly once; <code>computeDerivedRecursive</code> is contractually cold &mdash; the hypothesis report locks the symbol as a regression invariant in every scenario.
+      The <code>diamond</code> scenario is the shape causl was built to make correct: two derived nodes that depend on a common input, both feeding a third. The glitch&#8209;free invariant (<a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md#3-glitch-freedom" rel="noopener">SPEC&nbsp;&sect;3</a>) says the third node must observe the diamond settling exactly once, never with an intermediate stale read. All four libraries observe the invariant; the cost question is what the engine pays to do so. At 10k nodes, causl runs the diamond in 0.01&nbsp;ms median (165k commits/s), in front of mobx (153k), redux&#8209;toolkit (138k), and jotai (89k). Phase&nbsp;D&apos;s Kahn topological recompute walks each derived node exactly once; <code>computeDerivedRecursive</code> is contractually cold &mdash; the hypothesis report locks the symbol as a regression invariant in every scenario.
     </p>
 
     <p>
@@ -252,7 +252,7 @@
     </p>
 
     <p>
-      <code>dynamic-dep-flip</code> exercises the subscribed&#8209;reads engine&#8209;tracked deps path (<a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#111-subscribereads" rel="noopener">SPEC&nbsp;&sect;11.1</a>): a derived node with two candidate inputs flips its read pattern each iteration, and writes to the <em>abandoned</em> input must NOT trigger recompute. causl 0.01&nbsp;ms median (135k commits/s), leading the three comparators.
+      <code>dynamic-dep-flip</code> exercises the subscribed&#8209;reads engine&#8209;tracked deps path (<a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md#111-subscribereads" rel="noopener">SPEC&nbsp;&sect;11.1</a>): a derived node with two candidate inputs flips its read pattern each iteration, and writes to the <em>abandoned</em> input must NOT trigger recompute. causl 0.01&nbsp;ms median (135k commits/s), leading the three comparators.
     </p>
 
     <h3>2. The contract-bearing cells: equality-cutoff and scrolling-viewport</h3>
@@ -262,7 +262,7 @@
     </p>
 
     <p>
-      <strong><code>equality-cutoff</code></strong> exercises the Phase&nbsp;B input&#8209;layer invariant: an input write whose value is structurally equal to the current value must short&#8209;circuit before any derived recompute is queued (<a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#51-equality-cutoff" rel="noopener">SPEC&nbsp;&sect;5.1</a>). All four libraries observe the invariant; the cost question is how the engine pays for it. At 10k nodes:
+      <strong><code>equality-cutoff</code></strong> exercises the Phase&nbsp;B input&#8209;layer invariant: an input write whose value is structurally equal to the current value must short&#8209;circuit before any derived recompute is queued (<a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md#51-equality-cutoff" rel="noopener">SPEC&nbsp;&sect;5.1</a>). All four libraries observe the invariant; the cost question is how the engine pays for it. At 10k nodes:
     </p>
 
     <ul>
@@ -491,7 +491,7 @@
 
     <h2>Reproduce</h2>
 
-    <code class="codeblock-source" data-lang="bash">git clone https://github.com/iasbuilt/causl.git
+    <code class="codeblock-source" data-lang="bash">git clone https://github.com/causljs/causl-ts.git
 cd causl
 pnpm install
 pnpm --filter @causl/core build
@@ -517,7 +517,7 @@ open packages/bench/report/SUMMARY.md</code>
         <strong>Reference specs:</strong>
         <a href="../../../../../docs/benchmark.md"><code>docs/benchmark.md</code></a> &middot;
         <a href="../../../../../docs/bench-fairness.md"><code>docs/bench-fairness.md</code></a> &middot;
-        <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#17-public-commitments" rel="noopener">SPEC &sect;17 public commitments</a>.
+        <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md#17-public-commitments" rel="noopener">SPEC &sect;17 public commitments</a>.
       </p>
     </div>
 
@@ -534,7 +534,7 @@ open packages/bench/report/SUMMARY.md</code>
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </footer>
     </noscript>
   </div>

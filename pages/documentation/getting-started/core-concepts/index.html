@@ -54,7 +54,7 @@
       <a href="/pages/benchmarks/">Benchmarks</a>
       <a href="/pages/playground/">Playground</a>
       <a href="/pages/spreadsheet/">Spreadsheet</a>
-      <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </nav>
     </noscript>
   </div>
@@ -68,7 +68,7 @@
       <em>"what actually happens when I call <code>graph.commit(...)</code>?"</em> — without dragging
       you through the full pipeline mechanics. (Those live in the
       <a href="../../usage/">Usage Guide</a> and the canonical
-      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md" rel="noopener">SPEC.md</a>.)
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC.md</a>.)
     </p>
 
     <p>
@@ -185,7 +185,7 @@ console.log(graph.read(summary));   // "Hello, Ada! You picked 0."
       reference. The contract is <em>value identity</em> (<code>Object.is</code> on primitives, deep
       structural equality on aggregates), not reference identity. If you need a stable memoisation key,
       key on <code>commit.time</code> or the per-node version counter, not on the read return.
-      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#151-properties-as-the-3-theorems-made-executable" rel="noopener">SPEC §15.1</a>
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md#151-properties-as-the-3-theorems-made-executable" rel="noopener">SPEC §15.1</a>
       has the full story.
     </blockquote>
 
@@ -416,7 +416,7 @@ graph.commit('flip', tx =&gt; tx.set(flag, false));
 
     <p>
       The detailed pipeline lives in
-      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#51-the-eight-named-phases" rel="noopener">SPEC §5.1</a>;
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md#51-the-eight-named-phases" rel="noopener">SPEC §5.1</a>;
       the <a href="../../usage/">Usage Guide</a> tours each phase and shows the seams
       (<code>simulate</code>, <code>hydrate</code>, <code>commitMetadataDerived</code>) that ride on
       top.
@@ -479,7 +479,7 @@ graph.commit('cart-update', tx =&gt; {
         method on <code>Graph</code>, every type, every structured error class.
       </li>
       <li>
-        <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md" rel="noopener">SPEC.md</a> —
+        <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC.md</a> —
         the canonical specification. Everything on this page is a friendly restatement of §3, §4,
         and §5.
       </li>
@@ -497,7 +497,7 @@ graph.commit('cart-update', tx =&gt; {
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </footer>
     </noscript>
   </div>

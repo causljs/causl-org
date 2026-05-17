@@ -44,7 +44,7 @@
       <a href="/pages/benchmarks/">Benchmarks</a>
       <a href="/pages/playground/">Playground</a>
       <a href="/pages/spreadsheet/">Spreadsheet</a>
-      <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </nav>
     </noscript>
   </div>
@@ -79,7 +79,7 @@
 
     <p>
       The shape of the engine is anchored by fourteen commitments in
-      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#171-the-fourteen-commitments" rel="noopener">SPEC §17.1</a> —
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md#171-the-fourteen-commitments" rel="noopener">SPEC §17.1</a> —
       each marked MECHANICAL (a CI gate exists) or DESIGN-DISCIPLINE (review
       policy enforces it). Commitment&nbsp;6 names the worked example below as
       the gate for "the engine is real": until two inputs, one diamond
@@ -171,7 +171,7 @@ useEffect(() =&gt; { setPlanPings(forHighlights(highlights)) }, [highlights])</c
       mutable cell), a <strong>derived node</strong> (a pure computation over
       other nodes), and a <strong>commit</strong> (the only place writes happen).
       The engine runs an eight-phase pipeline (Phases A–H in
-      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md" rel="noopener">SPEC §5.1</a>)
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §5.1</a>)
       on every commit: precondition checks, input writes, the input-layer fast
       path, a Kahn topological recompute, the frozen <code>Commit</code>
       assembly, commit-history rotation, subscriber dispatch, and transient
@@ -273,7 +273,7 @@ unsubscribe()</code>
       The <a href="../why-causl/">Why Causl</a> page compares causl to
       Redux/RTK, MobX, and Jotai at the level of detail an adopter needs to
       decide. The
-      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md" rel="noopener">SPEC</a>
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC</a>
       is the normative reference; <code>docs/semantics.md</code> walks the
       denotational shape; <code>docs/lifecycle.md</code> renders the composite
       statechart that governs every async / conflict / transaction / interaction
@@ -297,7 +297,7 @@ unsubscribe()</code>
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </footer>
     </noscript>
   </div>

@@ -41,7 +41,7 @@
       <a href="/pages/benchmarks/">Benchmarks</a>
       <a href="/pages/playground/">Playground</a>
       <a href="/pages/spreadsheet/">Spreadsheet</a>
-      <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </nav>
     </noscript>
   </div>
@@ -51,7 +51,7 @@
 
     <p>This page is the honest comparison. Causl is one point in a rich design space; pretending it dominates every other library would waste your time and ours. The state-management ecosystem in JavaScript is mature, opinionated, and full of libraries that solve real problems &mdash; MobX, Jotai, Redux, Recoil, Zustand, Valtio. Each one is the right answer for some application. Causl is the right answer for a narrower band &mdash; tangled dependency graphs where atomic commits, deterministic replay, and a frozen commit log are load-bearing &mdash; and it pays a measurable cost outside that band.</p>
 
-    <p>The structure of this page: a one-line summary table; one section per library covering what it does well, what causl does differently, and when to pick which; a section on the capability-cost band causl commits to in <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#175-commitment-13-the-capability-cost-residual-amendment-1005">SPEC &sect;17.5 commitment 13</a>; and pointers to the per-library migration guides.</p>
+    <p>The structure of this page: a one-line summary table; one section per library covering what it does well, what causl does differently, and when to pick which; a section on the capability-cost band causl commits to in <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md#175-commitment-13-the-capability-cost-residual-amendment-1005">SPEC &sect;17.5 commitment 13</a>; and pointers to the per-library migration guides.</p>
 
     <h2>One-line summary</h2>
 
@@ -91,7 +91,7 @@
     <ul>
       <li><strong>One commit, atomic-or-nothing.</strong> <code>graph.commit(intent, tx =&gt; &hellip;)</code> stages every write; if the body throws, the graph rolls back as if nothing happened. MobX's <code>runInAction</code> does <em>not</em> roll back on throw &mdash; partial mutations remain. For a spreadsheet, an order entry form, or any flow where partial state is worse than no state, this is the decisive difference.</li>
       <li><strong>Deterministic replay.</strong> Causl's commit log can be replayed on a fresh graph to reproduce byte-identical state. This underwrites the <code>@causl/persistence</code> snapshot/restore story and a future event-sourcing surface. MobX has no equivalent &mdash; observables capture present state, not the history that produced it.</li>
-      <li><strong>One subscriber dispatch per commit.</strong> MobX's deep proxies generate one notification per field mutation. Causl's Phase G fires subscribers once at the end of a commit, with a frozen <code>changedNodes</code> set. The migration guide (<code><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-mobx.md">docs/migration/from-mobx.md</a></code>) calls out the consequence: <code>observable({ a, b, c })</code> typically becomes three inputs, not one, because three fields changing is three changes.</li>
+      <li><strong>One subscriber dispatch per commit.</strong> MobX's deep proxies generate one notification per field mutation. Causl's Phase G fires subscribers once at the end of a commit, with a frozen <code>changedNodes</code> set. The migration guide (<code><a href="https://github.com/causljs/causl-ts/blob/main/docs/migration/from-mobx.md">docs/migration/from-mobx.md</a></code>) calls out the consequence: <code>observable({ a, b, c })</code> typically becomes three inputs, not one, because three fields changing is three changes.</li>
     </ul>
 
     <h3>Pick MobX when&hellip;</h3>
@@ -114,7 +114,7 @@
       <strong>The capability-cost band.</strong> SPEC &sect;17.5 commitment 13 commits causl to the band <code>mobx_median &times; 3.0 &le; causl_median &le; mobx_median &times; 8.0</code> on contract-bearing benchmark cells (<code>equality-cutoff &times; 10000</code>, <code>equality-cutoff-fanout-10k &times; 10000</code>, <code>spreadsheet-100x100 &times; 10000</code>). The post-wave anchor is 6.4&times;, decomposed as <strong>1.84&times; engine baseline &times; 3.5&times; replay-determinism contract premium</strong>. The 3.5&times; is what causl pays for the four contract surfaces MobX does not ship: <code>commitLog</code> rebuild on every commit, <code>changedNodes</code> set construction, GraphTime monotonicity stamping, and <code>readAt</code>/<code>snapshotAt</code> retention bookkeeping. If you do not need those, MobX is faster &mdash; honestly so. If you do need them, you are buying the 3.5&times; on purpose.
     </blockquote>
 
-    <p>The migration guide at <code><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-mobx.md">docs/migration/from-mobx.md</a></code> covers the mechanical translation table and the structural decisions (record-shaped observables, <code>autorun</code> vs <code>subscribe</code>, why <code>runInAction</code> is a deceptive equivalent for <code>commit</code>).</p>
+    <p>The migration guide at <code><a href="https://github.com/causljs/causl-ts/blob/main/docs/migration/from-mobx.md">docs/migration/from-mobx.md</a></code> covers the mechanical translation table and the structural decisions (record-shaped observables, <code>autorun</code> vs <code>subscribe</code>, why <code>runInAction</code> is a deceptive equivalent for <code>commit</code>).</p>
 
     <h2>Causl vs Jotai</h2>
 
@@ -152,7 +152,7 @@
       <li>You want static checking of dependency-graph hazards.</li>
     </ul>
 
-    <p>The migration guide at <code><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-jotai.md">docs/migration/from-jotai.md</a></code> covers the mechanical translation (<code>atom</code> &rarr; <code>graph.input</code>, derived atoms &rarr; <code>graph.derived</code>) and the structural decisions (atom families, persistence, async atoms).</p>
+    <p>The migration guide at <code><a href="https://github.com/causljs/causl-ts/blob/main/docs/migration/from-jotai.md">docs/migration/from-jotai.md</a></code> covers the mechanical translation (<code>atom</code> &rarr; <code>graph.input</code>, derived atoms &rarr; <code>graph.derived</code>) and the structural decisions (atom families, persistence, async atoms).</p>
 
     <h2>Causl vs Redux (and Redux Toolkit)</h2>
 
@@ -190,7 +190,7 @@
       <li>You want the commit log to be a structural commitment of the engine, not a middleware add-on.</li>
     </ul>
 
-    <p>The migration guide at <code><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-redux.md">docs/migration/from-redux.md</a></code> covers the mapping from slices to inputs + derived nodes, the move from thunks to <code>@causl/sync</code> resources, and the discipline of value-bearing messages.</p>
+    <p>The migration guide at <code><a href="https://github.com/causljs/causl-ts/blob/main/docs/migration/from-redux.md">docs/migration/from-redux.md</a></code> covers the mapping from slices to inputs + derived nodes, the move from thunks to <code>@causl/sync</code> resources, and the discipline of value-bearing messages.</p>
 
     <h2>Causl vs Recoil</h2>
 
@@ -278,7 +278,7 @@
 
     <h2>The capability-cost band, restated</h2>
 
-    <p>It would be dishonest to end this page without naming the cost. Causl's <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#175-commitment-13-the-capability-cost-residual-amendment-1005">SPEC &sect;17.5 commitment 13</a> binds the engine to a measurable band against MobX on three contract-bearing benchmark cells:</p>
+    <p>It would be dishonest to end this page without naming the cost. Causl's <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md#175-commitment-13-the-capability-cost-residual-amendment-1005">SPEC &sect;17.5 commitment 13</a> binds the engine to a measurable band against MobX on three contract-bearing benchmark cells:</p>
 
     <code class="codeblock-source" data-lang="typescript">mobx_median &times; 3.0  &le;  causl_median  &le;  mobx_median &times; 8.0</code>
 
@@ -338,11 +338,11 @@ console.log(graph.read(doubled))  // 10</code>
     <h2>Where to go next</h2>
 
     <ul>
-      <li><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-mobx.md"><code>docs/migration/from-mobx.md</code></a> &mdash; mechanical and structural migration from MobX.</li>
-      <li><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-jotai.md"><code>docs/migration/from-jotai.md</code></a> &mdash; mechanical and structural migration from Jotai.</li>
-      <li><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/from-redux.md"><code>docs/migration/from-redux.md</code></a> &mdash; mechanical and structural migration from Redux/RTK.</li>
-      <li><a href="https://github.com/iasbuilt/causl/blob/main/docs/migration/RULE_CATALOGUE.md"><code>docs/migration/RULE_CATALOGUE.md</code></a> &mdash; the rule IDs the drift detector reports.</li>
-      <li><a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md#175-commitment-13-the-capability-cost-residual-amendment-1005">SPEC &sect;17.5</a> &mdash; the capability-cost band, in the engine's own words.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/docs/migration/from-mobx.md"><code>docs/migration/from-mobx.md</code></a> &mdash; mechanical and structural migration from MobX.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/docs/migration/from-jotai.md"><code>docs/migration/from-jotai.md</code></a> &mdash; mechanical and structural migration from Jotai.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/docs/migration/from-redux.md"><code>docs/migration/from-redux.md</code></a> &mdash; mechanical and structural migration from Redux/RTK.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/docs/migration/RULE_CATALOGUE.md"><code>docs/migration/RULE_CATALOGUE.md</code></a> &mdash; the rule IDs the drift detector reports.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md#175-commitment-13-the-capability-cost-residual-amendment-1005">SPEC &sect;17.5</a> &mdash; the capability-cost band, in the engine's own words.</li>
       <li><a href="../../benchmarks/">Benchmarks</a> &mdash; the live numbers behind the band.</li>
     </ul>
   </main>
@@ -358,7 +358,7 @@ console.log(graph.read(doubled))  // 10</code>
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </footer>
     </noscript>
   </div>
