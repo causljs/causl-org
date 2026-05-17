@@ -26,7 +26,7 @@
     ['/pages/benchmarks/',      'Benchmarks'],
     ['/pages/playground/',      'Playground'],
     ['/pages/spreadsheet/',     'Spreadsheet'],
-    ['https://github.com/iasbuilt/causl', 'GitHub']
+    ['https://github.com/causljs/causl-ts', 'GitHub']
   ];
 
   function escapeHtml(s) {

@@ -106,9 +106,9 @@ plus property tests" until [#282][i282] lands.
   rate reported per release."
 - `docs/ci.md` failure modes section.
 
-[i272]: https://github.com/iasbuilt/causl/issues/272
-[i278]: https://github.com/iasbuilt/causl/issues/278
-[i282]: https://github.com/iasbuilt/causl/issues/282
-[i286]: https://github.com/iasbuilt/causl/issues/286
-[i289]: https://github.com/iasbuilt/causl/issues/289
-[i293]: https://github.com/iasbuilt/causl/issues/293
+[i272]: https://github.com/causljs/causl-ts/issues
+[i278]: https://github.com/causljs/causl-ts/issues
+[i282]: https://github.com/causljs/causl-ts/issues
+[i286]: https://github.com/causljs/causl-ts/issues
+[i289]: https://github.com/causljs/causl-ts/issues
+[i293]: https://github.com/causljs/causl-ts/issues

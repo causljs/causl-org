@@ -13,7 +13,7 @@ Fair benchmarking between state libraries with different mutation semantics is h
 - **In-process microbenchmarks** measure the cost of state operations themselves: a commit, a derived recompute, a subscriber notification, an equality cutoff. Every library is loaded into the same Node.js process via dynamic import; every benchmark is run with [`tinybench`](https://github.com/tinylibs/tinybench) using a 200ms warm-up and a 1000-iteration sample, with the median reported and the noise floor recorded. No DOM, no React, no scheduler interference — just the engine doing what it claims to do.
 - **DOM-rendering benchmarks** measure end-to-end React mount and update cost using Playwright against a production build. Each library renders the same scenario component tree; the harness counts dropped frames at 60 Hz, measures wall time from `commit` (or equivalent mutation) to `requestIdleCallback` settling, and reports per-frame paint cost from the Chrome DevTools Protocol's `Performance.metrics`.
 
-Both layers run under the same Node version, the same `react@^18.3` (and a separate sweep on `react@19.0` once stable), the same machine class (Apple Silicon M-series for the `[TBD]` headline numbers; x64 Linux for the `[TBD]` reproduction in CI). Every library is loaded from npm at its latest stable release on the day the run was made, and the resolved versions are recorded in the JSON output. Source code for all benchmarks lives in [`packages/bench/`](https://github.com/iasbuilt/causl/tree/main/packages/bench), and the benchmark can be reproduced in Docker via `python tools/bench/run-bench.py`.
+Both layers run under the same Node version, the same `react@^18.3` (and a separate sweep on `react@19.0` once stable), the same machine class (Apple Silicon M-series for the `[TBD]` headline numbers; x64 Linux for the `[TBD]` reproduction in CI). Every library is loaded from npm at its latest stable release on the day the run was made, and the resolved versions are recorded in the JSON output. Source code for all benchmarks lives in [`packages/bench/`](https://github.com/causljs/causl-bench/tree/main/packages/bench), and the benchmark can be reproduced in Docker via `python tools/bench/run-bench.py`.
 
 ## The Workloads
 
@@ -178,7 +178,7 @@ The host-mode path (`--no-docker`) is preserved for contributors without Docker,
 
 The launcher deliberately does not propagate the child's raw returncode — a child's `1` would collide with launcher-level failures and CI could not branch reliably. The original code is always written to stderr for operator forensics.
 
-Source code for all benchmarks lives in [`packages/bench/`](https://github.com/iasbuilt/causl/tree/main/packages/bench). The benchmark can be reproduced in Docker via `python tools/bench/run-bench.py`. Result history is committed to `packages/bench/report/benchmark_history.json` per release; SVG charts are regenerated on every nightly CI run and stored at `packages/bench/report/chart_*.svg`.
+Source code for all benchmarks lives in [`packages/bench/`](https://github.com/causljs/causl-bench/tree/main/packages/bench). The benchmark can be reproduced in Docker via `python tools/bench/run-bench.py`. Result history is committed to `packages/bench/report/benchmark_history.json` per release; SVG charts are regenerated on every nightly CI run and stored at `packages/bench/report/chart_*.svg`.
 
 ## What This Benchmark Is Not
 
@@ -197,4 +197,4 @@ The benchmark we promise here is the benchmark we will publish. Until then, the 
 
 ---
 
-*Causl is `[TBD-license]`. View on [GitHub](https://github.com/iasbuilt/causl). Benchmark source: [packages/bench](https://github.com/iasbuilt/causl/tree/main/packages/bench).*
+*Causl is `[TBD-license]`. View on [GitHub](https://github.com/causljs/causl-ts). Benchmark source: [packages/bench](https://github.com/causljs/causl-bench/tree/main/packages/bench).*

@@ -41,7 +41,7 @@
       <a href="/pages/benchmarks/">Benchmarks</a>
       <a href="/pages/playground/">Playground</a>
       <a href="/pages/spreadsheet/">Spreadsheet</a>
-      <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </nav>
     </noscript>
   </div>
@@ -53,7 +53,7 @@
       Causl will let you register ten thousand inputs and a hundred
       thousand derivations on a single <code>Graph</code> instance and
       it will, mechanically, continue to work. The Phase D Kahn topo
-      recompute (<a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md">SPEC §5.1</a>)
+      recompute (<a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §5.1</a>)
       visits only the affected frontier on each commit, so the engine
       does not collapse under graph size. What collapses under graph
       size is your <em>mental model</em>. This page is about preserving
@@ -275,7 +275,7 @@ function RowView({ rowId }: { rowId: string }) {
       reference-counts each key and calls the dispose hook on the
       adapter layer when the count reaches zero. The mechanics live in
       SPEC §9 (lifecycle) and the worked source is
-      <a href="https://github.com/iasbuilt/causl/blob/main/packages/react/src/useCauslFamily.ts">packages/react/src/useCauslFamily.ts</a>;
+      <a href="https://github.com/causljs/causl-ts/blob/main/packages/react/src/useCauslFamily.ts">packages/react/src/useCauslFamily.ts</a>;
       copy the bones, swap React's <code>useEffect</code> for your own
       lifecycle hook.
     </p>
@@ -452,7 +452,7 @@ const { raw, display } = useCauslFamily(`row:${rowId}`, rowBundle);</code>
         rest of the <code>@causl/react</code> hook surface.
       </li>
       <li>
-        <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md">SPEC.md</a>
+        <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC.md</a>
         §5 (the commit pipeline) and §9 (lifecycle) for the normative
         rules behind the patterns above.
       </li>
@@ -470,7 +470,7 @@ const { raw, display } = useCauslFamily(`row:${rowId}`, rowBundle);</code>
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </footer>
     </noscript>
   </div>

@@ -43,7 +43,7 @@
       <a href="/pages/benchmarks/">Benchmarks</a>
       <a href="/pages/playground/">Playground</a>
       <a href="/pages/spreadsheet/">Spreadsheet</a>
-      <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </nav>
     </noscript>
   </div>
@@ -95,7 +95,7 @@ console.log(graph.read(doubled));  // 10
 
     <p>
       The engine is described in full in
-      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md">SPEC.md</a>,
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC.md</a>,
       and the public surface for each <code>@causl/*</code> package is
       documented in the
       <a href="../../api/">generated API reference</a>.
@@ -161,7 +161,7 @@ console.log(graph.read(doubled));  // 10
       commit-history append, subscriber dispatch, and transient
       disposal. Subscribers never observe a mid-commit state &mdash; that
       property is enforced by the engine, not by convention. See the
-      <a href="https://github.com/iasbuilt/causl/blob/main/README.md">README</a>
+      <a href="https://github.com/causljs/causl-ts/blob/main/README.md">README</a>
       for the comparison written out at length.
     </p>
 
@@ -174,7 +174,7 @@ console.log(graph.read(doubled));  // 10
       time &mdash; the engine never lets the application observe an
       intermediate state. This is what makes glitch-freedom a theorem
       and not a scheduler trick; see
-      <a href="https://github.com/iasbuilt/causl/blob/main/docs/semantics.md">docs/semantics.md</a>
+      <a href="https://github.com/causljs/causl-ts/blob/main/docs/semantics.md">docs/semantics.md</a>
       for the denotational walkthrough.
     </blockquote>
 
@@ -210,7 +210,7 @@ console.log(graph.read(doubled));  // 10
       If your state model is "one global object, a handful of
       selectors, no concurrent fetches" then Redux Toolkit, Zustand,
       or plain <code>useState</code> are likely the right answer. The
-      <a href="https://github.com/iasbuilt/causl">project home</a>
+      <a href="https://github.com/causljs/causl-ts">project home</a>
       lists the cases where causl is <em>not</em> the right tool;
       we'd rather you pick something simpler when it fits.
     </p>
@@ -225,7 +225,7 @@ console.log(graph.read(doubled));  // 10
       agreements beyond the standard DCO sign-off. You can use causl
       in commercial, closed-source, or open-source projects without
       asking us. See
-      <a href="https://github.com/iasbuilt/causl/blob/main/LICENSE">LICENSE</a>
+      <a href="https://github.com/causljs/causl-ts/blob/main/LICENSE">LICENSE</a>
       and the per-package <code>package.json</code> for the exact
       text.
     </p>
@@ -360,7 +360,7 @@ const user = resource(graph, {
       Cancellation, version-stamping (so a slow response from a stale
       key never lands), and conflict resolution are all governed by
       the statechart in
-      <a href="https://github.com/iasbuilt/causl/blob/main/SPEC.async.md">SPEC.async.md</a>.
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.async.md">SPEC.async.md</a>.
       The race classes S-1 and S-2 in &sect;16 are the ones that motivate
       the version-stamp; if you are wiring up your own async layer,
       read those two rows first.
@@ -413,7 +413,7 @@ const user = resource(graph, {
       strictly additive changes; if you adopt 0.9 today, the upgrade
       to 1.0 is expected to be either a no-op or a single codemod.
       The
-      <a href="https://github.com/iasbuilt/causl/blob/main/CHANGELOG.md">CHANGELOG</a>
+      <a href="https://github.com/causljs/causl-ts/blob/main/CHANGELOG.md">CHANGELOG</a>
       tracks every wave shipped on <code>main</code> and is the source
       of truth for "what changed since I last upgraded".
     </p>
@@ -427,7 +427,7 @@ const user = resource(graph, {
       the change is required to update the prose, the type surface,
       the conformance tests, the static checker, and the bounded model
       checker in lockstep. The amendment process is documented in
-      <a href="https://github.com/iasbuilt/causl/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.
+      <a href="https://github.com/causljs/causl-ts/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.
     </p>
 
     <p>
@@ -442,9 +442,9 @@ const user = resource(graph, {
 
     <p>
       For usage questions, the
-      <a href="https://github.com/iasbuilt/causl/discussions">GitHub
+      <a href="https://github.com/causljs/causl-ts/discussions">GitHub
       Discussions</a> board. For bugs, the
-      <a href="https://github.com/iasbuilt/causl/issues">issue tracker</a>
+      <a href="https://github.com/causljs/causl-ts/issues">issue tracker</a>
       &mdash; please include a minimal reproduction and the output of
       <code>graph.explain()</code> from
       <code>@causl/devtools</code> if the issue involves a derivation
@@ -460,7 +460,7 @@ const user = resource(graph, {
       <li><a href="../../tutorial/">Tutorial</a> &mdash; build a working app step-by-step.</li>
       <li><a href="../../usage/">Usage Guide</a> &mdash; one chapter per topic, in narrative form.</li>
       <li><a href="../../api/">API reference</a> &mdash; generated from the source on every build.</li>
-      <li><a href="https://github.com/iasbuilt/causl/blob/main/SPEC.md">SPEC.md</a> &mdash; the canonical specification.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC.md</a> &mdash; the canonical specification.</li>
     </ul>
   </main>
 
@@ -475,7 +475,7 @@ const user = resource(graph, {
         <a href="/pages/benchmarks/">Benchmarks</a>
         <a href="/pages/playground/">Playground</a>
         <a href="/pages/spreadsheet/">Spreadsheet</a>
-        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
       </footer>
     </noscript>
   </div>
