@@ -283,17 +283,27 @@ async function makeGraph() {
 }</code>
 
     <blockquote>
-      <strong>Current state.</strong> As of <code>v0.9.0</code> the WASM backend is a
-      <strong>TS-engine wrapper (Phase 1)</strong> — the public surface, the structured
-      <code>WasmBackendUnavailableError</code> fallback chain, and the three-tier host
-      compatibility matrix are all in place, but the underlying engine inside the WASM
-      artefact is the TypeScript engine compiled through the bridge. The full Rust port
-      is deferred to post-0.9.0 behind a GO/NO-GO review per SPEC §17.6. Adopters who turn
-      on the WASM backend today get the contract; they get the throughput improvement once
-      the Rust port lands. Cross-link:
-      <code>packages/core/wasm/README.md</code> and <code>docs/wasm-adoption-guide.md</code>
-      for the host-tier matrix, the bridge auto-detection, and the H1 reference-identity
-      hazard that bites at the Rust-swap boundary (SPEC §15.1 amendment).
+      <strong>Current state.</strong> In <code>causljs/causl-ts</code> the
+      <code>WasmBackend</code> is a TS-engine wrapper — the public surface,
+      the structured <code>WasmBackendUnavailableError</code> fallback
+      chain, and the host compatibility matrix are all in place, but the
+      engine inside the WASM artefact is the TypeScript engine. The Rust
+      engine lives in <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a>
+      (pure-algorithm <code>engine-rs-core</code> crate + the single
+      consolidated bridge cdylib that replaced the legacy
+      <code>engine-rs-bridge-serde</code> / <code>engine-rs-bridge-gc</code>
+      pair in <a href="https://github.com/causljs/causl-wasm/pull/74" rel="noopener">PR&nbsp;#74</a>),
+      and the TS-side that defaults to it is the fork at
+      <a href="https://github.com/causljs/causl-ts-wasm-engine" rel="noopener"><code>causljs/causl-ts-wasm-engine</code></a>
+      (`DEFAULT_WASM_ENGINE_MODE=rust-ssot`, `loadWasmBackend()` wired
+      to <code>@causljs/causl-wasm</code>). Adopters who want the
+      WASM-first ergonomics today install the fork; adopters who want
+      the contract with a JS-engine fallback continue on
+      <code>@causl/core</code> from <code>causljs/causl-ts</code>.
+      Cross-link: <code>packages/core/wasm/README.md</code> and
+      <code>docs/wasm-adoption-guide.md</code> for the host-tier matrix
+      and the H1 reference-identity hazard at the bridge boundary
+      (SPEC §15.1 amendment).
     </blockquote>
 
     <p>

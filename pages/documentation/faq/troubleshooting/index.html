@@ -105,12 +105,19 @@
       <li><code>Object.is(graph.read(node)@t, graph.read(node)@t')</code> may or may not hold across commits, and the answer depends on the backend.</li>
     </ul>
     <p>
-      Today's <code>WasmBackend</code> is a TS-engine wrapper, so an object-valued
-      node returns the same reference trivially. The day the real Rust
-      <code>serde</code>/<code>wasmgc</code> bridges land (deferred post-0.9.0),
-      every <code>read()</code> will deserialise across the FFI boundary and
-      return a fresh object per call. Code that memoised on the reference
-      will silently re-render every commit after <code>migrate('wasm')</code>.
+      Today's <code>WasmBackend</code> in <code>causljs/causl-ts</code> is a
+      TS-engine wrapper, so an object-valued node returns the same reference
+      trivially. The <code>causljs/causl-ts-wasm-engine</code> fork wires
+      <code>loadWasmBackend()</code> through the consolidated
+      <code>@causljs/causl-wasm</code> bridge (the two legacy
+      <code>engine-rs-bridge-serde</code> and
+      <code>engine-rs-bridge-gc</code> cdylibs were deleted in
+      <a href="https://github.com/causljs/causl-wasm/pull/74" rel="noopener">causl-wasm PR&nbsp;#74</a>
+      in favour of one bridge with feature-flagged hosts). Across that
+      bridge every <code>read()</code> deserialises across the FFI
+      boundary and returns a fresh object per call. Code that memoised
+      on the reference will silently re-render every commit after
+      <code>migrate('wasm')</code>.
     </p>
     <p>This is the H1 hazard from the WASM adopter audit. The fix is mechanical:</p>
     <code class="codeblock-source" data-lang="lang-ts">// WRONG — memoises on a reference the contract does not preserve.
@@ -335,23 +342,36 @@ return result.value;</code>
 
     <h2 id="wasm-bundle"><a class="qa-anchor" href="#wasm-bundle">WASM backend bundle-size warning in CI</a></h2>
     <p>
-      The Tier 3 serde bridge currently ships at <strong>213 KB raw / 66 KB
-      Brotli</strong>. SPEC §17.6 sets the target ceiling at 200 KB raw /
-      80 KB Brotli. Brotli is comfortably under; raw is over by 13 KB.
+      The consolidated <code>@causljs/causl-wasm</code> bridge (post
+      <a href="https://github.com/causljs/causl-wasm/pull/74" rel="noopener">PR&nbsp;#74</a>,
+      which deleted the legacy <code>engine-rs-bridge-serde</code> +
+      <code>engine-rs-bridge-gc</code> cdylib pair) currently ships its
+      serde-host artefact at <strong>213 KB raw / 66 KB Brotli</strong>.
+      SPEC §17.6 sets the target ceiling at 200 KB raw / 80 KB Brotli.
+      Brotli is comfortably under; raw is over by 13 KB. The
+      WasmGC-host artefact (selected by feature flag on the same
+      consolidated bridge crate) is well under both bounds.
     </p>
     <p>
-      This is a documented divergence, Option C — the size-limit cell in
+      This is a documented divergence — the size-limit cell in the
       root <code>package.json</code> was ratcheted to 230 KB so the
       bundle-size CI gate absorbs the current measurement, and the SPEC row
       continues to document 200/80 as the long-run target. If your CI gate
       is reading the size-limit cell, it passes today; if you've written
       your own gate directly against the §17.6 row, you may need to relax
-      it by up to ~30 KB raw until the gap closes.
+      it by up to ~30 KB raw until the gap closes. The
+      <code>causljs/causl-ts-wasm-engine</code> fork ships a per-PR
+      bundle-budget comment workflow that surfaces the delta on every
+      change.
     </p>
     <p>
-      <strong>When does the gap close?</strong> When the Rust engine port
-      lands and <code>wasm-opt</code> is invoked directly with the feature
-      flags <code>wasm-pack</code> rejects today. At that point the
+      <strong>When does the gap close?</strong> When the
+      <code>epic/1</code> zero-boundary migration in
+      <code>causljs/causl-wasm</code> (`&amp;mut dyn CellAccess` across
+      <code>mutate</code> / <code>recompute</code> / <code>publish</code> /
+      <code>kahn::drain</code>) lets the bridge invoke
+      <code>wasm-opt</code> directly with the feature flags
+      <code>wasm-pack</code> rejects today. At that point the
       size-limit cell tightens back to ≤200 KB raw and the §17.6
       current-state paragraph is removed.
     </p>
