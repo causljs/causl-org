@@ -1,313 +1,227 @@
-# Causl
+# causl-org
 
-> Transactional state for tangled dependency graphs.
+> Source for [causl.org](https://causl.org) — the public-facing
+> documentation, playground, spreadsheet demo, benchmark dashboard, and
+> brand assets for the Causl state-engine project.
 
----
-
-## Quickstart
-
-The example in [SPEC §10](./SPEC.md#10-the-smallest-worked-example-i-will-support) is the gate for "the engine is real" — two inputs, one derived value, one diamond derivation, one subscriber, two commits, three observed propagations. Everything else in the engine is downstream of getting this right.
-
-```ts
-import { createCausl } from '@causl/core'
-
-const graph = createCausl()
-const a = graph.input('a', 1)
-const b = graph.input('b', 2)
-const sum = graph.derived('sum', (get) => get(a) + get(b))
-const sumPlusOne = graph.derived('sumPlusOne', (get) => get(sum) + 1)
-
-graph.subscribe(sumPlusOne, (v) => console.log(v))
-// 4
-
-graph.commit('bump-a', tx => tx.set(a, 10))
-// 13
-
-graph.commit('bump-both', tx => { tx.set(a, 100); tx.set(b, 200) })
-// 301  — exactly one notification, not two
-```
-
-The four invariants — atomic commit, dependency tracking, dynamic-dep cleanup, glitch-free diamond — fall out of this example. It is pinned as an acceptance test at [`packages/core/test/spec-10-worked-example.test.ts`](./packages/core/test/spec-10-worked-example.test.ts).
+This repository is **the website**, not the engine. The engine, the
+WASM port, the static checker, and the benchmark harness each live in
+their own repository under the [`causljs`](https://github.com/causljs)
+GitHub organisation. The role of this repo is to be the human-readable
+front door: landing page, getting-started + tutorial + usage guides,
+generated API reference, two live in-browser demos (playground +
+spreadsheet), and the benchmark dashboard.
 
 ---
 
-## Why does this need to exist?
+## What is Causl?
 
-The TypeScript / React ecosystem already has Redux, MobX, Jotai, Recoil, Zustand, Valtio, TanStack Query, XState, and a long tail of hooks-shaped variants. Each one is well engineered for the slice it owns. None of them — **none** — solves the problem causl is built for.
+Causl is a state engine for applications whose model is a live graph
+of facts whose derivations cascade. The eight commitments — atomic
+commit, automatic dependency tracking, deterministic dynamic-dep
+cleanup, glitch-free diamond, denotational semantic foundation,
+composite statechart, strict model/controller/engine layering, and
+pre-runtime race detection — live in the canonical specification at
+[`causljs/causl-ts/SPEC.md`](https://github.com/causljs/causl-ts/blob/main/SPEC.md).
 
-The problem is this: an application whose state is not a tree of values but a **live graph of facts whose derivations cascade**, where:
-
-- A single user action invalidates dozens or hundreds of dependent values.
-- Some dependencies change *which* inputs they depend on as state changes (dynamic dependencies).
-- Async fetches can return after the dependency they were fetching against has already moved.
-- Wrong update ordering produces visible-but-inconsistent intermediate UI states (glitches).
-- The user is editing one part of the model while three other parts are recomputing from external feeds, server pushes, and other users' edits.
-- A bug that corrupts dependent state is not a render bug — it's data corruption that ships to disk and to other users.
-
-Real systems that look like this: spreadsheets, CMMS, capital-planning tools, BIM-style asset graphs, configuration editors, scheduling/Gantt systems, scenario planning, dashboard composers, and large operational consoles. The author of this library has shipped several. Every one of them ran into the same wall.
-
-If you have ever written this and watched it fire in the wrong order:
-
-```ts
-useEffect(() => { setHighlights(deriveFromSelection(selection, plan)); }, [selection, plan])
-useEffect(() => { setActiveAttachments(forSelection(selection)); }, [selection])
-useEffect(() => { setPlanPings(forHighlights(highlights)); }, [highlights])
-```
-
-— or written this and wondered if the result is still relevant:
-
-```ts
-const fetched = await fetchAssetStatus(activeAssetId)
-setStatus(fetched) // is activeAssetId still the same as when we started?
-```
-
-— or watched a 100-row tabular UI re-render the entire grid because a single cell's formula changed — you have hit the wall this library is for.
-
-The existing libraries each handle a *piece*. Redux gives you transactional commits but no dependency tracking. MobX gives you dependency tracking but no transactional commits and no semantic glitch-freedom guarantee. TanStack Query gives you async safety but only for HTTP state. XState gives you statecharts but not a dependency engine. Jotai gives you fine-grained atoms but no story for cross-atom transactions or stale-async protection.
-
-Causl is the library you reach for when *more than one of those concerns is true at the same time*. It is not a replacement for the others; it is a different shape of tool.
+The landing page at `causl.org` is the short-form version of that
+story; the docs site (`causl.org/documentation`) is the longer one.
 
 ---
 
-## What causl does differently
+## The causljs/* repos (cross-org topology)
 
-Eight commitments shape the library:
+Causl was split out of a single monorepo into seven repositories that
+each own one concern. The split keeps CI fast, lets the Rust and
+TypeScript halves move at independent cadences, and lets adopters
+depend only on the surface they need.
 
-1. **A denotational semantic foundation.** A derived value's meaning is a mathematical function of its inputs at a given commit time: `Behavior a = GraphTime → a`. Glitch-freedom is then a *theorem*, not a scheduler trick. Most JS reactive libraries cannot define what their own values mean precisely enough to disagree with another implementation.
-2. **Transactions as the only mutation boundary.** All writes happen inside `graph.commit(intent, tx => …)`. Outside, the graph is read-only. There is no concurrent-write API to misuse.
-3. **Automatic dependency tracking with deterministic dynamic-dep cleanup.** A derivation that today reads `assetA` and tomorrow reads `assetB` no longer fires on `assetA` writes — proven by property-based tests, not promised by docs.
-4. **One composite statechart for every lifecycle in the system.** Resource fetch, conflict status, transaction phases, and interaction modes share one chart with shared event vocabulary. No more parallel string enums sprinkled across object fields.
-5. **Strict layering** between the user's information model, the editor's controller state (selection, drag-in-progress), and the engine's substrate. They live in separate identifier namespaces and separate packages.
-6. **Discriminated-union state** everywhere optional fields would otherwise hide state machines. Impossible states cannot be represented; the type checker is the first reviewer.
-7. **MVU-shaped application surface.** A typed `Msg` union dispatched through `update : Msg → Model → Commit`. Transactions are the engine room; messages are the front door.
-8. **Pre-runtime race detection in CI/CD.** Two Rust-backed CI tools, both shipping today: `causl-check` is the static IR linter — twelve passes against the `CauslModel` IR (cycle, monotonic, glitch-propagation, subscribe-without-dispose, use-after-dispose, cross-graph-read, commit-from-subscribe, plus structural gates). `causl-enumerate` is the SPEC §16.4 bounded state-space enumerator — BFS over the §16.4.1 type surface (10-field `State`, 8-arm `Action`, phased `transition_phased` with per-step `events: Vec<Event>` and `phases: Vec<PhaseStep>`) with `Oracle::check(s, prev, a)` plugged into Tier-1/2/3 `Bound` presets. The Apalache differential runner (`tools/enumerator/diff/`) cross-checks the enumerator's verdicts against TLA+ counterexamples on the EPIC-7 corpus.
-
-The public surface anchored by these commitments — the `Graph` interface — is the canonical seven-method API (`createCausl`, `graph.input`, `graph.derived`, `graph.commit`, `graph.read`, `graph.subscribe`, `graph.explain`) plus the in-flight extensions that have earned a slot by naming an unavoidable engine concept: `subscribeCommits` (a narrow per-fire notification capability for adapters that don't need the full log), `exportModel` (the bridge to the Rust race-detection toolchain — feeds both `causl-check` static IR linting and `causl-enumerate` bounded state-space enumeration), `simulate` (the §5 dry-run API — predict a commit's effect without advancing time, appending to the log, or firing subscribers; observer-invisible by construction), `snapshot`/`hydrate` (single-call SSR transfer that emits a `Commit` with `intent: 'hydrate'` so consumers wake), `readAt`/`snapshotAt` (time-travel devtools and replay-determinism testing, returning a `Retained | Evicted` discriminated union per the bounded retention contract), `commitLog` (realising the "transaction log is a `Behavior [Commit]`" promise as a subscribable derived node), and the `now` getter. Memory hygiene for long-lived processes is the `commitHistoryCap` knob (default 1000; pass `0` or `1` for zero retention) — there is no runtime flush, because firing `commitLog` subscribers outside a commit boundary would violate §5. Every addition is justified one-by-one against the rule "name the unavoidable concept the engine cannot express without it, or take the cost of growing every README and every consumer's mental model." The bar for a fifteenth surface item is the same as the bar for the first eleven.
-
----
-
-## How causl compares
-
-This table is honest about where the existing libraries are *strictly better* (✓), where they cover the concern in some form (~), and where the concern is missing (✗). The Causl column uses ✓ for what currently ships on `main` and `*` for in-flight or planned future work — see Status below.
-
-| Concern                                                  | Redux + RTK | MobX | Jotai | Recoil | Zustand | Valtio | TanStack Query | XState | Causl |
-| -------------------------------------------------------- | :---------: | :--: | :---: | :----: | :-----: | :----: | :------------: | :----: | :------: |
-| Transactional commits (atomic write boundary)            |      ✓      |  ~   |   ✗   |   ✗    |    ✗    |   ✗    |       ~        |   ~    |    ✓     |
-| Automatic dependency tracking on reads                   |      ✗      |  ✓   |   ✓   |   ✓    |    ✗    |   ~    |       ~        |   ✗    |    ✓     |
-| Dynamic dependency cleanup proven correct                |      n/a    |  ~   |   ~   |   ~    |   n/a   |   ~    |      n/a       |  n/a   |    ✓     |
-| Glitch-free diamond as a *guarantee* (not best-effort)   |      ✗      |  ~   |   ~   |   ~    |    ✗    |   ✗    |       ✗        |   ✗    |    ✓     |
-| Denotational semantic specification                      |      ✗      |  ✗   |   ✗   |   ✗    |    ✗    |   ✗    |       ✗        |   ~    |    ✓     |
-| Composite statechart for *all* lifecycles                |      ✗      |  ✗   |   ✗   |   ✗    |    ✗    |   ✗    |       ✗        |   ✓    |    ✓     |
-| Stale-async protection by version, not by abort-only     |      ~      |  ✗   |   ✗   |   ~    |    ✗    |   ✗    |       ✓        |   ✗    |    ✓     |
-| Conflict records as first-class queryable state          |      ✗      |  ✗   |   ✗   |   ✗    |    ✗    |   ✗    |       ~        |   ✗    |    ✓     |
-| Discriminated-union state ("impossible states")          |      ~      |  ✗   |   ~   |   ~    |    ~    |   ✗    |       ~        |   ✓    |    ✓     |
-| Strict model / controller / engine layering              |      ~      |  ✗   |   ✗   |   ✗    |    ✗    |   ✗    |       ✗        |   ~    |    ✓     |
-| MVU-shaped typed Msg dispatch                            |      ✓      |  ✗   |   ✗   |   ✗    |    ~    |   ✗    |       ✗        |   ✓    |    ✓     |
-| Pre-runtime race detection in CI/CD (static IR linter + bounded enumerator + Apalache differential) |      ✗      |  ✗   |   ✗   |   ✗    |    ✗    |   ✗    |       ✗        |   ~    |    ✓     |
-| Live derivation editing in devtools                      |      ~      |  ✗   |   ✗   |   ✗    |    ✗    |   ✗    |       ✗        |   ~    |    ✓     |
-| Spreadsheet-grade dependency cascades (formulas, ranges) |      ✗      |  ~   |   ~   |   ~    |    ✗    |   ✗    |       ✗        |   ✗    |    ✓     |
-| Excellent at: small global state                         |      ~      |  ✓   |   ✓   |   ~    |    ✓    |   ✓    |      n/a       |   ~    |    ~     |
-| Excellent at: server cache / fetch dedupe                |      ~      |  ✗   |   ~   |   ~    |    ~    |   ✗    |       ✓        |   ✗    |    ~     |
-| Excellent at: hierarchical UI state machines             |      ✗      |  ✗   |   ✗   |   ✗    |    ✗    |   ✗    |       ✗        |   ✓    |    ~     |
-| Bundle size (smaller is better)                          |      ~      |  ~   |   ✓   |   ~    |    ✓    |   ✓    |       ~        |   ~    |    ~     |
-
-**Reading the table:**
-
-- **Redux + RTK** is excellent for transactional commits and time-travel debugging. It has no automatic dependency tracking; you write selectors by hand and remember to memoize them. Stale async is partly addressed by RTK Query for HTTP cache only.
-- **MobX** is excellent for ergonomic reactive objects. Glitch-free is best-effort; semantic glitch-freedom isn't a stated property. Mutations are not bounded by atomic transactions, so multi-write cascades have observable intermediate states.
-- **Jotai** and **Recoil** are excellent for fine-grained atomic state. They lack a transaction boundary, lack a model-checker, and conflict/stale-async stories are application-level concerns.
-- **Zustand** and **Valtio** prioritize ergonomics and small bundle size. Neither addresses dependency cascades, conflicts, or async safety as first-class concerns.
-- **TanStack Query** is the gold standard for server-state cache. It is not a general state engine; for client-side dependency graphs, you still need one of the others alongside it. Causl's `@causl/sync` is *complementary*, not a replacement.
-- **XState** is the closest peer in spirit. It nails statecharts. It is not a dependency-graph engine; cell formulas, range dependencies, and value-derived-from-other-values are not its model. Causl treats the statechart as the *lifecycle layer* and adds the dependency engine on top.
-
-The concerns where causl is currently `~` rather than `✓` (small global state, server cache, hierarchical UI state machines) are honest: for those problems alone, a smaller, more focused library is the right answer. Causl is for the case where you need *several* of those concerns at once and you are tired of stitching libraries together.
+| Repo                                                                            | Role                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`causljs/causl-ts`](https://github.com/causljs/causl-ts)                       | The TypeScript engine + adapter packages: `@causl/core`, `@causl/react`, `@causl/formula`, `@causl/sync`, `@causl/devtools`, `@causl/devtools-bridge`, `@causl/persistence`, `@causl/checker` (npm wrapper for the Rust linter), `@causl/bench` scenario taxonomy, `@causl/migration-check`. |
+| [`causljs/causl-wasm`](https://github.com/causljs/causl-wasm)                   | The Rust engine port + its single consolidated WASM bridge. Hosts `engine-rs-core` (pure-algorithm `no_std + alloc` crate carrying the SPEC §16.4.1 `State` / `Action` / `Event` / `Commit` types and `transition_phased`) and the active bridge cdylib that exposes it to JS. |
+| [`causljs/causl-ts-wasm-engine`](https://github.com/causljs/causl-ts-wasm-engine) | The TypeScript-engine fork that defaults to the WASM substrate (`DEFAULT_WASM_ENGINE_MODE=rust-ssot`), wired through the consolidated `@causljs/causl-wasm` bridge. Where `causl-ts` keeps the JS engine as the SSOT and treats WASM as an opt-in backend, this fork inverts the default. |
+| [`causljs/causl-bench`](https://github.com/causljs/causl-bench)                 | The cross-library benchmark suite. Compares causl-ts / causl-ts-wasm-engine / Jotai / RTK / MobX across the SPEC-derived scenario taxonomy; emits the JSON that powers the dashboard on this site. Honours the `CAUSL_TS_SOURCE` env var (see below) so a single run can A/B the two TypeScript-side engines. |
+| [`causljs/causl-check`](https://github.com/causljs/causl-check)                 | The Rust-backed static-analysis half: `causl-check` (twelve-pass IR linter), `causl-enumerate` (SPEC §16.4 bounded state-space enumerator), the Apalache differential runner, the EPIC-7 TLA+ corpus, and the Tier-3 Apalache S-row corpus. RFCs 0001 (adopter race classes) and 0002 (federated race detection across `causljs/*`) live here. |
+| [`causljs/causl-org`](https://github.com/causljs/causl-org)                     | **This repo.** Static site source (HTML + CSS + JS) for `causl.org`, brand assets, the playground and spreadsheet demos, the generated TypeDoc API reference, the benchmark dashboard front-end, and the hand-written docs (getting-started, tutorial, usage, best-practices, FAQ). |
+| [`causljs/causl-org-srv`](https://github.com/causljs/causl-org-srv)             | The tiny static-site server used during local development for the demos in this repo. Was previously vendored into `causl-ts/tools/causl-org-srv/`; lives standalone now. |
 
 ---
 
-## When to use causl
+## Wasm-engine zero-boundary architecture
 
-Reach for this library when **two or more** of these are true:
+The Rust engine port in `causljs/causl-wasm` has converged on a
+single-bridge story. Two pieces of history are worth knowing:
 
-- Your state is a graph of facts where one user action cascades through dozens of derived values.
-- Your derived values change *what they depend on* as the user navigates.
-- You have async fetches whose results may be stale by the time they return.
-- You need an audit trail of every state change with a typed intent.
-- You need conflict records that survive the transaction that created them — not exceptions, *data*.
-- You have spreadsheet-like cells with formula references, or asset hierarchies with reference-based dependencies.
-- You want to catch race conditions in CI before they reach production.
-- A bug in your state propagation is data corruption, not a UI glitch.
+1. **Bridge consolidation (PR #74).** The legacy two-cdylib design —
+   `engine-rs-bridge-serde` (the universal-fallback serde-wasm-bindgen
+   crate) plus `engine-rs-bridge-gc` (the WasmGC + `wasm:js-string`
+   crate that shipped two artefacts) — was deleted in
+   [`causl-wasm#74`](https://github.com/causljs/causl-wasm/pull/74) in
+   favour of a single consolidated bridge. The Tier-1/2/3 host matrix
+   that older docs referenced lives behind feature flags in that one
+   bridge now, not as separate crates.
+2. **`epic/1` — zero-boundary migration.** The hot-path traversal
+   modules (`mutate`, `recompute`, `publish`, `kahn::drain`) were
+   migrated to a `&mut dyn CellAccess` trait object that abstracts the
+   cell-storage backing. The migration lets the Rust engine talk to
+   either a flat-vector cell store (current) or a future
+   externally-owned cell pool (for WasmGC + JS-side ownership) without
+   re-stamping the algorithm code. The PoC landed in
+   [`causl-wasm#76`](https://github.com/causljs/causl-wasm/pull/76),
+   the four follow-ups in `#79`/`#80`/`#81`/`#82`, and the
+   value-pool optimisation for `DispatchMsg` payloads in `#77`.
 
-## When **not** to use causl
-
-Reach for something else when:
-
-- Your state is a flat object with maybe twenty fields and no cross-field derivations. Use Zustand or Jotai.
-- Your state is mostly cached HTTP responses. Use TanStack Query (or Apollo / Relay if GraphQL).
-- Your problem is "one giant form with validation." Use React Hook Form.
-- Your problem is "a wizard with five steps and a back button." Use XState directly.
-- You want a library you can adopt incrementally without thinking about your model layer. Causl asks you to commit to a layered approach (information model vs editor controllers vs engine substrate). That is a feature for the problems above and overhead for the problems below.
-
-The honest summary: causl is over-engineered for simple apps and the only way to ship the complex ones without losing your mind. Pick the right tool.
-
----
-
-## What causl is *not*
-
-I want this in writing too, because the spec used to promise too much:
-
-- **Not a spreadsheet engine.** `@causl/formula` is a small package that demonstrates spreadsheet patterns on top of the core. It does not ship VLOOKUP.
-- **Not a CRDT.** Multi-user merge semantics belong in a layer above this one.
-- **Not a database, message bus, workflow engine, or rules engine.**
-- **Not a competitor to Redux/MobX/etc.** for problems they already handle well.
-- **Not yet at 1.0.** Phases 1–4 ship on `main`; **v0.9.0 has shipped** (WASM substrate Phase-0/Phase-1 in, Rust engine port deferred — see Status below); APIs are stable but not version-locked.
+The practical consequence for adopters is that the TS-side surface
+the `wasm-engine` fork imports (`loadWasmBackend()` → consolidated
+bridge → `engine-rs-core`) does not change as the bridge internals
+evolve. The byte-identity cross-bridge gate that older releases
+referenced still holds; it just runs against one bridge now.
 
 ---
 
-## Status
+## The `CAUSL_TS_SOURCE` selector
 
-The full specification lives in [the repo-root specification](./SPEC.md). Phased epics and sub-tasks live as GitHub issues. **Phases 1–4 have shipped on `main`, and v0.9.0 is out.** Phase 1 (semantic core), Phase 2 (React surface + spreadsheet demo), and Phase 3 (resources, conflicts, devtools inspection primitives) landed first; Phase 4 (the CI race-detection toolchain) wrapped via the Phase-8 SPEC compliance audit (umbrella #564 closed). Phase-5 perf experiment umbrella #679 closed 22/22 sub-issues (the scrolling-viewport 654× regression is resolved). Phase-6 WASM substrate epic #680 closed: all 17 Phase-0 + Phase-1 sub-issues are merged, including SPEC §17 commitment 13 (capability-cost residual band 3.0×–8.0×, PR #1024) and commitment 14 (three-tier host matrix `wasmgc-builtins` / `wasmgc-classic` / `serde-json`, PR #1053). Both Rust binaries — `causl-check` (static IR linter) and `causl-enumerate` (bounded state-space enumerator) — run in CI against the spreadsheet and async demos. See `.github/workflows/ci.yml` and `.github/workflows/apalache-diff.yml`.
-
-### Current state (as of v0.9.0)
-
-- **WASM Phase-1 is a TS wrapper, not a Rust engine.** The `WasmBackend` returned by `loadWasmBackend()` is a TS engine wrapped in the FFI shape — the interface and the cross-bridge byte-identity gate are stable, but runtime characteristics match the TS engine (~0% delta vs `backend: 'js'`). The disclosure is repeated at the top of `packages/core/wasm/README.md`. Tracked by #1126.
-- **Rust engine port is deferred behind GO/NO-GO criteria.** Post-0.9.0 epic [#1133](https://github.com/causljs/causl-ts/issues) is filed but explicitly deferred — the epic body documents the GO/NO-GO criteria the team will evaluate before opening the implementation track. 15 implementation sub-issues (#1134–#1148) and 7 panel-review sub-issues (#1154–#1160) stay open under the deferral; 4 current-code defect issues #1150–#1153 (bundle ceiling SPEC amendment, NodeId generational disposal, JsonValue bench harness, property-test tier sweep) **merged in v0.9.0 via PRs #1161–#1164** and do not depend on the Rust port landing. `tools/engine-rs-core/` already carries real types — `NodeId` is generational `{ slot: u32, gen: u32 }` (post-#1151), `JsonValue::Object` uses `BTreeMap<SmolStr, _>` (post-#1078; an IndexMap swap is under investigation per #1152's bench harness), and the 7-named-struct cell shape ships from #1077/#1080.
-- **Serde Tier-3 bundle ceiling divergence is documented.** §17.6 commitment-14 names a 200 KB raw / 80 KB Brotli target ceiling on the serde bridge; the v0.9.0 artefact ships at 213 KB raw / 66 KB Brotli (Brotli inside cap, raw exceeds by 13 KB). The SPEC text was amended (PR #1161 / issue #1150) to document the divergence; resolution is tied to the Rust engine port and wasm-opt invocation per #1085.
-
-What that means concretely:
-
-- The semantic core (atomicity, glitch-freedom, dynamic-deps, replay determinism, cycle detection) is held by 1000-trial property suites — `packages/core/test/properties/`.
-- The React surface (`useCausl`, `useDispatch`, `useCauslFamily`, Suspense + SSR) ships and is tested under StrictMode mount/unmount cycles.
-- The spreadsheet demo (`packages/bench/scenarios/spreadsheet/`) runs through the static linter on every CI build; failures block merge.
-- The bounded enumerator's full SPEC §16.4.1 type surface is implemented — 10-field `State` backed by `im::*` collections, 8-arm `Action` with every variant wired through `transition()` and `transition_phased()`, `Oracle::check(s, prev, a) -> Vec<RaceClass>` as the canonical surface, `Trace.steps: im::Vector<Step>` for cheap structural-shared clones, `Step.phases` and `Step.events` populated from the per-action phase walker, the `enumerate_with_script(model, bound, script, oracles)` SPEC entry point, and 43 enumerator test binaries' worth of regression coverage.
-- The Apalache differential runner (`tools/enumerator/diff/`) cross-checks BFS verdicts against the EPIC-7 TLA+ corpus; `docs/apalache-diff-report.md` is regenerated on every CI run.
-- BFS memory ceilings are configurable via `CAUSL_BFS_FRONTIER_CAP` / `CAUSL_BFS_TRACES_CAP` / `CAUSL_BFS_RACES_CAP` env vars; the wave-32 conservative defaults stay until adopter empirical data supports retuning (#646).
-
-Pre-1.0 caveats remain — public APIs may evolve before a tagged release; published-package tooling is a separate epic. The closing section of the specification enumerates the eight team commitments the repo is held against — semantic foundation lands first; the composite statechart is drawn before conflict and resource code is written; the model/controller/engine layering is enforced at the package boundary; every discriminated union carries an exhaustiveness check; the race-class catalogue is kept current; the worked example is the gate for "the engine is real"; no enum tags ship whose transitions are unspecified; and the Rust race-detection toolchain (`causl-check` + `causl-enumerate`) ships as a required CI gate. CONTRIBUTING.md documents how each commitment is enforced.
-
----
-
-## Packages
-
-| Path                          | Package                       | Role                                                                                  |
-| ----------------------------- | ----------------------------- | ------------------------------------------------------------------------------------- |
-| `packages/core/`              | `@causl/core`              | Engine — Behaviors, derivations, transactions, snapshot/hydrate, retention, explain   |
-| `packages/react/`             | `@causl/react`             | React bindings — `useCausl`, `useDispatch`, `useCauslFamily`, MVU runner, SSR   |
-| `packages/formula/`           | `@causl/formula`           | Spreadsheet patterns *on top of* the core — formulas, ranges, cycles                  |
-| `packages/sync/`              | `@causl/sync`              | Async resources + conflict registry as composed statecharts                           |
-| `packages/devtools/`          | `@causl/devtools`          | Inspection primitives (explain materialisation, liveDerivation, snapshot, statechart) |
-| `packages/devtools-bridge/`   | `@causl/devtools-bridge`   | Redux DevTools Extension protocol bridge (zero-cost when absent)                      |
-| `packages/persistence/`       | `@causl/persistence`       | Persisted-input adapter with structured `PersistenceError` reporting                  |
-| `packages/checker/`           | `@causl/checker`           | npm wrapper for `causl-check` (Rust-backed static IR linter — twelve passes against the IR)               |
-| `packages/bench/`             | `@causl/bench`             | Benchmarks — Jotai / RTK / MobX comparisons across the canonical scenario taxonomy    |
-| `packages/migration-check/`   | `@causl/migration-check`   | Migration drift detector — flags unmigrated Jotai/MobX/Redux patterns in adopters     |
-
-Internal-only `packages/core/testing/` (published as `@causl/core-testing-internal`) provides shared property-test seam helpers.
-
-See each package's `README.md` for build and run instructions where they exist.
-
----
-
-## Tools
-
-Build infrastructure, Rust crates, CI gates, and release tooling live
-under [`tools/`](./tools/). Brief role descriptions below; the
-authoritative documentation lives in each tool's own `README.md`.
-
-### Release
-
-| Path | Purpose | Detailed docs |
-| --- | --- | --- |
-| [`tools/release/`](./tools/release/) | `release.py` — bundles the minimum viable per-package npm tree at `RELEASE_VERSION` for the TypeScript-only path. Output ships on the `release` branch. | [`tools/release/README.md`](./tools/release/README.md) |
-
-### Rust engine + WASM bridges
-
-| Path | Purpose | Detailed docs |
-| --- | --- | --- |
-| [`tools/engine-rs-core/`](./tools/engine-rs-core/) | Pure-algorithm core (`no_std + alloc`). SPEC §16.4.1 `State` / `Action` / `Event` / `Commit` types + `transition_phased`. | [`tools/engine-rs-core/README.md`](./tools/engine-rs-core/README.md) |
-| [`tools/engine-rs-bridge-serde/`](./tools/engine-rs-bridge-serde/) | Universal-fallback `serde-wasm-bindgen` bridge cdylib. | — |
-| [`tools/engine-rs-bridge-gc/`](./tools/engine-rs-bridge-gc/) | WasmGC + `wasm:js-string` bridge cdylib (two artefacts: `js-string-builtins`, `classic-strings`). | — |
-| [`tools/engine-rs-core-bench/`](./tools/engine-rs-core-bench/) | Criterion microbenches against the pure-algorithm core. | — |
-| [`tools/engine-rs-port-bench/`](./tools/engine-rs-port-bench/) | Cross-port perf comparison harness. | [`tools/engine-rs-port-bench/README.md`](./tools/engine-rs-port-bench/README.md) |
-| [`tools/wasm-build/`](./tools/wasm-build/) | `build.mjs` — drives `wasm-pack` + external binaryen `wasm-opt -Oz` for all bridge × target combinations; enforces SPEC §17.6 bundle-size caps. | [`tools/wasm-build/README.md`](./tools/wasm-build/README.md) |
-
-### Static checking + enumeration
-
-| Path | Purpose | Detailed docs |
-| --- | --- | --- |
-| [`tools/checker/`](./tools/checker/) | `causl-check` Rust crate — twelve-pass static IR linter (cycle, monotonic, glitch-propagation, use-after-dispose, cross-graph-read, commit-from-subscribe, …). Per-site `// @causl-allow:RuleId — reason: ...` magic-comment suppressions via the `--source <path>` flag; `--replay <report>` is the §16A.2 verdict-determinism gate. | [`tools/checker/README.md`](./tools/checker/README.md) |
-| [`tools/enumerator/`](./tools/enumerator/) | `causl-enumerate` — SPEC §16.4 bounded state-space enumerator. Tier-1/2/3 `Bound` presets cap exploration; Node worker-pool RPC sandboxes compute bodies (`Date.now` / `Math.random` / `crypto.randomUUID` / `performance.now`) with a 1% double-check sampler. | — |
-| [`tools/apalache-diff/`](./tools/apalache-diff/) | Apalache differential runner against the EPIC-7 TLA+ corpus. | — |
-
-### Bench, telemetry, audit, lint
-
-| Path | Purpose | Detailed docs |
-| --- | --- | --- |
-| [`tools/bench/`](./tools/bench/) | Python launcher + reproducer for the cross-library benchmark suite in `packages/bench/`; pinned-Docker runs with a typed exit-code contract. | — |
-| [`tools/drift/`](./tools/drift/) | Drift telemetry helpers. | — |
-| [`tools/audit/`](./tools/audit/) | Audit + governance tooling. | — |
-| [`tools/eslint-plugin-causl/`](./tools/eslint-plugin-causl/) | ESLint plugin for causl-aware lint rules. | — |
-| [`tools/lint/`](./tools/lint/) | Project lint helpers (orchestrates `eslint-plugin-causl`, prettier, custom passes). | — |
-| [`tools/lint-fixtures/`](./tools/lint-fixtures/) | Fixture corpus for the lint rules. | — |
-| [`tools/docs-postprocess/`](./tools/docs-postprocess/) | TypeDoc/Markdown post-processing for the docs pipeline. | — |
-| [`tools/causl-org-srv/`](./tools/causl-org-srv/) | Static-site server for the `causl-org/` demos. | [`tools/causl-org-srv/README.md`](./tools/causl-org-srv/README.md) |
-
-Tools without a per-tool `README.md` document themselves through the
-module-level header comments in their primary entry file (`build.mjs`,
-`src/lib.rs`, `release.py`, etc.). When a tool grows past that scale
-its dedicated `README.md` lands alongside.
-
----
-
-## Development setup
-
-### Prerequisites
-
-| Tool        | Version          | How to install                                |
-| ----------- | ---------------- | --------------------------------------------- |
-| Node.js     | 24.x (LTS Krypton) | Use [`nvm`](https://github.com/nvm-sh/nvm) — `nvm install` reads `.nvmrc` |
-| pnpm        | 10.x             | `corepack enable` (Node ships Corepack), or `npm i -g pnpm@10` |
-| Rust        | stable           | [`rustup`](https://rustup.rs) — only required to work on `tools/checker/` |
-
-The repository pins Node via `.nvmrc` and pnpm via `packageManager` in the root `package.json`. With `nvm` and Corepack on, switching into the directory and running `pnpm install` is enough.
+`causl-bench` ships its root `package.json` with no `pnpm.overrides`
+block, so the registry is the default resolver and the
+`bench — install + smoke` CI gate stays green on a bare runner.
+Linking against a local checkout of either TypeScript engine is
+opt-in via the `CAUSL_TS_SOURCE` env var, which
+`tools/select-causl-source.mjs` reads to rewrite `pnpm.overrides`:
 
 ```sh
-# one-time setup
-nvm install        # installs Node 24 from .nvmrc
-nvm use            # activates it for this shell
-corepack enable    # makes the pinned pnpm available
-
-# install workspace dependencies
-pnpm install
+CAUSL_TS_SOURCE=upstream     pnpm install   # links against ../causl-ts
+CAUSL_TS_SOURCE=wasm-engine  pnpm install   # links against ../causl-ts-wasm-engine
 ```
 
-### Common commands
-
-```sh
-pnpm validate       # typecheck + build + test (run before committing)
-pnpm typecheck      # tsc --noEmit across packages
-pnpm build          # tsup builds for every package
-pnpm test           # vitest in watch mode
-pnpm test:run       # vitest --run (single pass)
-pnpm lint           # eslint across packages
-```
-
-A Husky pre-commit hook runs `pnpm typecheck` and `pnpm test:run` against staged code; it picks up the same toolchain the CI workflows use.
+The dashboard on this site (`/benchmarks/`) consumes the JSON the
+bench harness emits; the `CAUSL_TS_SOURCE` toggle is what lets the
+dashboard's `causl-ts` and `causl-wasm` series carry comparable
+numbers from the same run.
 
 ---
 
-## Try it live
+## What landed recently
 
-The demos ship as static HTML pages under [`causl-org/`](./causl-org) — no build step, no framework install. Both load `@causl/core` at runtime from esm.sh so they exercise exactly what an adopter installs.
+Work that has landed across the org since the split, in rough
+reverse-chronological order:
 
-- **[`causl-org/playground/`](./causl-org/playground/index.html)** (`https://causl.org/playground`) — the Quickstart example above in a Monaco editor wired to a live `@causl/core` graph. Edit `derived`, watch the value update.
-- **[`causl-org/spreadsheet/`](./causl-org/spreadsheet/index.html)** (`https://causl.org/spreadsheet`) — the Phase 3 100-cell diamond demo. Type into column A; columns B/C/D and `E1` recompute through the engine. Supports live `replaceMany` formula edits, `whyUpdated` introspection, and a commit log. Same fixture as the dropped-frame Playwright gate in CI.
+- **causl-check** — RFC 0001 (adopter-defined race classes, Phase 2
+  loader + SARIF integration), RFC 0002 (federated race detection
+  across `causljs/*` repos), the resource-origin-bound lint pass, the
+  `causl-check-replay` SARIF counterexample tool, and the Tier-3
+  Apalache TLA+ corpus for the SPEC.async §9.1.1 S-rows (`spec_s1.tla`
+  / `spec_s2.tla` / `spec_s3.tla`).
+- **causl-wasm** — `epic/1` zero-boundary migration to `&mut dyn
+  CellAccess` across the hot-path traversal modules; deletion of the
+  two legacy bridge cdylibs (PR #74) in favour of one consolidated
+  bridge; split CI workflow (fast main, heavy release verification).
+- **causl-ts-wasm-engine** — the TS-engine fork that defaults to the
+  WASM substrate; consolidated-bridge wiring through
+  `loadWasmBackend()`; `graph.snapshotBlob()` / `hydrateBlob(blob)`
+  bulk-serialisation boundary API (throwing stub, pending the
+  causl-wasm side of the contract in #85); per-PR bundle-budget
+  comment workflow; the `causl/no-graph-upcast` S-3 lint gate.
+- **causl-bench** — `CAUSL_TS_SOURCE` engine-selector + the bench-row
+  property suite + dispatching `backend='wasm'` to the real WASM
+  constructor; zero-boundary scenario `run()` bodies for the first
+  ten taxonomy entries; functional workspace scaffold.
+- **causl-org-srv** — extracted to standalone repo; previously lived
+  at `causl-ts/tools/causl-org-srv/`.
+- **causl-org** (this repo) — dashboard with auto-adaptive Y-axis,
+  mouse-drag rescale, wheel-zoom / drag-pan charts, 0-anchored
+  baseline, honest skip-box surface for libraries that can't run a
+  given scenario; codeblock pipeline that pre-renders the wrapper
+  into the static HTML site-wide and preserves TypeDoc-baked syntax
+  tokens; brand-spec consolidation on the geometric Causl mark.
+- **All seven repos** — CI parity pre-commit hooks (`pre-commit ↔ CI
+  parity` PRs across `causl-ts`, `causl-wasm`, `causl-check`,
+  `causl-bench`, `causl-ts-wasm-engine`), so a `git commit` runs the
+  same gate union the CI workflow does.
 
-Both demos are React 19 apps rendered via `createRoot`; React is loaded from esm.sh alongside the causl packages.
+---
+
+## Repo layout
+
+```
+causl-org/
+├── index.html                  Landing page
+├── 404.html                    Fallback
+├── CNAME                       causl.org
+├── css/                        Site CSS, syntax highlight, topbar, playground
+├── js/                         Topbar, codeblock-wrapper, playground runner,
+│                               sandbox runner, contrast audit, footer
+├── img/                        Brand mark + supporting imagery
+├── fonts/                      Self-hosted brand typeface (Inter + IBM Plex Mono)
+├── vendor/                     Pinned third-party assets
+├── docs/brand/                 Brand specification + asset originals
+└── pages/
+    ├── playground/             Monaco-editor + live @causl/core graph
+    ├── spreadsheet/            Phase-3 100-cell diamond demo (React 19, esm.sh)
+    ├── benchmarks/             Dashboard (history.json + dashboard.js)
+    ├── brand/                  Brand spec, public-facing
+    └── documentation/
+        ├── api/                Generated TypeDoc output
+        ├── getting-started/
+        ├── tutorial/
+        ├── usage/
+        ├── best-practices/
+        └── faq/
+```
+
+The site is intentionally static. There is no framework, no build
+step, no module bundler — every page is hand-authored HTML that loads
+the CSS and JS in `css/` and `js/` directly. The two interactive
+demos load React 19 and `@causl/core` from
+[`esm.sh`](https://esm.sh) at runtime, so they exercise exactly what
+an adopter installs.
+
+---
+
+## Build and deploy
+
+There is no build. Deploy is GitHub Pages directly out of the
+repository root, driven by [`.github/workflows/static.yml`](./.github/workflows/static.yml):
+
+```yaml
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+```
+
+The workflow uploads the entire repository as the Pages artefact and
+invokes `actions/deploy-pages@v5`. The `CNAME` file in the repo root
+points the GitHub-Pages-hosted site at `causl.org`.
+
+To preview locally, any static-file server works:
+
+```sh
+# from causl-org-srv (sibling repo) — the canonical dev server
+npx @causljs/causl-org-srv
+
+# or, anything that serves the repo root with directory indexes
+python3 -m http.server 8000
+```
+
+The two interactive demos require the dev server to serve the
+`/playground/` and `/spreadsheet/` directories with their relative
+asset paths intact; the GitHub Pages deploy preserves the same
+layout.
+
+---
+
+## Browser support
+
+See [`BROWSER_SUPPORT.md`](./BROWSER_SUPPORT.md). Short version:
+evergreen Chromium / Firefox / Safari over the last two major
+releases; the playground requires Monaco's baseline (ES2022 + the
+shared-array-buffer-less worker shape).
 
 ---
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT — see [`LICENSE`](./LICENSE).
 
-Copyright (c) 2026 Roman Goldmann <roman@iasbuilt.com>.
+Copyright (c) 2026 Roman Goldmann.

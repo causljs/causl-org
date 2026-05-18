@@ -755,11 +755,15 @@ graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span
     <div class="section-head">
       <div>
         <div class="section-kicker">Packages</div>
-        <h2>The monorepo at a glance.</h2>
+        <h2>The <code>causljs/causl-ts</code> workspace at a glance.</h2>
       </div>
       <p class="lead">
         Each package owns one concern. Adopters install only the pieces
-        they need; the engine has no React dependency.
+        they need; the engine has no React dependency. Six sibling
+        repos round out the cross-org topology (Rust engine, WASM
+        bridge, TS fork that defaults to it, bench harness, static
+        analysis, this site) — see the
+        <a href="/documentation/#cross-org">documentation page</a>.
       </p>
     </div>
 
@@ -807,11 +811,16 @@ graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span
     </div>
 
     <p style="margin-top: 1.4rem; color: var(--text-on-base-muted); font-size: 0.9rem;">
-      Two Rust crates ship under <code>tools/</code> as CI gates, not runtimes:
-      <strong style="color: var(--surface-emphasis);">causl-check</strong> (static IR linter)
-      and <strong style="color: var(--surface-emphasis);">causl-enumerate</strong>
+      Two Rust crates ship in
+      <a href="https://github.com/causljs/causl-check" rel="noopener"><code>causljs/causl-check</code></a>
+      as CI gates, not runtimes:
+      <strong style="color: var(--surface-emphasis);">causl-check</strong> (static IR linter,
+      now with adopter-defined race classes per RFC 0001 and federated
+      cross-repo runs per RFC 0002) and
+      <strong style="color: var(--surface-emphasis);">causl-enumerate</strong>
       (SPEC §16.4 bounded model checker, with an Apalache differential
-      runner against the EPIC-7 TLA+ corpus).
+      runner against the EPIC-7 corpus and a Tier-3 Apalache TLA+
+      corpus for the SPEC.async §9.1.1 S-rows).
     </p>
   </section>
 
