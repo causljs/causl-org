@@ -87,14 +87,46 @@
    *  formerly labelled `causl`, renamed in #1538); `causl-wasm` is the
    *  REAL serde-wasm Rust engine (#1536/#1538) — ~85–390× slower on
    *  median by design (#1133 STANDS), kept adjacent so the honest
-   *  #1133/#1525 callout sits next to its bars. */
+   *  #1133/#1525 callout sits next to its bars.
+   *
+   *  `causl-wasm-all` is the same real engine measured under the
+   *  EXHAUSTIVE profile (no wall-clock kill, adaptive trial-count on
+   *  slow cells) — it sits next to `causl-wasm` so the eye sees the
+   *  pair "routine selective measurement / full exhaustive cross-cell
+   *  measurement" together. See the profile docblock in
+   *  packages/bench/scripts/cross-library-all-scenarios.ts. */
   const LIBRARY_ORDER = [
     'causl-ts',
     'causl-wasm',
+    'causl-wasm-all',
     'jotai',
     'redux-toolkit',
     'mobx',
   ]
+
+  /** Pretty legend labels — applied via getLibraryLabel(). Keeps the
+   *  underlying library id (`causl-wasm-all`) stable in the JSON shape
+   *  while the dashboard surfaces a human-friendlier "(all)" suffix
+   *  so the exhaustive-profile series reads as a related sibling of
+   *  `causl-wasm` rather than a standalone library. */
+  const LIBRARY_LABEL = {
+    'causl-wasm-all': 'causl-wasm (all)',
+  }
+  function getLibraryLabel(lib) {
+    return LIBRARY_LABEL[lib] ?? lib
+  }
+
+  /** Per-series annotation surfaced as a tooltip on the legend chip.
+   *  The `causl-wasm-all` annotation flags that this series is the
+   *  EXHAUSTIVE profile — including slow scenarios that the
+   *  selective `causl-wasm` series intentionally drops via its
+   *  wall-clock-kill DNF gate. Only annotated series get the
+   *  tooltip note; everything else uses the plain library name. */
+  const LIBRARY_ANNOTATION = {
+    'causl-wasm-all':
+      'exhaustive profile — includes slow scenarios that the ' +
+      'selective causl-wasm series DNFs',
+  }
 
   /** Library colours — competitor identity colours, NOT state
    *  semantics. The brand palette in css/site.css reserves Async
@@ -119,9 +151,27 @@
                                //   axis; distinct from causl-ts so the
                                //   ~85–390× slower bars read as a
                                //   separate series (#1133/#1525).
+    'causl-wasm-all': '#9FF0C8', // Paler commit-mint — the EXHAUSTIVE
+                               //   profile of the same Rust engine,
+                               //   washed-out so the eye reads it as
+                               //   a sibling of causl-wasm (not a
+                               //   competing colour). Also rendered
+                               //   with a dashed stroke (see
+                               //   LIBRARY_DASH below) for a second
+                               //   redundant axis of distinction in
+                               //   case the contrast washes out under
+                               //   a particular theme.
     jotai: '#C8743D',          // Copper Wire — neutral identity.
     'redux-toolkit': '#7C4DFF', // Mutation Violet — neutral identity.
     mobx: '#8FA2AA',           // Trace Ash — neutral identity.
+  }
+
+  /** Per-library SVG `stroke-dasharray` — empty string = solid line.
+   *  Only `causl-wasm-all` uses a dashed stroke today; the dash
+   *  reinforces the "this is the exhaustive sibling of causl-wasm"
+   *  read without consuming a fresh palette slot. */
+  const LIBRARY_DASH = {
+    'causl-wasm-all': '4 3',
   }
 
   /** Default-view filter: the two causl engine axes (`causl-ts` +
@@ -694,10 +744,12 @@
       }
 
       if (medianRaw.length > 0) {
+        const dash = LIBRARY_DASH[lib]
+        const dashAttr = dash ? ` stroke-dasharray="${dash}"` : ''
         allLines +=
           `<path d="${catmullRomPath(medianRaw)}" fill="none" ` +
           `stroke="${color}" stroke-width="1.8" stroke-linecap="round" ` +
-          `stroke-linejoin="round" data-library="${escapeHtml(lib)}" />`
+          `stroke-linejoin="round"${dashAttr} data-library="${escapeHtml(lib)}" />`
       }
 
       // Dots per datapoint with embedded tooltip.
@@ -705,8 +757,11 @@
         const idx = runIndex.get(p.capturedAt)
         if (idx === undefined || !Number.isFinite(p.medianMs)) continue
         const tooltip =
-          `${escapeHtml(lib)} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
-          `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms`
+          `${escapeHtml(getLibraryLabel(lib))} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
+          `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms` +
+          (LIBRARY_ANNOTATION[lib]
+            ? `\n${escapeHtml(LIBRARY_ANNOTATION[lib])}`
+            : '')
         allDots +=
           `<circle cx="${xAt(idx).toFixed(2)}" cy="${yAt(p.medianMs).toFixed(2)}" ` +
           `r="2.8" fill="${color}" stroke="rgba(11,16,32,0.6)" stroke-width="1" ` +
@@ -985,7 +1040,7 @@
       li.title = reason
       li.style.setProperty('--lib-color', color)
       li.innerHTML =
-        `<span class="skip-box-lib" aria-hidden="true">${escapeHtml(lib)}</span>` +
+        `<span class="skip-box-lib" aria-hidden="true">${escapeHtml(getLibraryLabel(lib))}</span>` +
         `<span class="skip-box-label" aria-hidden="true">${escapeHtml(label)}</span>`
       skipBoxList.appendChild(li)
       renderedSkipBoxes += 1
@@ -1024,11 +1079,12 @@
         item.style.setProperty('--verdict-color', VERDICT_COLOR.unknown)
         const reason = skipInfo.reason || 'skipped — no reason recorded'
         const reasonAttr = escapeHtml(reason)
+        const skippedLabel = getLibraryLabel(lib)
         item.innerHTML =
           `<span class="bench-legend-swatch" aria-hidden="true"></span>` +
           `<span class="bench-legend-lib bench-legend-lib--strike" ` +
           `title="${reasonAttr}">` +
-          `<s>${escapeHtml(lib)}</s>` +
+          `<s>${escapeHtml(skippedLabel)}</s>` +
           `</span>` +
           `<span class="bench-legend-stats bench-legend-stats--muted">` +
           `<span class="bench-legend-median">— ms</span>` +
@@ -1050,11 +1106,28 @@
       const verdictColor = VERDICT_COLOR[verdict.kind] ?? VERDICT_COLOR.unknown
       const lastMedian = last ? formatNumber(last.medianMs) : 'n/a'
       const lastP95 = last ? formatNumber(last.p95Ms) : 'n/a'
+      const label = getLibraryLabel(lib)
+      const annotation = LIBRARY_ANNOTATION[lib]
+      const libNameTitle = annotation
+        ? ` title="${escapeHtml(annotation)}"`
+        : ''
+      const libNameMarker = annotation
+        ? ' bench-legend-lib--annotated'
+        : ''
       item.dataset.verdict = verdict.kind
       item.style.setProperty('--verdict-color', verdictColor)
+      if (annotation) {
+        item.dataset.annotated = 'true'
+        item.dataset.annotation = annotation
+      }
       item.innerHTML =
         `<span class="bench-legend-swatch" aria-hidden="true"></span>` +
-        `<span class="bench-legend-lib">${escapeHtml(lib)}</span>` +
+        `<span class="bench-legend-lib${libNameMarker}"${libNameTitle}>` +
+        `${escapeHtml(label)}` +
+        (annotation
+          ? ` <span class="bench-legend-lib-note" aria-hidden="true">ⓘ</span>`
+          : '') +
+        `</span>` +
         `<span class="bench-legend-stats">` +
         `<span class="bench-legend-median">${lastMedian} ms</span>` +
         `<span class="bench-legend-p95">p95 ${lastP95}</span>` +
@@ -1064,7 +1137,7 @@
         `<span class="bench-legend-verdict-label">${verdict.kind}</span>` +
         `</span>` +
         `<a class="bench-legend-profile-link" href="${profileUrl}" rel="noopener" ` +
-        `aria-label="Profile artifacts for ${escapeHtml(lib)} ${escapeHtml(section.scenario)} at scale ${section.scale} (placeholder — populated by #709 once CI is restored)" ` +
+        `aria-label="Profile artifacts for ${escapeHtml(label)} ${escapeHtml(section.scenario)} at scale ${section.scale} (placeholder — populated by #709 once CI is restored)" ` +
         `title="profile snapshot → ${profileUrl} (placeholder until #709 nightly publish lands)">⌕</a>`
       legend.appendChild(item)
     }
@@ -1205,7 +1278,7 @@
       'Filter by library (controls which lines render on each chart)',
       filterState._allLibraries,
       (l) => l,
-      (l) => l,
+      (l) => getLibraryLabel(l),
       filterState.libraries,
     )
 

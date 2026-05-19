@@ -605,6 +605,33 @@
   white-space: nowrap;
 }
 
+/* Per-series annotation: rendered on legend chips whose underlying
+   library carries a LIBRARY_ANNOTATION entry (today: `causl-wasm-all`,
+   the exhaustive profile). The ⓘ glyph + dotted underline cue the
+   reader that hovering reveals the annotation tooltip — the
+   `title=` attribute carries the message itself. */
+.bench-legend-lib--annotated {
+  text-decoration: underline dotted color-mix(
+    in srgb,
+    var(--lib-color, var(--fog)) 70%,
+    transparent
+  );
+  text-underline-offset: 0.15em;
+  cursor: help;
+}
+
+.bench-legend-lib-note {
+  /* Inline glyph — sized small + dimmed so the chip's primary
+     reading axis stays the library name, not the marker. */
+  margin-left: 0.25em;
+  font-size: 0.85em;
+  color: color-mix(
+    in srgb,
+    var(--lib-color, var(--fog)) 70%,
+    var(--text-on-elevated-subtle)
+  );
+}
+
 .bench-legend-stats {
   display: inline-flex;
   align-items: baseline;
