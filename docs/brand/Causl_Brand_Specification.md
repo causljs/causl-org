@@ -180,7 +180,6 @@ Causl should sound like a serious systems tool with a mischievous mascot.
 
 - “Magical state management”
 - “Just works”
-- “AI-powered” unless actually true
 - “The cutest state library”
 - “RAT” jokes that evoke malware as the main message
 - Pest/horror imagery
