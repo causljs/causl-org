@@ -402,6 +402,44 @@
               boundaryBytesMax: m.boundaryBytesMax,
             };
           }
+          // Render a single metric cell's value with both causl
+          // engines stacked vertically. `topVal` / `bottomVal` are
+          // the formatted strings (caller picks the digits + unit);
+          // `topEngine` / `bottomEngine` carry the engine ids for
+          // the hover tag + data attribute. If one side's value is
+          // null/undefined, render ONLY the other side at its color
+          // (don't show "—" stacked above a number — the task spec
+          // calls this out explicitly).
+          //
+          // The two engines correspond to `engines[0]` and
+          // `engines[1]` in the dual-engine.json envelope — typically
+          // `causl-ts` + `causl-ts-wasm-engine` today; the prior PR
+          // also landed the `causl-wasm` / `causl-wasm-all` legend
+          // entries so the dashboard's color palette and tags are
+          // consistent across the two pair conventions. Color is the
+          // primary signal (top = solid causl-ts cyan, bottom = paler
+          // mint with a dashed-underline cue); the engine id surfaces
+          // on hover via the `title` attribute as the secondary
+          // signal.
+          function dualStack(topVal, topEngine, bottomVal, bottomEngine) {
+            const topHas = topVal !== '—' && topVal !== '' && topVal != null;
+            const botHas = bottomVal !== '—' && bottomVal !== '' && bottomVal != null;
+            if (topHas && botHas) {
+              return (
+                '<span class="dual-engine-stack">' +
+                  '<span class="dual-engine-stack-top" data-engine="' + topEngine + '" title="' + topEngine + ' (selective)">' + topVal + '</span>' +
+                  '<span class="dual-engine-stack-bot" data-engine="' + bottomEngine + '" title="' + bottomEngine + ' (all)">' + bottomVal + '</span>' +
+                '</span>'
+              );
+            }
+            if (topHas) {
+              return '<span class="dual-engine-stack dual-engine-stack--solo-top" data-engine="' + topEngine + '" title="' + topEngine + '">' + topVal + '</span>';
+            }
+            if (botHas) {
+              return '<span class="dual-engine-stack dual-engine-stack--solo-bot" data-engine="' + bottomEngine + '" title="' + bottomEngine + '">' + bottomVal + '</span>';
+            }
+            return '—';
+          }
           const rows = Array.from(scenarioNames).sort().map(function (scn) {
             const firstEng = engines[0];
             const secondEng = engines[1] || engines[0];
@@ -459,6 +497,53 @@
                 '</small>' +
                 '</div>'
               );
+
+            // causljs/causl-org#6 addition 3 — every metric column
+            // starting at wall-ms renders BOTH causl engines stacked.
+            // The first column (causl-ts engine col) keeps the single-
+            // engine view (it IS the engine-only readout); the metric
+            // columns from wallMs onward stack `firstEng` (causl-ts)
+            // on top and `secondEng` (causl-ts-wasm-engine) on the
+            // bottom. Where only one is present (the prior PR's
+            // engines[1] === engines[0] degenerate case, or one
+            // engine's scenarios map missing a key), `dualStack`
+            // renders solo — no em-dash above a real value.
+            const wallStack = dualStack(
+              fmt(firstMetrics.wallMs, 3),
+              firstEng,
+              fmt(secondMetrics.wallMs, 3),
+              secondEng,
+            );
+            const cpuUserStack = dualStack(
+              fmt(firstMetrics.cpuUserMs, 3),
+              firstEng,
+              fmt(secondMetrics.cpuUserMs, 3),
+              secondEng,
+            );
+            const cpuSysStack = dualStack(
+              fmt(firstMetrics.cpuSystemMs),
+              firstEng,
+              fmt(secondMetrics.cpuSystemMs),
+              secondEng,
+            );
+            const heapStack = dualStack(
+              fmtBytes(firstMetrics.heapPeakBytes),
+              firstEng,
+              fmtBytes(secondMetrics.heapPeakBytes),
+              secondEng,
+            );
+            const hotStack = dualStack(
+              firstMetrics.hotPath || '',
+              firstEng,
+              secondMetrics.hotPath || '',
+              secondEng,
+            );
+            const coldStack = dualStack(
+              firstMetrics.coldPath || '',
+              firstEng,
+              secondMetrics.coldPath || '',
+              secondEng,
+            );
             return '<tr data-scenario="' + scn + '">' +
               '<th scope="row"><code>' + scn + '</code></th>' +
               '<td data-engine="' + firstEng + '">' + fmt(firstMetrics.wallMs, 3) + ' ms</td>' +
@@ -467,12 +552,12 @@
                 '<div class="dual-engine-primary-metric">' + bcTxt + '</div>' +
                 bytesTripleHtml +
               '</td>' +
-              '<td data-perf-column="wallMs">' + fmt(firstMetrics.wallMs, 3) + '</td>' +
-              '<td data-perf-column="cpuUserMs">' + fmt(firstMetrics.cpuUserMs, 3) + '</td>' +
-              '<td data-perf-column="cpuSystemMs">' + fmt(firstMetrics.cpuSystemMs) + '</td>' +
-              '<td data-perf-column="heapPeakBytes">' + fmtBytes(firstMetrics.heapPeakBytes) + '</td>' +
-              '<td data-perf-column="hotPath">' + (firstMetrics.hotPath || '—') + '</td>' +
-              '<td data-perf-column="coldPath">' + (firstMetrics.coldPath || '—') + '</td>' +
+              '<td data-perf-column="wallMs">' + wallStack + '</td>' +
+              '<td data-perf-column="cpuUserMs">' + cpuUserStack + '</td>' +
+              '<td data-perf-column="cpuSystemMs">' + cpuSysStack + '</td>' +
+              '<td data-perf-column="heapPeakBytes">' + heapStack + '</td>' +
+              '<td data-perf-column="hotPath">' + hotStack + '</td>' +
+              '<td data-perf-column="coldPath">' + coldStack + '</td>' +
               '</tr>';
           });
           tbody.innerHTML = rows.join('');

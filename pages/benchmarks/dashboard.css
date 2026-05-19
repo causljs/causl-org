@@ -1058,3 +1058,68 @@ details.status-callout > summary:focus-visible {
 .dual-engine-bytes-min { color: var(--text-on-base-subtle); }
 .dual-engine-bytes-median { color: var(--text-on-base-muted); }
 .dual-engine-bytes-max { color: var(--text-on-base-muted); }
+
+/* ============================================================
+   causljs/causl-org#6 addition 3 — dual-stacked engine values.
+
+   Each metric cell starting at wall-ms renders TWO stacked
+   values: causl-ts (`engines[0]`, top, solid mint via Async
+   Cyan) and causl-ts-wasm-engine (`engines[1]`, bottom, paler
+   color + dashed underline). Color is the primary signal; the
+   small "selective" / "all" tag surfaces on hover via the
+   element's `title`.
+
+   When only one engine is present (the degenerate
+   `engines[1] === engines[0]` case, OR a scenario the second
+   engine doesn't carry), the renderer emits `dual-engine-stack
+   --solo-*` and the cell renders just that one value at its
+   own color — no em-dash stacked above a real number.
+
+   Layout: the cell grows vertically; column widths stay
+   unchanged so the table layout doesn't reflow.
+   ============================================================ */
+#dual-engine-table td .dual-engine-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.3;
+}
+.dual-engine-stack-top {
+  /* `engines[0]` — the SELECTIVE causl engine row (causl-ts on the
+     production runs / causl-wasm on the wasm-engine profile axis).
+     Rendered in the solid commit-mint that dashboard.js's
+     LIBRARY_COLOR map reserves for `causl-wasm` so the row's
+     visual identity matches the chart-card legend. Solid weight
+     so the top reads as the primary entry. */
+  color: #5EE6A8; /* dashboard.js LIBRARY_COLOR['causl-wasm'] */
+  font-weight: 600;
+}
+.dual-engine-stack-bot {
+  /* `engines[1]` — the ALL / exhaustive causl engine row
+     (causl-ts-wasm-engine on the production runs, or
+     `causl-wasm-all` on the profile-split axis the prior PR
+     introduced). Rendered in the paler commit-mint that matches
+     dashboard.js's LIBRARY_COLOR['causl-wasm-all'] — washed-out
+     so the eye reads it as a sibling of the top row, not a
+     competing color. Dashed underline as the second axis of
+     distinction (so the row is still readable when monochrome /
+     under a high-contrast theme), matching the chart-line dash
+     pattern (LIBRARY_DASH['causl-wasm-all'] = '4 3'). */
+  color: #9FF0C8; /* dashboard.js LIBRARY_COLOR['causl-wasm-all'] */
+  font-weight: 500;
+  text-decoration: underline dashed currentColor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+/* Solo states — single engine present at this (scenario × engine
+   slot); render at the corresponding color WITHOUT the dashed
+   underline (the underline carries the "this is the all variant"
+   semantic, which only makes sense when both are shown). */
+.dual-engine-stack--solo-top {
+  color: #5EE6A8;
+  font-weight: 600;
+}
+.dual-engine-stack--solo-bot {
+  color: #9FF0C8;
+  font-weight: 500;
+}
