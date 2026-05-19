@@ -929,3 +929,70 @@ details.status-callout > summary:focus-visible {
 
   html { scroll-behavior: auto !important; }
 }
+
+/* ============================================================
+   Dual-engine comparison panel (causl-bench#21).
+
+   The renderer in pages/benchmarks/index.html populates
+   #dual-engine-table. Cells with class .dual-engine-faster
+   indicate causl-ts-wasm-engine is materially faster (≥5%) than
+   causl-ts on that scenario; .dual-engine-slower marks a regression
+   of the same magnitude; .dual-engine-same is within ±5%.
+   ============================================================ */
+
+#dual-engine-panel {
+  margin-top: var(--space-6);
+}
+
+#dual-engine-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  margin-top: var(--space-4);
+}
+
+#dual-engine-table th,
+#dual-engine-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  text-align: left;
+  vertical-align: top;
+}
+
+#dual-engine-table thead th {
+  font-weight: 600;
+  color: var(--text-on-base-muted);
+  border-bottom: 1px solid rgba(39, 211, 195, 0.32);
+}
+
+#dual-engine-table tbody th[scope="row"] code {
+  white-space: nowrap;
+}
+
+.dual-engine-faster { color: var(--success-mint, #27d3a3); }
+.dual-engine-slower { color: var(--conflict-coral, #ff6b6b); }
+.dual-engine-same   { color: var(--text-on-base-subtle); }
+
+.dual-engine-meta {
+  margin-top: var(--space-3);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-on-base-subtle);
+}
+
+.dual-engine-blurb {
+  font-size: 0.92rem;
+  color: var(--text-on-base-muted);
+  max-width: 720px;
+}
+
+#dual-engine-table td[data-perf-column="boundaryCrossings"] {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-weight: 600;
+}
+.dual-engine-boundary-none { color: var(--text-on-base-subtle); }
+.dual-engine-boundary-low  { color: var(--commit-amber, #f5b942); }
+.dual-engine-boundary-high { color: var(--causal-cyan, #11D9FF); }
