@@ -214,6 +214,145 @@
         </p>
       </noscript>
     </div>
+
+    <!-- ============================================================
+         Dual-engine panel (causl-bench#21).
+
+         Renders `packages/bench/report/dual-engine.json` from the
+         `causljs/causl-bench` repo: a side-by-side comparison of the
+         upstream `causl-ts` engine vs. the experimental
+         `causl-ts-wasm-engine` fork. The full per-scenario perf
+         envelope (wall / CPU user+system / heap before+after+peak +
+         hot-path / cold-path) is surfaced per cell once
+         `causl-bench#24` lands the inner-bench output capture; until
+         then the panel renders a documented scaffold state.
+
+         The DOM contract is fixed (the Playwright spec at
+         `causljs/causl-bench/e2e/playwright/dashboard.spec.ts` pins
+         it): the panel root carries `id="dual-engine-panel"`; each
+         engine column carries `data-engine="<engine-id>"`; each
+         perf-metric column header carries `data-perf-column="<key>"`.
+         A future renderer can repaint the panel without touching the
+         selectors.
+         ============================================================ -->
+    <section id="dual-engine-panel" aria-labelledby="dual-engine-heading">
+      <h2 id="dual-engine-heading">Engine comparison: <code>causl-ts</code> vs <code>causl-ts-wasm-engine</code></h2>
+      <p class="dual-engine-blurb">
+        Side-by-side per-scenario perf envelope under two engine
+        implementations. The upstream <a href="https://github.com/causljs/causl-ts"><code>causl-ts</code></a> series is the
+        production TypeScript engine; the
+        <a href="https://github.com/causljs/causl-ts-wasm-engine"><code>causl-ts-wasm-engine</code></a> series is the
+        experimental fork wired to the consolidated WASM bridge from
+        <a href="https://github.com/causljs/causl-wasm"><code>causljs/causl-wasm</code></a>. Toggle the source per bench run with
+        <code>CAUSL_TS_SOURCE=upstream|wasm-engine</code> in
+        <code>causljs/causl-bench</code>.
+      </p>
+
+      <table id="dual-engine-table" aria-busy="true">
+        <thead>
+          <tr>
+            <th scope="col">Scenario</th>
+            <th scope="col" data-engine="causl-ts">causl-ts</th>
+            <th scope="col" data-engine="causl-ts-wasm-engine">causl-ts-wasm-engine</th>
+            <th scope="col" data-perf-column="wallMs">wall&nbsp;(ms)</th>
+            <th scope="col" data-perf-column="cpuUserMs">CPU&nbsp;user&nbsp;(ms)</th>
+            <th scope="col" data-perf-column="cpuSystemMs">CPU&nbsp;sys&nbsp;(ms)</th>
+            <th scope="col" data-perf-column="heapPeakBytes">heap&nbsp;peak&nbsp;(B)</th>
+            <th scope="col" data-perf-column="hotPath">hot&nbsp;path</th>
+            <th scope="col" data-perf-column="coldPath">cold&nbsp;path</th>
+          </tr>
+        </thead>
+        <tbody id="dual-engine-tbody">
+          <tr class="dual-engine-loading"><td colspan="9">Loading <code>dual-engine.json</code> from <code>causljs/causl-bench</code>&hellip;</td></tr>
+        </tbody>
+      </table>
+
+      <p class="dual-engine-meta" id="dual-engine-meta" data-engines="" data-generated-at=""></p>
+    </section>
+
+    <script>
+      // Dual-engine renderer (causl-bench#21). Fetches the report
+      // from the causl-bench repo's main branch on GitHub raw, then
+      // paints per-scenario rows into #dual-engine-tbody. Each row
+      // carries `data-engine` (per-engine value cell) and
+      // `data-perf-column` (per-metric value cell) so the Playwright
+      // contract pins the rendered shape, not the DOM ordering.
+      //
+      // Renders honestly when the inner-bench output capture is not
+      // yet wired (`scenarios` empty per causl-bench#24): one
+      // explicit "scaffold" row referencing the issue.
+      (function dualEnginePanel() {
+        const URL = 'https://raw.githubusercontent.com/causljs/causl-bench/main/packages/bench/report/dual-engine.json';
+        const tbody = document.getElementById('dual-engine-tbody');
+        const meta = document.getElementById('dual-engine-meta');
+        const table = document.getElementById('dual-engine-table');
+        if (!tbody || !meta || !table) return;
+
+        fetch(URL, { cache: 'no-store' }).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        }).then(function (doc) {
+          const engines = Array.isArray(doc.engines) ? doc.engines : [];
+          const series = (doc.series && typeof doc.series === 'object') ? doc.series : {};
+          const ts = doc.generatedAt || '';
+
+          meta.setAttribute('data-engines', engines.join(','));
+          meta.setAttribute('data-generated-at', ts);
+          meta.textContent = 'Generated at ' + ts + ' for engines: ' + engines.join(', ') +
+            (doc.meta && doc.meta.gitShas ? ' (' + Object.entries(doc.meta.gitShas).map(function (e) { return e[0] + '@' + e[1]; }).join(', ') + ')' : '');
+
+          // Union the scenario names across all engines so we never
+          // hide a row that only one engine emitted.
+          const scenarioNames = new Set();
+          engines.forEach(function (eng) {
+            const scns = (series[eng] && series[eng].scenarios) || {};
+            Object.keys(scns).forEach(function (n) { scenarioNames.add(n); });
+          });
+
+          if (scenarioNames.size === 0) {
+            // Scaffold state: schema-correct file but no per-cell
+            // data yet (inner-bench wiring tracked in #24).
+            tbody.innerHTML = '<tr class="dual-engine-scaffold"><td colspan="9">' +
+              'Scaffold state: <code>dual-engine.json</code> carries the schema (engines list, per-engine <code>scenarios</code> map) but no per-cell rows yet. ' +
+              'The inner bench skips causl-library cells until the wasm-engine fork\'s <code>apply_commands</code> extern is wired (see <a href="https://github.com/causljs/causl-bench/issues/24">causl-bench#24</a> for the runner ↔ inner-bench wiring gap and <a href="https://github.com/causljs/causl-wasm/issues/85">causl-wasm#85</a> for the wasm-side prerequisite).' +
+              '</td></tr>';
+            table.removeAttribute('aria-busy');
+            return;
+          }
+
+          // Real per-scenario rendering. Pick the first engine's
+          // metrics for the top-line columns; second engine's
+          // metrics surface via data-engine cells.
+          const rows = Array.from(scenarioNames).sort().map(function (scn) {
+            const firstEng = engines[0];
+            const firstMetrics = (series[firstEng] && series[firstEng].scenarios && series[firstEng].scenarios[scn]) || {};
+            const secondEng = engines[1] || engines[0];
+            const secondMetrics = (series[secondEng] && series[secondEng].scenarios && series[secondEng].scenarios[scn]) || {};
+            function fmt(v) { return (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(2) : '—'; }
+            function paths(arr) {
+              if (!Array.isArray(arr) || arr.length === 0) return '—';
+              return arr.slice(0, 3).map(function (x) { return typeof x === 'string' ? x.split(' @ ')[0] : (x.name || JSON.stringify(x)); }).join(', ');
+            }
+            return '<tr data-scenario="' + scn + '">' +
+              '<th scope="row"><code>' + scn + '</code></th>' +
+              '<td data-engine="' + firstEng + '">' + fmt(firstMetrics.wallMs) + ' ms</td>' +
+              '<td data-engine="' + secondEng + '">' + fmt(secondMetrics.wallMs) + ' ms</td>' +
+              '<td data-perf-column="wallMs">' + fmt(firstMetrics.wallMs) + '</td>' +
+              '<td data-perf-column="cpuUserMs">' + fmt(firstMetrics.cpuUserMs) + '</td>' +
+              '<td data-perf-column="cpuSystemMs">' + fmt(firstMetrics.cpuSystemMs) + '</td>' +
+              '<td data-perf-column="heapPeakBytes">' + (firstMetrics.heapPeakBytes || '—') + '</td>' +
+              '<td data-perf-column="hotPath">' + paths(firstMetrics.hotPath) + '</td>' +
+              '<td data-perf-column="coldPath">' + paths(firstMetrics.coldPath) + '</td>' +
+              '</tr>';
+          });
+          tbody.innerHTML = rows.join('');
+          table.removeAttribute('aria-busy');
+        }).catch(function (err) {
+          tbody.innerHTML = '<tr class="dual-engine-error"><td colspan="9">Failed to load <code>dual-engine.json</code>: ' + err.message + '</td></tr>';
+          table.removeAttribute('aria-busy');
+        });
+      })();
+    </script>
   </section>
 
   <!-- ============================================================
