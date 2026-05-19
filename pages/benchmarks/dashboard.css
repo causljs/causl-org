@@ -1023,3 +1023,38 @@ details.status-callout > summary:focus-visible {
 .dual-engine-boundary-none { color: var(--text-on-base-subtle); }
 .dual-engine-boundary-low  { color: var(--commit-amber, #f5b942); }
 .dual-engine-boundary-high { color: var(--causal-cyan, #11D9FF); }
+
+/* ============================================================
+   causljs/causl-org#6 addition 2 — bytes-distribution triple.
+
+   The dual-engine table's boundaryCrossings column carries the
+   primary metric (crossings count) on a top line and the per-
+   crossing payload-bytes `min / median / max` triple on a
+   subdued second line. The triple sits SUBORDINATE to the
+   crossings value (smaller font, muted color) so it doesn't
+   crowd the row — adopters scan crossings first and drill into
+   bytes only when they want the cost-per-byte view.
+   ============================================================ */
+.dual-engine-th-sub {
+  display: inline-block;
+  margin-top: 2px;
+  color: var(--text-on-base-subtle);
+  font-weight: 400;
+  font-size: 0.78em;
+}
+.dual-engine-primary-metric {
+  font-weight: 600;
+}
+.dual-engine-bytes-triple {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-on-base-subtle);
+  font-size: 0.78em;
+  margin-top: 2px;
+  font-weight: 400;
+  /* Reset font-weight from the parent's `font-weight: 600` (set on
+     the column for the crossings number). */
+}
+.dual-engine-bytes-min { color: var(--text-on-base-subtle); }
+.dual-engine-bytes-median { color: var(--text-on-base-muted); }
+.dual-engine-bytes-max { color: var(--text-on-base-muted); }
