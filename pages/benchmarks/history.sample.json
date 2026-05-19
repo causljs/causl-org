@@ -52280,5 +52280,67 @@
         "reason": "mobx: scenario \"op-wasm-boundary-1k\" not architecturally meaningful for this library — see per-harness docstring for the public-API gap that prevents the cell's acceptance gate from being expressible (#843)."
       }
     ]
+  },
+  {
+    "capturedAt": "2026-05-18T12:00:00.000Z",
+    "version": "cross-library-all-scenarios/profile-split",
+    "samples": [
+      {
+        "library": "causl-wasm",
+        "scenario": "skip-chip-demo",
+        "scale": 1000,
+        "medianMs": 4.21,
+        "p95Ms": 4.78
+      },
+      {
+        "library": "causl-ts",
+        "scenario": "skip-chip-demo",
+        "scale": 1000,
+        "medianMs": 1.07,
+        "p95Ms": 1.18
+      }
+    ],
+    "skipped": [
+      {
+        "library": "causl-wasm-all",
+        "scenario": "skip-chip-demo",
+        "scale": 1000,
+        "status": "SKIP",
+        "reason": "feature-not-wired",
+        "detail": "skip-chip-demo's setup path not yet routed through makeCauslAsync; tracking: causl-bench#32."
+      },
+      {
+        "library": "causl-wasm",
+        "scenario": "skip-chip-artefact-demo",
+        "scale": 1000,
+        "status": "SKIP",
+        "reason": "artefact-missing",
+        "detail": "wasm-stub artefact wasn't built; run `pnpm --filter @causl/bench wasm:build` to resume the cell."
+      },
+      {
+        "library": "causl-wasm",
+        "scenario": "skip-chip-incompat-demo",
+        "scale": 1000,
+        "status": "SKIP",
+        "reason": "engine-incompatible",
+        "detail": "scenario relies on the sync `computeEndState` LibraryHarness seam, which the WASM engine cannot honour today."
+      },
+      {
+        "library": "causl-wasm",
+        "scenario": "skip-chip-timeout-demo",
+        "scale": 1000,
+        "status": "SKIP",
+        "reason": "timeout",
+        "detail": "cell exceeded the wall-clock budget; the harness self-aborted before the parent's OS-level kill fired."
+      },
+      {
+        "library": "causl-wasm",
+        "scenario": "skip-chip-oom-demo",
+        "scale": 1000,
+        "status": "SKIP",
+        "reason": "oom",
+        "detail": "cell hit V8 heap exhaustion (exit 134) at this scale."
+      }
+    ]
   }
 ]
