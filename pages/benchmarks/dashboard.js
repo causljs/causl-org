@@ -285,6 +285,76 @@
     return Number.parseFloat(n.toFixed(2)).toString()
   }
 
+  /** Format a byte total with thousands separators ("12,345 bytes"). */
+  function formatBytesCount(n) {
+    if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return null
+    return `${Math.round(n).toLocaleString('en-US')} bytes`
+  }
+
+  /**
+   * #33 follow-up — render the boundary-crossings + boundary-bytes
+   * tooltip rows for a per-cell history point. The publisher preserves
+   * three distinct states for these fields:
+   *
+   *   1. number-on-both                — wasm sample with measurements.
+   *      Render both rows + a derived bytes-per-crossing average. The
+   *      bytes-per-crossing line is the load-bearing one — per-crossing
+   *      cost varies ~1000× by payload size, so the average bytes/event
+   *      is the real cost proxy the dashboard is here to surface.
+   *
+   *   2. crossings-only                — wasm sample captured before the
+   *      `boundaryBytes` column was added (historical 39-cell sweep).
+   *      Render just the crossings row to match the pre-#33 tooltip;
+   *      no fabricated byte count, no fabricated average. Missing data
+   *      stays missing — honest absence over a made-up number.
+   *
+   *   3. neither (or boundaryBytes === null)  — non-wasm library
+   *      (jotai/mobx/redux/causl-ts). The FFI boundary is structurally
+   *      absent. Render nothing — degrade to the pre-existing median/
+   *      p95-only tooltip so non-wasm libraries' tooltips are
+   *      unchanged.
+   *
+   * Returns a leading-newline string (or '' for state 3). The caller
+   * appends it to the median/p95 tooltip line so the formatting flows
+   * `median · p95\ncrossings: …\nbytes: …\navg: …` without a trailing
+   * empty line when nothing renders.
+   */
+  function formatBoundaryTooltipLines(point) {
+    const crossings = point.boundaryCrossings
+    const bytes = point.boundaryBytes
+    const hasCrossings =
+      typeof crossings === 'number' && Number.isFinite(crossings)
+    const hasBytes =
+      typeof bytes === 'number' && Number.isFinite(bytes) && bytes >= 0
+    // State 3 — neither applies, OR boundaryBytes is explicitly null
+    // (non-wasm library) and there are no crossings to render either.
+    // Crossings === 0 is still a real measurement (the JS-backed
+    // causl-ts leg legitimately reports 0), but state 3 here means
+    // the field is absent from the sample, not zero. We branch on
+    // existence, not truthiness.
+    if (!hasCrossings && !hasBytes) return ''
+    let out = ''
+    if (hasCrossings) {
+      out += `\nboundary crossings: ${crossings.toLocaleString('en-US')}`
+    }
+    if (hasBytes) {
+      out += `\nboundary bytes: ${formatBytesCount(bytes)}`
+      // Average bytes-per-crossing — only meaningful when BOTH fields
+      // are present AND crossings > 0 (else the divisor is zero / NaN).
+      // This is the cost-per-byte view the dashboard is being extended
+      // to surface; per-crossing cost varies ~1000× by payload size.
+      if (hasCrossings && crossings > 0) {
+        const avg = bytes / crossings
+        const avgRounded =
+          avg >= 100
+            ? Math.round(avg).toLocaleString('en-US')
+            : avg.toFixed(1)
+        out += `\navg ${avgRounded} bytes / crossing`
+      }
+    }
+    return out
+  }
+
   /** Tooltip-friendly ISO date → "May 06". */
   function formatShortDate(iso) {
     const d = new Date(iso)
@@ -377,6 +447,18 @@
           version: entry.version,
           medianMs: sample.medianMs,
           p95Ms: sample.p95Ms,
+          // #33 follow-up — surface boundary crossings + bytes in the
+          // per-point tooltip when both are present (wasm-backed
+          // samples only). The publisher preserves `null` for non-wasm
+          // libraries to mean "not applicable to this engine", and
+          // historical samples captured before the field existed have
+          // it absent (undefined). The tooltip renderer treats both
+          // null and undefined the same — degrade to the crossing-only
+          // tooltip (or, when crossings is also absent, the original
+          // median/p95-only tooltip). NO new chart series — bytes is
+          // tooltip-only; a dedicated chart line is a separate PR.
+          boundaryCrossings: sample.boundaryCrossings,
+          boundaryBytes: sample.boundaryBytes,
         })
       }
       // Attach per-entry skipped cells to the matching section so the
@@ -759,6 +841,7 @@
         const tooltip =
           `${escapeHtml(getLibraryLabel(lib))} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
           `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms` +
+          formatBoundaryTooltipLines(p) +
           (LIBRARY_ANNOTATION[lib]
             ? `\n${escapeHtml(LIBRARY_ANNOTATION[lib])}`
             : '')
@@ -798,7 +881,8 @@
           const y0 = PAD_T + libIdx * bandH
           const tooltip =
             `${escapeHtml(lib)} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
-            `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms`
+            `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms` +
+            formatBoundaryTooltipLines(p)
           allHitRects +=
             `<rect x="${x0.toFixed(2)}" y="${y0.toFixed(2)}" ` +
             `width="${(x1 - x0).toFixed(2)}" height="${bandH.toFixed(2)}" ` +
