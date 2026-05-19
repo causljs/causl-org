@@ -87,14 +87,46 @@
    *  formerly labelled `causl`, renamed in #1538); `causl-wasm` is the
    *  REAL serde-wasm Rust engine (#1536/#1538) — ~85–390× slower on
    *  median by design (#1133 STANDS), kept adjacent so the honest
-   *  #1133/#1525 callout sits next to its bars. */
+   *  #1133/#1525 callout sits next to its bars.
+   *
+   *  `causl-wasm-all` is the same real engine measured under the
+   *  EXHAUSTIVE profile (no wall-clock kill, adaptive trial-count on
+   *  slow cells) — it sits next to `causl-wasm` so the eye sees the
+   *  pair "routine selective measurement / full exhaustive cross-cell
+   *  measurement" together. See the profile docblock in
+   *  packages/bench/scripts/cross-library-all-scenarios.ts. */
   const LIBRARY_ORDER = [
     'causl-ts',
     'causl-wasm',
+    'causl-wasm-all',
     'jotai',
     'redux-toolkit',
     'mobx',
   ]
+
+  /** Pretty legend labels — applied via getLibraryLabel(). Keeps the
+   *  underlying library id (`causl-wasm-all`) stable in the JSON shape
+   *  while the dashboard surfaces a human-friendlier "(all)" suffix
+   *  so the exhaustive-profile series reads as a related sibling of
+   *  `causl-wasm` rather than a standalone library. */
+  const LIBRARY_LABEL = {
+    'causl-wasm-all': 'causl-wasm (all)',
+  }
+  function getLibraryLabel(lib) {
+    return LIBRARY_LABEL[lib] ?? lib
+  }
+
+  /** Per-series annotation surfaced as a tooltip on the legend chip.
+   *  The `causl-wasm-all` annotation flags that this series is the
+   *  EXHAUSTIVE profile — including slow scenarios that the
+   *  selective `causl-wasm` series intentionally drops via its
+   *  wall-clock-kill DNF gate. Only annotated series get the
+   *  tooltip note; everything else uses the plain library name. */
+  const LIBRARY_ANNOTATION = {
+    'causl-wasm-all':
+      'exhaustive profile — includes slow scenarios that the ' +
+      'selective causl-wasm series DNFs',
+  }
 
   /** Library colours — competitor identity colours, NOT state
    *  semantics. The brand palette in css/site.css reserves Async
@@ -119,9 +151,27 @@
                                //   axis; distinct from causl-ts so the
                                //   ~85–390× slower bars read as a
                                //   separate series (#1133/#1525).
+    'causl-wasm-all': '#9FF0C8', // Paler commit-mint — the EXHAUSTIVE
+                               //   profile of the same Rust engine,
+                               //   washed-out so the eye reads it as
+                               //   a sibling of causl-wasm (not a
+                               //   competing colour). Also rendered
+                               //   with a dashed stroke (see
+                               //   LIBRARY_DASH below) for a second
+                               //   redundant axis of distinction in
+                               //   case the contrast washes out under
+                               //   a particular theme.
     jotai: '#C8743D',          // Copper Wire — neutral identity.
     'redux-toolkit': '#7C4DFF', // Mutation Violet — neutral identity.
     mobx: '#8FA2AA',           // Trace Ash — neutral identity.
+  }
+
+  /** Per-library SVG `stroke-dasharray` — empty string = solid line.
+   *  Only `causl-wasm-all` uses a dashed stroke today; the dash
+   *  reinforces the "this is the exhaustive sibling of causl-wasm"
+   *  read without consuming a fresh palette slot. */
+  const LIBRARY_DASH = {
+    'causl-wasm-all': '4 3',
   }
 
   /** Default-view filter: the two causl engine axes (`causl-ts` +
@@ -235,6 +285,76 @@
     return Number.parseFloat(n.toFixed(2)).toString()
   }
 
+  /** Format a byte total with thousands separators ("12,345 bytes"). */
+  function formatBytesCount(n) {
+    if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return null
+    return `${Math.round(n).toLocaleString('en-US')} bytes`
+  }
+
+  /**
+   * #33 follow-up — render the boundary-crossings + boundary-bytes
+   * tooltip rows for a per-cell history point. The publisher preserves
+   * three distinct states for these fields:
+   *
+   *   1. number-on-both                — wasm sample with measurements.
+   *      Render both rows + a derived bytes-per-crossing average. The
+   *      bytes-per-crossing line is the load-bearing one — per-crossing
+   *      cost varies ~1000× by payload size, so the average bytes/event
+   *      is the real cost proxy the dashboard is here to surface.
+   *
+   *   2. crossings-only                — wasm sample captured before the
+   *      `boundaryBytes` column was added (historical 39-cell sweep).
+   *      Render just the crossings row to match the pre-#33 tooltip;
+   *      no fabricated byte count, no fabricated average. Missing data
+   *      stays missing — honest absence over a made-up number.
+   *
+   *   3. neither (or boundaryBytes === null)  — non-wasm library
+   *      (jotai/mobx/redux/causl-ts). The FFI boundary is structurally
+   *      absent. Render nothing — degrade to the pre-existing median/
+   *      p95-only tooltip so non-wasm libraries' tooltips are
+   *      unchanged.
+   *
+   * Returns a leading-newline string (or '' for state 3). The caller
+   * appends it to the median/p95 tooltip line so the formatting flows
+   * `median · p95\ncrossings: …\nbytes: …\navg: …` without a trailing
+   * empty line when nothing renders.
+   */
+  function formatBoundaryTooltipLines(point) {
+    const crossings = point.boundaryCrossings
+    const bytes = point.boundaryBytes
+    const hasCrossings =
+      typeof crossings === 'number' && Number.isFinite(crossings)
+    const hasBytes =
+      typeof bytes === 'number' && Number.isFinite(bytes) && bytes >= 0
+    // State 3 — neither applies, OR boundaryBytes is explicitly null
+    // (non-wasm library) and there are no crossings to render either.
+    // Crossings === 0 is still a real measurement (the JS-backed
+    // causl-ts leg legitimately reports 0), but state 3 here means
+    // the field is absent from the sample, not zero. We branch on
+    // existence, not truthiness.
+    if (!hasCrossings && !hasBytes) return ''
+    let out = ''
+    if (hasCrossings) {
+      out += `\nboundary crossings: ${crossings.toLocaleString('en-US')}`
+    }
+    if (hasBytes) {
+      out += `\nboundary bytes: ${formatBytesCount(bytes)}`
+      // Average bytes-per-crossing — only meaningful when BOTH fields
+      // are present AND crossings > 0 (else the divisor is zero / NaN).
+      // This is the cost-per-byte view the dashboard is being extended
+      // to surface; per-crossing cost varies ~1000× by payload size.
+      if (hasCrossings && crossings > 0) {
+        const avg = bytes / crossings
+        const avgRounded =
+          avg >= 100
+            ? Math.round(avg).toLocaleString('en-US')
+            : avg.toFixed(1)
+        out += `\navg ${avgRounded} bytes / crossing`
+      }
+    }
+    return out
+  }
+
   /** Tooltip-friendly ISO date → "May 06". */
   function formatShortDate(iso) {
     const d = new Date(iso)
@@ -327,6 +447,18 @@
           version: entry.version,
           medianMs: sample.medianMs,
           p95Ms: sample.p95Ms,
+          // #33 follow-up — surface boundary crossings + bytes in the
+          // per-point tooltip when both are present (wasm-backed
+          // samples only). The publisher preserves `null` for non-wasm
+          // libraries to mean "not applicable to this engine", and
+          // historical samples captured before the field existed have
+          // it absent (undefined). The tooltip renderer treats both
+          // null and undefined the same — degrade to the crossing-only
+          // tooltip (or, when crossings is also absent, the original
+          // median/p95-only tooltip). NO new chart series — bytes is
+          // tooltip-only; a dedicated chart line is a separate PR.
+          boundaryCrossings: sample.boundaryCrossings,
+          boundaryBytes: sample.boundaryBytes,
         })
       }
       // Attach per-entry skipped cells to the matching section so the
@@ -694,10 +826,12 @@
       }
 
       if (medianRaw.length > 0) {
+        const dash = LIBRARY_DASH[lib]
+        const dashAttr = dash ? ` stroke-dasharray="${dash}"` : ''
         allLines +=
           `<path d="${catmullRomPath(medianRaw)}" fill="none" ` +
           `stroke="${color}" stroke-width="1.8" stroke-linecap="round" ` +
-          `stroke-linejoin="round" data-library="${escapeHtml(lib)}" />`
+          `stroke-linejoin="round"${dashAttr} data-library="${escapeHtml(lib)}" />`
       }
 
       // Dots per datapoint with embedded tooltip.
@@ -705,8 +839,12 @@
         const idx = runIndex.get(p.capturedAt)
         if (idx === undefined || !Number.isFinite(p.medianMs)) continue
         const tooltip =
-          `${escapeHtml(lib)} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
-          `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms`
+          `${escapeHtml(getLibraryLabel(lib))} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
+          `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms` +
+          formatBoundaryTooltipLines(p) +
+          (LIBRARY_ANNOTATION[lib]
+            ? `\n${escapeHtml(LIBRARY_ANNOTATION[lib])}`
+            : '')
         allDots +=
           `<circle cx="${xAt(idx).toFixed(2)}" cy="${yAt(p.medianMs).toFixed(2)}" ` +
           `r="2.8" fill="${color}" stroke="rgba(11,16,32,0.6)" stroke-width="1" ` +
@@ -743,7 +881,8 @@
           const y0 = PAD_T + libIdx * bandH
           const tooltip =
             `${escapeHtml(lib)} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
-            `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms`
+            `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms` +
+            formatBoundaryTooltipLines(p)
           allHitRects +=
             `<rect x="${x0.toFixed(2)}" y="${y0.toFixed(2)}" ` +
             `width="${(x1 - x0).toFixed(2)}" height="${bandH.toFixed(2)}" ` +
@@ -985,7 +1124,7 @@
       li.title = reason
       li.style.setProperty('--lib-color', color)
       li.innerHTML =
-        `<span class="skip-box-lib" aria-hidden="true">${escapeHtml(lib)}</span>` +
+        `<span class="skip-box-lib" aria-hidden="true">${escapeHtml(getLibraryLabel(lib))}</span>` +
         `<span class="skip-box-label" aria-hidden="true">${escapeHtml(label)}</span>`
       skipBoxList.appendChild(li)
       renderedSkipBoxes += 1
@@ -1024,11 +1163,12 @@
         item.style.setProperty('--verdict-color', VERDICT_COLOR.unknown)
         const reason = skipInfo.reason || 'skipped — no reason recorded'
         const reasonAttr = escapeHtml(reason)
+        const skippedLabel = getLibraryLabel(lib)
         item.innerHTML =
           `<span class="bench-legend-swatch" aria-hidden="true"></span>` +
           `<span class="bench-legend-lib bench-legend-lib--strike" ` +
           `title="${reasonAttr}">` +
-          `<s>${escapeHtml(lib)}</s>` +
+          `<s>${escapeHtml(skippedLabel)}</s>` +
           `</span>` +
           `<span class="bench-legend-stats bench-legend-stats--muted">` +
           `<span class="bench-legend-median">— ms</span>` +
@@ -1050,11 +1190,28 @@
       const verdictColor = VERDICT_COLOR[verdict.kind] ?? VERDICT_COLOR.unknown
       const lastMedian = last ? formatNumber(last.medianMs) : 'n/a'
       const lastP95 = last ? formatNumber(last.p95Ms) : 'n/a'
+      const label = getLibraryLabel(lib)
+      const annotation = LIBRARY_ANNOTATION[lib]
+      const libNameTitle = annotation
+        ? ` title="${escapeHtml(annotation)}"`
+        : ''
+      const libNameMarker = annotation
+        ? ' bench-legend-lib--annotated'
+        : ''
       item.dataset.verdict = verdict.kind
       item.style.setProperty('--verdict-color', verdictColor)
+      if (annotation) {
+        item.dataset.annotated = 'true'
+        item.dataset.annotation = annotation
+      }
       item.innerHTML =
         `<span class="bench-legend-swatch" aria-hidden="true"></span>` +
-        `<span class="bench-legend-lib">${escapeHtml(lib)}</span>` +
+        `<span class="bench-legend-lib${libNameMarker}"${libNameTitle}>` +
+        `${escapeHtml(label)}` +
+        (annotation
+          ? ` <span class="bench-legend-lib-note" aria-hidden="true">ⓘ</span>`
+          : '') +
+        `</span>` +
         `<span class="bench-legend-stats">` +
         `<span class="bench-legend-median">${lastMedian} ms</span>` +
         `<span class="bench-legend-p95">p95 ${lastP95}</span>` +
@@ -1064,7 +1221,7 @@
         `<span class="bench-legend-verdict-label">${verdict.kind}</span>` +
         `</span>` +
         `<a class="bench-legend-profile-link" href="${profileUrl}" rel="noopener" ` +
-        `aria-label="Profile artifacts for ${escapeHtml(lib)} ${escapeHtml(section.scenario)} at scale ${section.scale} (placeholder — populated by #709 once CI is restored)" ` +
+        `aria-label="Profile artifacts for ${escapeHtml(label)} ${escapeHtml(section.scenario)} at scale ${section.scale} (placeholder — populated by #709 once CI is restored)" ` +
         `title="profile snapshot → ${profileUrl} (placeholder until #709 nightly publish lands)">⌕</a>`
       legend.appendChild(item)
     }
@@ -1205,7 +1362,7 @@
       'Filter by library (controls which lines render on each chart)',
       filterState._allLibraries,
       (l) => l,
-      (l) => l,
+      (l) => getLibraryLabel(l),
       filterState.libraries,
     )
 
