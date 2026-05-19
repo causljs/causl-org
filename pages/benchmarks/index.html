@@ -138,6 +138,18 @@
       </p>
     </div>
 
+    <details class="status-callout" aria-label="boundaryCrossings sample field">
+      <summary><strong>New sample field: <code>boundaryCrossings</code> (Phase L1)</strong></summary>
+      <p>
+        Each <code>causl-wasm</code> sample now carries a <code>boundaryCrossings</code>
+        integer counting how many times the scenario crossed the JS↔WASM bridge during
+        the timed region. <code>causl-ts</code> samples carry <code>0</code> (no bridge).
+        The per-cell history charts will gain a boundary-crossings sparkline in a
+        follow-up; today the value is queryable in
+        <a href="./history.json"><code>history.json</code></a> directly.
+      </p>
+    </details>
+
     <details class="status-callout" aria-label="Charting library decision">
       <summary><strong>Charting library — vanilla SVG (decision log)</strong></summary>
       <p>
@@ -174,34 +186,40 @@
          a misleading-by-omission story without this callout.
          ============================================================ -->
     <div class="bench-honest-callout" role="note"
-         aria-label="causl-wasm median-latency honest framing (#1133 / #1525)">
-      <strong>Read this before the causl-wasm bars</strong>
+         aria-label="Phase L1 dual-engine benchmark landed">
+      <strong>Phase L1 — dual-engine comparison landed</strong>
       <p>
-        <a href="https://github.com/causljs/causl-ts/issues" rel="noopener">#1133</a>
-        median-latency falsification <strong>STANDS</strong>:
-        <code>causl-wasm</code> is <strong>~85&ndash;390&times; slower</strong>
-        than <code>causl-ts</code> on median commit &mdash;
-        <em>by design, not a regression to fix</em>. The bars below
-        plot those real, un-massaged numbers.
+        Earlier dashboard text on this page referenced a <code>causl-wasm</code>
+        "~85–390× slower" finding drawn from a bench harness that, on audit, never
+        actually instantiated the WASM engine — the
+        <code>causl-ts-wasm-engine</code> fork's <code>createCausl</code>
+        hardcoded <code>new JsBackend(...)</code> and the bench's
+        <code>createWasmCausl</code> factory only warmed the wasm module via a
+        one-shot <code>bridge_id()</code> extern before returning a regular
+        JS-backed graph. Those numbers were withdrawn pending Phase L1.
       </p>
       <p>
-        <code>causl-wasm</code>'s value axis is large-tree
-        <strong>GC-survival</strong>
-        (<a href="https://github.com/causljs/causl-ts/issues" rel="noopener">#1525</a>),
-        which a median chart <em>structurally cannot show</em>: at
-        50k nodes <code>causl-ts</code> GC-livelocks to process death
-        (p50&nbsp;15.5&nbsp;ms, 43 major-GC pauses) while
-        <code>causl-wasm</code> survives (p50&nbsp;1.73&nbsp;ms,
-        1 pause, ~16.6&times; p99.9 flattening, transient-not-&approx;0
-        allocation). A reader who concludes &ldquo;causl-wasm is
-        slow, therefore worse&rdquo; has read only the axis a median
-        chart can draw.
+        Phase L1 now ships: the dual-engine bench routes every causl-wasm cell
+        through <code>loadWasmBackend()</code> → a real <code>WasmBackend</code>
+        instance whose <code>commit()</code> shadow-invokes the consolidated
+        bridge's <code>apply_commands</code> extern on every commit. The
+        <strong>JS↔WASM crossings</strong> column in the panel below counts the
+        actual boundary tax paid per scenario; the wall-time delta between
+        engines is dominated by <em>boundary cost per crossing × number of
+        crossings</em>. The validation gate in
+        <code>tools/run-bench.mjs</code> refuses to publish numbers when the
+        wasm leg shows zero crossings, so a regression to JS-vs-JS noise will
+        loud-fail the run.
       </p>
       <p class="bench-honest-callout-refs">
-        References:
-        <a href="https://github.com/causljs/causl-ts/issues" rel="noopener">#1133 (median-latency falsification — STANDS)</a>
-        &middot;
-        <a href="https://github.com/causljs/causl-ts/issues" rel="noopener">#1525 (large-tree GC-survival — the real value axis)</a>
+        Receipts: <code>dual-engine.json#meta.gitShas</code> pins the upstream
+        and fork commits this comparison was drawn from;
+        <code>meta.legValidation</code> per-leg booleans pin the boundary
+        crossings. Phase L2 (tracked as follow-ups) inverts the SSOT so the
+        wasm-side diff becomes authoritative — that's where the engine
+        comparison stops measuring boundary tax and starts measuring engine
+        compute. Until then, treat the column as a faithful boundary-cost
+        signature.
       </p>
     </div>
 
@@ -246,6 +264,10 @@
         <a href="https://github.com/causljs/causl-wasm"><code>causljs/causl-wasm</code></a>. Toggle the source per bench run with
         <code>CAUSL_TS_SOURCE=upstream|wasm-engine</code> in
         <code>causljs/causl-bench</code>.
+        The <strong>JS↔WASM crossings</strong> column is the star metric — it counts how many times each
+        scenario rang the WASM bridge on this run. <code>causl-ts</code> is always 0 (no boundary);
+        <code>causl-ts-wasm-engine</code> should be &gt; 0 on every cell. The wall-time delta between
+        engines is dominated by boundary cost per crossing × number of crossings.
       </p>
 
       <table id="dual-engine-table" aria-busy="true">
@@ -254,6 +276,7 @@
             <th scope="col">Scenario</th>
             <th scope="col" data-engine="causl-ts">causl-ts</th>
             <th scope="col" data-engine="causl-ts-wasm-engine">causl-ts-wasm-engine</th>
+            <th scope="col" data-perf-column="boundaryCrossings">JS↔WASM crossings</th>
             <th scope="col" data-perf-column="wallMs">wall&nbsp;(ms)</th>
             <th scope="col" data-perf-column="cpuUserMs">CPU&nbsp;user&nbsp;(ms)</th>
             <th scope="col" data-perf-column="cpuSystemMs">CPU&nbsp;sys&nbsp;(ms)</th>
@@ -263,7 +286,7 @@
           </tr>
         </thead>
         <tbody id="dual-engine-tbody">
-          <tr class="dual-engine-loading"><td colspan="9">Loading <code>dual-engine.json</code> from <code>causljs/causl-bench</code>&hellip;</td></tr>
+          <tr class="dual-engine-loading"><td colspan="10">Loading <code>dual-engine.json</code> from <code>causljs/causl-bench</code>&hellip;</td></tr>
         </tbody>
       </table>
 
@@ -312,7 +335,7 @@
           if (scenarioNames.size === 0) {
             // Scaffold state: schema-correct file but no per-cell
             // data yet (inner-bench wiring tracked in #24).
-            tbody.innerHTML = '<tr class="dual-engine-scaffold"><td colspan="9">' +
+            tbody.innerHTML = '<tr class="dual-engine-scaffold"><td colspan="10">' +
               'Scaffold state: <code>dual-engine.json</code> carries the schema (engines list, per-engine <code>scenarios</code> map) but no per-cell rows yet. ' +
               'The inner bench skips causl-library cells until the wasm-engine fork\'s <code>apply_commands</code> extern is wired (see <a href="https://github.com/causljs/causl-bench/issues/24">causl-bench#24</a> for the runner ↔ inner-bench wiring gap and <a href="https://github.com/causljs/causl-wasm/issues/85">causl-wasm#85</a> for the wasm-side prerequisite).' +
               '</td></tr>';
@@ -320,35 +343,76 @@
             return;
           }
 
-          // Real per-scenario rendering. Pick the first engine's
-          // metrics for the top-line columns; second engine's
-          // metrics surface via data-engine cells.
+          // Real per-scenario rendering. The published schema nests
+          // metrics under `scenarios[name].result.runtime` (median /
+          // mean / cpuNs / gcPauses) and `scenarios[name].{heapDeltaBytes,
+          // peakRssBytes}`; project those into the flat columns the
+          // Playwright contract pins (`data-perf-column="<key>"`).
+          function fmt(v, digits) { return (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(typeof digits === 'number' ? digits : 2) : '—'; }
+          function fmtBytes(n) {
+            if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
+            if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MiB';
+            if (n >= 1024) return (n / 1024).toFixed(1) + ' KiB';
+            return n + ' B';
+          }
+          function project(cell) {
+            // `cell` is `scenarios[name]` for one engine. Returns the
+            // flat view the renderer consumes; missing fields stay
+            // undefined so fmt() emits an em-dash.
+            const c = cell || {};
+            const rt = (c.result && c.result.runtime) || {};
+            const gc = Array.isArray(rt.gcPauses) ? rt.gcPauses.slice() : [];
+            gc.sort(function (a, b) { return (b.totalMs || 0) - (a.totalMs || 0); });
+            const hot = gc.length ? (gc[0].kind + ' ' + (gc[0].totalMs || 0).toFixed(1) + 'ms') : undefined;
+            const cold = gc.length > 1 ? (gc[1].kind + ' ' + (gc[1].totalMs || 0).toFixed(1) + 'ms') : undefined;
+            return {
+              wallMs: rt.median,
+              cpuUserMs: typeof rt.cpuNs === 'number' ? rt.cpuNs / 1e6 : undefined,
+              cpuSystemMs: undefined, // not collected by the current inner bench
+              heapPeakBytes: c.peakRssBytes,
+              hotPath: hot,
+              coldPath: cold,
+              boundaryCrossings: c?.meta?.boundaryCrossings,
+            };
+          }
           const rows = Array.from(scenarioNames).sort().map(function (scn) {
             const firstEng = engines[0];
-            const firstMetrics = (series[firstEng] && series[firstEng].scenarios && series[firstEng].scenarios[scn]) || {};
             const secondEng = engines[1] || engines[0];
-            const secondMetrics = (series[secondEng] && series[secondEng].scenarios && series[secondEng].scenarios[scn]) || {};
-            function fmt(v) { return (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(2) : '—'; }
-            function paths(arr) {
-              if (!Array.isArray(arr) || arr.length === 0) return '—';
-              return arr.slice(0, 3).map(function (x) { return typeof x === 'string' ? x.split(' @ ')[0] : (x.name || JSON.stringify(x)); }).join(', ');
+            const firstMetrics = project((series[firstEng] && series[firstEng].scenarios && series[firstEng].scenarios[scn]));
+            const secondMetrics = project((series[secondEng] && series[secondEng].scenarios && series[secondEng].scenarios[scn]));
+            let deltaCls = '';
+            let deltaTxt = '';
+            if (typeof firstMetrics.wallMs === 'number' && typeof secondMetrics.wallMs === 'number' && firstMetrics.wallMs > 0) {
+              const pct = ((secondMetrics.wallMs - firstMetrics.wallMs) / firstMetrics.wallMs) * 100;
+              deltaTxt = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+              if (pct <= -5) deltaCls = ' class="dual-engine-faster"';
+              else if (pct >= 5) deltaCls = ' class="dual-engine-slower"';
+              else deltaCls = ' class="dual-engine-same"';
             }
+            // Boundary-crossings (star metric): pick the wasm-engine row's
+            // count when present; fall back to firstMetrics. 0 renders as
+            // an em-dash (no boundary). Class scales: none / low / high.
+            const bcRaw = (typeof secondMetrics.boundaryCrossings === 'number' ? secondMetrics.boundaryCrossings : firstMetrics.boundaryCrossings);
+            const bc = (typeof bcRaw === 'number' && Number.isFinite(bcRaw)) ? bcRaw : 0;
+            const bcCls = bc === 0 ? 'dual-engine-boundary-none' : (bc < 1000 ? 'dual-engine-boundary-low' : 'dual-engine-boundary-high');
+            const bcTxt = bc === 0 ? '<small>—</small>' : bc.toLocaleString();
             return '<tr data-scenario="' + scn + '">' +
               '<th scope="row"><code>' + scn + '</code></th>' +
-              '<td data-engine="' + firstEng + '">' + fmt(firstMetrics.wallMs) + ' ms</td>' +
-              '<td data-engine="' + secondEng + '">' + fmt(secondMetrics.wallMs) + ' ms</td>' +
-              '<td data-perf-column="wallMs">' + fmt(firstMetrics.wallMs) + '</td>' +
-              '<td data-perf-column="cpuUserMs">' + fmt(firstMetrics.cpuUserMs) + '</td>' +
+              '<td data-engine="' + firstEng + '">' + fmt(firstMetrics.wallMs, 3) + ' ms</td>' +
+              '<td data-engine="' + secondEng + '"' + deltaCls + '>' + fmt(secondMetrics.wallMs, 3) + ' ms' + (deltaTxt ? ' <small>(' + deltaTxt + ')</small>' : '') + '</td>' +
+              '<td data-perf-column="boundaryCrossings" class="' + bcCls + '">' + bcTxt + '</td>' +
+              '<td data-perf-column="wallMs">' + fmt(firstMetrics.wallMs, 3) + '</td>' +
+              '<td data-perf-column="cpuUserMs">' + fmt(firstMetrics.cpuUserMs, 3) + '</td>' +
               '<td data-perf-column="cpuSystemMs">' + fmt(firstMetrics.cpuSystemMs) + '</td>' +
-              '<td data-perf-column="heapPeakBytes">' + (firstMetrics.heapPeakBytes || '—') + '</td>' +
-              '<td data-perf-column="hotPath">' + paths(firstMetrics.hotPath) + '</td>' +
-              '<td data-perf-column="coldPath">' + paths(firstMetrics.coldPath) + '</td>' +
+              '<td data-perf-column="heapPeakBytes">' + fmtBytes(firstMetrics.heapPeakBytes) + '</td>' +
+              '<td data-perf-column="hotPath">' + (firstMetrics.hotPath || '—') + '</td>' +
+              '<td data-perf-column="coldPath">' + (firstMetrics.coldPath || '—') + '</td>' +
               '</tr>';
           });
           tbody.innerHTML = rows.join('');
           table.removeAttribute('aria-busy');
         }).catch(function (err) {
-          tbody.innerHTML = '<tr class="dual-engine-error"><td colspan="9">Failed to load <code>dual-engine.json</code>: ' + err.message + '</td></tr>';
+          tbody.innerHTML = '<tr class="dual-engine-error"><td colspan="10">Failed to load <code>dual-engine.json</code>: ' + err.message + '</td></tr>';
           table.removeAttribute('aria-busy');
         });
       })();
