@@ -553,6 +553,80 @@
   padding: 0.06rem 0.4rem;
 }
 
+/* -- causl-bench#37 typed SKIP taxonomy -----------------------
+   The publisher now emits structured SKIP rows on `history.json`'s
+   `skipped[]` with a fixed `reason` enum drawn from
+   `packages/bench/src/skip-row.ts`:
+
+     artefact-missing     → wasm bridge artefact not built
+                            (muted warm gray — actionable rebuild).
+     feature-not-wired    → setup path not routed through
+                            `makeCauslAsync` (muted cool cyan
+                            — TODO-style, future PR resumes).
+     engine-incompatible  → sync-only LibraryHarness seam the
+                            wasm engine can't honour (muted
+                            violet — semantic gap).
+     timeout              → wall-clock budget exceeded
+                            (muted commit-amber).
+     oom                  → V8 heap exhaustion / exit 134
+                            (muted conflict-coral).
+
+   All five reuse the brand palette tokens (--causal-cyan,
+   --signal-blue, --commit-amber, --conflict-coral, --fog) so
+   no new colours are introduced — only new bindings of existing
+   ones. Each rule paints the .skip-box-label pill background +
+   border at the same low-alpha ratio as the legacy `.skip-class-*`
+   classes above (0.14 fill / 0.32-ish border) so the strip reads
+   uniformly across legacy and typed rows. */
+
+.skip-class-artefact-missing .skip-box-label {
+  background: rgba(143, 162, 170, 0.16);
+  border: 1px solid rgba(143, 162, 170, 0.40);
+  border-radius: 4px;
+  padding: 0.06rem 0.4rem;
+}
+
+.skip-class-feature-not-wired .skip-box-label {
+  /* causal-cyan, low alpha — TODO-style "wiring pending" cue. */
+  background: rgba(17, 217, 255, 0.13);
+  border: 1px solid rgba(17, 217, 255, 0.36);
+  border-radius: 4px;
+  padding: 0.06rem 0.4rem;
+}
+
+.skip-class-engine-incompatible .skip-box-label {
+  /* signal-blue (= mutation-violet), low alpha — "semantic gap". */
+  background: rgba(124, 77, 255, 0.14);
+  border: 1px solid rgba(124, 77, 255, 0.36);
+  border-radius: 4px;
+  padding: 0.06rem 0.4rem;
+}
+
+.skip-class-timeout .skip-box-label {
+  /* commit-amber, low alpha — "ran past the wall-clock budget". */
+  background: rgba(255, 179, 71, 0.14);
+  border: 1px solid rgba(255, 179, 71, 0.38);
+  border-radius: 4px;
+  padding: 0.06rem 0.4rem;
+}
+
+.skip-class-oom .skip-box-label {
+  /* conflict-coral, low alpha — "ran out of memory". */
+  background: rgba(255, 100, 110, 0.14);
+  border: 1px solid rgba(255, 100, 110, 0.36);
+  border-radius: 4px;
+  padding: 0.06rem 0.4rem;
+}
+
+/* Typed-row marker on .skip-box itself: keeps the dashed border +
+   striped surface from the legacy class, just adds a `data-typed`
+   hook for downstream automation that wants to filter the typed
+   subset (e.g. the "show skipped rows" toggle's future surface). */
+.skip-box--typed[data-typed-reason] {
+  /* Keep the geometry identical to the legacy .skip-box. The
+     per-reason colour rides on the label pill above. */
+}
+
 /* -- Per-section legend strip (one chip per framework) -------- */
 
 .bench-section-legend {
@@ -717,6 +791,67 @@
   color: var(--fog);
   background: color-mix(in srgb, var(--fog) 14%, transparent);
   border-color: color-mix(in srgb, var(--fog) 50%, transparent);
+}
+
+/* causl-bench#37 — typed SKIP chip in the legend's verdict slot.
+   Mirrors the .skip-class-* taxonomy used by the in-chart skip
+   strip so a (scenario × library) cell with a typed skip reads
+   the same colour in BOTH places: the in-chart strip below the
+   SVG and the legend chip next to it. The `--skip-typed` modifier
+   resets the verdict-pill geometry to the per-reason variable so
+   each reason carries its own muted surface + border without the
+   generic-skip neutral grey.
+
+   The taxonomy → token mapping:
+     artefact-missing    → --fog          (muted warm gray)
+     feature-not-wired   → --causal-cyan  (muted cool cyan, TODO)
+     engine-incompatible → --signal-blue  (muted violet, semantic)
+     timeout             → --commit-amber (muted amber)
+     oom                 → --conflict-coral (muted red)
+
+   Geometry inherits from .bench-legend-verdict so the chip stays
+   the same 999px-radius pill shape across legacy + typed paths;
+   only colour shifts. */
+.bench-legend-verdict--skip-typed {
+  /* Reset the inherited --verdict-color tint (which the legacy
+     skipped chip wires to --fog) so the per-reason rule below can
+     paint the surface against the brand token directly. */
+  color: var(--skip-reason-color, var(--fog));
+  background: color-mix(
+    in srgb,
+    var(--skip-reason-color, var(--fog)) 14%,
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--skip-reason-color, var(--fog)) 44%,
+    transparent
+  );
+}
+
+.bench-legend-verdict--skip-typed .bench-legend-verdict-badge {
+  background: var(--skip-reason-color, var(--fog));
+  color: rgba(11, 16, 32, 0.85);
+}
+
+.bench-legend-skip-reason-artefact-missing {
+  --skip-reason-color: var(--fog);
+}
+
+.bench-legend-skip-reason-feature-not-wired {
+  --skip-reason-color: var(--causal-cyan);
+}
+
+.bench-legend-skip-reason-engine-incompatible {
+  --skip-reason-color: var(--signal-blue);
+}
+
+.bench-legend-skip-reason-timeout {
+  --skip-reason-color: var(--commit-amber);
+}
+
+.bench-legend-skip-reason-oom {
+  --skip-reason-color: var(--conflict-coral);
 }
 
 .bench-legend-verdict-badge {

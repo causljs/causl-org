@@ -264,6 +264,82 @@
   }
 
   /** ----------------------------------------------------------------
+   *  Typed skip taxonomy (causl-bench#32, persisted by #37).
+   *
+   *  After causl-bench#37, every SKIP cell in `history.json`'s new
+   *  `skipped[]` array carries a structured `reason` drawn from a
+   *  fixed enum (mirrors `packages/bench/src/skip-row.ts`'s
+   *  `SKIP_REASONS`) PLUS a `status: 'SKIP'` discriminator and a
+   *  free-form `detail` string. The dashboard renders these as typed
+   *  chips with per-reason colour drawn from the existing brand
+   *  palette (no new colours introduced):
+   *
+   *    artefact-missing     → fog          (muted warm gray)
+   *                           "wasm bridge artefact wasn't built"
+   *                           — rebuild + the cell resumes.
+   *    feature-not-wired    → causal-cyan  (muted cool blue / TODO)
+   *                           "scenario's setup path not routed
+   *                           through `makeCauslAsync`" — a future
+   *                           wiring PR returns the cell to OK.
+   *    engine-incompatible  → signal-blue  (muted violet, semantic)
+   *                           "sync-only LibraryHarness seam the
+   *                           wasm engine can't honour today" — the
+   *                           gap is structural; the chip surfaces it.
+   *    timeout              → commit-amber (muted amber)
+   *                           "wall-clock budget exceeded" — same
+   *                           class as the existing DNF row's
+   *                           wall-clock kill but emitted up-front.
+   *    oom                  → conflict-coral (muted red)
+   *                           "V8 heap exhaustion (exit 134)" —
+   *                           distinct glyph from the wall-clock
+   *                           bucket so the operator-facing chip
+   *                           reads the right resource axis.
+   *
+   *  Legacy free-form skip entries (history rows captured before
+   *  #37 landed) fall through `classifySkip()` above, preserving
+   *  the previous render path so the dashboard still reads off
+   *  unmigrated history without re-baselining.
+   *  ---------------------------------------------------------------- */
+  const TYPED_SKIP_REASONS = Object.freeze([
+    'artefact-missing',
+    'feature-not-wired',
+    'engine-incompatible',
+    'timeout',
+    'oom',
+  ])
+
+  const TYPED_SKIP_META = {
+    'artefact-missing': {
+      label: 'artefact missing',
+      cls: 'artefact-missing',
+    },
+    'feature-not-wired': {
+      label: 'feature not wired',
+      cls: 'feature-not-wired',
+    },
+    'engine-incompatible': {
+      label: 'engine incompatible',
+      cls: 'engine-incompatible',
+    },
+    timeout: { label: 'timeout', cls: 'timeout' },
+    oom: { label: 'OOM', cls: 'oom' },
+  }
+
+  function isTypedSkipReason(r) {
+    return typeof r === 'string' && TYPED_SKIP_REASONS.includes(r)
+  }
+
+  /** Classify a typed SKIP cell (`status: 'SKIP'` + enum `reason`).
+   *  Returns `{ label, cls, typed: true }` when the reason matches
+   *  the taxonomy; returns `null` for legacy (free-form) entries so
+   *  the caller can fall through to `classifySkip()`. */
+  function classifyTypedSkip(reason) {
+    if (!isTypedSkipReason(reason)) return null
+    const meta = TYPED_SKIP_META[reason]
+    return { label: meta.label, cls: meta.cls, typed: true }
+  }
+
+  /** ----------------------------------------------------------------
    *  Filter state — managed as a single mutable object that the
    *  filter UI mutates and the renderer reads. Re-renders are
    *  triggered by `applyFilters()`.
@@ -469,10 +545,33 @@
       const skipped = Array.isArray(entry.skipped) ? entry.skipped : []
       for (const cell of skipped) {
         const { section } = ensureSection(cell.scenario, cell.scale)
+        // causl-bench#37 introduced a typed schema:
+        //   { status: 'SKIP', reason: SkipReason, detail: string }
+        // alongside the legacy `{ reason: <free-form string> }` rows
+        // already in history. We lift BOTH shapes into one normalized
+        // section descriptor:
+        //   - `typedReason` is set ONLY when the row matches the
+        //     typed taxonomy (status === 'SKIP' AND reason is in the
+        //     enum). The renderer branches on its presence to pick
+        //     the typed-chip palette.
+        //   - `detail` is the human-readable elaboration (typed
+        //     schema's `detail`, or '' for legacy rows).
+        //   - `reason` keeps the original string (typed enum value
+        //     OR free-form legacy text) so the legacy `classifySkip`
+        //     fallback + the existing tooltip-shows-reason behaviour
+        //     keep working unchanged for un-migrated history rows.
         // Latest-wins so the freshest skip reason surfaces if a
         // framework's failure mode changes between runs.
+        const rawReason = cell.reason
+        const typedReason =
+          cell.status === 'SKIP' && isTypedSkipReason(rawReason)
+            ? rawReason
+            : null
         section.skipped.set(cell.library, {
-          reason: String(cell.reason ?? ''),
+          reason: String(rawReason ?? ''),
+          typedReason,
+          detail: typeof cell.detail === 'string' ? cell.detail : '',
+          status: typeof cell.status === 'string' ? cell.status : null,
           capturedAt: entry.capturedAt,
           version: entry.version,
         })
@@ -1108,20 +1207,38 @@
       // exact point an adopter scans for "where is this library at
       // this scale?". The two affordances complement each other.
       const reason = skipInfo.reason || 'skipped — no reason recorded'
-      const { label, cls } = classifySkip(reason)
+      // Typed (causl-bench#37) reasons take precedence over the
+      // legacy free-form classifier so the strip reads the chip
+      // colour from the new taxonomy when the row carries one. The
+      // chip label drops the legacy "library limit" phrasing in
+      // favour of the typed reason word ("feature not wired",
+      // "engine incompatible", etc.). Legacy rows still flow through
+      // classifySkip() unchanged.
+      const typed = classifyTypedSkip(skipInfo.typedReason)
+      const { label, cls } = typed ?? classifySkip(reason)
+      // Tooltip text: typed rows surface the human-readable `detail`
+      // (the publisher's "why it skipped" string), then the library
+      // tag on a second line so the operator sees both pieces at a
+      // glance. Legacy rows fall back to the original free-form
+      // reason since `detail` is absent.
+      const tooltip =
+        typed && skipInfo.detail
+          ? `${skipInfo.detail}\nlibrary: ${getLibraryLabel(lib)}`
+          : reason
       const color = LIBRARY_COLOR[lib] ?? '#A9B5C9'
-      const reasonAttr = escapeHtml(reason)
       const li = document.createElement('li')
       li.className = `skip-box skip-class-${cls}`
+      if (typed) li.classList.add('skip-box--typed')
       li.dataset.library = lib
       li.dataset.skipClass = cls
+      if (typed) li.dataset.typedReason = skipInfo.typedReason
       li.setAttribute('role', 'img')
       li.setAttribute('tabindex', '0')
       li.setAttribute(
         'aria-label',
-        `${lib} skipped at ${section.scenario} scale ${section.scale}: ${reason}`,
+        `${lib} skipped at ${section.scenario} scale ${section.scale}: ${tooltip.replace(/\n/g, ' — ')}`,
       )
-      li.title = reason
+      li.title = tooltip
       li.style.setProperty('--lib-color', color)
       li.innerHTML =
         `<span class="skip-box-lib" aria-hidden="true">${escapeHtml(getLibraryLabel(lib))}</span>` +
@@ -1162,26 +1279,44 @@
         item.dataset.verdict = 'skipped'
         item.style.setProperty('--verdict-color', VERDICT_COLOR.unknown)
         const reason = skipInfo.reason || 'skipped — no reason recorded'
-        const reasonAttr = escapeHtml(reason)
+        // causl-bench#37 — typed SKIP rows render the verdict slot as
+        // a per-reason chip (colour + label drawn from the typed
+        // taxonomy) instead of the generic "skipped" pill. The
+        // skipped state classes still set the dashed border + muted
+        // surface; the verdict chip carries the structural reason.
+        // Legacy rows render the original generic chip (back-compat
+        // for un-migrated history).
+        const typed = classifyTypedSkip(skipInfo.typedReason)
+        const tooltip =
+          typed && skipInfo.detail
+            ? `${skipInfo.detail}\nlibrary: ${getLibraryLabel(lib)}`
+            : reason
+        const tooltipAttr = escapeHtml(tooltip)
         const skippedLabel = getLibraryLabel(lib)
+        const verdictChipClass = typed
+          ? `bench-legend-verdict bench-legend-verdict--skip-typed bench-legend-skip-reason-${typed.cls}`
+          : 'bench-legend-verdict bench-legend-verdict--skipped'
+        const verdictBadgeGlyph = typed ? '▢' : '✗'
+        const verdictLabel = typed ? typed.label : 'skipped'
+        if (typed) item.dataset.typedReason = skipInfo.typedReason
         item.innerHTML =
           `<span class="bench-legend-swatch" aria-hidden="true"></span>` +
           `<span class="bench-legend-lib bench-legend-lib--strike" ` +
-          `title="${reasonAttr}">` +
+          `title="${tooltipAttr}">` +
           `<s>${escapeHtml(skippedLabel)}</s>` +
           `</span>` +
           `<span class="bench-legend-stats bench-legend-stats--muted">` +
           `<span class="bench-legend-median">— ms</span>` +
           `<span class="bench-legend-p95">p95 —</span>` +
           `</span>` +
-          `<span class="bench-legend-verdict bench-legend-verdict--skipped" ` +
-          `title="${reasonAttr}" aria-label="skipped — ${reasonAttr}">` +
-          `<span class="bench-legend-verdict-badge" aria-hidden="true">✗</span>` +
-          `<span class="bench-legend-verdict-label">skipped</span>` +
+          `<span class="${verdictChipClass}" ` +
+          `title="${tooltipAttr}" aria-label="skipped — ${tooltipAttr}">` +
+          `<span class="bench-legend-verdict-badge" aria-hidden="true">${verdictBadgeGlyph}</span>` +
+          `<span class="bench-legend-verdict-label">${escapeHtml(verdictLabel)}</span>` +
           `</span>` +
           `<a class="bench-legend-profile-link" href="${profileUrl}" rel="noopener" ` +
           `aria-label="Profile artifacts for ${escapeHtml(lib)} ${escapeHtml(section.scenario)} at scale ${section.scale} (skipped — see legend tooltip)" ` +
-          `title="${reasonAttr}">⌕</a>`
+          `title="${tooltipAttr}">⌕</a>`
         legend.appendChild(item)
         continue
       }
