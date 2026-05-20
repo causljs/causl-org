@@ -240,7 +240,15 @@
       cls: 'stack-overflow',
     },
     {
-      match: (r) => /wasm/i.test(r) && /boundary|only/i.test(r),
+      // Match the exact phrase "wasm-only" (word-boundary) instead of
+      // co-occurring substrings. The looser predicate
+      // (`/wasm/i && /boundary|only/i`) false-positived on reasons
+      // like "floor-only … crosses the WASM boundary" — see #11 — and
+      // mislabelled causl-ts skips as "WASM-only". The typed-skip
+      // pipeline (`TYPED_SKIP_META`) is the preferred path; this
+      // legacy classifier remains only for back-compat with
+      // un-migrated free-form reasons.
+      match: (r) => /\bwasm-only\b/i.test(r),
       label: 'WASM-only',
       cls: 'wasm-only',
     },
@@ -1199,13 +1207,25 @@
     for (const lib of libsToPlot) {
       const skipInfo = skippedMap.get(lib)
       if (!skipInfo) continue
-      // A skip box is rendered for EVERY (library × scenario × scale)
-      // cell the runner couldn't measure on the latest run — even if
-      // the series has historical measured points (which still draw as
-      // a line on the chart above). The chart shows the *trend*; the
-      // box surfaces the latest miss + the runner's reason at the
-      // exact point an adopter scans for "where is this library at
-      // this scale?". The two affordances complement each other.
+      // Mutex with the chart line: only render the in-chart skip-box
+      // when the *latest* event for this library is the skip itself
+      // (i.e. no measured sample exists with capturedAt >= the skip's
+      // capturedAt). Mirrors the legend chip mutex at the top of the
+      // legend loop below. Previously this strip was rendered for
+      // every skipped (lib × scenario × scale) cell regardless of
+      // whether a more recent measured sample existed, which produced
+      // the contradiction reported in #10 — chart line + typed-skip
+      // chip for the same engine in the same cell.
+      const livePoints = section.series.get(lib) ?? []
+      const lastLive = livePoints.length
+        ? livePoints[livePoints.length - 1]
+        : null
+      if (
+        lastLive &&
+        new Date(lastLive.capturedAt) >= new Date(skipInfo.capturedAt)
+      ) {
+        continue
+      }
       const reason = skipInfo.reason || 'skipped — no reason recorded'
       // Typed (causl-bench#37) reasons take precedence over the
       // legacy free-form classifier so the strip reads the chip
