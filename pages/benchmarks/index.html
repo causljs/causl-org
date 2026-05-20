@@ -291,6 +291,8 @@
       </table>
 
       <p class="dual-engine-meta" id="dual-engine-meta" data-engines="" data-generated-at=""></p>
+      <p class="dual-engine-coverage-note" id="dual-engine-coverage-note" hidden></p>
+      <div class="dual-engine-staleness-warn" id="dual-engine-staleness-warn" role="status" hidden></div>
     </section>
 
     <script>
@@ -308,8 +310,50 @@
         const URL = 'https://raw.githubusercontent.com/causljs/causl-bench/main/packages/bench/report/dual-engine.json';
         const tbody = document.getElementById('dual-engine-tbody');
         const meta = document.getElementById('dual-engine-meta');
+        const coverageNote = document.getElementById('dual-engine-coverage-note');
+        const stalenessWarn = document.getElementById('dual-engine-staleness-warn');
         const table = document.getElementById('dual-engine-table');
         if (!tbody || !meta || !table) return;
+
+        // Engine ↔ library mapping for skipped-row lookup.
+        // dual-engine.json's `series` is keyed by ENGINE id
+        // (`causl-ts`, `causl-ts-wasm-engine`); the `skipped[]` rows
+        // (per Audit K + the cross-library report shape) are keyed by
+        // LIBRARY id (`causl-ts`, `causl-wasm`). Translate before we
+        // index so a (scenario, scale, secondEng) lookup hits the
+        // right row.
+        const ENGINE_TO_LIBRARY = {
+          'causl-ts': 'causl-ts',
+          'causl-ts-wasm-engine': 'causl-wasm',
+        };
+        function engineToLibrary(eng) {
+          return ENGINE_TO_LIBRARY[eng] || eng;
+        }
+
+        // causljs/causl-org#12 — freshness watermark for the
+        // dual-engine.json envelope. Surface a yellow banner once the
+        // file's `generatedAt` slips past the 7-day staleness budget;
+        // adopters land on the dashboard via a search-result link
+        // long after the data went stale, and the silent-stale-render
+        // failure mode (issue #15) was the wedge that made #12's
+        // "— ms" cells look broken rather than uncovered.
+        const STALE_BUDGET_HOURS = 168;
+        function renderStalenessBanner(generatedAt) {
+          if (!stalenessWarn) return;
+          if (!generatedAt) return;
+          const genMs = new Date(generatedAt).getTime();
+          if (!Number.isFinite(genMs)) return;
+          const ageHours = (Date.now() - genMs) / 3600000;
+          if (ageHours <= STALE_BUDGET_HOURS) return;
+          const days = Math.floor(ageHours / 24);
+          stalenessWarn.hidden = false;
+          stalenessWarn.setAttribute('data-age-hours', ageHours.toFixed(1));
+          stalenessWarn.innerHTML =
+            '<strong>Stale benchmark data:</strong> <code>dual-engine.json</code> is ' +
+            days + ' days old (generated ' + generatedAt + '). ' +
+            'Refresh via <code>pnpm bench</code> in ' +
+            '<a href="https://github.com/causljs/causl-bench"><code>causljs/causl-bench</code></a>.';
+        }
 
         fetch(URL, { cache: 'no-store' }).then(function (r) {
           if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -323,6 +367,79 @@
           meta.setAttribute('data-generated-at', ts);
           meta.textContent = 'Generated at ' + ts + ' for engines: ' + engines.join(', ') +
             (doc.meta && doc.meta.gitShas ? ' (' + Object.entries(doc.meta.gitShas).map(function (e) { return e[0] + '@' + e[1]; }).join(', ') + ')' : '');
+
+          renderStalenessBanner(ts);
+
+          // causljs/causl-org#12 — build a (library × scenario × scale)
+          // → skip-row index from `doc.skipped[]`. The dual-engine
+          // report MAY (per causl-bench#37 follow-up) carry skipped
+          // rows with `status: 'SKIP'` + a typed `reason` enum drawn
+          // from {artefact-missing, feature-not-wired,
+          // engine-incompatible, timeout, oom}, plus a free-form
+          // `detail`. Pre-#37 rows carry only `reason` as a free
+          // string. We honour both: typed → typed pill (colour from
+          // the brand palette); legacy → muted "skipped" pill with
+          // the reason on hover. Absent rows (no entry at all) render
+          // a plain em-dash with a "not in coverage today" tooltip.
+          const skipIndex = new Map();
+          const skippedArr = Array.isArray(doc.skipped) ? doc.skipped : [];
+          // Also fold any per-engine `series[eng].skipped` if a future
+          // schema rev puts them there — defensive, not load-bearing.
+          engines.forEach(function (eng) {
+            const perEng = series[eng] && Array.isArray(series[eng].skipped) ? series[eng].skipped : [];
+            perEng.forEach(function (row) { skippedArr.push(row); });
+          });
+          function skipKey(library, scenario, scale) {
+            return library + '|' + scenario + '|' + (scale == null ? '' : scale);
+          }
+          const TYPED_SKIP_REASONS = ['artefact-missing', 'feature-not-wired', 'engine-incompatible', 'timeout', 'oom'];
+          const TYPED_SKIP_LABEL = {
+            'artefact-missing': 'artefact missing',
+            'feature-not-wired': 'feature not wired',
+            'engine-incompatible': 'engine incompatible',
+            'timeout': 'timeout',
+            'oom': 'OOM',
+          };
+          skippedArr.forEach(function (row) {
+            if (!row || typeof row !== 'object') return;
+            const lib = row.library;
+            const scn = row.scenario;
+            const scale = row.scale;
+            if (!lib || !scn) return;
+            skipIndex.set(skipKey(lib, scn, scale), row);
+          });
+          function lookupSkip(secondEng, scn, scale) {
+            // Try (library, scenario, scale) first; fall back to a
+            // scale-agnostic match so a skipped row that didn't pin
+            // a scale still surfaces.
+            const lib = engineToLibrary(secondEng);
+            return (
+              skipIndex.get(skipKey(lib, scn, scale)) ||
+              skipIndex.get(skipKey(lib, scn, '')) ||
+              null
+            );
+          }
+          function escapeAttr(s) {
+            return String(s)
+              .replace(/&/g, '&amp;')
+              .replace(/"/g, '&quot;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
+          }
+          function renderSkipPill(skip) {
+            // Typed taxonomy → coloured pill; legacy free-form →
+            // muted "skipped" pill. Both carry the reason/detail
+            // string on the title attribute so the operator can
+            // hover and read the long-form prose.
+            const reason = skip && skip.reason;
+            const detail = (skip && skip.detail) || (typeof reason === 'string' ? reason : '');
+            if (typeof reason === 'string' && TYPED_SKIP_REASONS.indexOf(reason) !== -1) {
+              return '<span class="dual-engine-skip-pill dual-engine-skip-pill--' + reason + '" ' +
+                'title="' + escapeAttr(detail) + '">' + TYPED_SKIP_LABEL[reason] + '</span>';
+            }
+            return '<span class="dual-engine-skip-pill dual-engine-skip-pill--legacy" ' +
+              'title="' + escapeAttr(detail) + '">skipped</span>';
+          }
 
           // Union the scenario names across all engines so we never
           // hide a row that only one engine emitted.
@@ -440,11 +557,30 @@
             }
             return '—';
           }
+          // Tally coverage so the meta strip can surface "N of M
+          // scenarios covered by the wasm-engine fork today" — the
+          // explanatory note the absent cells now point readers
+          // toward (causl-bench#24).
+          const totalScenarios = scenarioNames.size;
+          let secondEngCoveredCount = 0;
           const rows = Array.from(scenarioNames).sort().map(function (scn) {
             const firstEng = engines[0];
             const secondEng = engines[1] || engines[0];
-            const firstMetrics = project((series[firstEng] && series[firstEng].scenarios && series[firstEng].scenarios[scn]));
-            const secondMetrics = project((series[secondEng] && series[secondEng].scenarios && series[secondEng].scenarios[scn]));
+            const firstCell = (series[firstEng] && series[firstEng].scenarios && series[firstEng].scenarios[scn]) || null;
+            const secondCell = (series[secondEng] && series[secondEng].scenarios && series[secondEng].scenarios[scn]) || null;
+            const firstMetrics = project(firstCell);
+            const secondMetrics = project(secondCell);
+            // The second-engine row's scale lives at
+            // `cell.result.scale` per the schema; fall back to the
+            // first-engine cell's scale when the second engine is
+            // entirely absent, so the skip-row lookup still has a
+            // scale axis to match against.
+            const secondScale = (secondCell && secondCell.result && secondCell.result.scale)
+              || (firstCell && firstCell.result && firstCell.result.scale)
+              || null;
+            const secondAbsent = typeof secondMetrics.wallMs !== 'number';
+            if (!secondAbsent) secondEngCoveredCount++;
+            const secondSkip = secondAbsent ? lookupSkip(secondEng, scn, secondScale) : null;
             let deltaCls = '';
             let deltaTxt = '';
             if (typeof firstMetrics.wallMs === 'number' && typeof secondMetrics.wallMs === 'number' && firstMetrics.wallMs > 0) {
@@ -544,10 +680,35 @@
               secondMetrics.coldPath || '',
               secondEng,
             );
+            // causljs/causl-org#12 — conditional render for the
+            // second-engine cell. When the engine has no sample for
+            // this scenario, emit either a typed-skip pill (if a
+            // matching `skipped[]` row exists) or a muted em-dash
+            // with a "not in coverage today" tooltip. Either way
+            // we never concatenate ` ms` onto an em-dash again.
+            const firstWallTd = '<td data-engine="' + firstEng + '">' +
+              (typeof firstMetrics.wallMs === 'number'
+                ? fmt(firstMetrics.wallMs, 3) + ' ms'
+                : '<span class="dual-engine-absent" title="no sample emitted on this run">—</span>') +
+              '</td>';
+            let secondWallTd;
+            if (typeof secondMetrics.wallMs === 'number') {
+              secondWallTd = '<td data-engine="' + secondEng + '"' + deltaCls + '>' +
+                fmt(secondMetrics.wallMs, 3) + ' ms' +
+                (deltaTxt ? ' <small>(' + deltaTxt + ')</small>' : '') +
+                '</td>';
+            } else if (secondSkip) {
+              secondWallTd = '<td data-engine="' + secondEng + '" class="dual-engine-absent dual-engine-absent--skipped">' +
+                renderSkipPill(secondSkip) +
+                '</td>';
+            } else {
+              secondWallTd = '<td data-engine="' + secondEng + '" class="dual-engine-absent" ' +
+                'title="not in causl-ts-wasm-engine coverage today — see causljs/causl-bench#24">—</td>';
+            }
             return '<tr data-scenario="' + scn + '">' +
               '<th scope="row"><code>' + scn + '</code></th>' +
-              '<td data-engine="' + firstEng + '">' + fmt(firstMetrics.wallMs, 3) + ' ms</td>' +
-              '<td data-engine="' + secondEng + '"' + deltaCls + '>' + fmt(secondMetrics.wallMs, 3) + ' ms' + (deltaTxt ? ' <small>(' + deltaTxt + ')</small>' : '') + '</td>' +
+              firstWallTd +
+              secondWallTd +
               '<td data-perf-column="boundaryCrossings" class="' + bcCls + '">' +
                 '<div class="dual-engine-primary-metric">' + bcTxt + '</div>' +
                 bytesTripleHtml +
@@ -561,6 +722,22 @@
               '</tr>';
           });
           tbody.innerHTML = rows.join('');
+
+          // causljs/causl-org#12 — surface the coverage gap as a
+          // factual one-liner. Only render when the second engine
+          // covers strictly fewer scenarios than the union (the
+          // common case today: causl-ts-wasm-engine fork ships 13 of
+          // 25 scenarios per causl-bench#24).
+          const secondEng = engines[1] || engines[0];
+          if (coverageNote && secondEng !== engines[0] && secondEngCoveredCount < totalScenarios) {
+            coverageNote.hidden = false;
+            coverageNote.innerHTML =
+              secondEngCoveredCount + ' of ' + totalScenarios +
+              ' scenarios covered by <code>' + secondEng + '</code> today — ' +
+              'see <a href="https://github.com/causljs/causl-bench/issues/24">causljs/causl-bench#24</a> ' +
+              'for the wiring gap that gates the remaining cells.';
+          }
+
           table.removeAttribute('aria-busy');
         }).catch(function (err) {
           tbody.innerHTML = '<tr class="dual-engine-error"><td colspan="10">Failed to load <code>dual-engine.json</code>: ' + err.message + '</td></tr>';
