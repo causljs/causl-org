@@ -274,8 +274,8 @@
         <thead>
           <tr>
             <th scope="col">Scenario</th>
-            <th scope="col" data-engine="causl-ts">causl-ts</th>
-            <th scope="col" data-engine="causl-ts-wasm-engine">causl-ts-wasm-engine</th>
+            <th scope="col" data-series="causl-ts" data-engine="causl-ts">causl-ts</th>
+            <th scope="col" data-series="causl-wasm" data-engine="causl-ts-wasm-engine">causl-ts-wasm-engine</th>
             <th scope="col" data-perf-column="boundaryCrossings">JS↔WASM crossings<br><small class="dual-engine-th-sub">+ payload bytes min/median/max</small></th>
             <th scope="col" data-perf-column="wallMs">wall&nbsp;(ms)</th>
             <th scope="col" data-perf-column="cpuUserMs">CPU&nbsp;user&nbsp;(ms)</th>
@@ -306,6 +306,39 @@
       // Renders honestly when the inner-bench output capture is not
       // yet wired (`scenarios` empty per causl-bench#24): one
       // explicit "scaffold" row referencing the issue.
+      //
+      // -----------------------------------------------------------
+      // Series-id vocabulary (causl-org#13 / Audit K).
+      // -----------------------------------------------------------
+      // Every per-engine cell this IIFE emits is tagged with the
+      // engine it represents. Pre-#13 the tag was `data-engine`
+      // (here) vs `data-library` (in dashboard.js) — the same
+      // concept under two different attribute names with two
+      // different (undocumented) translation tables.
+      //
+      // After #13 every emission writes BOTH attributes for one
+      // release cycle: `data-series` (the new canonical, carrying
+      // the dashboard SeriesId defined by the 3-axis vocabulary in
+      // `causljs/causl-bench:packages/bench/src/series-id.ts`) and
+      // `data-engine` (the legacy attribute the Playwright contract
+      // in `causljs/causl-bench/e2e/playwright/dashboard.spec.ts`
+      // pins via `[data-engine="causl-ts"]` /
+      // `[data-engine="causl-ts-wasm-engine"]`). Both attributes
+      // carry IDENTICAL strings — for the dual-engine panel the
+      // tag IS the sibling-repo slug, which IS the SeriesId for
+      // the engine-source axis, so the two attributes are
+      // synonyms in this panel. A follow-up PR drops `data-engine`
+      // once the release cycle ships; consumers should migrate to
+      // `[data-series=...]` selectors in the interim.
+      //
+      // The three axes the SeriesId encodes (same vocabulary as
+      // dashboard.js's header comment): harness / profile /
+      // repoSlug. The dual-engine panel only ever spans the
+      // repoSlug axis (the harness is implied per-engine: causl-ts
+      // → causl-js harness, causl-ts-wasm-engine → causl-wasm
+      // harness), so the SeriesId here always parses to a
+      // (harness, undefined, repoSlug) triple per
+      // `parseSeriesId()`.
       (function dualEnginePanel() {
         const URL = 'https://raw.githubusercontent.com/causljs/causl-bench/main/packages/bench/report/dual-engine.json';
         const tbody = document.getElementById('dual-engine-tbody');
@@ -322,11 +355,30 @@
         // LIBRARY id (`causl-ts`, `causl-wasm`). Translate before we
         // index so a (scenario, scale, secondEng) lookup hits the
         // right row.
+        //
+        // Post-causl-org#13: the LIBRARY id IS the dashboard SeriesId
+        // — the centralised vocabulary in
+        // `causljs/causl-bench:packages/bench/src/series-id.ts`
+        // expresses the same rule via `seriesForRepoSlug()`. This
+        // table is the IIFE-layer expression of that rule; the
+        // helper below (`engineToSeries`) is the explicit alias
+        // every new emission goes through to produce a `data-series`
+        // attribute value. The legacy `data-library` / `data-engine`
+        // call-sites still carry the engine slug for the duration of
+        // the one-release-cycle compat shim — see the IIFE-header
+        // comment for the shim policy.
         const ENGINE_TO_LIBRARY = {
           'causl-ts': 'causl-ts',
           'causl-ts-wasm-engine': 'causl-wasm',
         };
         function engineToLibrary(eng) {
+          return ENGINE_TO_LIBRARY[eng] || eng;
+        }
+        // Canonical SeriesId for a given engine slug. Same table as
+        // ENGINE_TO_LIBRARY above — kept separate so the call-sites
+        // that produce `data-series` are visually traceable to the
+        // 3-axis vocabulary rather than to the legacy skip-row index.
+        function engineToSeries(eng) {
           return ENGINE_TO_LIBRARY[eng] || eng;
         }
 
@@ -544,16 +596,16 @@
             if (topHas && botHas) {
               return (
                 '<span class="dual-engine-stack">' +
-                  '<span class="dual-engine-stack-top" data-engine="' + topEngine + '" title="' + topEngine + ' (selective)">' + topVal + '</span>' +
-                  '<span class="dual-engine-stack-bot" data-engine="' + bottomEngine + '" title="' + bottomEngine + ' (all)">' + bottomVal + '</span>' +
+                  '<span class="dual-engine-stack-top" data-series="' + engineToSeries(topEngine) + '" data-engine="' + topEngine + '" title="' + topEngine + ' (selective)">' + topVal + '</span>' +
+                  '<span class="dual-engine-stack-bot" data-series="' + engineToSeries(bottomEngine) + '" data-engine="' + bottomEngine + '" title="' + bottomEngine + ' (all)">' + bottomVal + '</span>' +
                 '</span>'
               );
             }
             if (topHas) {
-              return '<span class="dual-engine-stack dual-engine-stack--solo-top" data-engine="' + topEngine + '" title="' + topEngine + '">' + topVal + '</span>';
+              return '<span class="dual-engine-stack dual-engine-stack--solo-top" data-series="' + engineToSeries(topEngine) + '" data-engine="' + topEngine + '" title="' + topEngine + '">' + topVal + '</span>';
             }
             if (botHas) {
-              return '<span class="dual-engine-stack dual-engine-stack--solo-bot" data-engine="' + bottomEngine + '" title="' + bottomEngine + '">' + bottomVal + '</span>';
+              return '<span class="dual-engine-stack dual-engine-stack--solo-bot" data-series="' + engineToSeries(bottomEngine) + '" data-engine="' + bottomEngine + '" title="' + bottomEngine + '">' + bottomVal + '</span>';
             }
             return '—';
           }
@@ -686,23 +738,23 @@
             // matching `skipped[]` row exists) or a muted em-dash
             // with a "not in coverage today" tooltip. Either way
             // we never concatenate ` ms` onto an em-dash again.
-            const firstWallTd = '<td data-engine="' + firstEng + '">' +
+            const firstWallTd = '<td data-series="' + engineToSeries(firstEng) + '" data-engine="' + firstEng + '">' +
               (typeof firstMetrics.wallMs === 'number'
                 ? fmt(firstMetrics.wallMs, 3) + ' ms'
                 : '<span class="dual-engine-absent" title="no sample emitted on this run">—</span>') +
               '</td>';
             let secondWallTd;
             if (typeof secondMetrics.wallMs === 'number') {
-              secondWallTd = '<td data-engine="' + secondEng + '"' + deltaCls + '>' +
+              secondWallTd = '<td data-series="' + engineToSeries(secondEng) + '" data-engine="' + secondEng + '"' + deltaCls + '>' +
                 fmt(secondMetrics.wallMs, 3) + ' ms' +
                 (deltaTxt ? ' <small>(' + deltaTxt + ')</small>' : '') +
                 '</td>';
             } else if (secondSkip) {
-              secondWallTd = '<td data-engine="' + secondEng + '" class="dual-engine-absent dual-engine-absent--skipped">' +
+              secondWallTd = '<td data-series="' + engineToSeries(secondEng) + '" data-engine="' + secondEng + '" class="dual-engine-absent dual-engine-absent--skipped">' +
                 renderSkipPill(secondSkip) +
                 '</td>';
             } else {
-              secondWallTd = '<td data-engine="' + secondEng + '" class="dual-engine-absent" ' +
+              secondWallTd = '<td data-series="' + engineToSeries(secondEng) + '" data-engine="' + secondEng + '" class="dual-engine-absent" ' +
                 'title="not in causl-ts-wasm-engine coverage today — see causljs/causl-bench#24">—</td>';
             }
             return '<tr data-scenario="' + scn + '">' +
