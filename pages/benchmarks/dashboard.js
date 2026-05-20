@@ -1,4 +1,56 @@
 /* ============================================================
+   Series-id vocabulary (causl-org#13 / Audit K).
+   ------------------------------------------------------------
+   Every chart element this renderer emits is tagged with the
+   library it represents. Historically that tag lived in one
+   attribute (`data-library`) here and a parallel attribute
+   (`data-engine`) in `index.html`'s dual-engine panel — same
+   concept, two undocumented spellings, no way for the dashboard
+   to reverse the mapping that turned an "engine id" into a
+   "library id" (see the prior `ENGINE_TO_LIBRARY` table in this
+   file and its mirror in `index.html`).
+
+   After causl-org#13 every emission writes ONE canonical
+   attribute — `data-series` — carrying the dashboard SeriesId
+   defined by the centralised 3-axis vocabulary in
+   `causljs/causl-bench:packages/bench/src/series-id.ts`. The
+   three axes the SeriesId encodes are:
+
+     - harness  — what code ran inside the cell (causl-js,
+                  causl-wasm, jotai, redux-toolkit, mobx, plus the
+                  back-compat `causl` alias).
+     - profile  — selective (default) vs all (exhaustive). Only
+                  the causl-wasm harness is meaningfully
+                  profile-dimensioned today.
+     - repoSlug — which sibling-repo sourced the engine code:
+                  `causl-ts` (upstream) vs `causl-ts-wasm-engine`
+                  (the fork). Only the engine-tagged harnesses
+                  have a meaningful repoSlug.
+
+   The mapping rules:
+
+     causl-js  + (no repo slug)        → causl-js
+     causl-js  + repoSlug=causl-ts     → causl-ts
+     causl-wasm + profile=selective    → causl-wasm
+     causl-wasm + profile=all          → causl-wasm-all
+     causl-wasm + (no profile)         → causl-wasm
+     causl-wasm + repoSlug=causl-ts-wasm-engine → causl-wasm (collapses)
+     <competitor>                      → identity
+
+   Compat shim (one release cycle): this renderer continues to
+   emit `data-library="<series-id>"` *alongside* the new
+   `data-series` attribute. The e2e Playwright contract pinned by
+   `causljs/causl-bench/e2e/playwright/dashboard.spec.ts` reads
+   `data-engine` selectors against `index.html`'s dual-engine
+   panel; this file's `data-library` was reachable but not pinned
+   by the spec. We mirror both attributes so any tooling that
+   pinned to either spelling keeps resolving while the
+   centralised `data-series` becomes the load-bearing seam in
+   the next release. A follow-up PR will drop the legacy
+   attribute once one full release cycle has shipped.
+   ============================================================ */
+
+/* ============================================================
    causl.org/benchmarks — full dashboard renderer (#707, #769,
    restructured by #1247).
 
@@ -929,7 +981,7 @@
           .join(' ')
         allBands +=
           `<path d="${upPath} ${downCmds} Z" fill="${color}" ` +
-          `fill-opacity="0.14" stroke="none" data-library="${escapeHtml(lib)}" />`
+          `fill-opacity="0.14" stroke="none" data-series="${escapeHtml(lib)}" data-library="${escapeHtml(lib)}" />`
       }
 
       if (medianRaw.length > 0) {
@@ -938,7 +990,7 @@
         allLines +=
           `<path d="${catmullRomPath(medianRaw)}" fill="none" ` +
           `stroke="${color}" stroke-width="1.8" stroke-linecap="round" ` +
-          `stroke-linejoin="round"${dashAttr} data-library="${escapeHtml(lib)}" />`
+          `stroke-linejoin="round"${dashAttr} data-series="${escapeHtml(lib)}" data-library="${escapeHtml(lib)}" />`
       }
 
       // Dots per datapoint with embedded tooltip.
@@ -955,7 +1007,7 @@
         allDots +=
           `<circle cx="${xAt(idx).toFixed(2)}" cy="${yAt(p.medianMs).toFixed(2)}" ` +
           `r="2.8" fill="${color}" stroke="rgba(11,16,32,0.6)" stroke-width="1" ` +
-          `data-library="${escapeHtml(lib)}">` +
+          `data-series="${escapeHtml(lib)}" data-library="${escapeHtml(lib)}">` +
           `<title>${tooltip}</title>` +
           `</circle>`
       }
@@ -993,7 +1045,7 @@
           allHitRects +=
             `<rect x="${x0.toFixed(2)}" y="${y0.toFixed(2)}" ` +
             `width="${(x1 - x0).toFixed(2)}" height="${bandH.toFixed(2)}" ` +
-            `fill="transparent" pointer-events="all" data-library="${escapeHtml(lib)}">` +
+            `fill="transparent" pointer-events="all" data-series="${escapeHtml(lib)}" data-library="${escapeHtml(lib)}">` +
             `<title>${tooltip}</title>` +
             `</rect>`
         }
