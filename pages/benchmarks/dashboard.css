@@ -1258,3 +1258,109 @@ details.status-callout > summary:focus-visible {
   color: #9FF0C8;
   font-weight: 500;
 }
+
+/* ============================================================
+   causljs/causl-org#12 — absent / skipped cells in the
+   side-by-side table.
+
+   The dual-engine.json envelope union-counts scenarios across
+   both engines; today the experimental `causl-ts-wasm-engine`
+   fork covers 13 of the 25 scenarios the upstream `causl-ts`
+   engine reports. For the remaining cells the renderer used to
+   concatenate ` ms` onto fmt()'s em-dash and emit a literal
+   "— ms" that read as broken data. The classes below give the
+   absent cell a deliberate visual identity:
+
+     .dual-engine-absent             — plain em-dash, subdued,
+                                       carrying the "not in
+                                       coverage today" tooltip.
+     .dual-engine-absent--skipped    — surface for the typed-skip
+                                       pill child below.
+
+   The skip pill colour palette mirrors the bench-legend's
+   typed-skip taxonomy (artefact-missing / feature-not-wired /
+   engine-incompatible / timeout / oom) so a reader scanning
+   either the legend OR the side-by-side table sees the same
+   colour for the same skip class. Geometry inherits the
+   999px-radius "pill" treatment that the legend uses.
+   ============================================================ */
+.dual-engine-absent {
+  color: var(--text-on-base-subtle);
+  font-style: italic;
+  text-align: center;
+}
+
+.dual-engine-skip-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--skip-pill-color, var(--fog)) 44%, transparent);
+  background: color-mix(in srgb, var(--skip-pill-color, var(--fog)) 14%, transparent);
+  color: var(--skip-pill-color, var(--fog));
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.dual-engine-skip-pill--legacy {
+  --skip-pill-color: var(--fog);
+}
+
+.dual-engine-skip-pill--artefact-missing {
+  --skip-pill-color: var(--fog);
+}
+
+.dual-engine-skip-pill--feature-not-wired {
+  --skip-pill-color: var(--causal-cyan);
+}
+
+.dual-engine-skip-pill--engine-incompatible {
+  --skip-pill-color: var(--signal-blue);
+}
+
+.dual-engine-skip-pill--timeout {
+  --skip-pill-color: var(--commit-amber);
+}
+
+.dual-engine-skip-pill--oom {
+  --skip-pill-color: var(--conflict-coral);
+}
+
+.dual-engine-coverage-note {
+  margin-top: var(--space-2);
+  font-size: 0.85rem;
+  color: var(--text-on-base-muted);
+}
+
+/* ============================================================
+   causljs/causl-org#15 — freshness watermark.
+
+   The dashboard fetches dual-engine.json from raw.github on
+   every page load (cross-origin, no cache contract). When the
+   file's `generatedAt` has slipped past the 7-day staleness
+   budget we surface a banner above the table so adopters
+   landing on the page from a stale search-result link don't
+   read stale numbers as current. Yellow (commit-amber) is the
+   "needs attention but not failing" signal the brand palette
+   reserves for this class of warning.
+   ============================================================ */
+.dual-engine-staleness-warn {
+  margin: var(--space-3) 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--commit-amber) 60%, transparent);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--commit-amber) 12%, transparent);
+  color: var(--text-on-base);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.dual-engine-staleness-warn code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+}
