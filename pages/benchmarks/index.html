@@ -84,20 +84,20 @@
   <section class="hero page" aria-labelledby="page-title">
     <h1 id="page-title">Benchmarks.</h1>
     <p class="lede">
-      Per-cell history for <code>causl-ts</code> and
-      <code>causl-wasm</code> against Jotai, Redux Toolkit, and MobX
-      across the canonical scenario taxonomy in
-      <code>causljs/causl-bench</code>. Each card shows one
+      Per-cell history for <code>causl-ts</code> (the TypeScript floor
+      engine) and <code>causl-wasm</code> (the Rust production engine
+      backed by the <code>causljs/causl-wasm</code> repository) against
+      Jotai, Redux Toolkit, and MobX across the canonical scenario
+      taxonomy in <code>causljs/causl-bench</code>. Each card shows one
       (library × scenario × scale) cell — median wall-time as the
       solid line, p95 as the translucent band, run-by-run, with a
       regression verdict computed from the latest two runs. The
-      <code>causl-ts</code> series is rendered from whichever engine
-      the bench harness was pointed at via
-      <code>CAUSL_TS_SOURCE</code>:
-      <code>upstream</code> (the JS engine from
-      <code>causljs/causl-ts</code>) or <code>wasm-engine</code>
-      (the WASM-first fork at
-      <code>causljs/causl-ts-wasm-engine</code>).
+      <code>CAUSL_TS_SOURCE</code> environment variable
+      (<code>upstream</code> vs <code>wasm-engine</code>) lets a single
+      run compare the JavaScript implementation (the JS engine from
+      <code>causljs/causl-ts</code>) against the fork at
+      <code>causljs/causl-ts-wasm-engine</code> that defaults to the
+      Rust core backend.
     </p>
     <div class="hero-actions">
       <a class="button primary"
