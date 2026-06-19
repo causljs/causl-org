@@ -2,6 +2,29 @@
 
 > Transactional state for tangled dependency graphs.
 
+**`causl-client` is the thin TypeScript API over the `causl-wasm` engine core**
+(SPEC [§18A.4](./SPEC.md)). `causl` is a reactive dependency-graph engine whose
+public contract — the §12 surface (the `input` / `derived` / `commit` / `read` /
+`subscribe` / `snapshot` spine plus the `dependencies` / `dependents` structural
+queries) — ships in **two conformant engines** held byte-identical at that
+boundary (§18A.1):
+
+- **`causl-ts`** — the TypeScript reference engine, the unconditional **floor**
+  (lives in [`causljs/causl-ts-wasm-engine`](https://github.com/causljs/causl-ts-wasm-engine)).
+- **`causl-wasm`** — the Rust core (`engine-rs-core` + `engine-rs-bridge`)
+  compiled to WebAssembly and reached over FFI: the **committed alternative** now
+  and the **planned replacement** once all [§18A.7](./SPEC.md) GO/NO-GO criteria
+  are met (lives in [`causljs/causl-wasm`](https://github.com/causljs/causl-wasm),
+  which also owns the Python build/package tooling).
+
+This repo (`causljs/causl-client`) is the **TypeScript API + Node loader** that
+lets a TS/Node.js app integrate the placed `causl-wasm` artefact over FFI. It is
+**not** a copy of the TS engine and ships **no Rust source and no build tooling**
+(§18A.4). For the full Node-integration walkthrough — install, the `node:fs`
+loader, artefact placement via `causl-wasm`'s Python scripts, the read-identity
+migration, and the perf ceiling — see
+[`docs/integrating-causl-client.md`](./docs/integrating-causl-client.md).
+
 ---
 
 ## Quickstart
@@ -159,22 +182,82 @@ I want this in writing too, because the spec used to promise too much:
 - **Not a CRDT.** Multi-user merge semantics belong in a layer above this one.
 - **Not a database, message bus, workflow engine, or rules engine.**
 - **Not a competitor to Redux/MobX/etc.** for problems they already handle well.
-- **Not yet at 1.0.** Phases 1–4 ship on `main`; APIs are stable but not version-locked. The hosted playground at `causl.org` is a **future goal*** — see "Try it live" below. See Status below.
+- **Not yet at 1.0.** Phases 1–4 ship on `main`; **v0.9.0 has shipped** (WASM substrate Phase-0/Phase-1 in, Rust engine port deferred — see Status below); APIs are stable but not version-locked.
 
 ---
 
 ## Status
 
-The full specification lives in [the repo-root specification](./SPEC.md). Phased epics and sub-tasks live as GitHub issues. **Phases 1–4 have shipped on `main`.** Phase 1 (semantic core), Phase 2 (React surface + spreadsheet demo), and Phase 3 (resources, conflicts, devtools inspection primitives) landed first; Phase 4 (the CI race-detection toolchain) wrapped via the Phase-8 SPEC compliance audit (umbrella #564 closed). Both Rust binaries — `causl-check` (static IR linter) and `causl-enumerate` (bounded state-space enumerator) — run in CI against the spreadsheet and async demos. See `.github/workflows/ci.yml` and `.github/workflows/apalache-diff.yml`.
+The full specification lives in [the repo-root specification](./SPEC.md). Phased epics and sub-tasks live as GitHub issues. **Phases 1–4 have shipped on `main`, and v0.9.0 is out.** Phase 1 (semantic core), Phase 2 (React surface + spreadsheet demo), and Phase 3 (resources, conflicts, devtools inspection primitives) landed first; Phase 4 (the CI race-detection toolchain) wrapped via the Phase-8 SPEC compliance audit (umbrella #564 closed). Phase-5 perf experiment umbrella #679 closed 22/22 sub-issues (the scrolling-viewport 654× regression is resolved). Phase-6 WASM substrate epic #680 closed: all 17 Phase-0 + Phase-1 sub-issues are merged, including SPEC §17 commitment 13 (capability-cost residual band 3.0×–8.0×, PR #1024) and commitment 14 (three-tier host matrix `wasmgc-builtins` / `wasmgc-classic` / `serde-json`, PR #1053). Both Rust binaries — `causl-check` (static IR linter) and `causl-enumerate` (bounded state-space enumerator) — run in CI against the spreadsheet and async demos. See `.github/workflows/ci.yml` and `.github/workflows/apalache-diff.yml`.
 
-What that means concretely:
+### Current state (post v0.9.0) — the two-engine topology
 
-- The semantic core (atomicity, glitch-freedom, dynamic-deps, replay determinism, cycle detection) is held by 1000-trial property suites — `packages/core/test/properties/`.
-- The React surface (`useCausl`, `useDispatch`, `useCauslFamily`, Suspense + SSR) ships and is tested under StrictMode mount/unmount cycles.
-- The spreadsheet demo (`packages/bench/scenarios/spreadsheet/`) runs through the static linter on every CI build; failures block merge.
-- The bounded enumerator's full SPEC §16.4.1 type surface is implemented — 10-field `State` backed by `im::*` collections, 8-arm `Action` with every variant wired through `transition()` and `transition_phased()`, `Oracle::check(s, prev, a) -> Vec<RaceClass>` as the canonical surface, `Trace.steps: im::Vector<Step>` for cheap structural-shared clones, `Step.phases` and `Step.events` populated from the per-action phase walker, the `enumerate_with_script(model, bound, script, oracles)` SPEC entry point, and 43 enumerator test binaries' worth of regression coverage.
-- The Apalache differential runner (`tools/enumerator/diff/`) cross-checks BFS verdicts against the EPIC-7 TLA+ corpus; `docs/apalache-diff-report.md` is regenerated on every CI run.
-- BFS memory ceilings are configurable via `CAUSL_BFS_FRONTIER_CAP` / `CAUSL_BFS_TRACES_CAP` / `CAUSL_BFS_RACES_CAP` env vars; the wave-32 conservative defaults stay until adopter empirical data supports retuning (#646).
+Per the repository topology recorded in SPEC [§18A.10](./SPEC.md), the
+two-engine contract spans three first-party `causljs` repos, each owning one
+artefact and none duplicating another's role:
+
+- **`causljs/causl-wasm`** — the `causl-wasm` engine: the Rust core
+  (`tools/engine-rs-core`) compiled to WebAssembly via the bridge
+  (`tools/engine-rs-bridge`), the §18A.3 FFI surface, the byte-identity gate's
+  Rust side, and the **Python build/package tooling** (`scripts/build_wasm.py` +
+  `scripts/package_wasm.py`, §18A.11) that produces the node-target artefact and
+  places it where a consumer states.
+- **`causljs/causl-client`** (this repo) — the **TypeScript API for
+  `causl-wasm`**: the thin TS binding of §18A.4 (a binding over the FFI, **not** a
+  copy of the TS engine), the loader hook that resolves the placed `.wasm`, and
+  the adoption docs that let TS/Node.js web apps integrate it. Ships no Rust
+  source. Named integration consumers: `iasbuilt/xldatagrid` and
+  `iasbuilt/webapp`.
+- **`causljs/causl-ts-wasm-engine`** — `causl-ts`, the TypeScript
+  value-of-record / §13.8 unconditional **floor**, plus the cross-backend
+  benchmark/conformance harness (the byte-identity gate's JS side) and the
+  historical wasm-cutover R&D, including the experimental
+  `DEFAULT_WASM_ENGINE_MODE=rust-ssot` substrate.
+
+Within this repo:
+
+- **WASM Phase-1 is a TS wrapper, not a Rust engine.** The `WasmBackend` returned by `loadWasmBackend()` is a TS engine wrapped in the FFI shape — the bridge interface and the cross-bridge byte-identity contract are stable, but runtime characteristics match the TS engine. The disclosure is repeated at the top of `packages/core/wasm/README.md`. The real Rust swap is the post-0.9.0 epic #1133, gated by the five §18A.7 GO/NO-GO criteria below.
+- **Bundle-budget overage tracked in issue #22.** The post-v0.9.0 size-limit cells were re-tuned in PR #23 (createCausl-only ratcheted from 15 KB to 16 KB to absorb the `invariant` option from PR #2 / issue #1); the `@causl/core/wasm` cell still sits ~2.5 KB over the 13 KB ceiling and is the only known-red gate. PR #21 dropped the dangling bench-fixture cells that were producing six consecutive red CI runs against unrelated PRs.
+- **Pre-commit ↔ CI parity landed in PR #25.** The full check union — typecheck, build, lint, size, vendor-manifest — now runs in `.husky/pre-commit`; the bundler-interop matrix moved to `.husky/pre-push`. See the *Pre-commit / pre-push hooks* subsection above.
+
+What that means concretely for adopters:
+
+- The semantic core (atomicity, glitch-freedom, dynamic-deps, replay determinism, cycle detection) is held by 1000-trial property suites under `packages/core/test/properties/`.
+- The React surface (`useCausl`, `useDispatch`, `useCauslFamily`, Suspense + SSR) ships and is tested under StrictMode mount/unmount cycles; the `idle`-resource Suspense contract was locked in by PR #17 / issue #7.
+- `@causl/core` 0.3.0 carries the runtime `invariant` callback on `graph.input(id, initial, { invariant })` added in PR #2 / issue #1.
+- The `causl/no-graph-upcast` ESLint rule (PR #15 / issue #9) is the third gate in the S-3 layering enforcement chain — `as Graph` upcasts that erase capability narrowing are now lint errors, not review notes.
+- The cross-backend determinism property test (`packages/core/test/properties/cross-backend-determinism.property.test.ts`) was refreshed by PR #16 / issue #6 to drop the stale Phase-1 TODO and wire World-pairing through the Graph facade.
+- The full Rust race-detection toolchain (`causl-check` + `causl-enumerate`) ships out of the parent monorepo and runs against the spreadsheet + async demos there. This repo's `tools/apalache-diff/` is the TLA+ differential surface that consumes the parent repo's enumerator verdicts.
+
+#### The wasm engine's promotion gate (SPEC §18A.7)
+
+The `causl-wasm` engine is the **committed alternative** today; its promotion to
+default / replacement of the TS floor is gated by **five GO/NO-GO criteria**
+(§18A.7) that must **all** pass, after which a **dated governance amendment** —
+never a CI auto-flip — records the promotion. Adopters reading the Phase-1
+wrapper disclosure should read these as the promotion roadmap, not guess at it:
+
+1. **Correctness — cross-backend byte-identity** (MECHANICAL). TS and wasm
+   engines produce byte-identical `Commit` records, snapshots, structural-query
+   results, and subscriber fire-order, proven by the 1000-trial per-flush gate.
+2. **Completeness — full FFI surface** (MECHANICAL). Every §12.1 canonical-seven
+   + §12.2 second-tier-thirteen row is reachable over FFI with no JS-engine
+   fallback for any row.
+3. **Performance** (MECHANICAL). Single commit ≤ 250 µs p95 marshal overhead;
+   batch / large mutation ≤ 5 ms p95. *(The standing 78× wire tax and the ~85×
+   per-commit engine-exec cost at current WASM maturity are the documented floor;
+   epic #1133's A.1 perf-floor probe fired a STOP-VERDICT on 2026-05-13.)*
+4. **Node target + real-world adoption** (MECHANICAL artefact + adopter
+   attestation). The `--target nodejs` artefact + ESM/`node:fs` loader ships
+   (§18A.2), **and** at least one adopter has shipped a production workload on
+   the **real** Rust engine at ≥Tier 2.
+5. **Governance** (DESIGN-DISCIPLINE). The promotion is a named, dated amendment
+   by the §13.8 authority — not mechanised, not a green-gate auto-flip.
+
+Until all five pass, the TS engine is the unconditional floor and the wasm
+engine is the documented alternative with its costs transparent. The current
+epoch is the opt-in `engine: 'rust-ssot'` work (epic #1515), **default-off** and
+not a perf win — see [`docs/integrating-causl-client.md`](./docs/integrating-causl-client.md) §6.
 
 Pre-1.0 caveats remain — public APIs may evolve before a tagged release; published-package tooling is a separate epic. The closing section of the specification enumerates the eight team commitments the repo is held against — semantic foundation lands first; the composite statechart is drawn before conflict and resource code is written; the model/controller/engine layering is enforced at the package boundary; every discriminated union carries an exhaustiveness check; the race-class catalogue is kept current; the worked example is the gate for "the engine is real"; no enum tags ship whose transitions are unspecified; and the Rust race-detection toolchain (`causl-check` + `causl-enumerate`) ships as a required CI gate. CONTRIBUTING.md documents how each commitment is enforced.
 
@@ -182,27 +265,66 @@ Pre-1.0 caveats remain — public APIs may evolve before a tagged release; publi
 
 ## Packages
 
-| Path                          | Package                       | Role                                                                                  |
-| ----------------------------- | ----------------------------- | ------------------------------------------------------------------------------------- |
-| `packages/core/`              | `@causl/core`              | Engine — Behaviors, derivations, transactions, snapshot/hydrate, retention, explain   |
-| `packages/react/`             | `@causl/react`             | React bindings — `useCausl`, `useDispatch`, `useCauslFamily`, MVU runner, SSR   |
-| `packages/formula/`           | `@causl/formula`           | Spreadsheet patterns *on top of* the core — formulas, ranges, cycles                  |
-| `packages/sync/`              | `@causl/sync`              | Async resources + conflict registry as composed statecharts                           |
-| `packages/devtools/`          | `@causl/devtools`          | Inspection primitives (explain materialisation, liveDerivation, snapshot, statechart) |
-| `packages/devtools-bridge/`   | `@causl/devtools-bridge`   | Redux DevTools Extension protocol bridge (zero-cost when absent)                      |
-| `packages/persistence/`       | `@causl/persistence`       | Persisted-input adapter with structured `PersistenceError` reporting                  |
-| `packages/checker/`           | `@causl/checker`           | npm wrapper for `causl-check` (Rust-backed static IR linter — twelve passes against the IR)               |
-| `packages/bench/`             | `@causl/bench`             | Benchmarks — Jotai / RTK / MobX comparisons across the canonical scenario taxonomy    |
-| `packages/migration-check/`   | `@causl/migration-check`   | Migration drift detector — flags unmigrated Jotai/MobX/Redux patterns in adopters     |
+| Path                          | Package                       | Version | Role                                                                                  |
+| ----------------------------- | ----------------------------- | :-----: | ------------------------------------------------------------------------------------- |
+| `packages/core/`              | `@causl/core`                 | `0.3.0` | Engine — Behaviors, derivations, transactions, snapshot/hydrate, retention, explain. Also exposes the opt-in `/wasm` subpath. |
+| `packages/react/`             | `@causl/react`                | `0.2.0` | React bindings — `useCausl`, `useDispatch`, `useCauslFamily`, MVU runner, SSR.        |
+| `packages/sync/`              | `@causl/sync`                 | `0.2.0` | Async resources + conflict registry as composed statecharts.                          |
+| `packages/formula/`           | `@causl/formula`              | `0.2.0` | Spreadsheet patterns *on top of* the core — formulas, ranges, cycles.                 |
+| `packages/persistence/`       | `@causl/persistence`          | `0.1.0` | Persisted-input adapter with structured `PersistenceError` reporting.                 |
+| `packages/devtools/`          | `@causl/devtools`             | `0.1.0` | Inspection primitives (explain materialisation, liveDerivation, snapshot, statechart). |
+| `packages/devtools-bridge/`   | `@causl/devtools-bridge`      | `0.1.0` | Redux DevTools Extension protocol bridge (zero-cost when absent).                     |
+| `packages/migration-check/`   | `@causl/migration-check`      | `0.1.0` | Migration drift detector — flags unmigrated Jotai/MobX/Redux patterns in adopters.    |
+| `packages/hypothesis/`        | `@causl/hypothesis`           | `0.1.0` | Hypothesis combinators + state-space hooks (Apalache differential surface).           |
 
-`tools/checker/` and `tools/enumerator/` house the two Rust crates — both CI tools, not runtimes:
+`@causl/core` carries the major-zero `0.3.x` line because it has absorbed the post-0.2.0 race-class catalogue refinements that the adapter packages have not yet had to chase. The adapter and tooling tier sits at `^0.2.0` / `^0.1.0` until those packages have their own breaking changes to ship.
 
-- **`tools/checker/`** ships `causl-check`, the static IR linter (twelve passes: cycle, monotonic, glitch-propagation, subscribe-without-dispose, use-after-dispose, cross-graph-read, commit-from-subscribe, plus structural gates). Per-site `// @causl-allow:RuleId — reason: ...` magic-comment suppressions are wired through the `--source <path>` CLI flag; `--replay <report>` is the SPEC §16A.2 verdict-determinism gate.
-- **`tools/enumerator/`** ships `causl-enumerate`, the SPEC §16.4 bounded state-space enumerator. Tier-1 / tier-2 / tier-3 `Bound` presets cap exploration; the Node worker-pool RPC (`worker.mjs`) sandboxes compute bodies against `Date.now`/`Math.random`/`crypto.randomUUID`/`performance.now` with a 1% double-check sampler. The companion `tools/enumerator/diff/` ships the Apalache differential runner against the EPIC-7 TLA+ corpus.
+Internal-only workspace siblings:
 
-`tools/drift/` houses the drift telemetry helpers. Internal-only `packages/core/testing/` (published as `@causl/core-testing-internal`) provides shared property-test seam helpers.
+- `packages/core/testing/` — published as `@causl/core-testing-internal`; shared property-test seam helpers.
+- `packages/sync-testing-internal/` — `@causl/sync-testing-internal` (currently `0.0.0`); fc.Arbitrary generators for the resource/conflict event vocabulary, consumed by the sync property suites.
+
+The `causl-wasm` engine source — the Rust core (`engine-rs-core`), the FFI
+bridge (`engine-rs-bridge`), and the Python build/package tooling — lives **out
+of this repo** in [`causljs/causl-wasm`](https://github.com/causljs/causl-wasm)
+(SPEC §18A.10). The `causl-ts` floor and the experimental
+`DEFAULT_WASM_ENGINE_MODE=rust-ssot` + shared-memory-worker R&D live in
+[`causljs/causl-ts-wasm-engine`](https://github.com/causljs/causl-ts-wasm-engine).
+The interface and bridge contracts this repo exposes (`packages/core/wasm/index.ts`)
+are the stable FFI surface those repos are held byte-identical against by the
+cross-backend determinism gate.
 
 See each package's `README.md` for build and run instructions where they exist.
+
+---
+
+## Tools
+
+Build infrastructure, CI gates, lint rules, and release tooling live
+under [`tools/`](./tools/). Brief role descriptions below; the
+authoritative documentation lives in each tool's own `README.md`
+where one ships, otherwise in the module-level header comments.
+
+| Path | Purpose |
+| --- | --- |
+| [`tools/release/`](./tools/release/) | `release.py` — bundles the minimum-viable per-package npm tree at `RELEASE_VERSION` for the TypeScript-only path. Output ships on the `release` branch. |
+| [`tools/apalache-diff/`](./tools/apalache-diff/) | Apalache differential runner that cross-checks the bounded enumerator against the EPIC-7 TLA+ corpus. The Rust enumerator + checker crates themselves live in the parent monorepo (`causljs/causl`); this directory holds the TS-side harness that consumes their verdicts. |
+| [`tools/audit/`](./tools/audit/) | Governance / commitment-audit tooling (`pnpm audit:commitments`). |
+| [`tools/drift/`](./tools/drift/) | Drift-telemetry helpers consumed by `@causl/migration-check`. |
+| [`tools/eslint-plugin-causl/`](./tools/eslint-plugin-causl/) | ESLint plugin for causl-aware lint rules (e.g. `causl/no-graph-upcast` from PR #15 / issue #9). |
+| [`tools/lint/`](./tools/lint/) | Project lint helpers (orchestrates `eslint-plugin-causl`, prettier, custom passes). |
+| [`tools/lint-fixtures/`](./tools/lint-fixtures/) | Fixture corpus for the lint rules. |
+| [`tools/docs-postprocess/`](./tools/docs-postprocess/) | TypeDoc / Markdown post-processing for the docs pipeline. |
+| [`tools/migrate-ir-2-to-3.ts`](./tools/migrate-ir-2-to-3.ts) | One-shot CauslModel IR schema-3 migration codemod. |
+
+The `causl-wasm` Rust engine (`engine-rs-core` + `engine-rs-bridge`) and the
+Python build/package tooling (`scripts/build_wasm.py` + `scripts/package_wasm.py`)
+live in [`causljs/causl-wasm`](https://github.com/causljs/causl-wasm) (SPEC
+§18A.10); the `causl-check` static IR linter and `causl-enumerate` bounded
+enumerator run from the race-detection toolchain. This repo
+(`causljs/causl-client`) carries the **TypeScript API + Node loader** over that
+engine, the TypeScript packages, the per-PR bundle-budget gate, the TLA+
+differential runner, and the lint plugin — and ships no Rust source.
 
 ---
 
@@ -231,27 +353,52 @@ pnpm install
 ### Common commands
 
 ```sh
-pnpm validate       # typecheck + build + test (run before committing)
-pnpm typecheck      # tsc --noEmit across packages
+pnpm install        # install workspace deps
 pnpm build          # tsup builds for every package
-pnpm test           # vitest in watch mode
-pnpm test:run       # vitest --run (single pass)
+pnpm test:run       # vitest --run across every workspace (single pass)
+pnpm typecheck      # tsc --noEmit across packages
 pnpm lint           # eslint across packages
+pnpm size           # size-limit gate (uses the dist/ from `pnpm build`)
+pnpm test           # vitest in watch mode (interactive)
+pnpm validate       # typecheck + build + test:run + docs:test (pre-publish)
 ```
 
-A Husky pre-commit hook runs `pnpm typecheck` and `pnpm test:run` against staged code; it picks up the same toolchain the CI workflows use.
+Smoke flow for a fresh clone:
+
+```sh
+pnpm install && pnpm build && pnpm test:run
+```
+
+### Pre-commit / pre-push hooks
+
+Husky is wired up via the root `prepare` script (`husky` install runs on `pnpm install`). PR [#25](https://github.com/causljs/causl-ts/pull/25) replaced the previous "lint-staged only" hook with the **full CI-check union** so passing locally implies passing CI:
+
+- **`.husky/pre-commit`** runs, in order: `lint-staged` (eslint --fix on staged TS) → `pnpm typecheck` → `pnpm build` → `pnpm lint` → `pnpm size` → `scripts/check-vendor-manifest.sh` (paths-filtered, fires only when vendored bytes are staged).
+- **`.husky/pre-push`** runs the `e2e/bundler-interop/` matrix (`webpack5-app`, `vite5-app`, `esbuild-app`) — `npm install --no-save` → `npm run build` → `npm run verify`. Mirrors `wasm.yml`'s `bundler-interop` CI job; the gate is the bundle-no-wasm-leak invariant from issue #689.
+
+Escape hatches: `SKIP_PRECOMMIT=1` / `SKIP_PREPUSH=1` env vars, or the standard `git commit --no-verify` / `git push --no-verify`. The `pnpm size` step is known-red on `main` until issue [#22](https://github.com/causljs/causl-ts/issues/22) closes — see the bundle-budget paragraph below.
+
+### Bundle-budget status (post PR #21 + #23)
+
+The `size-limit` cells in the root `package.json` gate dist-bundle ceilings on every PR. Current band:
+
+- `@causl/core` (full import) ≤ **20 KB**.
+- `@causl/core` (createCausl-only) ≤ **16 KB** — bumped 1 KB in PR [#23](https://github.com/causljs/causl-ts/pull/23) to absorb the post-`invariant` overage.
+- `@causl/core/wasm` ≤ **13 KB** — still over per issue [#22](https://github.com/causljs/causl-ts/issues/22); the gate stays in the hook so the moment the cell goes green new drift starts being caught.
+- WASM artefact ceilings (per-bridge, raw + Brotli) are documented in the root `package.json`'s `//size-limit-wasm` comment block — the `.wasm` artefacts themselves ship from the parent repo's `tools/wasm-build/` driver.
+
+PR [#21](https://github.com/causljs/causl-ts/pull/21) dropped the dangling bench-fixture size-limit cells (closing issue [#19](https://github.com/causljs/causl-ts/issues/19)); PR [#14](https://github.com/causljs/causl-ts/pull/14) re-enabled the per-PR bundle-budget comment workflow.
 
 ---
 
 ## Try it live
 
-The demos ship as static HTML pages under `causl-org/` — no build step, no framework install. Both load `@causl/core` at runtime from esm.sh so they exercise exactly what an adopter installs.
-
-- **`https://causl.org/playground`** — the Quickstart example above in a Monaco editor wired to a live `@causl/core` graph. Edit `derived`, watch the value update.
-- **`https://causl.org/spreadsheet`** — the Phase 3 100-cell diamond demo. Type into column A; columns B/C/D and `E1` recompute through the engine. Supports live `replaceMany` formula edits and `whyUpdated` introspection.
+The interactive playground + spreadsheet demos that load `@causl/core` from esm.sh ship out of the parent monorepo's `causl-org/` static-site tree, hosted at `https://causl.org`. The `@causl/core` build this repo publishes is exactly what those demos pull at runtime, so a local `pnpm build` is enough to dogfood adopter-shaped imports.
 
 ---
 
 ## License
 
-TBD.
+MIT — see [LICENSE](./LICENSE).
+
+Copyright (c) 2026 Roman Goldmann <roman@iasbuilt.com>.
