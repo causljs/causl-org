@@ -67,6 +67,7 @@
       <h4>On this page</h4>
       <ul>
         <li><a href="#supported-environments">Supported environments</a></li>
+        <li><a href="#two-engine-architecture">Two-engine architecture</a></li>
         <li><a href="#core">@causl/core</a></li>
         <li><a href="#react">@causl/react</a></li>
         <li><a href="#sync">@causl/sync</a></li>
@@ -97,6 +98,33 @@
       form or a small wrapper.
     </p>
 
+    <h2 id="two-engine-architecture">Two-engine architecture</h2>
+    <p>
+      Causl ships two SPEC §3 and §15-compliant engine implementations:
+      (1) <strong><code>causl-ts</code></strong>, the TypeScript floor in
+      <code>@causl/core</code> (the default in v0.9.0+), optimized for development,
+      debugging, and bundle size; (2) <strong><code>engine-rs-core</code></strong>,
+      the Rust engine in the
+      <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a>
+      repository (production opt-in via a <code>loadWasmBackend()</code> call, or as the
+      default via the
+      <a href="https://github.com/causljs/causl-ts-wasm-engine" rel="noopener"><code>@causljs/causl-ts-wasm-engine</code></a>
+      fork). Both engines pass identical §3 denotational and §15 property-based test
+      suites. Choose based on deployment runtime profile, FFI marshalling overhead
+      tolerance, and absolute-latency requirements (detailed in
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6</a>
+      and the <a href="https://github.com/causljs/causl-ts/blob/main/docs/wasm-adoption-guide.md" rel="noopener"><code>wasm-adoption-guide.md</code></a>
+      section on host-tier substrate compatibility).
+    </p>
+    <p>
+      The <code>causl-ts</code> engine is the unconditional floor: it is the default
+      backend and stays supported and byte-identical to the wasm engine for all adopter
+      code. The wasm path is a committed conformant <em>alternative</em> today; promotion
+      to wasm-as-default (Phase 2) is gated by the SPEC §18A.7 GO/NO-GO criteria. The
+      sections below install <code>causl-ts</code>; the
+      <a href="#wasm">WasmBackend (optional)</a> section covers opting into the wasm path.
+    </p>
+
     <h2 id="core">@causl/core</h2>
     <p>
       <code>@causl/core</code> is the semantic kernel — the dependency graph, the
@@ -112,14 +140,14 @@ pnpm add @causl/core
 # yarn
 yarn add @causl/core</code>
     <p>That gives you the canonical primitives:</p>
-    <code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
 
 const graph = createCausl();
-const count = input(graph, 0);
-const doubled = derived(graph, g =&gt; g.read(count) * 2);
+const count = graph.input('count', 0);
+const doubled = graph.derived('doubled', g =&gt; g(count) * 2);
 
-graph.commit(() =&gt; {
-  graph.set(count, 5);
+graph.commit('set-count', tx =&gt; {
+  tx.set(count, 5);
 });
 
 console.log(graph.read(doubled));  // 10</code>
@@ -151,12 +179,12 @@ yarn add @causl/core @causl/react react</code>
       <code>@causl/sync</code> transitively so you can use <code>useCauslSuspense</code> against
       async resources without installing the sync package by hand.
     </p>
-    <code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
 import { useCauslNode } from '@causl/react';
 
 const graph = createCausl();
-const count = input(graph, 0);
-const doubled = derived(graph, g =&gt; g.read(count) * 2);
+const count = graph.input('count', 0);
+const doubled = graph.derived('doubled', g =&gt; g(count) * 2);
 
 export function Counter() {
   const value = useCauslNode(graph, doubled);
@@ -283,27 +311,34 @@ async function makeGraph() {
 }</code>
 
     <blockquote>
-      <strong>Current state.</strong> In <code>causljs/causl-ts</code> the
+      <strong>Current state</strong> (per the
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6 Phase-1 disclosure (#1127)</a>).
+      In <code>causljs/causl-ts</code> the
       <code>WasmBackend</code> is a TS-engine wrapper — the public surface,
       the structured <code>WasmBackendUnavailableError</code> fallback
       chain, and the host compatibility matrix are all in place, but the
-      engine inside the WASM artefact is the TypeScript engine. The Rust
-      engine lives in <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a>
-      (pure-algorithm <code>engine-rs-core</code> crate + the single
-      consolidated bridge cdylib that replaced the legacy
+      engine inside the WASM artefact is the TypeScript engine.
+      The Rust <code>engine-rs-core</code> is production-ready in
+      <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a>
+      as of the current version (pure-algorithm <code>engine-rs-core</code> crate +
+      the single consolidated bridge cdylib that replaced the legacy
       <code>engine-rs-bridge-serde</code> / <code>engine-rs-bridge-gc</code>
-      pair in <a href="https://github.com/causljs/causl-wasm/pull/74" rel="noopener">PR&nbsp;#74</a>),
-      and the TS-side that defaults to it is the fork at
-      <a href="https://github.com/causljs/causl-ts-wasm-engine" rel="noopener"><code>causljs/causl-ts-wasm-engine</code></a>
-      (`DEFAULT_WASM_ENGINE_MODE=rust-ssot`, `loadWasmBackend()` wired
-      to <code>@causljs/causl-wasm</code>). Adopters who want the
-      WASM-first ergonomics today install the fork; adopters who want
-      the contract with a JS-engine fallback continue on
-      <code>@causl/core</code> from <code>causljs/causl-ts</code>.
+      pair in <a href="https://github.com/causljs/causl-wasm/pull/74" rel="noopener">PR&nbsp;#74</a>).
+      <strong>Phase-1</strong> (the TypeScript wrapper) ships in
+      <code>@causl/core</code> v0.9.0+; <strong>Phase-2</strong> (Rust as the
+      default backend) is pending GO/NO-GO criteria (SPEC §18A.7).
+      Adopters wanting Rust-first defaults today use the fork
+      <a href="https://github.com/causljs/causl-ts-wasm-engine" rel="noopener"><code>@causljs/causl-ts-wasm-engine</code></a>
+      (the <code>causl-ts-wasm-engine</code> fork, with
+      <code>DEFAULT_WASM_ENGINE_MODE=rust-ssot</code> and
+      <code>loadWasmBackend()</code> wired to
+      <code>@causljs/causl-wasm</code>); adopters who want the contract with
+      a JS-engine fallback continue on <code>@causl/core</code> from
+      <code>causljs/causl-ts</code>.
       Cross-link: <code>packages/core/wasm/README.md</code> and
       <code>docs/wasm-adoption-guide.md</code> for the host-tier matrix
       and the H1 reference-identity hazard at the bridge boundary
-      (SPEC §15.1 amendment).
+      (SPEC §15.1 amendment #1124).
     </blockquote>
 
     <p>
