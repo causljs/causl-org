@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Installation — Causl</title>
-  <meta name="description" content="Install the @causl/* packages with npm, pnpm, or yarn. Covers @causl/core, @causl/react, @causl/sync, @causl/persistence, @causl/checker, @causl/formula, @causl/devtools, and the optional WasmBackend entry point." />
+  <meta name="description" content="Install the @causl/* packages with npm, pnpm, or yarn. Covers the default pure-TS @causl/core engine plus @causl/react, @causl/sync, @causl/persistence, @causl/checker, @causl/formula, and @causl/devtools. The wasm engine and causl-client are an Enterprise feature." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../../css/site.css" />
@@ -60,14 +60,16 @@
       a Node script or a non-React UI, and every other package — React bindings, async resource
       lifecycles, persistence, static checking, statecharts — is additive. This page covers
       install commands for all three major package managers, peer dependency requirements,
-      TypeScript setup, the optional WebAssembly backend, and the per-package bundle budget.
+      TypeScript setup, and the per-package bundle budget. The default engine everywhere here is
+      the pure-TypeScript <code>@causl/core</code>; the wasm engine and
+      <code>causl-client</code> are an <a href="../../enterprise/">Enterprise</a> feature.
     </p>
 
     <nav class="page-nav" aria-label="On this page">
       <h4>On this page</h4>
       <ul>
         <li><a href="#supported-environments">Supported environments</a></li>
-        <li><a href="#two-engine-architecture">Two-engine architecture</a></li>
+        <li><a href="#engine">Engine <span class="badge-enterprise">Enterprise</span></a></li>
         <li><a href="#core">@causl/core</a></li>
         <li><a href="#react">@causl/react</a></li>
         <li><a href="#sync">@causl/sync</a></li>
@@ -75,7 +77,6 @@
         <li><a href="#checker">@causl/checker</a></li>
         <li><a href="#formula">@causl/formula</a></li>
         <li><a href="#devtools">@causl/devtools</a></li>
-        <li><a href="#wasm">WasmBackend (optional)</a></li>
         <li><a href="#typescript">TypeScript setup</a></li>
         <li><a href="#bundle-sizes">Bundle sizes</a></li>
         <li><a href="#next-steps">Next steps</a></li>
@@ -98,32 +99,19 @@
       form or a small wrapper.
     </p>
 
-    <h2 id="two-engine-architecture">Two-engine architecture</h2>
+    <h2 id="engine">Engine</h2>
     <p>
-      Causl ships two SPEC §3 and §15-compliant engine implementations:
-      (1) <strong><code>causl-ts</code></strong>, the TypeScript floor in
-      <code>@causl/core</code> (the default in v0.9.0+), optimized for development,
-      debugging, and bundle size; (2) <strong><code>engine-rs-core</code></strong>,
-      the Rust engine in the
-      <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a>
-      repository (production opt-in via a <code>loadWasmBackend()</code> call, or as the
-      default via the
-      <a href="https://github.com/causljs/causl-ts-wasm-engine" rel="noopener"><code>@causljs/causl-ts-wasm-engine</code></a>
-      fork). Both engines pass identical §3 denotational and §15 property-based test
-      suites. Choose based on deployment runtime profile, FFI marshalling overhead
-      tolerance, and absolute-latency requirements (detailed in
-      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6</a>
-      and the <a href="https://github.com/causljs/causl-ts/blob/main/docs/wasm-adoption-guide.md" rel="noopener"><code>wasm-adoption-guide.md</code></a>
-      section on host-tier substrate compatibility).
+      Everything on this page installs and runs on the default pure-TypeScript engine in
+      <code>@causl/core</code> — it is the unconditional floor, optimized for development,
+      debugging, and bundle size, and it is all most applications ever need. No wasm toolchain,
+      no extra artefacts.
     </p>
-    <p>
-      The <code>causl-ts</code> engine is the unconditional floor: it is the default
-      backend and stays supported and byte-identical to the wasm engine for all adopter
-      code. The wasm path is a committed conformant <em>alternative</em> today; promotion
-      to wasm-as-default (Phase 2) is gated by the SPEC §18A.7 GO/NO-GO criteria. The
-      sections below install <code>causl-ts</code>; the
-      <a href="#wasm">WasmBackend (optional)</a> section covers opting into the wasm path.
-    </p>
+
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>The wasm engine &amp; causl-client are an Enterprise feature.</strong> The Rust&rarr;WASM core, the second conformant engine it provides, and the rationale for running two byte-identical engines side by side are documented in the Enterprise section.</p>
+      <p><a href="../../enterprise/two-engine-architecture/">Two-engine architecture &rarr;</a> &nbsp;&middot;&nbsp; <a href="../../enterprise/integrating-causl-client/">Integrating causl-client &rarr;</a></p>
+    </aside>
 
     <h2 id="core">@causl/core</h2>
     <p>
@@ -288,69 +276,11 @@ yarn add --dev @causl/devtools</code>
       outside the browser extension.
     </p>
 
-    <h2 id="wasm">WasmBackend (optional)</h2>
-    <p>
-      Causl ships an opt-in WebAssembly backend entry point at <code>@causl/core/wasm</code>.
-      It is bundled with <code>@causl/core</code> — no extra <code>npm install</code> step —
-      and is loaded only if you call <code>loadWasmBackend()</code>.
-    </p>
-    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
-import { loadWasmBackend, WasmBackendUnavailableError } from '@causl/core/wasm';
-
-async function makeGraph() {
-  try {
-    const backend = await loadWasmBackend();
-    return createCausl({ backend });
-  } catch (err) {
-    if (err instanceof WasmBackendUnavailableError) {
-      // CSP rejected wasm-unsafe-eval, embedded runtime, etc.
-      return createCausl();  // TS engine fallback
-    }
-    throw err;
-  }
-}</code>
-
-    <blockquote>
-      <strong>Current state</strong> (per the
-      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6 Phase-1 disclosure (#1127)</a>).
-      In <code>causljs/causl-ts</code> the
-      <code>WasmBackend</code> is a TS-engine wrapper — the public surface,
-      the structured <code>WasmBackendUnavailableError</code> fallback
-      chain, and the host compatibility matrix are all in place, but the
-      engine inside the WASM artefact is the TypeScript engine.
-      The Rust <code>engine-rs-core</code> is production-ready in
-      <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a>
-      as of the current version (pure-algorithm <code>engine-rs-core</code> crate +
-      the single consolidated bridge cdylib that replaced the legacy
-      <code>engine-rs-bridge-serde</code> / <code>engine-rs-bridge-gc</code>
-      pair in <a href="https://github.com/causljs/causl-wasm/pull/74" rel="noopener">PR&nbsp;#74</a>).
-      <strong>Phase-1</strong> (the TypeScript wrapper) ships in
-      <code>@causl/core</code> v0.9.0+; <strong>Phase-2</strong> (Rust as the
-      default backend) is pending GO/NO-GO criteria (SPEC §18A.7).
-      Adopters wanting Rust-first defaults today use the fork
-      <a href="https://github.com/causljs/causl-ts-wasm-engine" rel="noopener"><code>@causljs/causl-ts-wasm-engine</code></a>
-      (the <code>causl-ts-wasm-engine</code> fork, with
-      <code>DEFAULT_WASM_ENGINE_MODE=rust-ssot</code> and
-      <code>loadWasmBackend()</code> wired to
-      <code>@causljs/causl-wasm</code>); adopters who want the contract with
-      a JS-engine fallback continue on <code>@causl/core</code> from
-      <code>causljs/causl-ts</code>.
-      Cross-link: <code>packages/core/wasm/README.md</code> and
-      <code>docs/wasm-adoption-guide.md</code> for the host-tier matrix
-      and the H1 reference-identity hazard at the bridge boundary
-      (SPEC §15.1 amendment #1124).
-    </blockquote>
-
-    <p>
-      The three host tiers (<code>wasmgc-builtins</code>, <code>wasmgc-classic</code>,
-      <code>serde-json</code>) are selected at module-load time by <code>detectBridge()</code>.
-      You do not pin a tier in your <code>package.json</code> — the artefacts are lazily
-      fetched, and only the tier your host actually supports is downloaded. If
-      <code>WebAssembly</code> instantiation fails outright (CSP without
-      <code>'wasm-unsafe-eval'</code>, embedded runtimes, etc.), the loader throws
-      <code>WasmBackendUnavailableError</code> with a structured <code>code</code> field and
-      you fall back to the TS engine at the construction seam.
-    </p>
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>The wasm engine &amp; causl-client are an Enterprise feature.</strong> Wiring the WebAssembly backend, building and vendoring the wasm artefact through <code>causl-client</code>, the host-tier matrix, and the fallback chain are all covered in the Enterprise section.</p>
+      <p><a href="../../enterprise/integrating-causl-client/">Integrating causl-client &rarr;</a> &nbsp;&middot;&nbsp; <a href="../../enterprise/wasm-performance/">wasm performance &amp; ceiling &rarr;</a></p>
+    </aside>
 
     <h2 id="typescript">TypeScript setup</h2>
     <p>
@@ -371,7 +301,9 @@ async function makeGraph() {
 }</code>
     <p>
       <strong>Module resolution.</strong> Causl is ESM-only and uses package <code>exports</code>
-      subpaths (<code>@causl/core/wasm</code>, <code>@causl/core/testing</code>, etc.). You need
+      subpaths (<code>@causl/core/testing</code>, and the
+      <a href="../../enterprise/integrating-causl-client/"><code>@causl/core/wasm</code></a>
+      <span class="badge-enterprise">Enterprise</span> entry, etc.). You need
       <code>"moduleResolution": "Bundler"</code> (or <code>"NodeNext"</code>) so TypeScript
       reads the <code>exports</code> map. Older <code>"moduleResolution": "Node"</code> will
       silently miss the subpath types.
@@ -428,29 +360,12 @@ async function makeGraph() {
             The present-extension path is larger.</td>
         </tr>
         <tr>
-          <td><code>@causl/core/wasm</code> entry stub</td>
-          <td>3 KB</td>
-          <td>Loader skeleton (<code>loadWasmBackend</code>, <code>detectBridge</code>,
-            <code>WasmBackendUnavailableError</code>, <code>BridgeFeatures</code>). Adopters
-            who never import this entry pay zero bytes for it.</td>
-        </tr>
-        <tr>
-          <td>WASM Tier 1 (<code>wasmgc-builtins</code>)</td>
-          <td>60 KB Brotli ceiling</td>
-          <td>Currently ~45 KB Brotli. Lazily fetched only on hosts that support
-            <code>wasm:js-string</code> direct imports.</td>
-        </tr>
-        <tr>
-          <td>WASM Tier 2 (<code>wasmgc-classic</code>)</td>
-          <td>60 KB Brotli ceiling</td>
-          <td>Currently ~50 KB Brotli. Lazily fetched on Safari 18.2+ and WasmGC hosts without
-            the JS-string import binding.</td>
-        </tr>
-        <tr>
-          <td>WASM Tier 3 (<code>serde-json</code>)</td>
-          <td>80 KB Brotli ceiling (target)</td>
-          <td>Universal-compat fallback. Lazily fetched only on hosts that hit Tier 3. See
-            SPEC §17.6 for the current raw-byte divergence.</td>
+          <td>wasm engine artefacts <span class="badge-enterprise">Enterprise</span></td>
+          <td>see Enterprise docs</td>
+          <td>The <code>@causl/core/wasm</code> entry stub, the lazily-fetched per-host wasm
+            tiers, and their Brotli ceilings are an
+            <a href="../../enterprise/wasm-performance/">Enterprise</a> concern. Adopters on the
+            default pure-TS engine pay zero bytes for any of it.</td>
         </tr>
       </tbody>
     </table>

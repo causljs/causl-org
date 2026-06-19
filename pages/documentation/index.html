@@ -356,6 +356,82 @@
   </section>
 
   <!-- ============================================================
+       Enterprise
+       ============================================================ -->
+  <section class="page section" id="enterprise">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">Enterprise</div>
+        <h2>The <code>causl-wasm</code> engine and the <code>causl-client</code> API.</h2>
+      </div>
+      <p class="lead">
+        Causl ships a second, Enterprise-tier engine: the
+        <code>causl-wasm</code> core, written in Rust and compiled to
+        WebAssembly, reached through <code>causl-client</code> — a thin
+        TypeScript API over the same public surface as
+        <code>@causl/core</code>. It is a gated alternative to the
+        TypeScript floor and the planned replacement for it
+        (SPEC&nbsp;§18A).
+      </p>
+    </div>
+
+    <div class="grid-3">
+      <a class="card doc-card"
+         href="./enterprise/">
+        <div class="mono-label">enterprise</div>
+        <h3>Enterprise overview <span class="badge-enterprise">Enterprise</span></h3>
+        <p>
+          The landing page for the Enterprise tier — the Rust→WASM
+          engine (<code>causl-wasm</code>) behind a thin TypeScript API
+          (<code>causl-client</code>), exposing the same public surface
+          as <code>@causl/core</code>. A gated alternative to the
+          TypeScript floor and its planned replacement (SPEC&nbsp;§18A).
+        </p>
+        <span class="doc-card-link">Read the overview</span>
+      </a>
+
+      <a class="card doc-card"
+         href="./enterprise/integrating-causl-client/">
+        <div class="mono-label">integrating-causl-client</div>
+        <h3>Integrating <code>causl-client</code> <span class="badge-enterprise">Enterprise</span></h3>
+        <p>
+          How to adopt the thin <code>causl-client</code> TypeScript API
+          in place of <code>@causl/core</code>. Because both expose the
+          same public surface, the swap is gated and drop-in — your
+          input / derived / commit / read / subscribe code is unchanged.
+        </p>
+        <span class="doc-card-link">Read the guide</span>
+      </a>
+
+      <a class="card doc-card"
+         href="./enterprise/two-engine-architecture/">
+        <div class="mono-label">two-engine-architecture</div>
+        <h3>Two-engine architecture <span class="badge-enterprise">Enterprise</span></h3>
+        <p>
+          Why Causl runs two conformant engines — the TypeScript floor
+          and the Rust→WASM <code>causl-wasm</code> core — and how the
+          shared public surface lets the gated WASM engine stand in as
+          the planned replacement for the floor (SPEC&nbsp;§18A).
+        </p>
+        <span class="doc-card-link">Read the architecture</span>
+      </a>
+
+      <a class="card doc-card"
+         href="./enterprise/wasm-performance/">
+        <div class="mono-label">wasm-performance</div>
+        <h3>WASM performance <span class="badge-enterprise">Enterprise</span></h3>
+        <p>
+          Where the Rust→WASM <code>causl-wasm</code> engine pays off
+          against the TypeScript floor across the canonical scenario
+          taxonomy — the FFI / marshal costs to weigh, and the workloads
+          that justify the Enterprise engine.
+        </p>
+        <span class="doc-card-link">Read the numbers</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============================================================
        Repository docs
        ============================================================ -->
   <section class="page section" id="repo-docs">
@@ -548,7 +624,11 @@
         under the <a href="https://github.com/causljs" rel="noopener"><code>causljs</code></a>
         GitHub organisation. Each repo owns one concern; the
         contribution flow, the CI gates, and the release cadences are
-        independent.
+        independent. The Rust→WASM <code>causl-wasm</code> engine and the
+        <code>causl-ts-wasm-engine</code> fork are
+        <a href="./enterprise/"><span class="badge-enterprise">Enterprise</span></a>
+        — see the <a href="./enterprise/">Enterprise docs</a> for the
+        two-engine architecture and the <code>causl-client</code> API.
       </p>
     </div>
 
@@ -575,7 +655,7 @@
          href="https://github.com/causljs/causl-wasm"
          rel="noopener">
         <div class="mono-label">causljs/causl-wasm</div>
-        <h3>Rust engine + consolidated bridge</h3>
+        <h3>Rust engine + consolidated bridge <span class="badge-enterprise">Enterprise</span></h3>
         <p>
           <code>engine-rs-core</code> (pure-algorithm
           <code>no_std + alloc</code>) plus the single consolidated
@@ -593,7 +673,7 @@
          href="https://github.com/causljs/causl-ts-wasm-engine"
          rel="noopener">
         <div class="mono-label">causljs/causl-ts-wasm-engine</div>
-        <h3>TS fork — WASM by default</h3>
+        <h3>TS fork — WASM by default <span class="badge-enterprise">Enterprise</span></h3>
         <p>
           Defaults <code>loadWasmBackend()</code> to the consolidated
           <code>@causljs/causl-wasm</code> bridge

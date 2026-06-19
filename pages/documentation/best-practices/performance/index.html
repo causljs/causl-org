@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Performance Best Practices — Causl</title>
-  <meta name="description" content="Practical guidance for getting the most out of the causl engine: equality-cutoff exploitation, commit batching, fan-out avoidance, WasmBackend adoption, and local benchmarking." />
+  <meta name="description" content="Practical guidance for getting the most out of the default pure-TypeScript causl engine: equality-cutoff exploitation, commit batching, fan-out avoidance, and local benchmarking. The opt-in wasm engine is an Enterprise feature." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../../css/site.css" />
@@ -228,71 +228,33 @@ const cells = grid.cells.map((c) =&gt;
       microbenches; below that the direct form wins on simplicity.
     </blockquote>
 
-    <h2>4. When to enable the WasmBackend</h2>
+    <h2>4. The default TS engine covers almost every workload</h2>
     <p>
-      <code>loadWasmBackend()</code> from <code>@causl/core/wasm</code>
-      returns a backend that runs the same engine in an opt-in WebAssembly
-      substrate. As of the current ship, the WasmBackend is a TS-engine
-      wrapper (Phase 1) — the full Rust port is deferred to post-0.9.0
-      behind GO/NO-GO criteria. The wrapper exists today because the
-      contract surface and the loader stabilise the integration seam
-      ahead of the engine swap.
+      The four levers above — equality-cutoff exploitation, write
+      batching, fan-out collapsing, and aiming at the §17.5 band — are all
+      properties of the pure-TypeScript engine that ships in
+      <code>@causl/core</code> by default. That engine needs no opt-in and
+      no host probe, and for the overwhelming majority of application
+      workloads it is the only engine you should reason about. Reach for
+      the levers on this page before reaching for a different backend; a
+      collapsed fan-out or a merged commit almost always beats a substrate
+      swap.
     </p>
     <p>
-      The auto-adapt heuristic names the boundary adopters should care
-      about. Enable WasmBackend when both of:
+      There is also an opt-in WebAssembly engine for adopters whose
+      profile lands on the engine inner loop at large graph sizes. It pays
+      an FFI marshaling tax per commit, so it only overtakes the default
+      engine above a measurable crossover in graph size and commit latency.
+      The adoption thresholds, the <code>read()</code>-identity hazard, and
+      the telemetry-driven measurement pattern are covered in the
+      Enterprise documentation.
     </p>
-    <ul>
-      <li>
-        <strong>Graph size ≥ 50,000 nodes.</strong> Below this, the
-        TS-engine wrapper's overhead is observable but the JS engine's
-        absolute cost is still small enough that the swap is not worth the
-        opt-in.
-      </li>
-      <li>
-        <strong>Median commit latency ≥ 1.0 ms.</strong> This is the floor
-        where the swap starts to deliver a wall-clock win against
-        application workloads. Below 1.0 ms, GC pressure and FFI envelope
-        cost dominate; above it, the engine work amortises.
-      </li>
-    </ul>
-    <p>
-      You measure both numbers with <code>EngineTelemetry</code> against a
-      real workload — not synthetic benchmarks. The standard adoption
-      pattern is the one in <code>docs/wasm-adoption-guide.md</code>:
-    </p>
-<code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
-import { loadWasmBackend, WasmBackendUnavailableError } from '@causl/core/wasm';
 
-async function tryWasmBackend() {
-  try {
-    return await loadWasmBackend();
-  } catch (err) {
-    if (err instanceof WasmBackendUnavailableError) return 'js';
-    throw err;
-  }
-}
-
-const graph = createCausl({
-  backend: await tryWasmBackend(),
-  commitHistoryCap: 1000,
-});
-</code>
-
-    <blockquote>
-      <strong>H1 hazard for adopters.</strong> Per the SPEC §15.1 amendment,
-      <code>graph.read(node)</code> does <em>not</em> contractually return
-      the same JavaScript reference across calls.
-      Today's WasmBackend is a TS-engine wrapper so identity holds
-      trivially; the day the real Rust serde/wasmgc bridges land,
-      <code>read()</code> returns a fresh object per call as the value
-      crosses the FFI boundary. Adopters who keyed
-      <code>React.memo</code> or <code>useMemo</code> off the read return
-      will silently re-render every commit. Key your memoisation on
-      <code>commit.time</code> (the <code>GraphTime</code> exposed on
-      <code>Commit</code>) or the per-node version counter exposed via
-      <code>EngineTelemetry</code> instead.
-    </blockquote>
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>The wasm engine is an Enterprise feature.</strong> Wasm only pays off above a crossover in graph size and median commit latency, because the per-commit marshaling tax dominates below it — the Enterprise guide gives the adoption thresholds, the FFI wire cost, and the <code>read()</code>-identity hazard that bites adopters keying <code>React.memo</code> or <code>useMemo</code> off the read return.</p>
+      <p><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling &rarr;</a></p>
+    </aside>
 
     <h2>5. The bench harness — validate locally</h2>
     <p>

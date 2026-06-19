@@ -256,12 +256,14 @@ console.log(graph.read(doubled));  // 10
       <code>WebAssembly</code> global, which has been available in
       every shipping browser since 2017. The WASM module is gated
       behind <code>loadWasmBackend()</code> &mdash; you only pay the
-      download and instantiation cost if you opt in. Note that the
-      WASM backend is currently a TypeScript-engine wrapper (Phase-1);
-      the full Rust port is deferred behind GO/NO-GO criteria as part
-      of the 1.0 plan (see
-      <a href="#one-point-oh">the 1.0 timeline question</a> below).
+      download and instantiation cost if you opt in.
     </p>
+
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>This is an Enterprise feature.</strong> The WASM backend and the Rust core it bridges to ship under the Enterprise tier; the two-engine design (TypeScript wrapper today, native Rust port behind GO/NO-GO) is documented there.</p>
+      <p><a href="../../enterprise/two-engine-architecture/">Two-engine architecture &rarr;</a></p>
+    </aside>
 
     <h3 id="node-support">Which Node versions are supported?</h3>
 
@@ -399,7 +401,8 @@ const user = resource(graph, {
         from the current Phase-1 TypeScript-wrapper into the native
         Rust core. That gives 1.0 a single normative reference
         implementation across both backends and unblocks the long-term
-        performance roadmap.
+        performance roadmap. The Rust core and its WASM backend are an
+        <a href="../../enterprise/two-engine-architecture/">Enterprise feature <span class="badge-enterprise">Enterprise</span></a>.
       </li>
       <li>
         <strong>Or:</strong> the maintainers explicitly declare API

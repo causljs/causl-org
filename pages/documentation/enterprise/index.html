@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Enterprise — Causl</title>
+  <meta name="description" content="The Causl Enterprise tier — the Rust→WebAssembly engine (causl-wasm) consumed through the thin causl-client TypeScript API. A committed conformant alternative to the pure-TypeScript floor, promotion-gated by the SPEC §18A.7 GO/NO-GO criteria." />
+  <link rel="icon" href="../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../css/site.css" />
+  <link rel="stylesheet" href="../../../css/syntax.css" /><link rel="stylesheet" href="../../../css/playground.css" />
+  <style>
+    /* Docs container — matches the shell used across the doc pages. */
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h1 .badge-enterprise { vertical-align: middle; margin-left: 0.6rem; }
+    .docs-content p.lede {
+      font-size: 1.1rem;
+      color: var(--text-on-base-muted);
+      max-width: 680px;
+      margin: 1rem 0 0;
+    }
+    :root[data-theme="light"] .docs-content p.lede { color: var(--text-on-base-muted); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+
+    /* Doc cards — link the whole card, show a chevron on hover.
+       Same markup/classes as the documentation index. */
+    .doc-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .doc-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(39, 211, 195, 0.4);
+      box-shadow: 0 12px 28px rgba(39, 211, 195, 0.12);
+      text-decoration: none;
+    }
+
+    .doc-card h3 {
+      margin: 0;
+      color: var(--text-on-base);
+    }
+
+    :root[data-theme="light"] .doc-card h3 { color: var(--text-on-base); }
+
+    .doc-card p {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .doc-card .doc-card-link {
+      margin-top: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--surface-emphasis);
+      letter-spacing: 0.02em;
+    }
+
+    .doc-card .doc-card-link::after {
+      content: " →";
+      transition: transform 0.15s;
+      display: inline-block;
+    }
+
+    .doc-card:hover .doc-card-link::after {
+      transform: translateX(3px);
+    }
+
+    .enterprise-grid { margin: 2rem 0 0; }
+  </style>
+</head>
+<body>
+    <!-- Topbar host — js/topbar.js replaces this with the canonical
+       <header id="topbar"> element. The fallback links inside the
+       <noscript> block keep nav usable for crawlers and no-JS users. -->
+  <div id="topbar-host" data-current="docs">
+    <noscript>
+      <nav class="topbar-fallback" aria-label="Site navigation">
+      <a href="/">Home</a>
+      <a href="/pages/documentation/">Documentation</a>
+      <a href="/pages/documentation/getting-started/">Getting Started</a>
+      <a href="/pages/documentation/tutorial/">Tutorial</a>
+      <a href="/pages/documentation/usage/">Usage Guide</a>
+      <a href="/pages/documentation/api/">API</a>
+      <a href="/pages/documentation/faq/">FAQ</a>
+      <a href="/pages/documentation/best-practices/">Best Practices</a>
+      <a href="/pages/benchmarks/">Benchmarks</a>
+      <a href="/pages/playground/">Playground</a>
+      <a href="/pages/spreadsheet/">Spreadsheet</a>
+      <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
+      </nav>
+    </noscript>
+  </div>
+
+  <main class="docs-content">
+    <h1>Enterprise <span class="badge-enterprise">Enterprise</span> — the wasm engine &amp; causl-client</h1>
+    <p class="lede">
+      Causl ships a pure-TypeScript engine (<code>causl-ts</code>) as the
+      open-source floor and reference implementation. As an Enterprise
+      feature it also ships a Rust→WebAssembly engine,
+      <code>causl-wasm</code>, consumed through a thin TypeScript API,
+      <code>causl-client</code>. Both engines expose the same 7-method
+      public surface (SPEC §18A.4); the wasm path is a committed
+      conformant <em>alternative</em> today and the planned future
+      replacement, promotion-gated by the 5-criterion GO/NO-GO in
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.7</a>.
+    </p>
+
+    <div class="grid-2 enterprise-grid">
+      <a class="card doc-card"
+         href="./integrating-causl-client/">
+        <div class="mono-label">causl-client</div>
+        <h3>Integrating causl-client</h3>
+        <p>
+          Consume the wasm artefact through <code>@causl/core/wasm</code>
+          in a TS/Node application — <code>loadWasmBackend()</code>, the
+          construction seam, and the structured
+          <code>WasmBackendUnavailableError</code> fallback chain back to
+          the TS floor.
+        </p>
+        <span class="doc-card-link">Read the guide</span>
+      </a>
+
+      <a class="card doc-card"
+         href="./two-engine-architecture/">
+        <div class="mono-label">SPEC §18A</div>
+        <h3>Two-engine architecture</h3>
+        <p>
+          The <code>causl-ts</code> floor versus the
+          <code>causl-wasm</code> production engine: the §18A contract,
+          the shared 7-method surface, and why both implementations are
+          byte-identical and conformant for all adopter code.
+        </p>
+        <span class="doc-card-link">Read the contract</span>
+      </a>
+
+      <a class="card doc-card"
+         href="./wasm-performance/">
+        <div class="mono-label">SPEC §18A.7</div>
+        <h3>Wasm performance &amp; the perf ceiling</h3>
+        <p>
+          What the wasm path costs — FFI marshalling overhead, the
+          atomicity contract at the bridge boundary, and the §18A.7
+          performance ceiling against which promotion is measured
+          (GO/RESOLVED).
+        </p>
+        <span class="doc-card-link">Read the numbers</span>
+      </a>
+
+      <a class="card doc-card"
+         href="../api/modules/_causl_core.wasm.html">
+        <div class="mono-label">@causl/core/wasm</div>
+        <h3>Wasm API reference</h3>
+        <p>
+          The TypeDoc-generated reference for the
+          <code>@causl/core/wasm</code> exports — <code>loadWasmBackend</code>,
+          <code>detectBridge</code>, <code>WasmBackendUnavailableError</code>,
+          and the <code>BridgeFeatures</code> surface.
+        </p>
+        <span class="doc-card-link">View API</span>
+      </a>
+    </div>
+
+    <p style="margin-top: 2.4rem;">
+      These Enterprise features require a production Rust build and a Node
+      target (<a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.2</a>).
+      The TypeScript engine remains the default and unconditional floor:
+      it is byte-identical to the wasm engine for all adopter code and stays
+      supported regardless of whether the §18A.7 GO/NO-GO promotes the wasm
+      path to default.
+    </p>
+  </main>
+
+    <!-- Footer host — js/footer.js replaces this with the canonical
+       <footer class="site-footer"> element. -->
+  <div id="footer-host">
+    <noscript>
+      <footer class="site-footer">
+        <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
+      </footer>
+    </noscript>
+  </div>
+  <script src="../../../js/footer.js" defer></script>
+  <script src="../../../js/topbar.js" defer></script>
+</body>
+</html>

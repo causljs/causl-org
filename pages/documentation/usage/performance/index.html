@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Performance — Causl</title>
-  <meta name="description" content="How causl measures performance, what the SPEC §17.5 capability-cost residual band promises, how to run the bench harness, and when to migrate to the WasmBackend." />
+  <meta name="description" content="How causl measures performance with the default pure-TypeScript engine, what the SPEC §17.5 capability-cost residual band promises, and how to run the bench harness. The opt-in wasm engine is an Enterprise feature." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../../css/site.css" />
@@ -74,7 +74,7 @@
 
     <ul>
       <li><strong>Upper bound (8.0&times;) is the regression gate.</strong> Earlier in the project the <code>equality-cutoff &times; 10000</code> cell ran at 1.94 ms vs mobx's 0.215 ms — about 9&times;, breaching the ceiling. A focused perf wave delivered a 24% drop (1.94 ms &rarr; 1.47 ms), pulling the residual to ~6.4&times; and giving the 8&times; ceiling about 25% headroom over the post-wave anchor. A future change that drives the cell back past 8&times; either reintroduces a per-write per-derived allocation seam or invents a new one; either way, the gate forces the conversation in review.</li>
-      <li><strong>Lower bound (3.0&times;) is the capability-erosion gate.</strong> The ~0.9–1.1 ms causl pays beyond mobx on <code>equality-cutoff</code> is, from JavaScript, non-addressable: string-keyed Map probes, full-call <code>Object.is</code>, frozen <code>Commit</code> allocation, and the GC pressure those produce together set a structural floor. A future PR that delivers a sub-3&times; ratio on a contract-bearing cell has either shipped a real architectural breakthrough (the named candidate is promotion of <code>engine-rs-core</code> from <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a> — the Rust implementation — to the default backend, per SPEC §17.6) or it has silently retired one of the four contract surfaces. The 3&times; floor flips that trade-off into a visible CI failure rather than a silent ship.</li>
+      <li><strong>Lower bound (3.0&times;) is the capability-erosion gate.</strong> The ~0.9–1.1 ms causl pays beyond mobx on <code>equality-cutoff</code> is, from JavaScript, non-addressable: string-keyed Map probes, full-call <code>Object.is</code>, frozen <code>Commit</code> allocation, and the GC pressure those produce together set a structural floor. A future PR that delivers a sub-3&times; ratio on a contract-bearing cell has either shipped a real architectural breakthrough (the named candidate is promotion of the native wasm engine <span class="badge-enterprise">Enterprise</span> to the default backend, per SPEC §17.6 — see the <a href="../../enterprise/wasm-performance/">Enterprise wasm-performance guide</a>) or it has silently retired one of the four contract surfaces. The 3&times; floor flips that trade-off into a visible CI failure rather than a silent ship.</li>
     </ul>
 
     <p>The residual decomposes as <strong>1.84&times; engine baseline &times; 3.5&times; contract premium</strong>. The 1.84&times; factor is the only honest engine-on-engine microbench (<code>op-tx-set-isolated-1k</code>, with the <code>hasDependents</code> fast path that skips the staging/rollback round-trip on isolated inputs). The 3.5&times; factor is what the four contract surfaces above actually cost.</p>
@@ -83,13 +83,9 @@
       <strong>Methodology callout.</strong> Two cells in the wider engine-on-engine harness are <em>excluded</em> from the residual: <code>op-tx-shadow-read-1k</code> reads ~11&times; because mobx returns the new value directly inside <code>runInAction</code> without a shadow-Map probe, and <code>op-commit-rollback-1k</code> reads ~2.8&times; because mobx is not transactional — <code>runInAction</code> does not roll back on throw, so the comparator simulates a failed transaction with a second <code>runInAction</code>. Both are methodology asymmetries rooted in shipped capability, not inner-loop cost, and folding them into the residual would produce a number neither side could defend.
     </blockquote>
 
-    <h3>Post-Rust port projection</h3>
+    <h3>The TS engine residual is the contract you measure against <span class="badge-enterprise">Enterprise</span></h3>
 
-    <p>The numbers above describe the current TS engine. Once the Rust port lands (deferred behind GO/NO-GO criteria post-0.9.0), the projected residual band is <strong>1.0&times; to 4.0&times; mobx_median</strong> on the same contract cells. The lower bound moves to parity because the structural floor that the JS engine cannot cross — Map allocation, <code>Object.is</code> dispatch, GC pressure on frozen <code>Commit</code> objects — is precisely what crossing the WASM/Rust boundary is allowed to bypass. The upper bound moves to 4&times; because the contract surfaces themselves do not get cheaper; they just get implemented in a substrate that walks pointers instead of hash maps.</p>
-
-    <p>Today's <code>WasmBackend</code> is a TS-engine wrapper (Phase 1 — see <a href="https://github.com/causljs/causl-ts/blob/main/docs/wasm-adoption-guide.md">wasm-adoption-guide.md</a>). The post-Rust band is a projection, not a promise.</p>
-
-    <p>The Rust engine <code>engine-rs-core</code> is production-ready today in the <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a> repository. Phase-1 (the wrapped TS engine) ships with <code>@causl/core</code> v0.9.0+ via the optional <code>loadWasmBackend()</code>; full Phase-2 (Rust as the default backend) is behind GO/NO-GO criteria per <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6</a> (and the §18A.7 gate). Adopters desiring Rust-first semantics today use the <a href="https://github.com/causljs/causl-ts-wasm-engine" rel="noopener"><code>@causljs/causl-ts-wasm-engine</code></a> fork, which inverts the backend default.</p>
+    <p>The numbers above describe the current TS engine — the default, and the band the §17.5 gate enforces. There is also a projected residual band for the wasm engine, where crossing the native boundary is allowed to bypass the JS structural floor (Map allocation, <code>Object.is</code> dispatch, GC pressure on frozen <code>Commit</code> objects) that the TS engine cannot. Those projections, the backend-selection semantics, and the GO/NO-GO criteria are Enterprise material; the TS-engine band on this page stands on its own.</p>
 
     <h2>2. Running the bench harness</h2>
 
@@ -121,16 +117,15 @@
 
     <p>The full audit driver is <code>packages/bench/src/freeze-impact-cli.ts</code>; the smaller-cell entry points share the same harness so the numbers compose with the full report.</p>
 
-    <h3>2.5 Measurement targets and backend-specific notes</h3>
+    <h3>2.5 Measurement target for the default engine</h3>
 
-    <p>SPEC §18A.7 performance ceiling targets (250&nbsp;&micro;s p95 single-commit marshal overhead, 5&nbsp;ms p95 batch-1000 commits, 1k-graph commit) are validated against the Rust engine <code>engine-rs-core</code> in <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a>. The TypeScript floor engine in <code>@causl/core</code> meets the same contract; performance trade-offs between backends are documented in <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6</a> and <a href="https://github.com/causljs/causl-ts/blob/main/docs/wasm-adoption-guide.md" rel="noopener"><code>wasm-adoption-guide.md</code></a>.</p>
+    <p>The TypeScript floor engine in <code>@causl/core</code> is measured against the §17.5 capability-cost residual band: <strong>3.0&times;&ndash;8.0&times; mobx_median</strong> on the three contract cells. This is the unconditional floor — the numbers in §1 above describe it, and it is the target the bench harness gates against on every run.</p>
 
-    <p>Two backends, one contract, distinct measurement targets:</p>
-
-    <ul>
-      <li><strong><code>causl-ts</code> (TypeScript floor, default).</strong> Measured against the §17.5 capability-cost residual band (3.0&times;&ndash;8.0&times; mobx_median on the three contract cells). This is the unconditional floor — the numbers in §1 above describe it.</li>
-      <li><strong><code>causl-wasm</code> (Rust core, opt-in).</strong> Measured against the §18A.7 marshaling-tax ceiling, not the §17.5 band. The relevant gate is the FFI wire cost: a single commit must stay &le; 250&nbsp;&micro;s p95 marshal overhead, and a large batch / mutation &le; 5&nbsp;ms p95 total. A fresh cross-backend sweep (fresh-process per cell, <code>causl-wasm</code> vs <code>causl-ts</code>) places the wasm path at roughly 0.16&ndash;0.24&nbsp;ms single-commit, ~1.5&ndash;2.0&nbsp;ms batch-1000, and ~2.7&ndash;4.5&nbsp;ms 1k-graph commit — i.e. inside the §18A.7 ceiling. The documented 78&times; wire tax (156.4&nbsp;ms / 10k commits vs the 2.017&nbsp;ms TS median) is the standing cost the wasm path pays before the Rust engine does any work, and is named in full at §17.6 G.1.</li>
-    </ul>
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>The wasm engine is an Enterprise feature.</strong> The wasm backend is measured against a different target — the §18A.7 marshaling-tax ceiling rather than the §17.5 band — because it pays an FFI wire tax per commit before the native engine does any work; the cross-backend sweep and the standing marshal cost are covered in the Enterprise guide.</p>
+      <p><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling &rarr;</a></p>
+    </aside>
 
     <h2>3. The equality-cutoff optimisation</h2>
 
@@ -170,41 +165,21 @@ graph.commit('rewrite-source', tx =&gt; {
       <strong>Why this is worth remembering.</strong> The 654&times; figure was not a competitor cherry-pick; it was the engine's own reported wall-clock against its own canonical workload. The recovery happened because the hypothesis catalogue named the suspect symbol, the bench harness measured the suspect symbol's contribution, and the fix was small enough to ship in one PR. If you observe a regression of similar shape in your own profile, the same loop applies: <code>pnpm bench:check-hypotheses</code> names the candidate symbols, <code>pnpm bench:profile:cpu</code> attributes the wall-clock, and the fix should land in one PR with a Perf delta in the body.
     </blockquote>
 
-    <h2>5. When to migrate to <code>WasmBackend</code></h2>
+    <h2>5. The TS engine is the default — and the focus of this page</h2>
 
-    <p>Causl ships an opt-in WebAssembly backend at <code>@causl/core/wasm</code>. Today's implementation is a Phase-1 TS-engine wrapper: it gives you the ergonomics of the WASM loader and the host-tier compatibility shape, but the inner loop is still TypeScript. The full Rust port lands behind explicit GO/NO-GO criteria post-0.9.0.</p>
+    <p>Everything above describes the pure-TypeScript engine that ships in <code>@causl/core</code> by default. It is the unconditional floor: it honours every contract surface, meets the §17.5 residual band, and needs no opt-in, no loader, and no host-capability probe. For the overwhelming majority of application workloads — interactive UIs, forms, moderate spreadsheets — it is the right and only engine you need to reason about.</p>
 
-    <p>The adapter heuristic lets adopters opt in to <em>auto-adaption</em>: causl probes the host, picks the highest available bridge tier (<code>wasmgc-builtins</code> &gt; <code>wasmgc-classic</code> &gt; <code>serde-json</code>), and falls back to the TS engine when no tier is available. The default is the TS engine; <code>WasmBackend</code> is opt-in even when the host supports it.</p>
+    <p>There is also an opt-in WebAssembly engine for adopters who profile their workload onto the engine inner loop at scale. Because it carries a per-commit marshaling tax across the FFI boundary, it only pays off above a measurable crossover — and that depth (when wasm wins, the marshal tax, the read()-identity hazard, the crossover sweep) is covered in the Enterprise documentation.</p>
 
-    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
-import { loadWasmBackend, WasmBackendUnavailableError } from '@causl/core/wasm';
-
-async function chooseBackend() {
-  try {
-    return await loadWasmBackend();
-  } catch (err) {
-    if (err instanceof WasmBackendUnavailableError) return 'js';
-    throw err;
-  }
-}
-
-const graph = createCausl({ backend: await chooseBackend() });</code>
-
-    <p>The structured-code fallback chain (<code>CAUSL_WASM_NOT_BUILT</code>, <code>CAUSL_WASM_UNAVAILABLE</code>, <code>CAUSL_WASM_CSP_BLOCKED</code>, <code>CAUSL_WASM_BRIDGE_UNAVAILABLE</code>) means a single try/catch covers every host where WASM is not viable — CSP without <code>'wasm-unsafe-eval'</code>, embedded runtimes with WASM stripped, hosts where <code>WebAssembly.Module</code> is undefined.</p>
-
-    <p>You should migrate to <code>WasmBackend</code> when:</p>
-
-    <ol>
-      <li><strong>Your workload sits on a contract-bearing cell shape.</strong> If <code>pnpm bench:report</code> against a workload that mirrors yours shows you near the 8&times; upper bound and the profile attributes the cost to engine inner-loop work (not user-provided derive functions), you are the population the Rust port is designed for. Once the native Rust phase lands, your residual moves toward the 1&times;–4&times; band; today's wrapper at least lets you stage the loader and adopter-side seams.</li>
-      <li><strong>You are willing to accept the H1 hazard.</strong> The day the real Rust bridges land, <code>graph.read(node)</code> on an object-valued node will return a fresh object per call as the value crosses the FFI boundary. Adopters who <code>React.memo</code>'d on the read reference, or used <code>useMemo(() =&gt; transform(value), [value])</code> with <code>value</code> as the read return, will silently re-render every commit. SPEC §15.1 makes this explicit: reference identity is <strong>not</strong> contractual; key memoisation on <code>commit.time</code> or the per-node version counter <code>EngineTelemetry</code> surfaces.</li>
-      <li><strong>You measured the crossover.</strong> The <code>bench:crossover-curve</code> script in <code>packages/bench/scripts/crossover-curve.ts</code> sweeps the cell scale and prints the point at which <code>WasmBackend</code> overtakes the TS engine for your scenario shape. For most workloads under ~1,000 active derived nodes, the TS engine wins outright; the WASM substrate's per-call overhead exceeds its inner-loop advantage. Above ~10,000 active nodes the wrapper begins to break even, and the post-Rust projection puts the crossover much earlier.</li>
-    </ol>
-
-    <p>You should <em>not</em> migrate to <code>WasmBackend</code> when your workload looks like the smallest cells. If "single mutation, single subscriber, no diamond, no async, no batch" describes your hot path, the TS engine is fast enough and the WASM loader is paying for a capability you do not use. Jotai will outpace any backend on that shape; causl is honest about the crossover.</p>
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>The wasm engine is an Enterprise feature.</strong> The marshaling tax across the FFI boundary means wasm only overtakes the default TS engine above a measurable crossover — the Enterprise guide covers when wasm pays off, the per-commit wire cost, and the <code>read()</code>-identity hazard in full.</p>
+      <p><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling &rarr;</a></p>
+    </aside>
 
     <h2>6. Where the residual cannot be addressed</h2>
 
-    <p>It is worth restating the §17.5 lower-bound argument in adopter terms. If your profile of a contract-bearing cell shows the bulk of the wall-clock in <code>Map.prototype.get</code>, <code>Object.is</code>, structured-clone of <code>Commit</code> deltas, or major-GC pauses, those are the floor: no JavaScript-level optimisation crosses below them while preserving the contract surfaces. The right lever is the WasmBackend, not a micro-optimisation in <code>commit()</code>.</p>
+    <p>It is worth restating the §17.5 lower-bound argument in adopter terms. If your profile of a contract-bearing cell shows the bulk of the wall-clock in <code>Map.prototype.get</code>, <code>Object.is</code>, structured-clone of <code>Commit</code> deltas, or major-GC pauses, those are the floor: no JavaScript-level optimisation crosses below them while preserving the contract surfaces. At that point the lever is the wasm engine <span class="badge-enterprise">Enterprise</span> rather than a micro-optimisation in <code>commit()</code> — see the Enterprise wasm-performance guide for the crossover analysis.</p>
 
     <p>Conversely, if your profile shows the bulk of the wall-clock in user-provided <code>derived</code> bodies, the engine is already as fast as the contract allows; the answer is to look at the derive function itself. <code>pnpm bench:profile:cpu causl &lt;scenario&gt; &lt;scale&gt;</code> attributes user code separately from engine code in the flame graph, so the question of "is this me or is this causl?" is mechanically answerable.</p>
 
@@ -214,7 +189,7 @@ const graph = createCausl({ backend: await chooseBackend() });</code>
       <li><a href="../../../benchmarks/">Benchmarks landing page</a> — the canonical seven-cell sweep with live numbers.</li>
       <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §17.5</a> — the capability-cost residual amendment.</li>
       <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §17.6</a> — the host-tier substrate-compatibility commitment.</li>
-      <li><a href="https://github.com/causljs/causl-ts/blob/main/docs/wasm-adoption-guide.md">WASM adoption guide</a> — H1 hazard, the <code>migrate('wasm')</code> seam, structured-code fallback.</li>
+      <li><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling</a> <span class="badge-enterprise">Enterprise</span> — when wasm pays off, the marshal tax, the <code>read()</code>-identity hazard, the crossover sweep.</li>
       <li><a href="https://github.com/causljs/causl-ts/blob/main/docs/profiling.md">Profiling guide</a> — flame graphs, deopt traces, GC pause distributions.</li>
       <li><a href="https://github.com/causljs/causl-ts/blob/main/docs/contributing-perf.md">Perf-delta template</a> — what to put in a PR body when you touch hot code.</li>
     </ul>

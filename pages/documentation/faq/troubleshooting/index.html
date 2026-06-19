@@ -88,7 +88,7 @@
       </ol>
     </nav>
 
-    <h2 id="read-identity"><a class="qa-anchor" href="#read-identity">Why does <code>graph.read(node)</code> return a different reference every commit?</a></h2>
+    <h2 id="read-identity"><a class="qa-anchor" href="#read-identity">Why does <code>graph.read(node)</code> return a different reference every commit?</a> <span class="badge-enterprise">Enterprise</span></h2>
     <p>
       <strong>Short answer:</strong> because reference identity across commits is
       not part of the contract. The TS engine happens to return the same
@@ -104,21 +104,11 @@
       <li><code>Object.is(graph.read(node)@t, graph.read(node)@t)</code> holds for any two synchronous reads at the same <code>GraphTime</code>.</li>
       <li><code>Object.is(graph.read(node)@t, graph.read(node)@t')</code> may or may not hold across commits, and the answer depends on the backend.</li>
     </ul>
-    <p>
-      Today's <code>WasmBackend</code> in <code>causljs/causl-ts</code> is a
-      TS-engine wrapper, so an object-valued node returns the same reference
-      trivially. The <code>causljs/causl-ts-wasm-engine</code> fork wires
-      <code>loadWasmBackend()</code> through the consolidated
-      <code>@causljs/causl-wasm</code> bridge (the two legacy
-      <code>engine-rs-bridge-serde</code> and
-      <code>engine-rs-bridge-gc</code> cdylibs were deleted in
-      <a href="https://github.com/causljs/causl-wasm/pull/74" rel="noopener">causl-wasm PR&nbsp;#74</a>
-      in favour of one bridge with feature-flagged hosts). Across that
-      bridge every <code>read()</code> deserialises across the FFI
-      boundary and returns a fresh object per call. Code that memoised
-      on the reference will silently re-render every commit after
-      <code>migrate('wasm')</code>.
-    </p>
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>This is an Enterprise feature.</strong> The reference-churn behaviour is specific to the WASM backend, where every <code>read()</code> deserialises across the FFI boundary and returns a fresh object per call &mdash; the two-engine design and its identity contract are documented in the Enterprise section.</p>
+      <p><a href="../../enterprise/two-engine-architecture/">Two-engine architecture &rarr;</a></p>
+    </aside>
     <p>This is the H1 hazard from the WASM adopter audit. The fix is mechanical:</p>
     <code class="codeblock-source" data-lang="lang-ts">// WRONG — memoises on a reference the contract does not preserve.
 const view = useMemo(() =&gt; transform(graph.read(profile)), [graph.read(profile)]);
@@ -346,47 +336,21 @@ if (result.status === 'evicted') {
 }
 return result.value;</code>
 
-    <h2 id="wasm-bundle"><a class="qa-anchor" href="#wasm-bundle">WASM backend bundle-size warning in CI</a></h2>
+    <h2 id="wasm-bundle"><a class="qa-anchor" href="#wasm-bundle">WASM backend bundle-size warning in CI</a> <span class="badge-enterprise">Enterprise</span></h2>
     <p>
-      The consolidated <code>@causljs/causl-wasm</code> bridge (post
-      <a href="https://github.com/causljs/causl-wasm/pull/74" rel="noopener">PR&nbsp;#74</a>,
-      which deleted the legacy <code>engine-rs-bridge-serde</code> +
-      <code>engine-rs-bridge-gc</code> cdylib pair) currently ships its
-      serde-host artefact at <strong>213 KB raw / 66 KB Brotli</strong>.
-      SPEC §17.6 sets the target ceiling at 200 KB raw / 80 KB Brotli.
-      Brotli is comfortably under; raw is over by 13 KB. The
-      WasmGC-host artefact (selected by feature flag on the same
-      consolidated bridge crate) is well under both bounds.
+      The consolidated <code>@causljs/causl-wasm</code> bridge currently
+      ships its serde-host artefact slightly over the SPEC §17.6 raw-size
+      ceiling (Brotli is comfortably under). The size-limit gate is
+      ratcheted to absorb the current measurement; if you've written
+      your own gate directly against the §17.6 row you may need to relax
+      it until the documented gap closes.
     </p>
-    <p>
-      This is a documented divergence — the size-limit cell in the
-      root <code>package.json</code> was ratcheted to 230 KB so the
-      bundle-size CI gate absorbs the current measurement, and the SPEC row
-      continues to document 200/80 as the long-run target. If your CI gate
-      is reading the size-limit cell, it passes today; if you've written
-      your own gate directly against the §17.6 row, you may need to relax
-      it by up to ~30 KB raw until the gap closes. The
-      <code>causljs/causl-ts-wasm-engine</code> fork ships a per-PR
-      bundle-budget comment workflow that surfaces the delta on every
-      change.
-    </p>
-    <p>
-      <strong>When does the gap close?</strong> When the
-      <code>epic/1</code> zero-boundary migration in
-      <code>causljs/causl-wasm</code> (`&amp;mut dyn CellAccess` across
-      <code>mutate</code> / <code>recompute</code> / <code>publish</code> /
-      <code>kahn::drain</code>) lets the bridge invoke
-      <code>wasm-opt</code> directly with the feature flags
-      <code>wasm-pack</code> rejects today. At that point the
-      size-limit cell tightens back to ≤200 KB raw and the §17.6
-      current-state paragraph is removed.
-    </p>
-    <blockquote>
-      Detailed explanation. Brotli is the wire size that actually matters for
-      end users; raw is the bound that matters for CDN cold-start and for the
-      bridge's claim to be small enough to inline. The SPEC keeps both, and
-      the temporary divergence is on raw only.
-    </blockquote>
+
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>This is an Enterprise feature.</strong> The WASM bridge artefact sizes, host-tier feature flags, and the bundle-budget gate are part of the Enterprise WASM tier; the full size breakdown and budget guidance live in the Enterprise performance docs.</p>
+      <p><a href="../../enterprise/wasm-performance/">WASM performance &rarr;</a></p>
+    </aside>
 
     <h2 id="bench-gate"><a class="qa-anchor" href="#bench-gate">Bench-gate is failing on a change that "shouldn't be slower"</a></h2>
     <p>

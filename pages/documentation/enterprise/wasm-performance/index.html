@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wasm performance &amp; the perf ceiling — Causl</title>
+  <meta name="description" content="What the causl-wasm path costs and what it buys: the JS↔WASM marshal tax, the §18A.7 Criterion-3 250 µs/commit ceiling versus the §14 RAIL responsiveness budget (they measure different things), the freshly-corrected quiet-host benchmark numbers, and why the wasm engine's value is tail-latency and GC-pressure, not median parity." />
+  <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../../css/topbar.css" />
+  <link rel="stylesheet" href="../../../../css/site.css" />
+  <link rel="stylesheet" href="../../../../css/syntax.css" /><link rel="stylesheet" href="../../../../css/playground.css" />
+  <style>
+    .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+    .docs-content h1 { margin-top: 2.5rem; }
+    .docs-content h1 .badge-enterprise { vertical-align: middle; margin-left: 0.6rem; }
+    .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
+    .docs-content h3 { margin-top: 1.8rem; font-size: 1.2rem; }
+    .docs-content pre { background: rgba(26, 34, 56, 0.7); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; }
+    :root[data-theme="light"] .docs-content pre { background: rgba(11, 16, 32, 0.06); }
+    .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: var(--text-on-base-muted); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: var(--text-on-base-muted); }
+  </style>
+</head>
+<body>
+    <!-- Topbar host — js/topbar.js replaces this with the canonical
+       <header id="topbar"> element. The fallback links inside the
+       <noscript> block keep nav usable for crawlers and no-JS users. -->
+  <div id="topbar-host" data-current="docs">
+    <noscript>
+      <nav class="topbar-fallback" aria-label="Site navigation">
+      <a href="/">Home</a>
+      <a href="/pages/documentation/">Documentation</a>
+      <a href="/pages/documentation/getting-started/">Getting Started</a>
+      <a href="/pages/documentation/tutorial/">Tutorial</a>
+      <a href="/pages/documentation/usage/">Usage Guide</a>
+      <a href="/pages/documentation/api/">API</a>
+      <a href="/pages/documentation/faq/">FAQ</a>
+      <a href="/pages/documentation/best-practices/">Best Practices</a>
+      <a href="/pages/benchmarks/">Benchmarks</a>
+      <a href="/pages/playground/">Playground</a>
+      <a href="/pages/spreadsheet/">Spreadsheet</a>
+      <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
+      </nav>
+    </noscript>
+  </div>
+
+  <main class="docs-content">
+    <h1>Wasm performance &amp; the perf ceiling <span class="badge-enterprise">Enterprise</span></h1>
+
+    <p>This page states honestly what the <code>causl-wasm</code> path costs and what it does — and does not — buy. The short version: crossing the JS↔WASM boundary has a standing wire tax that the pure-TypeScript engine never pays, that tax is <em>bounded</em> (not asymptotic) by a contract in <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.7</a>, and the wasm engine earns its keep on the tail-latency and GC-pressure axes — not on the median per-commit cost, where the TS engine is faster. The §18A.7 Criterion-3 perf ceiling is <strong>GO / RESOLVED</strong> as of 2026-06-19, but that resolution gates "stays responsive within the §14 RAIL budget," <strong>not</strong> "beats the TS engine," and it does not by itself promote the wasm engine.</p>
+
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise feature</span>
+      <p>The <code>causl-wasm</code> engine (a Rust core compiled to WebAssembly, reached through the thin <code>causl-client</code> TypeScript API) is an Enterprise feature. The pure-TypeScript engine, <code>causl-ts</code>, remains the default and the <strong>unconditional floor</strong>: it is byte-identical to the wasm engine for all adopter code (SPEC §18A.1.1) and stays supported regardless of any §18A.7 promotion decision. Everything on this page is the arithmetic you need to decide whether the wasm path is worth its standing cost for <em>your</em> workload shape — see <a href="../integrating-causl-client/">Integrating causl-client</a> and the <a href="../two-engine-architecture/">two-engine architecture</a>.</p>
+    </aside>
+
+    <h2>1. The marshal tax — why crossing the boundary costs</h2>
+
+    <p>The TS engine runs natively on the JS event loop: a <code>commit()</code> is a function call, and the <code>Commit</code> envelope it produces is already a JS object. The wasm engine runs in WebAssembly linear memory; every commit must be <em>marshalled</em> across the JS↔WASM boundary. The action payload is serialised into the engine's memory, the engine runs Phases A–H inside WASM, and the resulting <code>Commit</code> envelope is marshalled back out so JS-side subscribers can read it. That round-trip — serialise in, deserialise out — is pure overhead the TS engine never incurs. It is the <strong>marshal tax</strong>, and SPEC §17.6 G.1 measures it rather than hiding it.</p>
+
+    <p>The tax is a <em>standing</em> cost: it is paid before the Rust engine does any useful work, on every crossing, independent of how much the graph computes. Measured against the production <code>serde-json</code> bridge artefact, the full bidirectional commit envelope costs ~15.64&nbsp;µs/commit; projected over 10,000 commits that is 156.4&nbsp;ms of pure wire cost — about 78× the entire 2.017&nbsp;ms median of the TS engine's <code>equality-cutoff &times; 10000</code> workload. That ~78×/~85× boundary tax is the documented standing cost named in full at <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6 G.1</a> and §18A.7. It is not hidden in an adoption guide; it sits in front of every wasm-vs-js decision deliberately.</p>
+
+    <p>The crucial mitigation is <strong>batching</strong>. The crossing tax amortises exactly 1/N when N commits cross the boundary in one flush, because the wire is crossed once per <em>flush</em>, not once per commit. The <code>op-rust-batch-boundary</code> probe pins this precisely:</p>
+
+    <table>
+      <thead>
+        <tr><th>Batch size N</th><th>Per-op boundary cost</th><th>Note</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>N = 10</td><td>1564 ns/op</td><td>wire crossed once for 10 commits</td></tr>
+        <tr><td>N = 100</td><td>156 ns/op</td><td>amortises exactly 1/N</td></tr>
+        <tr><td>N = 312</td><td>50.1 ns/op</td><td>crosses the §3 ≤50 ns floor at N≥312</td></tr>
+        <tr><td>N = 1000</td><td>15.6 ns/op</td><td>per-flush marshal, not per-commit tax</td></tr>
+      </tbody>
+    </table>
+
+    <p>That 1/N amortisation is what makes the isolated per-flush marshal overhead sit comfortably <em>under</em> the §18A.7 ceiling: the quantity the ceiling bounds is the per-flush wire cost, which is small once batched, not the un-amortised per-commit tax.</p>
+
+    <h2>2. The 250&nbsp;µs ceiling vs the RAIL budget — two different measurements</h2>
+
+    <p>This is the distinction that the §18A.7 Criterion-3 resolution rests on, and getting it wrong is the most common way to misread the numbers. The criterion names <strong>two separate ceilings that measure two different things</strong>:</p>
+
+    <ul>
+      <li><strong>The 250&nbsp;µs/commit ceiling bounds the <em>isolated marshal overhead</em>.</strong> This is the JS↔WASM wire cost <em>alone</em> — the crossing tax, with no engine work counted. The relevant figures are the <code>op-rust-batch-boundary</code> per-flush numbers above (down to 15.6 ns/op at N=1000). At ≤ 250&nbsp;µs of marshal overhead per commit, a ≤200-commit interaction stays inside the 50&nbsp;ms RAIL synchronous budget, and ≤60 commits fit within a single 16&nbsp;ms frame.</li>
+      <li><strong>The §14 RAIL budget bounds the <em>end-to-end commit→recompute cascade</em>.</strong> This is the full engine-exec latency — the commit <em>plus</em> the entire derive cascade it triggers — not the isolated marshal. RAIL gives a single user-perceptible interaction a 50&nbsp;ms responsiveness window, and a batch interaction a 200&nbsp;ms window.</li>
+    </ul>
+
+    <p>Conflating the two produces nonsense: the marshal tax is microseconds, while the end-to-end cascade is milliseconds, and they are bounded by different gates for different reasons. Criterion 3 passes <em>both</em> — the isolated marshal sits well under 250&nbsp;µs once amortised, and the end-to-end cascade sits well inside the RAIL window. Crucially, the ceiling gates <strong>responsiveness, not parity</strong>: it asks "does the wasm path stay inside the human-perception budget," not "does the wasm path beat the TS engine." (It does not, on median — see §4.)</p>
+
+    <h2>3. The measured numbers (quiet-host, fresh-process)</h2>
+
+    <p>The confirming benchmark for the §18A.7 Criterion-3 resolution was the <code>taco-mutation</code> smoke tier, run fresh-process per cell on a quiet host (Apple M5, Node v26), where the <code>engine</code> measurement is the full commit→recompute cascade. The end-to-end latencies all land comfortably inside the RAIL responsiveness budget:</p>
+
+    <table>
+      <thead>
+        <tr><th>Workload</th><th>p95 latency (causl-wasm)</th><th>RAIL budget</th><th>Verdict</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Single-input commit</td><td>2.5&nbsp;ms</td><td>≤ 50&nbsp;ms (single)</td><td>PASS</td></tr>
+        <tr><td>Batch input commit</td><td>5.5&nbsp;ms</td><td>≤ 200&nbsp;ms (batch)</td><td>PASS</td></tr>
+        <tr><td>TACO 1000-cell segment</td><td>15.9&nbsp;ms</td><td>≤ 200&nbsp;ms (batch)</td><td>PASS</td></tr>
+      </tbody>
+    </table>
+
+    <p>And the isolated marshal/crossing tax — the quantity the 250&nbsp;µs ceiling actually bounds — is held separately and stays well under it:</p>
+
+    <table>
+      <thead>
+        <tr><th>Quantity</th><th>Measured</th><th>Ceiling</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Isolated JS↔WASM marshal / crossing tax</td><td>bounded ≤ 250&nbsp;µs/commit</td><td>250&nbsp;µs/commit p95</td></tr>
+        <tr><td><code>op-rust-batch-boundary</code> per-op (N=10/100/312/1000)</td><td>1564 / 156 / 50.1 / 15.6 ns/op</td><td>amortises exactly 1/N</td></tr>
+      </tbody>
+    </table>
+
+    <p>These are the freshly-corrected, quiet-host figures. The end-to-end cascade numbers (single 2.5&nbsp;ms p95, batch 5.5&nbsp;ms p95, TACO-segment 15.9&nbsp;ms p95) are full engine-exec latencies — commit plus derive cascade — and must not be confused with the isolated marshal cost in the second table. Six of six cells pass the §14 RAIL budget with zero absolute breaches and zero regressions, which is what made Criterion 3 <strong>GO / RESOLVED</strong> on 2026-06-19.</p>
+
+    <h2>4. What the wasm path buys — and what it does not</h2>
+
+    <p>Be honest about the trade. On <strong>median per-commit cost</strong>, the wasm engine is <em>slower</em>, not faster: roughly 7× to 30× the TS engine on the per-commit median (the smoke run read 6.85× to 28.84× p50). That is consistent with — and does not refute — the standing ~78×/~85× boundary-tax falsification. The marshal tax is real, it is named, and on the median axis the TypeScript engine wins outright. If your hot path is "single mutation, shallow graph, no batching," the wasm loader is paying for a capability you do not use.</p>
+
+    <p>Where the wasm path delivers value is on a different axis entirely:</p>
+
+    <ul>
+      <li><strong>Tail-latency flattening (p99.9).</strong> The Rust substrate walks pointers instead of hash maps and does not produce the major-GC pauses that the JS engine's frozen <code>Commit</code> allocation and <code>Object.is</code> dispatch generate under load. The re-measured win is roughly 16.6× p99.9 flattening — the worst-case commits get dramatically tighter, even though the median does not.</li>
+      <li><strong>GC-pressure relief on large trees.</strong> The structural floor the JS engine cannot cross — Map allocation, structured-clone of <code>Commit</code> deltas, GC pressure on frozen objects — is precisely what crossing into WASM linear memory bypasses. On high-derivation-depth graphs and large-fanout trees, that is where the WASM-side compute amortises the boundary tax.</li>
+    </ul>
+
+    <p>So the decision rule is: the wasm path is for adopters with <strong>p99/p999-sensitive paths and GC-pressure on large graphs</strong>, not for adopters chasing a faster median. SPEC §18A.8 says this explicitly — the wasm engine stays "valuable for adopters with workload shapes where the WASM-side compute amortises the boundary tax (high-derivation-depth graphs, p99/p999-sensitive paths)."</p>
+
+    <h2>5. What Criterion-3 GO does — and does not — mean</h2>
+
+    <p>The §18A.7 GO/NO-GO gate has <strong>five</strong> criteria, and promotion of the wasm engine to default (or replacement of the TS value-of-record) requires <strong>all five GO plus a separate dated amendment</strong> that flips the value-of-record. Criterion 3 — the perf floor — is now GO / RESOLVED, but:</p>
+
+    <ul>
+      <li><strong>Criterion-3 GO does not promote the wasm engine.</strong> It moves exactly one of five load-bearing criteria from "not-yet-confirmed" to GO. Promotion stays gated on Criteria 1 (byte-identity), 2 (full FFI surface), 4 (Node target + production adopter), and 5 (TS-engine floor maintained), and on a named, dated governance amendment. Promotion is never automatic on merge.</li>
+      <li><strong>The TS engine stays the default and the unconditional floor.</strong> In every NO-GO outcome — and until <em>all</em> five criteria are GO — <code>causl-ts</code> remains the value-of-record. The wasm engine remains the opt-in alternative.</li>
+      <li><strong>Criterion 3 gates responsiveness, not parity.</strong> The 2026-06-19 resolution supersedes the prior 2026-05-13 "beats-TS" perf-floor framing <em>only for the purpose of this named criterion</em>. The ~78× boundary tax still stands as the documented standing cost; it informs the ceiling magnitude but no longer gates promotion under a "beats-TS" reading.</li>
+    </ul>
+
+    <h2>6. Re-running the benchmark</h2>
+
+    <p>The §18A.7 Criterion-3 evidence is reproducible. Build the core package, then run the <code>taco-mutation</code> suite at the smoke tier from the benchmarks package:</p>
+
+    <code class="codeblock-source" data-lang="bash">pnpm -F @causl/core build</code>
+
+    <p>Then, from the benchmarks package, drive <code>run-bench.ts</code> against the <code>taco-mutation</code> suite at the smoke tier (fresh process per cell, threads=1, the <code>engine</code> measurement is the full commit→recompute cascade):</p>
+
+    <code class="codeblock-source" data-lang="bash">pnpm exec tsx src/cli/run-bench.ts --suite taco-mutation --tier smoke</code>
+
+    <p>The per-flush marshal-cost axis — the quantity the 250&nbsp;µs ceiling actually bounds — is re-confirmed separately by the <code>op-rust-batch-boundary-{10,100,312,1000}</code> probes under the F-marshal.6 bidirectional-envelope methodology. The end-to-end RAIL figures and the isolated marshal figures are different measurements; re-run both if you want to reproduce the full Criterion-3 picture.</p>
+
+    <h2>Related reading</h2>
+
+    <ul>
+      <li><a href="../two-engine-architecture/">Two-engine architecture</a> — the SPEC §18A contract, the shared seven-method surface, and why both engines are byte-identical and conformant for all adopter code.</li>
+      <li><a href="../integrating-causl-client/">Integrating causl-client</a> — consume the wasm artefact through <code>@causl/core/wasm</code>: <code>loadWasmBackend()</code>, the construction seam, and the structured fallback chain back to the TS floor.</li>
+      <li><a href="../../usage/performance/">Performance (usage guide)</a> — the §17.5 capability-cost residual band for the TS engine and the canonical bench harness.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.7</a> — the GO/NO-GO criteria gating alternative → default promotion (Criterion 3 GO / RESOLVED).</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6 G.1</a> — the marshaling-cost measurement (the named 78× boundary tax).</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §14</a> — the perceptual-perf / RAIL responsiveness budget.</li>
+    </ul>
+  </main>
+
+    <!-- Footer host — js/footer.js replaces this with the canonical
+       <footer class="site-footer"> element. -->
+  <div id="footer-host">
+    <noscript>
+      <footer class="site-footer">
+        <p>© 2026 Causl contributors · MIT License · State with cause and effect.</p>
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/causljs/causl-ts" rel="noopener">GitHub</a>
+      </footer>
+    </noscript>
+  </div>
+  <script src="../../../../js/footer.js" defer></script>
+  <script src="../../../../js/topbar.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-core.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-markup.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-css.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-clike.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-javascript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-typescript.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-jsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-tsx.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-bash.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-rust.min.js" defer></script>
+  <script src="../../../../vendor/prismjs/prism-json.min.js" defer></script>
+  <script src="../../../../js/sandbox-runner.js" defer></script><script src="../../../../js/playground.js" defer></script><script src="../../../../js/codeblock.js" defer></script>
+</body>
+</html>

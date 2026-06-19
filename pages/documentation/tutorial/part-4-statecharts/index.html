@@ -158,8 +158,14 @@ graph.read(user.node);
     <h2>5. The reducer is pure</h2>
 
     <p>
-      The decision logic — given a current state, an event, and a <code>GraphTime</code>, what is the next state? — is one pure function. The wiring shell (in <code>resource.ts</code>) reads the current node value, calls the reducer, and commits the result. The reducer never reads from the graph, never calls <code>graph.now</code>, never closures over engine handles. This is why swapping the substrate underneath — from the <code>causl-ts</code> floor engine to the <code>causl-wasm</code> Rust core — replaces just the engine and leaves the reducer and adapter untouched. That two-engine substrate is real today: <code>@causl/core</code> v0.9.0+ ships an opt-in WASM path via <code>loadWasmBackend()</code> whose engine is currently a TypeScript wrapper in the FFI shape (the SPEC §17.6 Phase-1 disclosure, #1127). The promotion of the Rust <code>engine-rs-core</code> from <code>causljs/causl-wasm</code> to a real-Rust kernel — Phase 2 — lands behind the §18A.7 GO/NO-GO criteria.
+      The decision logic — given a current state, an event, and a <code>GraphTime</code>, what is the next state? — is one pure function. The wiring shell (in <code>resource.ts</code>) reads the current node value, calls the reducer, and commits the result. The reducer never reads from the graph, never calls <code>graph.now</code>, never closures over engine handles. Because the reducer is pure and substrate-independent, the same chart behaviour holds no matter which engine sits underneath — so the rest of this tutorial runs on the default pure-TS engine you get from <code>createCausl()</code>, and nothing here requires anything more.
     </p>
+
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>The wasm engine &amp; causl-client are an Enterprise feature.</strong> The purity of the reducer is also what lets an Enterprise deployment swap the pure-TS floor for the <code>causl-wasm</code> Rust core without touching the reducer or the adapter — an optional upgrade, not part of this tutorial's path.</p>
+      <p><a href="../../enterprise/two-engine-architecture/">Two-engine architecture →</a> &nbsp;·&nbsp; <a href="../../enterprise/integrating-causl-client/">Integrating causl-client →</a></p>
+    </aside>
 
     <code class="codeblock-source" data-lang="typescript">// Conceptual signature exposed via @causl/sync's BackendEngine seam.
 // The structurally-equivalent core implementation lives at
@@ -321,7 +327,7 @@ graph.subscribe(user.node, (next, prev, commit) =&gt; {
       <li>An understanding of the six legal transitions and the chart-named no-ops.</li>
       <li>The staleness guard, and the S-1 / S-2 race rows it neutralises.</li>
       <li>Forbidden-transition errors as the boundary that protects downstream invariants.</li>
-      <li>The seam to <code>evaluateStatechart</code> that lets the engine swap its substrate from the <code>causl-ts</code> floor to the <code>causl-wasm</code> Rust core without touching the reducer or the adapter — opt-in today via <code>loadWasmBackend()</code> (v0.9.0+, Phase-1 wrapper), real-Rust behind the §18A.7 gate.</li>
+      <li>The seam to <code>evaluateStatechart</code> that keeps the reducer and adapter independent of the substrate — so the same chart runs on the default pure-TS engine, and an Enterprise deployment can swap in the <code>causl-wasm</code> Rust core without touching either. <span class="badge-enterprise">Enterprise</span></li>
     </ul>
 
     <p>

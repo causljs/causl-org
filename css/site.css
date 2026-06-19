@@ -819,3 +819,52 @@ table.compare tr:last-child td { border-bottom: none; }
 
 :root[data-theme="light"] .site-footer p { color: var(--text-on-overlay-muted); }
 :root[data-theme="light"] .site-footer .footer-links a { color: var(--text-on-overlay); }
+
+/* ============================================================
+   Enterprise marker — the wasm engine (causl-wasm) and the
+   thin-TS-API client (causl-client) are Enterprise-tier
+   features. The amber accent (var(--causl-amber)) signals
+   "premium / Enterprise" consistently across the docs.
+   Used as: an inline <span class="badge-enterprise">Enterprise</span>
+   pill next to a heading/mention, and a <aside class="callout-enterprise">
+   box that replaces an in-depth wasm section in a public page with
+   a short pointer into /pages/documentation/enterprise/.
+   ============================================================ */
+.badge-enterprise {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--causl-void);
+  background: var(--causl-amber);
+  border-radius: 999px;
+  padding: 0.1em 0.62em;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+a .badge-enterprise { cursor: pointer; }
+
+.callout-enterprise {
+  display: block;
+  border: 1px solid var(--causl-amber);
+  border-left: 4px solid var(--causl-amber);
+  background: rgba(255, 176, 32, 0.07);
+  border-radius: 8px;
+  padding: 1rem 1.15rem;
+  margin: 1.4rem 0;
+}
+.callout-enterprise .badge-enterprise { margin-bottom: 0.55rem; }
+.callout-enterprise p { margin: 0.35rem 0 0; color: var(--text-on-base-muted); }
+.callout-enterprise p:first-of-type { color: var(--text-on-base); }
+.callout-enterprise a {
+  color: var(--causl-amber);
+  font-weight: 600;
+  text-decoration: none;
+}
+.callout-enterprise a:hover { text-decoration: underline; }
+
+:root[data-theme="light"] .callout-enterprise {
+  background: rgba(255, 176, 32, 0.10);
+}

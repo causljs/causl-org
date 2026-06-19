@@ -84,20 +84,16 @@
   <section class="hero page" aria-labelledby="page-title">
     <h1 id="page-title">Benchmarks.</h1>
     <p class="lede">
-      Per-cell history for <code>causl-ts</code> (the TypeScript floor
-      engine) and <code>causl-wasm</code> (the Rust production engine
-      backed by the <code>causljs/causl-wasm</code> repository) against
-      Jotai, Redux Toolkit, and MobX across the canonical scenario
-      taxonomy in <code>causljs/causl-bench</code>. Each card shows one
+      Per-cell history for <code>causl-ts</code> — the default pure-TypeScript
+      engine — against Jotai, Redux Toolkit, and MobX across the canonical
+      scenario taxonomy in <code>causljs/causl-bench</code>. Each card shows one
       (library × scenario × scale) cell — median wall-time as the
       solid line, p95 as the translucent band, run-by-run, with a
       regression verdict computed from the latest two runs. The
-      <code>CAUSL_TS_SOURCE</code> environment variable
-      (<code>upstream</code> vs <code>wasm-engine</code>) lets a single
-      run compare the JavaScript implementation (the JS engine from
-      <code>causljs/causl-ts</code>) against the fork at
-      <code>causljs/causl-ts-wasm-engine</code> that defaults to the
-      Rust core backend.
+      <code>causl-wasm</code> Rust production engine <span class="badge-enterprise">Enterprise</span>
+      is benchmarked separately under a two-engine comparison; that data
+      and its analysis ship with the Enterprise
+      <a href="../documentation/enterprise/wasm-performance/">wasm-performance guide</a>.
     </p>
     <div class="hero-actions">
       <a class="button primary"
@@ -139,14 +135,16 @@
     </div>
 
     <details class="status-callout" aria-label="boundaryCrossings sample field">
-      <summary><strong>New sample field: <code>boundaryCrossings</code> (Phase L1)</strong></summary>
+      <summary><strong>New sample field: <code>boundaryCrossings</code> (Phase L1)</strong> <span class="badge-enterprise">Enterprise</span></summary>
       <p>
-        Each <code>causl-wasm</code> sample now carries a <code>boundaryCrossings</code>
+        Each <code>causl-wasm</code> <span class="badge-enterprise">Enterprise</span> sample now carries a <code>boundaryCrossings</code>
         integer counting how many times the scenario crossed the JS↔WASM bridge during
         the timed region. <code>causl-ts</code> samples carry <code>0</code> (no bridge).
         The per-cell history charts will gain a boundary-crossings sparkline in a
         follow-up; today the value is queryable in
-        <a href="./history.json"><code>history.json</code></a> directly.
+        <a href="./history.json"><code>history.json</code></a> directly. The full
+        boundary-tax analysis is an Enterprise topic — see the
+        <a href="../documentation/enterprise/wasm-performance/">wasm-performance guide</a>.
       </p>
     </details>
 
@@ -185,43 +183,15 @@
          axis (large-tree GC-survival, #1525), so the bars would tell
          a misleading-by-omission story without this callout.
          ============================================================ -->
-    <div class="bench-honest-callout" role="note"
-         aria-label="Phase L1 dual-engine benchmark landed">
-      <strong>Phase L1 — dual-engine comparison landed</strong>
-      <p>
-        Earlier dashboard text on this page referenced a <code>causl-wasm</code>
-        "~85–390× slower" finding drawn from a bench harness that, on audit, never
-        actually instantiated the WASM engine — the
-        <code>causl-ts-wasm-engine</code> fork's <code>createCausl</code>
-        hardcoded <code>new JsBackend(...)</code> and the bench's
-        <code>createWasmCausl</code> factory only warmed the wasm module via a
-        one-shot <code>bridge_id()</code> extern before returning a regular
-        JS-backed graph. Those numbers were withdrawn pending Phase L1.
-      </p>
-      <p>
-        Phase L1 now ships: the dual-engine bench routes every causl-wasm cell
-        through <code>loadWasmBackend()</code> → a real <code>WasmBackend</code>
-        instance whose <code>commit()</code> shadow-invokes the consolidated
-        bridge's <code>apply_commands</code> extern on every commit. The
-        <strong>JS↔WASM crossings</strong> column in the panel below counts the
-        actual boundary tax paid per scenario; the wall-time delta between
-        engines is dominated by <em>boundary cost per crossing × number of
-        crossings</em>. The validation gate in
-        <code>tools/run-bench.mjs</code> refuses to publish numbers when the
-        wasm leg shows zero crossings, so a regression to JS-vs-JS noise will
-        loud-fail the run.
-      </p>
-      <p class="bench-honest-callout-refs">
-        Receipts: <code>dual-engine.json#meta.gitShas</code> pins the upstream
-        and fork commits this comparison was drawn from;
-        <code>meta.legValidation</code> per-leg booleans pin the boundary
-        crossings. Phase L2 (tracked as follow-ups) inverts the SSOT so the
-        wasm-side diff becomes authoritative — that's where the engine
-        comparison stops measuring boundary tax and starts measuring engine
-        compute. Until then, treat the column as a faithful boundary-cost
-        signature.
-      </p>
-    </div>
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>The wasm engine is an Enterprise feature.</strong> The two-engine
+        comparison measures the JS↔WASM marshal tax per crossing and the
+        tail-latency wins it buys on large-tree commits, bounded by the §18A.7
+        performance ceiling — the full boundary-cost methodology and the
+        withdrawn-then-validated Phase L1 numbers live in the Enterprise guide.</p>
+      <p><a href="../documentation/enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling →</a></p>
+    </aside>
 
     <div id="dashboard-root" aria-live="polite" aria-busy="true">
       <noscript>
@@ -254,13 +224,22 @@
          selectors.
          ============================================================ -->
     <section id="dual-engine-panel" aria-labelledby="dual-engine-heading">
-      <h2 id="dual-engine-heading">Engine comparison: <code>causl-ts</code> vs <code>causl-ts-wasm-engine</code></h2>
+      <h2 id="dual-engine-heading">Engine comparison: <code>causl-ts</code> vs <code>causl-ts-wasm-engine</code> <span class="badge-enterprise">Enterprise</span></h2>
+      <aside class="callout-enterprise">
+        <span class="badge-enterprise">Enterprise</span>
+        <p><strong>The wasm engine is an Enterprise feature.</strong> This two-engine
+          panel quantifies the JS↔WASM marshal tax — boundary cost per crossing ×
+          number of crossings — and the tail-latency it buys against the §18A.7
+          perf ceiling; the methodology and committed numbers ship with the
+          Enterprise guide.</p>
+        <p><a href="../documentation/enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling →</a></p>
+      </aside>
       <p class="dual-engine-blurb">
         Side-by-side per-scenario perf envelope under two engine
         implementations. The upstream <a href="https://github.com/causljs/causl-ts"><code>causl-ts</code></a> series is the
-        production TypeScript engine; the
-        <a href="https://github.com/causljs/causl-ts-wasm-engine"><code>causl-ts-wasm-engine</code></a> series is the
-        experimental fork wired to the consolidated WASM bridge from
+        default pure-TypeScript engine; the
+        <a href="https://github.com/causljs/causl-ts-wasm-engine"><code>causl-ts-wasm-engine</code></a> <span class="badge-enterprise">Enterprise</span> series is the
+        fork wired to the consolidated WASM bridge from
         <a href="https://github.com/causljs/causl-wasm"><code>causljs/causl-wasm</code></a>. Toggle the source per bench run with
         <code>CAUSL_TS_SOURCE=upstream|wasm-engine</code> in
         <code>causljs/causl-bench</code>.
@@ -275,7 +254,7 @@
           <tr>
             <th scope="col">Scenario</th>
             <th scope="col" data-series="causl-ts" data-engine="causl-ts">causl-ts</th>
-            <th scope="col" data-series="causl-wasm" data-engine="causl-ts-wasm-engine">causl-ts-wasm-engine</th>
+            <th scope="col" data-series="causl-wasm" data-engine="causl-ts-wasm-engine">causl-ts-wasm-engine <span class="badge-enterprise">Enterprise</span></th>
             <th scope="col" data-perf-column="boundaryCrossings">JS↔WASM crossings<br><small class="dual-engine-th-sub">+ payload bytes min/median/max</small></th>
             <th scope="col" data-perf-column="wallMs">wall&nbsp;(ms)</th>
             <th scope="col" data-perf-column="cpuUserMs">CPU&nbsp;user&nbsp;(ms)</th>
@@ -891,7 +870,7 @@
         staleness-aware async (a commit-seq surface so a late fetch
         result can detect that a newer write has landed &mdash; see
         <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.async.md" rel="noopener"><code>SPEC.async.md</code></a>),
-        or the WASM-FFI boundary contract (SPEC &sect;17.6).
+        or the WASM-FFI boundary contract (SPEC &sect;17.6) <span class="badge-enterprise">Enterprise</span>.
         None of the three comparator libraries have an equivalent
         public-API surface, so the cell's acceptance gate is not
         architecturally expressible.
@@ -989,10 +968,13 @@
     </div>
     <p class="lead" style="margin-top: 1.5rem;">
       For the full methodology behind these numbers — the SPEC §17.5
-      capability-cost residual band, how to run the bench harness
-      against your own workload, and when to opt into the WebAssembly
-      backend — read the
+      capability-cost residual band and how to run the bench harness
+      against your own workload — read the
       <a href="../documentation/usage/performance/">Performance usage
+      guide</a>. Opting into the WebAssembly backend
+      <span class="badge-enterprise">Enterprise</span> and its benchmark
+      story are covered in the Enterprise
+      <a href="../documentation/enterprise/wasm-performance/">wasm-performance
       guide</a>.
     </p>
   </section>

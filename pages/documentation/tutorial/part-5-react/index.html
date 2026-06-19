@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Part 5: React Integration — Causl</title>
-  <meta name="description" content="Connect a Causl graph to a React 18+ application using CauslProvider and the useCauslNode hook — covers subscription semantics, StrictMode safety, the read() reference-identity hazard, and the typed-array zero-copy path." />
+  <meta name="description" content="Connect a Causl graph to a React 18+ application using CauslProvider and the useCauslNode hook — covers subscription semantics, StrictMode safety, the read() reference-identity hazard, and typed-array projections on the default pure-TS engine." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../../css/site.css" />
@@ -65,8 +65,10 @@
       subscription hook <code>useCauslNode</code> in detail — mount and
       unmount semantics, StrictMode safety, a reference-identity
       hazard you must plan around, and the typed-array projection
-      hook that becomes zero-copy in Phase 2, when the <code>causl-wasm</code>
-      Rust core becomes the default backend (SPEC §17.6).
+      hook. Everything here runs on the default pure-TS engine from
+      <code>createCausl()</code>; the zero-copy typed-array path is an
+      optional Enterprise upgrade <span class="badge-enterprise">Enterprise</span>
+      that we flag where it applies.
     </p>
 
     <p>
@@ -282,12 +284,10 @@ function Counter() {
       <code>graph.read(node)</code> is <em>not</em> required to return
       the same JavaScript reference on successive calls — even when the
       committed value is the same. Two reads from the same commit
-      <em>may</em> return reference-equal values, and the JS engine —
-      and today's Phase-1 <code>WasmBackend</code> wrapper (v0.9.0+) —
-      typically do, but adopters must not rely on it. The Phase-2
-      real-Rust <code>causl-wasm</code> core explicitly reserves the right
-      to re-materialise compound values on each read as they cross the
-      FFI boundary (SPEC §15.1 amendment #1124, §18A.5).
+      <em>may</em> return reference-equal values, and the default pure-TS
+      engine typically does, but adopters must not rely on it. The
+      contract is intentionally weak here so that alternative backends
+      stay conformant (SPEC §15.1 amendment #1124).
     </blockquote>
 
     <p>
@@ -326,7 +326,7 @@ function Counter() {
 function Row({ id }: { id: string }) {
   const row = useCauslNode(rowsById[id])           // {name, qty}
   const lastRow = useRef(row)
-  if (row !== lastRow.current) {                   // may fire spuriously on WASM
+  if (row !== lastRow.current) {                   // may fire spuriously: read() identity is not guaranteed
     analytics.track('row-changed', id)
     lastRow.current = row
   }
@@ -352,31 +352,26 @@ function Row({ id }: { id: string }) {
     <blockquote>
       <strong>Detailed explanation: why the spec was amended.</strong>
       Earlier drafts of the spec were silent on reference identity, and
-      the JS engine's implementation happened to return the same
-      reference because compound values were stored directly. The WASM
-      port re-materialises values across the FFI boundary on each read
-      — the Rust core owns the canonical value and hands back a
-      freshly-allocated JS object. Promoting that behavioural difference
-      into the spec lets us ship the WASM backend without a breaking
-      change for adopters who follow the documented contract. The
-      governing contract is the
+      the pure-TS engine's implementation happened to return the same
+      reference because compound values were stored directly. Promoting
+      a weaker, backend-independent guarantee into the spec lets
+      alternative backends stay conformant without a breaking change for
+      adopters who follow the documented contract. The governing
+      contract is the
       <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §15.1 amendment (#1124)</a>:
       <code>graph.read(node)</code> does not contractually return the same
       JavaScript reference across calls; value identity at a fixed
       <code>GraphTime</code> is preserved, reference identity across commits
-      is backend-dependent. The staged read-identity migration — including
-      the memoisation-key audit you run before upgrading to a real-Rust
-      build — is SPEC §18A.5, and the always-on guard is the
+      is backend-dependent. The always-on guard is the
       <code>read-no-identity-contract.property.test.ts</code> 1000-trial
       property that wraps a backend in a fresh-copy decorator so no internal
-      engine code can accidentally rely on identity. Today's Phase-1
-      <code>WasmBackend</code> (v0.9.0+) is a TypeScript wrapper, so the
-      reference is identical trivially; the contract bite materialises only
-      at the Phase-2 real-Rust swap, which is why §15.1 surfaces it now,
-      ahead of the boundary rather than after it.
+      engine code can accidentally rely on identity. The default pure-TS
+      engine returns identical references trivially, so following the
+      content-comparison rule above keeps your code correct on every
+      backend.
     </blockquote>
 
-    <h2>6. Zero-copy typed arrays — current status</h2>
+    <h2>6. Typed-array projections</h2>
 
     <p>
       For components that visualise bulk numeric data — price ladders,
@@ -399,62 +394,30 @@ function Ladder() {
 }</code>
 
     <p>
-      The hook contract is forward-compatible with two backends:
+      On the default pure-TS engine the hook reads via
+      <code>graph.read(node)</code>: if the committed value is already an
+      instance of the requested constructor, it is returned verbatim,
+      otherwise the hook does a one-shot <code>ctor.from(value)</code>
+      copy. A cached view reference is re-used across renders for the same
+      commit, so <code>React.memo</code> consumers comparing by identity
+      still skip work.
     </p>
-
-    <ul>
-      <li>
-        <strong>Zero-copy WASM path (Phase 2).</strong>
-        The opt-in WASM path already exists: <code>@causl/core</code> v0.9.0+
-        ships <code>loadWasmBackend()</code>, but the Phase-1 engine inside
-        the bridge is a TypeScript wrapper in the FFI shape (the SPEC §17.6
-        Phase-1 disclosure, #1127), so the typed-array view is still copied
-        out of the JS engine today. Zero-copy unlocks in <strong>Phase 2</strong>,
-        when the real <code>causl-wasm</code> Rust core (<code>engine-rs-core</code>,
-        <code>causljs/causl-wasm</code>) becomes the default backend per SPEC
-        §17.6 — at that point the returned view points directly into the
-        engine's linear memory:
-        <code>new Float64Array(memory.buffer, ptr, length)</code>. No
-        copy occurs on render. The engine guarantees no
-        <code>WebAssembly.Memory.grow()</code> between the subscribe
-        callback and the React render that consumes the view — grows
-        happen only at commit boundaries.
-      </li>
-      <li>
-        <strong>JS-engine fallback (today, and the Phase-1 wrapper).</strong> The hook reads via
-        <code>graph.read(node)</code>; if the committed value is already
-        an instance of the requested constructor, it is returned
-        verbatim, otherwise the hook does a one-shot
-        <code>ctor.from(value)</code> copy. A cached view reference is
-        re-used across renders for the same commit, so
-        <code>React.memo</code> consumers comparing by identity still
-        skip work.
-      </li>
-    </ul>
 
     <p>
-      Both paths preserve the same stability contract: the view
-      returned for commit N is <code>Object.is</code>-equal to itself
-      across every render between commit N and commit N+1, and a fresh
-      reference is returned after any commit that changes the node.
-      Adopters may rely on <code>Object.is(viewA, viewB) === false</code>
-      as a signal that the underlying numeric data changed.
+      The hook preserves a stability contract you can rely on regardless
+      of backend: the view returned for commit N is
+      <code>Object.is</code>-equal to itself across every render between
+      commit N and commit N+1, and a fresh reference is returned after any
+      commit that changes the node. Adopters may rely on
+      <code>Object.is(viewA, viewB) === false</code> as a signal that the
+      underlying numeric data changed.
     </p>
 
-    <blockquote>
-      <strong>Detailed explanation: probing for the WASM backend.</strong>
-      At module load, <code>useCauslTypedArrayNode</code> invokes
-      <code>loadWasmBackend()</code>.
-      Today that loader throws <code>WasmBackendUnavailableError</code>
-      with <code>code: 'CAUSL_WASM_NOT_BUILT'</code>; the hook catches
-      the error and locks into the JS fallback. The probe is
-      module-scoped (one promise per process) — host bundlers can
-      tree-shake the <code>@causl/core/wasm</code> subpath out of the
-      main bundle, and CSP-restricted environments that forbid
-      <code>wasm-eval</code> see the import rejection cleanly. When the
-      Rust artefacts land, the next render flips paths automatically
-      with no adopter source change.
-    </blockquote>
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>The wasm engine &amp; causl-client are an Enterprise feature.</strong> An Enterprise deployment can back this same hook with the <code>causl-wasm</code> Rust core so the returned view points directly into the engine's linear memory — no copy on render — with no change to your component source.</p>
+      <p><a href="../../enterprise/two-engine-architecture/">Two-engine architecture →</a> &nbsp;·&nbsp; <a href="../../enterprise/integrating-causl-client/">Integrating causl-client →</a></p>
+    </aside>
 
     <h2>7. Honest limits</h2>
 
