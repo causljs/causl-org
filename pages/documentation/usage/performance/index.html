@@ -74,7 +74,7 @@
 
     <ul>
       <li><strong>Upper bound (8.0&times;) is the regression gate.</strong> Earlier in the project the <code>equality-cutoff &times; 10000</code> cell ran at 1.94 ms vs mobx's 0.215 ms — about 9&times;, breaching the ceiling. A focused perf wave delivered a 24% drop (1.94 ms &rarr; 1.47 ms), pulling the residual to ~6.4&times; and giving the 8&times; ceiling about 25% headroom over the post-wave anchor. A future change that drives the cell back past 8&times; either reintroduces a per-write per-derived allocation seam or invents a new one; either way, the gate forces the conversation in review.</li>
-      <li><strong>Lower bound (3.0&times;) is the capability-erosion gate.</strong> The ~0.9–1.1 ms causl pays beyond mobx on <code>equality-cutoff</code> is, from JavaScript, non-addressable: string-keyed Map probes, full-call <code>Object.is</code>, frozen <code>Commit</code> allocation, and the GC pressure those produce together set a structural floor. A future PR that delivers a sub-3&times; ratio on a contract-bearing cell has either shipped a real architectural breakthrough (the named candidate is promotion of the Rust-backed <code>@causl/engine-wasm</code> substrate to the default, per SPEC §17.6) or it has silently retired one of the four contract surfaces. The 3&times; floor flips that trade-off into a visible CI failure rather than a silent ship.</li>
+      <li><strong>Lower bound (3.0&times;) is the capability-erosion gate.</strong> The ~0.9–1.1 ms causl pays beyond mobx on <code>equality-cutoff</code> is, from JavaScript, non-addressable: string-keyed Map probes, full-call <code>Object.is</code>, frozen <code>Commit</code> allocation, and the GC pressure those produce together set a structural floor. A future PR that delivers a sub-3&times; ratio on a contract-bearing cell has either shipped a real architectural breakthrough (the named candidate is promotion of <code>engine-rs-core</code> from <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a> — the Rust implementation — to the default backend, per SPEC §17.6) or it has silently retired one of the four contract surfaces. The 3&times; floor flips that trade-off into a visible CI failure rather than a silent ship.</li>
     </ul>
 
     <p>The residual decomposes as <strong>1.84&times; engine baseline &times; 3.5&times; contract premium</strong>. The 1.84&times; factor is the only honest engine-on-engine microbench (<code>op-tx-set-isolated-1k</code>, with the <code>hasDependents</code> fast path that skips the staging/rollback round-trip on isolated inputs). The 3.5&times; factor is what the four contract surfaces above actually cost.</p>
@@ -88,6 +88,8 @@
     <p>The numbers above describe the current TS engine. Once the Rust port lands (deferred behind GO/NO-GO criteria post-0.9.0), the projected residual band is <strong>1.0&times; to 4.0&times; mobx_median</strong> on the same contract cells. The lower bound moves to parity because the structural floor that the JS engine cannot cross — Map allocation, <code>Object.is</code> dispatch, GC pressure on frozen <code>Commit</code> objects — is precisely what crossing the WASM/Rust boundary is allowed to bypass. The upper bound moves to 4&times; because the contract surfaces themselves do not get cheaper; they just get implemented in a substrate that walks pointers instead of hash maps.</p>
 
     <p>Today's <code>WasmBackend</code> is a TS-engine wrapper (Phase 1 — see <a href="https://github.com/causljs/causl-ts/blob/main/docs/wasm-adoption-guide.md">wasm-adoption-guide.md</a>). The post-Rust band is a projection, not a promise.</p>
+
+    <p>The Rust engine <code>engine-rs-core</code> is production-ready today in the <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a> repository. Phase-1 (the wrapped TS engine) ships with <code>@causl/core</code> v0.9.0+ via the optional <code>loadWasmBackend()</code>; full Phase-2 (Rust as the default backend) is behind GO/NO-GO criteria per <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6</a> (and the §18A.7 gate). Adopters desiring Rust-first semantics today use the <a href="https://github.com/causljs/causl-ts-wasm-engine" rel="noopener"><code>@causljs/causl-ts-wasm-engine</code></a> fork, which inverts the backend default.</p>
 
     <h2>2. Running the bench harness</h2>
 
@@ -119,27 +121,38 @@
 
     <p>The full audit driver is <code>packages/bench/src/freeze-impact-cli.ts</code>; the smaller-cell entry points share the same harness so the numbers compose with the full report.</p>
 
+    <h3>2.5 Measurement targets and backend-specific notes</h3>
+
+    <p>SPEC §18A.7 performance ceiling targets (250&nbsp;&micro;s p95 single-commit marshal overhead, 5&nbsp;ms p95 batch-1000 commits, 1k-graph commit) are validated against the Rust engine <code>engine-rs-core</code> in <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>causljs/causl-wasm</code></a>. The TypeScript floor engine in <code>@causl/core</code> meets the same contract; performance trade-offs between backends are documented in <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6</a> and <a href="https://github.com/causljs/causl-ts/blob/main/docs/wasm-adoption-guide.md" rel="noopener"><code>wasm-adoption-guide.md</code></a>.</p>
+
+    <p>Two backends, one contract, distinct measurement targets:</p>
+
+    <ul>
+      <li><strong><code>causl-ts</code> (TypeScript floor, default).</strong> Measured against the §17.5 capability-cost residual band (3.0&times;&ndash;8.0&times; mobx_median on the three contract cells). This is the unconditional floor — the numbers in §1 above describe it.</li>
+      <li><strong><code>causl-wasm</code> (Rust core, opt-in).</strong> Measured against the §18A.7 marshaling-tax ceiling, not the §17.5 band. The relevant gate is the FFI wire cost: a single commit must stay &le; 250&nbsp;&micro;s p95 marshal overhead, and a large batch / mutation &le; 5&nbsp;ms p95 total. A fresh cross-backend sweep (fresh-process per cell, <code>causl-wasm</code> vs <code>causl-ts</code>) places the wasm path at roughly 0.16&ndash;0.24&nbsp;ms single-commit, ~1.5&ndash;2.0&nbsp;ms batch-1000, and ~2.7&ndash;4.5&nbsp;ms 1k-graph commit — i.e. inside the §18A.7 ceiling. The documented 78&times; wire tax (156.4&nbsp;ms / 10k commits vs the 2.017&nbsp;ms TS median) is the standing cost the wasm path pays before the Rust engine does any work, and is named in full at §17.6 G.1.</li>
+    </ul>
+
     <h2>3. The equality-cutoff optimisation</h2>
 
     <p>Causl's most consequential commit-time optimisation is the <strong>equality cutoff</strong>: if a staged write to an input would set the same value already in the cell (<code>Object.is(prev, next)</code> returns true), the engine drops the write before Phase D and never recomputes downstream derived nodes.</p>
 
     <p>This sounds obvious; the consequence is not. In a derived graph where a single input writes its dependent column on every commit, the equality cutoff turns a topological-recompute-of-everything into a topological-recompute-of-nothing. The <code>equality-cutoff &times; 10000</code> cell is named after exactly this scenario: 10,000 derived nodes fanning out from one input that is written to with a value that compares equal to its current value.</p>
 
-    <code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
 
 const graph = createCausl();
-const source = input(graph, { count: 0 });
-const doubled = derived(graph, g =&gt; g.read(source).count * 2);
+const source = graph.input('source', { count: 0 });
+const doubled = graph.derived('doubled', g =&gt; g(source).count * 2);
 
-graph.commit(() =&gt; {
+graph.commit('rewrite-source', tx =&gt; {
   // Same value: equality cutoff drops the write, doubled is NOT recomputed.
-  graph.set(source, { count: 0 });
+  tx.set(source, { count: 0 });
 });</code>
 
     <p>Two things are worth knowing about this:</p>
 
     <ol>
-      <li><strong>The comparison is <code>Object.is</code>, not deep equality.</strong> <code>graph.set(source, { count: 0 })</code> in the snippet above passes a <em>new</em> object reference each call, so <code>Object.is</code> returns false and the write commits. If you want the cutoff to fire for value-equal objects, you must keep the reference stable yourself, or compute the value into a variable and pass that variable in.</li>
+      <li><strong>The comparison is <code>Object.is</code>, not deep equality.</strong> <code>tx.set(source, { count: 0 })</code> in the snippet above passes a <em>new</em> object reference each call, so <code>Object.is</code> returns false and the write commits. If you want the cutoff to fire for value-equal objects, you must keep the reference stable yourself, or compute the value into a variable and pass that variable in.</li>
       <li><strong>The cutoff runs in Phase C (input-layer fast path), before Phase D (Kahn topo recompute).</strong> That is why <code>equality-cutoff &times; 10000</code> is so much cheaper than a write that <em>does</em> propagate: when the cutoff fires, the engine never enters the topological walker. See <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §5.1</a> for the phase diagram.</li>
     </ol>
 
