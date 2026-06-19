@@ -65,7 +65,8 @@
       subscription hook <code>useCauslNode</code> in detail — mount and
       unmount semantics, StrictMode safety, a reference-identity
       hazard you must plan around, and the typed-array projection
-      hook that will become zero-copy once the WASM backend ships.
+      hook that becomes zero-copy in Phase 2, when the <code>causl-wasm</code>
+      Rust core becomes the default backend (SPEC §17.6).
     </p>
 
     <p>
@@ -281,10 +282,12 @@ function Counter() {
       <code>graph.read(node)</code> is <em>not</em> required to return
       the same JavaScript reference on successive calls — even when the
       committed value is the same. Two reads from the same commit
-      <em>may</em> return reference-equal values, and the JS engine
-      typically does today, but adopters must not rely on it. The future
-      WASM backend explicitly reserves the right to re-materialise
-      compound values on each read.
+      <em>may</em> return reference-equal values, and the JS engine —
+      and today's Phase-1 <code>WasmBackend</code> wrapper (v0.9.0+) —
+      typically do, but adopters must not rely on it. The Phase-2
+      real-Rust <code>causl-wasm</code> core explicitly reserves the right
+      to re-materialise compound values on each read as they cross the
+      FFI boundary (SPEC §15.1 amendment #1124, §18A.5).
     </blockquote>
 
     <p>
@@ -355,7 +358,22 @@ function Row({ id }: { id: string }) {
       — the Rust core owns the canonical value and hands back a
       freshly-allocated JS object. Promoting that behavioural difference
       into the spec lets us ship the WASM backend without a breaking
-      change for adopters who follow the documented contract.
+      change for adopters who follow the documented contract. The
+      governing contract is the
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §15.1 amendment (#1124)</a>:
+      <code>graph.read(node)</code> does not contractually return the same
+      JavaScript reference across calls; value identity at a fixed
+      <code>GraphTime</code> is preserved, reference identity across commits
+      is backend-dependent. The staged read-identity migration — including
+      the memoisation-key audit you run before upgrading to a real-Rust
+      build — is SPEC §18A.5, and the always-on guard is the
+      <code>read-no-identity-contract.property.test.ts</code> 1000-trial
+      property that wraps a backend in a fresh-copy decorator so no internal
+      engine code can accidentally rely on identity. Today's Phase-1
+      <code>WasmBackend</code> (v0.9.0+) is a TypeScript wrapper, so the
+      reference is identical trivially; the contract bite materialises only
+      at the Phase-2 real-Rust swap, which is why §15.1 surfaces it now,
+      ahead of the boundary rather than after it.
     </blockquote>
 
     <h2>6. Zero-copy typed arrays — current status</h2>
@@ -386,9 +404,16 @@ function Ladder() {
 
     <ul>
       <li>
-        <strong>Zero-copy WASM path (deferred).</strong>
-        Once the WASM engine ships, the returned view points directly
-        into the engine's linear memory:
+        <strong>Zero-copy WASM path (Phase 2).</strong>
+        The opt-in WASM path already exists: <code>@causl/core</code> v0.9.0+
+        ships <code>loadWasmBackend()</code>, but the Phase-1 engine inside
+        the bridge is a TypeScript wrapper in the FFI shape (the SPEC §17.6
+        Phase-1 disclosure, #1127), so the typed-array view is still copied
+        out of the JS engine today. Zero-copy unlocks in <strong>Phase 2</strong>,
+        when the real <code>causl-wasm</code> Rust core (<code>engine-rs-core</code>,
+        <code>causljs/causl-wasm</code>) becomes the default backend per SPEC
+        §17.6 — at that point the returned view points directly into the
+        engine's linear memory:
         <code>new Float64Array(memory.buffer, ptr, length)</code>. No
         copy occurs on render. The engine guarantees no
         <code>WebAssembly.Memory.grow()</code> between the subscribe
@@ -396,7 +421,7 @@ function Ladder() {
         happen only at commit boundaries.
       </li>
       <li>
-        <strong>JS-engine fallback (today).</strong> The hook reads via
+        <strong>JS-engine fallback (today, and the Phase-1 wrapper).</strong> The hook reads via
         <code>graph.read(node)</code>; if the committed value is already
         an instance of the requested constructor, it is returned
         verbatim, otherwise the hook does a one-shot

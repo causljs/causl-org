@@ -158,7 +158,7 @@ graph.read(user.node);
     <h2>5. The reducer is pure</h2>
 
     <p>
-      The decision logic — given a current state, an event, and a <code>GraphTime</code>, what is the next state? — is one pure function. The wiring shell (in <code>resource.ts</code>) reads the current node value, calls the reducer, and commits the result. The reducer never reads from the graph, never calls <code>graph.now</code>, never closures over engine handles. This is why a future Rust port of the engine can replace just the reducer without rewriting the adapter.
+      The decision logic — given a current state, an event, and a <code>GraphTime</code>, what is the next state? — is one pure function. The wiring shell (in <code>resource.ts</code>) reads the current node value, calls the reducer, and commits the result. The reducer never reads from the graph, never calls <code>graph.now</code>, never closures over engine handles. This is why swapping the substrate underneath — from the <code>causl-ts</code> floor engine to the <code>causl-wasm</code> Rust core — replaces just the engine and leaves the reducer and adapter untouched. That two-engine substrate is real today: <code>@causl/core</code> v0.9.0+ ships an opt-in WASM path via <code>loadWasmBackend()</code> whose engine is currently a TypeScript wrapper in the FFI shape (the SPEC §17.6 Phase-1 disclosure, #1127). The promotion of the Rust <code>engine-rs-core</code> from <code>causljs/causl-wasm</code> to a real-Rust kernel — Phase 2 — lands behind the §18A.7 GO/NO-GO criteria.
     </p>
 
     <code class="codeblock-source" data-lang="typescript">// Conceptual signature exposed via @causl/sync's BackendEngine seam.
@@ -311,7 +311,7 @@ graph.subscribe(user.node, (next, prev, commit) =&gt; {
     </p>
 
     <p>
-      They are <em>not</em> the right tool for high-cardinality data with no lifecycle: a 100k-row table doesn't need a chart per row. The <code>InputNode</code>/<code>derived</code> primitives from Parts 2 and 3 carry that load directly. The chart is for shape, not volume.
+      They are <em>not</em> the right tool for high-cardinality data with no lifecycle: a 100k-row table doesn't need a chart per row. The <code>graph.input</code>/<code>graph.derived</code> primitives from Parts 2 and 3 carry that load directly. The chart is for shape, not volume.
     </p>
 
     <h2>12. What you built</h2>
@@ -321,7 +321,7 @@ graph.subscribe(user.node, (next, prev, commit) =&gt; {
       <li>An understanding of the six legal transitions and the chart-named no-ops.</li>
       <li>The staleness guard, and the S-1 / S-2 race rows it neutralises.</li>
       <li>Forbidden-transition errors as the boundary that protects downstream invariants.</li>
-      <li>The seam to <code>evaluateStatechart</code> that lets the engine future-port the reducer to Rust without touching the adapter.</li>
+      <li>The seam to <code>evaluateStatechart</code> that lets the engine swap its substrate from the <code>causl-ts</code> floor to the <code>causl-wasm</code> Rust core without touching the reducer or the adapter — opt-in today via <code>loadWasmBackend()</code> (v0.9.0+, Phase-1 wrapper), real-Rust behind the §18A.7 gate.</li>
     </ul>
 
     <p>

@@ -115,24 +115,25 @@
       track reads.
     </p>
 
-    <code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
 
 const graph = createCausl();
 
-const price = input(graph, 100);
+const price = graph.input('price', 100);
 
-const withTax = derived(graph, g =&gt; g.read(price) * 1.08);
-const withDiscount = derived(graph, g =&gt; g.read(price) * 0.90);
+const withTax = graph.derived('withTax', g =&gt; g(price) * 1.08);
+const withDiscount = graph.derived('withDiscount', g =&gt; g(price) * 0.90);
 
-const total = derived(graph, g =&gt;
-  (g.read(withTax) + g.read(withDiscount)) / 2,
+const total = graph.derived('total', g =&gt;
+  (g(withTax) + g(withDiscount)) / 2,
 );
 
 console.log(graph.read(total));  // 99.0  ((108 + 90) / 2)</code>
 
     <p>
-      Every <code>g.read(...)</code> inside a derivation body is tracked: the engine records the
-      dynamic dependency set the first time the body runs and refreshes it on every subsequent
+      Every <code>g(...)</code> call inside a derivation body is tracked: the compute receives a
+      callable getter (<code>get</code>), and the engine records the dynamic dependency set the
+      first time the body runs and refreshes it on every subsequent
       recompute. There is no manual <code>subscribe</code> call between derivations. The graph
       structure is inferred from <em>what each compute actually reads</em>, not from a schema you
       hand the engine up front.
@@ -153,8 +154,8 @@ graph.subscribe(withTax,      v =&gt; log.push({ node: 'withTax',      value: v 
 graph.subscribe(withDiscount, v =&gt; log.push({ node: 'withDiscount', value: v }));
 graph.subscribe(total,        v =&gt; log.push({ node: 'total',        value: v }));
 
-graph.commit(() =&gt; {
-  graph.set(price, 200);
+graph.commit('bump-price', tx =&gt; {
+  tx.set(price, 200);
 });
 
 console.log(log);
@@ -254,8 +255,8 @@ console.log(log);
 
     <ul>
       <li>
-        A derivation reads its upstreams via <code>g.read(...)</code>. Whatever it reads becomes
-        its tracked dep set for this commit. The set can change commit-over-commit — conditional
+        A derivation reads its upstreams via the callable getter <code>g(...)</code>. Whatever it
+        reads becomes its tracked dep set for this commit. The set can change commit-over-commit — conditional
         reads, branchy compute bodies, dynamic indexing — and the engine re-indexes the affected
         sub-graph on the fly.
       </li>
@@ -286,27 +287,27 @@ console.log(log);
       grand total:
     </p>
 
-    <code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
 
 const graph = createCausl();
 
-const lineA = input(graph, 10);
-const lineB = input(graph, 20);
-const lineC = input(graph, 30);
+const lineA = graph.input('lineA', 10);
+const lineB = graph.input('lineB', 20);
+const lineC = graph.input('lineC', 30);
 
-const subtotalAB = derived(graph, g =&gt; g.read(lineA) + g.read(lineB));
-const subtotalBC = derived(graph, g =&gt; g.read(lineB) + g.read(lineC));
+const subtotalAB = graph.derived('subtotalAB', g =&gt; g(lineA) + g(lineB));
+const subtotalBC = graph.derived('subtotalBC', g =&gt; g(lineB) + g(lineC));
 
-const grandTotal = derived(graph, g =&gt;
-  g.read(subtotalAB) + g.read(subtotalBC),
+const grandTotal = graph.derived('grandTotal', g =&gt;
+  g(subtotalAB) + g(subtotalBC),
 );
 
 graph.subscribe(grandTotal, v =&gt; console.log('grandTotal =', v));
 
-graph.commit(() =&gt; {
-  graph.set(lineA, 100);
-  graph.set(lineB, 200);  // shared upstream of both subtotals
-  graph.set(lineC, 300);
+graph.commit('update-lines', tx =&gt; {
+  tx.set(lineA, 100);
+  tx.set(lineB, 200);  // shared upstream of both subtotals
+  tx.set(lineC, 300);
 });
 // grandTotal = 800
 //   subtotalAB = 100 + 200 = 300
