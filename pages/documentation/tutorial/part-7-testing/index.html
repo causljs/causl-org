@@ -99,6 +99,12 @@
       TypeScript library — there is no special test runner.
     </p>
 
+    <!-- API-EPOCH-AUDIT (2026-06): the code below uses the retired v0.1 function-style
+         API — input(graph, value) / derived(graph, compute) / g.read(node). The current
+         v1 surface is graph.input(id, value) / graph.derived(id, compute) with a callable
+         getter g(node) inside derivation bodies (SPEC §10.1, §12). FLAGGED FOR CODEMOD /
+         manual replacement. API evolution is recorded in the SPEC §19 amendment trail and
+         §5.1 Amendment 3: https://github.com/causljs/causl-ts/blob/main/SPEC.md -->
 <code class="codeblock-source" data-lang="typescript">// graph.test.ts
 import { describe, it, expect } from 'vitest'
 import { createCausl, input, derived } from '@causl/core'
