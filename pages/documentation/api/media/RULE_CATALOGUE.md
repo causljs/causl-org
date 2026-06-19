@@ -1,6 +1,6 @@
 # Migration Rule Catalogue (v0.1)
 
-> **Status.** Initial draft. The format and the first set of rule IDs are the contract; the per-rule predicates and tests will be filled in by the open Adoption Epic F PRs (#197, #198) once they adopt this catalogue. The drift detector (`@causl/migration-check`) consumes this document; the migration guides (`docs/migration/from-{jotai,mobx,redux}.md`) reference it by rule ID.
+> **Status.** Accepted. The Adoption Epic F PRs that originally referenced this document — #197 (migration guides), #198 (drift detector), #199 (validation procedure) — have all merged, and #225 added the runnable end-to-end harness. The catalogue ships at schema version `0.1`. The drift detector (`@causl/migration-check`) consumes this document; the migration guides (`docs/migration/from-{jotai,mobx,redux}.md`) reference it by rule ID; the validation procedure (`docs/migration/validation.md`) cross-references it when reporting findings.
 >
 > **Voice.** First person, as the team's representative.
 
@@ -8,13 +8,13 @@
 
 ## What this catalogue is for
 
-I'm publishing this catalogue because Epic F's three PRs in flight (#197 migration guides, #198 drift detector, #199 validation procedure) currently disagree on:
+I published this catalogue because Epic F's three PRs (#197 migration guides, #198 drift detector, #199 validation procedure) originally disagreed on:
 
 - Where each rule lives (guide bullet vs detector predicate vs validation check).
 - What severity means.
-- How a guide reader's LLM identifies which rule a given pattern violates.
+- How a guide reader identifies which rule a given pattern violates.
 
-That disagreement is the failure mode the catalogue eliminates. From this commit forward, every drift-detector rule has a stable `RULE_ID`, every migration guide cites those rule IDs in its "before/after" examples, and the validation procedure cross-references the catalogue when reporting findings.
+That disagreement is the failure mode the catalogue eliminates. Every drift-detector rule carries a stable `RULE_ID`, every migration guide cites those rule IDs in its "before/after" examples, and the validation procedure cross-references the catalogue when reporting findings.
 
 If a future PR introduces a rule, the rule ID is allocated here first, the guide section is written second, the detector implementation is written third, and the validation suite picks both up automatically. That ordering is binding.
 
@@ -60,13 +60,15 @@ rationale: |
   Why this matters; what regression it prevents.
 ```
 
-The catalogue itself ships as a versioned YAML file (`packages/migration-check/rules.yaml`) consumed by the detector. This document is the human-readable mirror; the YAML is the contract.
+The catalogue itself ships as a versioned TypeScript table (`packages/migration-check/src/catalogue.ts`, exporting `RULES` and `CATALOGUE_VERSION`) consumed directly by the detector. This document is the human-readable mirror; the TypeScript table is the contract.
+
+> **Current state (as of v0.9.0).** The early draft of this document described the contract as a `rules.yaml` artefact. We moved the canonical form to TypeScript when the detector was implemented under #198 — the schema is the same set of fields shown above, just expressed as a `readonly RuleDescriptor[]`. The `Per-rule schema` block remains the field-by-field reference; `detector_test` is named `detectorTest`, `guide_section` is `guideSection`, and `spec_ref` is `specRef` in the TS source.
 
 ---
 
-## Initial rule allocations (draft)
+## Rule allocations
 
-These IDs are **reserved** for the Epic F PRs to fill in. The detector PR (#198) writes the predicates and tests; the guide PR (#197) writes the before/after examples and rationale.
+These IDs are **accepted**. The detector PR (#198) wrote the predicates and tests, and the guide PR (#197) wrote the before/after examples and rationale. Each row below is mirrored by a `RuleDescriptor` entry in `packages/migration-check/src/catalogue.ts` and a dedicated test under `packages/migration-check/test/`.
 
 ### Jotai → causl (J-NN)
 
@@ -106,7 +108,7 @@ These IDs are **reserved** for the Epic F PRs to fill in. The detector PR (#198)
 
 ### Cross-source / causl-idiomatic (S-NN)
 
-These rules apply regardless of the source library — they catch common LLM-migration mistakes.
+These rules apply regardless of the source library — they catch common manual-migration mistakes.
 
 | ID | Severity | Title | Predicate (sketch) |
 | --- | --- | --- | --- |
@@ -117,8 +119,10 @@ These rules apply regardless of the source library — they catch common LLM-mig
 | `S-05` | important | Stale-closure dispatcher (closure captures graph from a prior render) | A `dispatch`/setter reference captured in a closure not re-bound across renders. |
 | `S-06` | important | Untyped `Msg` union (string-typed actions) | `dispatch('foo')` or `dispatch({ type: 'foo' })` without a discriminated `Msg` union type annotation. |
 | `S-07` | important | `useState`/`useReducer` for state that should be a `graph.input`/`derived` | A `useState` whose value is read by another component via context or prop-drilling — the canonical signal that it should be lifted into the graph. |
-| `S-08` | nice-to-have | Imports from a deferred/non-existent symbol | Imports of `useCauslSuspense`, `persistedInput`, `useCauslFamily`, or other phantom symbols from packages whose corresponding Adoption epic hasn't shipped. |
-| `S-09` | critical | Codemod-style transformation comments | A `// TODO(causl-migrate)` or similar marker indicating the LLM left a manual step undone. |
+| `S-08` | nice-to-have | Imports from a deferred/non-existent symbol | Imports of phantom symbols from packages whose corresponding Adoption epic hasn't shipped. See the **Current state** note below. |
+| `S-09` | critical | Codemod-style transformation comments | A `// TODO(causl-migrate)` or similar marker indicating the migration left a manual step undone. |
+
+> **Current state (as of v0.9.0) — S-08.** `useCauslSuspense`, `persistedInput`, and `useCauslFamily` are no longer phantom symbols — `@causl/react` ships `useCauslSuspense` and `useCauslFamily`, and `@causl/persistence` ships `persistedInput` (see PR #428 and the worked examples in `docs/migration/from-jotai.md`). The detector under `packages/migration-check/src/scan.ts` still emits `S-08` for `useCauslSuspense` / `persistedInput` imports as a leftover guard; the rule remains `nice-to-have` so it never blocks CI. If you hit it on a now-shipped symbol, treat the finding as an info note. We'll retire the unconditional emit in a follow-up; the rule ID stays reserved and continues to cover any future deferred symbol.
 
 ---
 
@@ -136,15 +140,15 @@ The exit-code contract is binding. A CI pipeline integrating `causl-migration-ch
 
 ## How the catalogue evolves
 
-- **Adding a rule.** Open a PR that (a) appends a row to the table above, (b) adds the YAML entry to `packages/migration-check/rules.yaml`, (c) adds the failing-then-fixed test pair to `packages/migration-check/test/`, and (d) — if the rule is source-specific — updates `docs/migration/from-<source>.md` with the before/after example. All four must land together.
+- **Adding a rule.** Open a PR that (a) appends a row to the table above, (b) adds the `RuleDescriptor` entry to `packages/migration-check/src/catalogue.ts` and the matching `detect*` function in `packages/migration-check/src/scan.ts`, (c) adds the failing-then-fixed test pair to `packages/migration-check/test/`, and (d) — if the rule is source-specific — updates `docs/migration/from-<source>.md` with the before/after example. All four must land together.
 - **Bumping a rule's severity.** A breaking change to consumers' CI exit codes. Requires a major version bump on `@causl/migration-check` and an entry in the changelog naming the rule and the rationale.
-- **Deprecating a rule.** Mark `status: deprecated` in the YAML; keep the row in this document with a strikethrough and a `Superseded by: <new-id>` note. Never reuse the rule ID.
-- **Schema-version bumps.** This document and `rules.yaml` share a schema version (currently `0.1`). When the schema changes (e.g. adding a new field to every rule), bump both.
+- **Deprecating a rule.** Mark `status: deprecated` in the descriptor; keep the row in this document with a strikethrough and a `Superseded by: <new-id>` note. Never reuse the rule ID.
+- **Schema-version bumps.** This document and `CATALOGUE_VERSION` in `packages/migration-check/src/catalogue.ts` share a schema version (currently `0.1`). When the schema changes (e.g. adding a new field to every rule), bump both.
 
 ---
 
 ## What this catalogue is *not*
 
-- Not a codemod definition. The team committed in Epic F to LLM-driven migration, not jscodeshift transformations. Rules describe *predicates over migrated code*, not transformations from source to target.
+- Not a codemod definition. The team committed in Epic F (shipped under #197/#198/#199, with the end-to-end harness landing in #225) to guide-driven manual migration, not jscodeshift transformations. Rules describe *predicates over migrated code*, not transformations from source to target.
 - Not a complete list of patterns the source libraries support. Coverage starts at the foot-guns and grows as user reports come in.
 - Not a substitute for the migration guides. The guides teach; the catalogue audits. Both are required.

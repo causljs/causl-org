@@ -1,0 +1,662 @@
+<!DOCTYPE html><html class="default" lang="en" data-base=".."><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>@causl/hypothesis | Causl API Reference - v0.2.0</title><meta name="description" content="Documentation for Causl API Reference"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><link rel="stylesheet" href="../assets/custom.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script><link rel="stylesheet" href="../../../../css/topbar.css" data-causl-bridge="topbar-css"/></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header id="topbar" class="topbar" data-current="api" data-depth="4">
+    <div class="topbar-content">
+      <a href="/" class="topbar-brand" aria-label="Causl home">
+        <img class="topbar-brand-img" src="../../../../img/causl-mark.svg" alt="" aria-hidden="true" width="80" height="80">
+        <span class="brand-name">caus<span class="accent">l</span></span>
+      </a>
+      <div class="pronunciation"><span lang="en-fonipa">/&#712;k&#596;&#720;.z&#601;l/</span> &mdash; like &ldquo;causal&rdquo;</div>
+      <p class="tagline">Transactional state for tangled dependency graphs.</p>
+    </div>
+
+    <button id="topbarBurger" class="topbar-burger"
+            aria-label="Open navigation menu" aria-expanded="false"
+            aria-controls="topbar-menu">
+      <span class="burger-icon"></span>
+    </button>
+
+    <nav id="topbar-menu" class="topbar-menu" aria-hidden="true"
+         aria-label="Site navigation">
+      <div class="topbar-menu-inner">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/documentation/getting-started/">Getting Started</a>
+        <a href="/pages/documentation/tutorial/">Tutorial</a>
+        <a href="/pages/documentation/usage/">Usage Guide</a>
+        <a href="/pages/documentation/api/" class="is-current" aria-current="page">API</a>
+        <a href="/pages/documentation/faq/">FAQ</a>
+        <a href="/pages/documentation/best-practices/">Best Practices</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="/pages/playground/">Playground</a>
+        <a href="/pages/spreadsheet/">Spreadsheet</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+        <hr class="menu-divider" />
+        <button id="themeToggle" type="button"
+                class="topbar-theme-toggle" role="switch" aria-checked="false">
+          <span class="theme-glyph">&#9790;</span>
+          <span class="theme-label">Dark</span>
+        </button>
+      </div>
+    </nav>
+  </header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><ul class="tsd-breadcrumb"><li><a href="../index.html">Causl API Reference</a></li><li><a href="_causl_hypothesis.html">@causl/hypothesis</a></li></ul><h1>Module @causl/hypothesis</h1></div><section class="tsd-panel tsd-typography"><a id="causl" class="tsd-anchor"></a><h1 class="tsd-anchor-link">Causl<a href="#causl" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h1><blockquote>
+<p>Transactional state for tangled dependency graphs.</p>
+</blockquote>
+<p><strong><code>causl-client</code> is the thin TypeScript API over the <code>causl-wasm</code> engine core</strong>
+(SPEC <a href="../media/SPEC.md">§18A.4</a>). <code>causl</code> is a reactive dependency-graph engine whose
+public contract — the §12 surface (the <code>input</code> / <code>derived</code> / <code>commit</code> / <code>read</code> /
+<code>subscribe</code> / <code>snapshot</code> spine plus the <code>dependencies</code> / <code>dependents</code> structural
+queries) — ships in <strong>two conformant engines</strong> held byte-identical at that
+boundary (§18A.1):</p>
+<ul>
+<li><strong><code>causl-ts</code></strong> — the TypeScript reference engine, the unconditional <strong>floor</strong>
+(lives in <a href="https://github.com/causljs/causl-ts-wasm-engine"><code>causljs/causl-ts-wasm-engine</code></a>).</li>
+<li><strong><code>causl-wasm</code></strong> — the Rust core (<code>engine-rs-core</code> + <code>engine-rs-bridge</code>)
+compiled to WebAssembly and reached over FFI: the <strong>committed alternative</strong> now
+and the <strong>planned replacement</strong> once all <a href="../media/SPEC.md">§18A.7</a> GO/NO-GO criteria
+are met (lives in <a href="https://github.com/causljs/causl-wasm"><code>causljs/causl-wasm</code></a>,
+which also owns the Python build/package tooling).</li>
+</ul>
+<p>This repo (<code>causljs/causl-client</code>) is the <strong>TypeScript API + Node loader</strong> that
+lets a TS/Node.js app integrate the placed <code>causl-wasm</code> artefact over FFI. It is
+<strong>not</strong> a copy of the TS engine and ships <strong>no Rust source and no build tooling</strong>
+(§18A.4). For the full Node-integration walkthrough — install, the <code>node:fs</code>
+loader, artefact placement via <code>causl-wasm</code>'s Python scripts, the read-identity
+migration, and the perf ceiling — see
+<a href="../media/integrating-causl-client.md"><code>docs/integrating-causl-client.md</code></a>.</p>
+<hr>
+<a id="quickstart" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Quickstart<a href="#quickstart" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The example in <a href="../media/SPEC.md#10-the-smallest-worked-example-i-will-support">SPEC §10</a> is the gate for &quot;the engine is real&quot; — two inputs, one derived value, one diamond derivation, one subscriber, two commits, three observed propagations. Everything else in the engine is downstream of getting this right.</p>
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">createCausl</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@causl/core&#39;</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">a</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-2">&#39;a&#39;</span><span class="hl-1">, </span><span class="hl-7">1</span><span class="hl-1">)</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">b</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-2">&#39;b&#39;</span><span class="hl-1">, </span><span class="hl-7">2</span><span class="hl-1">)</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">sum</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">derived</span><span class="hl-1">(</span><span class="hl-2">&#39;sum&#39;</span><span class="hl-1">, (</span><span class="hl-4">get</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">a</span><span class="hl-1">) + </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">b</span><span class="hl-1">))</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">sumPlusOne</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">derived</span><span class="hl-1">(</span><span class="hl-2">&#39;sumPlusOne&#39;</span><span class="hl-1">, (</span><span class="hl-4">get</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">sum</span><span class="hl-1">) + </span><span class="hl-7">1</span><span class="hl-1">)</span><br/><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">subscribe</span><span class="hl-1">(</span><span class="hl-4">sumPlusOne</span><span class="hl-1">, (</span><span class="hl-4">v</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-4">v</span><span class="hl-1">))</span><br/><span class="hl-8">// 4</span><br/><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">commit</span><span class="hl-1">(</span><span class="hl-2">&#39;bump-a&#39;</span><span class="hl-1">, </span><span class="hl-4">tx</span><span class="hl-1"> </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">a</span><span class="hl-1">, </span><span class="hl-7">10</span><span class="hl-1">))</span><br/><span class="hl-8">// 13</span><br/><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">commit</span><span class="hl-1">(</span><span class="hl-2">&#39;bump-both&#39;</span><span class="hl-1">, </span><span class="hl-4">tx</span><span class="hl-1"> </span><span class="hl-5">=&gt;</span><span class="hl-1"> { </span><span class="hl-4">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">a</span><span class="hl-1">, </span><span class="hl-7">100</span><span class="hl-1">); </span><span class="hl-4">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">b</span><span class="hl-1">, </span><span class="hl-7">200</span><span class="hl-1">) })</span><br/><span class="hl-8">// 301  — exactly one notification, not two</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The four invariants — atomic commit, dependency tracking, dynamic-dep cleanup, glitch-free diamond — fall out of this example. It is pinned as an acceptance test at <a href="../media/spec-10-worked-example.test.ts"><code>packages/core/test/spec-10-worked-example.test.ts</code></a>.</p>
+<hr>
+<a id="why-does-this-need-to-exist" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Why does this need to exist?<a href="#why-does-this-need-to-exist" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The TypeScript / React ecosystem already has Redux, MobX, Jotai, Recoil, Zustand, Valtio, TanStack Query, XState, and a long tail of hooks-shaped variants. Each one is well engineered for the slice it owns. None of them — <strong>none</strong> — solves the problem causl is built for.</p>
+<p>The problem is this: an application whose state is not a tree of values but a <strong>live graph of facts whose derivations cascade</strong>, where:</p>
+<ul>
+<li>A single user action invalidates dozens or hundreds of dependent values.</li>
+<li>Some dependencies change <em>which</em> inputs they depend on as state changes (dynamic dependencies).</li>
+<li>Async fetches can return after the dependency they were fetching against has already moved.</li>
+<li>Wrong update ordering produces visible-but-inconsistent intermediate UI states (glitches).</li>
+<li>The user is editing one part of the model while three other parts are recomputing from external feeds, server pushes, and other users' edits.</li>
+<li>A bug that corrupts dependent state is not a render bug — it's data corruption that ships to disk and to other users.</li>
+</ul>
+<p>Real systems that look like this: spreadsheets, CMMS, capital-planning tools, BIM-style asset graphs, configuration editors, scheduling/Gantt systems, scenario planning, dashboard composers, and large operational consoles. The author of this library has shipped several. Every one of them ran into the same wall.</p>
+<p>If you have ever written this and watched it fire in the wrong order:</p>
+<pre><code class="ts"><span class="hl-0">useEffect</span><span class="hl-1">(() </span><span class="hl-5">=&gt;</span><span class="hl-1"> { </span><span class="hl-0">setHighlights</span><span class="hl-1">(</span><span class="hl-0">deriveFromSelection</span><span class="hl-1">(</span><span class="hl-4">selection</span><span class="hl-1">, </span><span class="hl-4">plan</span><span class="hl-1">)); }, [</span><span class="hl-4">selection</span><span class="hl-1">, </span><span class="hl-4">plan</span><span class="hl-1">])</span><br/><span class="hl-0">useEffect</span><span class="hl-1">(() </span><span class="hl-5">=&gt;</span><span class="hl-1"> { </span><span class="hl-0">setActiveAttachments</span><span class="hl-1">(</span><span class="hl-0">forSelection</span><span class="hl-1">(</span><span class="hl-4">selection</span><span class="hl-1">)); }, [</span><span class="hl-4">selection</span><span class="hl-1">])</span><br/><span class="hl-0">useEffect</span><span class="hl-1">(() </span><span class="hl-5">=&gt;</span><span class="hl-1"> { </span><span class="hl-0">setPlanPings</span><span class="hl-1">(</span><span class="hl-0">forHighlights</span><span class="hl-1">(</span><span class="hl-4">highlights</span><span class="hl-1">)); }, [</span><span class="hl-4">highlights</span><span class="hl-1">])</span>
+</code><button type="button">Copy</button></pre>
+
+<p>— or written this and wondered if the result is still relevant:</p>
+<pre><code class="ts"><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">fetched</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">fetchAssetStatus</span><span class="hl-1">(</span><span class="hl-4">activeAssetId</span><span class="hl-1">)</span><br/><span class="hl-0">setStatus</span><span class="hl-1">(</span><span class="hl-4">fetched</span><span class="hl-1">) </span><span class="hl-8">// is activeAssetId still the same as when we started?</span>
+</code><button type="button">Copy</button></pre>
+
+<p>— or watched a 100-row tabular UI re-render the entire grid because a single cell's formula changed — you have hit the wall this library is for.</p>
+<p>The existing libraries each handle a <em>piece</em>. Redux gives you transactional commits but no dependency tracking. MobX gives you dependency tracking but no transactional commits and no semantic glitch-freedom guarantee. TanStack Query gives you async safety but only for HTTP state. XState gives you statecharts but not a dependency engine. Jotai gives you fine-grained atoms but no story for cross-atom transactions or stale-async protection.</p>
+<p>Causl is the library you reach for when <em>more than one of those concerns is true at the same time</em>. It is not a replacement for the others; it is a different shape of tool.</p>
+<hr>
+<a id="what-causl-does-differently" class="tsd-anchor"></a><h2 class="tsd-anchor-link">What causl does differently<a href="#what-causl-does-differently" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Eight commitments shape the library:</p>
+<ol>
+<li><strong>A denotational semantic foundation.</strong> A derived value's meaning is a mathematical function of its inputs at a given commit time: <code>Behavior a = GraphTime → a</code>. Glitch-freedom is then a <em>theorem</em>, not a scheduler trick. Most JS reactive libraries cannot define what their own values mean precisely enough to disagree with another implementation.</li>
+<li><strong>Transactions as the only mutation boundary.</strong> All writes happen inside <code>graph.commit(intent, tx =&gt; …)</code>. Outside, the graph is read-only. There is no concurrent-write API to misuse.</li>
+<li><strong>Automatic dependency tracking with deterministic dynamic-dep cleanup.</strong> A derivation that today reads <code>assetA</code> and tomorrow reads <code>assetB</code> no longer fires on <code>assetA</code> writes — proven by property-based tests, not promised by docs.</li>
+<li><strong>One composite statechart for every lifecycle in the system.</strong> Resource fetch, conflict status, transaction phases, and interaction modes share one chart with shared event vocabulary. No more parallel string enums sprinkled across object fields.</li>
+<li><strong>Strict layering</strong> between the user's information model, the editor's controller state (selection, drag-in-progress), and the engine's substrate. They live in separate identifier namespaces and separate packages.</li>
+<li><strong>Discriminated-union state</strong> everywhere optional fields would otherwise hide state machines. Impossible states cannot be represented; the type checker is the first reviewer.</li>
+<li><strong>MVU-shaped application surface.</strong> A typed <code>Msg</code> union dispatched through <code>update : Msg → Model → Commit</code>. Transactions are the engine room; messages are the front door.</li>
+<li><strong>Pre-runtime race detection in CI/CD.</strong> Two Rust-backed CI tools, both shipping today: <code>causl-check</code> is the static IR linter — twelve passes against the <code>CauslModel</code> IR (cycle, monotonic, glitch-propagation, subscribe-without-dispose, use-after-dispose, cross-graph-read, commit-from-subscribe, plus structural gates). <code>causl-enumerate</code> is the SPEC §16.4 bounded state-space enumerator — BFS over the §16.4.1 type surface (10-field <code>State</code>, 8-arm <code>Action</code>, phased <code>transition_phased</code> with per-step <code>events: Vec&lt;Event&gt;</code> and <code>phases: Vec&lt;PhaseStep&gt;</code>) with <code>Oracle::check(s, prev, a)</code> plugged into Tier-1/2/3 <code>Bound</code> presets. The Apalache differential runner (<code>tools/enumerator/diff/</code>) cross-checks the enumerator's verdicts against TLA+ counterexamples on the EPIC-7 corpus.</li>
+</ol>
+<p>The public surface anchored by these commitments — the <code>Graph</code> interface — is the canonical seven-method API (<code>createCausl</code>, <code>graph.input</code>, <code>graph.derived</code>, <code>graph.commit</code>, <code>graph.read</code>, <code>graph.subscribe</code>, <code>graph.explain</code>) plus the in-flight extensions that have earned a slot by naming an unavoidable engine concept: <code>subscribeCommits</code> (a narrow per-fire notification capability for adapters that don't need the full log), <code>exportModel</code> (the bridge to the Rust race-detection toolchain — feeds both <code>causl-check</code> static IR linting and <code>causl-enumerate</code> bounded state-space enumeration), <code>simulate</code> (the §5 dry-run API — predict a commit's effect without advancing time, appending to the log, or firing subscribers; observer-invisible by construction), <code>snapshot</code>/<code>hydrate</code> (single-call SSR transfer that emits a <code>Commit</code> with <code>intent: 'hydrate'</code> so consumers wake), <code>readAt</code>/<code>snapshotAt</code> (time-travel devtools and replay-determinism testing, returning a <code>Retained | Evicted</code> discriminated union per the bounded retention contract), <code>commitLog</code> (realising the &quot;transaction log is a <code>Behavior [Commit]</code>&quot; promise as a subscribable derived node), and the <code>now</code> getter. Memory hygiene for long-lived processes is the <code>commitHistoryCap</code> knob (default 1000; pass <code>0</code> or <code>1</code> for zero retention) — there is no runtime flush, because firing <code>commitLog</code> subscribers outside a commit boundary would violate §5. Every addition is justified one-by-one against the rule &quot;name the unavoidable concept the engine cannot express without it, or take the cost of growing every README and every consumer's mental model.&quot; The bar for a fifteenth surface item is the same as the bar for the first eleven.</p>
+<hr>
+<a id="how-causl-compares" class="tsd-anchor"></a><h2 class="tsd-anchor-link">How causl compares<a href="#how-causl-compares" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>This table is honest about where the existing libraries are <em>strictly better</em> (✓), where they cover the concern in some form (~), and where the concern is missing (✗). The Causl column uses ✓ for what currently ships on <code>main</code> and <code>*</code> for in-flight or planned future work — see Status below.</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th style="text-align:center">Redux + RTK</th>
+<th style="text-align:center">MobX</th>
+<th style="text-align:center">Jotai</th>
+<th style="text-align:center">Recoil</th>
+<th style="text-align:center">Zustand</th>
+<th style="text-align:center">Valtio</th>
+<th style="text-align:center">TanStack Query</th>
+<th style="text-align:center">XState</th>
+<th style="text-align:center">Causl</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Transactional commits (atomic write boundary)</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Automatic dependency tracking on reads</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Dynamic dependency cleanup proven correct</td>
+<td style="text-align:center">n/a</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">n/a</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">n/a</td>
+<td style="text-align:center">n/a</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Glitch-free diamond as a <em>guarantee</em> (not best-effort)</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Denotational semantic specification</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Composite statechart for <em>all</em> lifecycles</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Stale-async protection by version, not by abort-only</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Conflict records as first-class queryable state</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Discriminated-union state (&quot;impossible states&quot;)</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Strict model / controller / engine layering</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>MVU-shaped typed Msg dispatch</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Pre-runtime race detection in CI/CD (static IR linter + bounded enumerator + Apalache differential)</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Live derivation editing in devtools</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Spreadsheet-grade dependency cascades (formulas, ranges)</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td>Excellent at: small global state</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">n/a</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+</tr>
+<tr>
+<td>Excellent at: server cache / fetch dedupe</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">~</td>
+</tr>
+<tr>
+<td>Excellent at: hierarchical UI state machines</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✗</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">~</td>
+</tr>
+<tr>
+<td>Bundle size (smaller is better)</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+<td style="text-align:center">~</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reading the table:</strong></p>
+<ul>
+<li><strong>Redux + RTK</strong> is excellent for transactional commits and time-travel debugging. It has no automatic dependency tracking; you write selectors by hand and remember to memoize them. Stale async is partly addressed by RTK Query for HTTP cache only.</li>
+<li><strong>MobX</strong> is excellent for ergonomic reactive objects. Glitch-free is best-effort; semantic glitch-freedom isn't a stated property. Mutations are not bounded by atomic transactions, so multi-write cascades have observable intermediate states.</li>
+<li><strong>Jotai</strong> and <strong>Recoil</strong> are excellent for fine-grained atomic state. They lack a transaction boundary, lack a model-checker, and conflict/stale-async stories are application-level concerns.</li>
+<li><strong>Zustand</strong> and <strong>Valtio</strong> prioritize ergonomics and small bundle size. Neither addresses dependency cascades, conflicts, or async safety as first-class concerns.</li>
+<li><strong>TanStack Query</strong> is the gold standard for server-state cache. It is not a general state engine; for client-side dependency graphs, you still need one of the others alongside it. Causl's <code>@causl/sync</code> is <em>complementary</em>, not a replacement.</li>
+<li><strong>XState</strong> is the closest peer in spirit. It nails statecharts. It is not a dependency-graph engine; cell formulas, range dependencies, and value-derived-from-other-values are not its model. Causl treats the statechart as the <em>lifecycle layer</em> and adds the dependency engine on top.</li>
+</ul>
+<p>The concerns where causl is currently <code>~</code> rather than <code>✓</code> (small global state, server cache, hierarchical UI state machines) are honest: for those problems alone, a smaller, more focused library is the right answer. Causl is for the case where you need <em>several</em> of those concerns at once and you are tired of stitching libraries together.</p>
+<hr>
+<a id="when-to-use-causl" class="tsd-anchor"></a><h2 class="tsd-anchor-link">When to use causl<a href="#when-to-use-causl" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Reach for this library when <strong>two or more</strong> of these are true:</p>
+<ul>
+<li>Your state is a graph of facts where one user action cascades through dozens of derived values.</li>
+<li>Your derived values change <em>what they depend on</em> as the user navigates.</li>
+<li>You have async fetches whose results may be stale by the time they return.</li>
+<li>You need an audit trail of every state change with a typed intent.</li>
+<li>You need conflict records that survive the transaction that created them — not exceptions, <em>data</em>.</li>
+<li>You have spreadsheet-like cells with formula references, or asset hierarchies with reference-based dependencies.</li>
+<li>You want to catch race conditions in CI before they reach production.</li>
+<li>A bug in your state propagation is data corruption, not a UI glitch.</li>
+</ul>
+<a id="when-not-to-use-causl" class="tsd-anchor"></a><h2 class="tsd-anchor-link">When <strong>not</strong> to use causl<a href="#when-not-to-use-causl" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Reach for something else when:</p>
+<ul>
+<li>Your state is a flat object with maybe twenty fields and no cross-field derivations. Use Zustand or Jotai.</li>
+<li>Your state is mostly cached HTTP responses. Use TanStack Query (or Apollo / Relay if GraphQL).</li>
+<li>Your problem is &quot;one giant form with validation.&quot; Use React Hook Form.</li>
+<li>Your problem is &quot;a wizard with five steps and a back button.&quot; Use XState directly.</li>
+<li>You want a library you can adopt incrementally without thinking about your model layer. Causl asks you to commit to a layered approach (information model vs editor controllers vs engine substrate). That is a feature for the problems above and overhead for the problems below.</li>
+</ul>
+<p>The honest summary: causl is over-engineered for simple apps and the only way to ship the complex ones without losing your mind. Pick the right tool.</p>
+<hr>
+<a id="what-causl-is-not" class="tsd-anchor"></a><h2 class="tsd-anchor-link">What causl is <em>not</em><a href="#what-causl-is-not" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>I want this in writing too, because the spec used to promise too much:</p>
+<ul>
+<li><strong>Not a spreadsheet engine.</strong> <code>@causl/formula</code> is a small package that demonstrates spreadsheet patterns on top of the core. It does not ship VLOOKUP.</li>
+<li><strong>Not a CRDT.</strong> Multi-user merge semantics belong in a layer above this one.</li>
+<li><strong>Not a database, message bus, workflow engine, or rules engine.</strong></li>
+<li><strong>Not a competitor to Redux/MobX/etc.</strong> for problems they already handle well.</li>
+<li><strong>Not yet at 1.0.</strong> Phases 1–4 ship on <code>main</code>; <strong>v0.9.0 has shipped</strong> (WASM substrate Phase-0/Phase-1 in, Rust engine port deferred — see Status below); APIs are stable but not version-locked.</li>
+</ul>
+<hr>
+<a id="status" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Status<a href="#status" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The full specification lives in <a href="../media/SPEC.md">the repo-root specification</a>. Phased epics and sub-tasks live as GitHub issues. <strong>Phases 1–4 have shipped on <code>main</code>, and v0.9.0 is out.</strong> Phase 1 (semantic core), Phase 2 (React surface + spreadsheet demo), and Phase 3 (resources, conflicts, devtools inspection primitives) landed first; Phase 4 (the CI race-detection toolchain) wrapped via the Phase-8 SPEC compliance audit (umbrella #564 closed). Phase-5 perf experiment umbrella #679 closed 22/22 sub-issues (the scrolling-viewport 654× regression is resolved). Phase-6 WASM substrate epic #680 closed: all 17 Phase-0 + Phase-1 sub-issues are merged, including SPEC §17 commitment 13 (capability-cost residual band 3.0×–8.0×, PR #1024) and commitment 14 (three-tier host matrix <code>wasmgc-builtins</code> / <code>wasmgc-classic</code> / <code>serde-json</code>, PR #1053). Both Rust binaries — <code>causl-check</code> (static IR linter) and <code>causl-enumerate</code> (bounded state-space enumerator) — run in CI against the spreadsheet and async demos. See <code>.github/workflows/ci.yml</code> and <code>.github/workflows/apalache-diff.yml</code>.</p>
+<a id="current-state-post-v090--the-two-engine-topology" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Current state (post v0.9.0) — the two-engine topology<a href="#current-state-post-v090--the-two-engine-topology" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Per the repository topology recorded in SPEC <a href="../media/SPEC.md">§18A.10</a>, the
+two-engine contract spans three first-party <code>causljs</code> repos, each owning one
+artefact and none duplicating another's role:</p>
+<ul>
+<li><strong><code>causljs/causl-wasm</code></strong> — the <code>causl-wasm</code> engine: the Rust core
+(<code>tools/engine-rs-core</code>) compiled to WebAssembly via the bridge
+(<code>tools/engine-rs-bridge</code>), the §18A.3 FFI surface, the byte-identity gate's
+Rust side, and the <strong>Python build/package tooling</strong> (<code>scripts/build_wasm.py</code> +
+<code>scripts/package_wasm.py</code>, §18A.11) that produces the node-target artefact and
+places it where a consumer states.</li>
+<li><strong><code>causljs/causl-client</code></strong> (this repo) — the <strong>TypeScript API for
+<code>causl-wasm</code></strong>: the thin TS binding of §18A.4 (a binding over the FFI, <strong>not</strong> a
+copy of the TS engine), the loader hook that resolves the placed <code>.wasm</code>, and
+the adoption docs that let TS/Node.js web apps integrate it. Ships no Rust
+source. Named integration consumers: <code>iasbuilt/xldatagrid</code> and
+<code>iasbuilt/webapp</code>.</li>
+<li><strong><code>causljs/causl-ts-wasm-engine</code></strong> — <code>causl-ts</code>, the TypeScript
+value-of-record / §13.8 unconditional <strong>floor</strong>, plus the cross-backend
+benchmark/conformance harness (the byte-identity gate's JS side) and the
+historical wasm-cutover R&amp;D, including the experimental
+<code>DEFAULT_WASM_ENGINE_MODE=rust-ssot</code> substrate.</li>
+</ul>
+<p>Within this repo:</p>
+<ul>
+<li><strong>WASM Phase-1 is a TS wrapper, not a Rust engine.</strong> The <code>WasmBackend</code> returned by <code>loadWasmBackend()</code> is a TS engine wrapped in the FFI shape — the bridge interface and the cross-bridge byte-identity contract are stable, but runtime characteristics match the TS engine. The disclosure is repeated at the top of <code>packages/core/wasm/README.md</code>. The real Rust swap is the post-0.9.0 epic #1133, gated by the five §18A.7 GO/NO-GO criteria below.</li>
+<li><strong>Bundle-budget overage tracked in issue #22.</strong> The post-v0.9.0 size-limit cells were re-tuned in PR #23 (createCausl-only ratcheted from 15 KB to 16 KB to absorb the <code>invariant</code> option from PR #2 / issue #1); the <code>@causl/core/wasm</code> cell still sits ~2.5 KB over the 13 KB ceiling and is the only known-red gate. PR #21 dropped the dangling bench-fixture cells that were producing six consecutive red CI runs against unrelated PRs.</li>
+<li><strong>Pre-commit ↔ CI parity landed in PR #25.</strong> The full check union — typecheck, build, lint, size, vendor-manifest — now runs in <code>.husky/pre-commit</code>; the bundler-interop matrix moved to <code>.husky/pre-push</code>. See the <em>Pre-commit / pre-push hooks</em> subsection above.</li>
+</ul>
+<p>What that means concretely for adopters:</p>
+<ul>
+<li>The semantic core (atomicity, glitch-freedom, dynamic-deps, replay determinism, cycle detection) is held by 1000-trial property suites under <code>packages/core/test/properties/</code>.</li>
+<li>The React surface (<code>useCausl</code>, <code>useDispatch</code>, <code>useCauslFamily</code>, Suspense + SSR) ships and is tested under StrictMode mount/unmount cycles; the <code>idle</code>-resource Suspense contract was locked in by PR #17 / issue #7.</li>
+<li><code>@causl/core</code> 0.3.0 carries the runtime <code>invariant</code> callback on <code>graph.input(id, initial, { invariant })</code> added in PR #2 / issue #1.</li>
+<li>The <code>causl/no-graph-upcast</code> ESLint rule (PR #15 / issue #9) is the third gate in the S-3 layering enforcement chain — <code>as Graph</code> upcasts that erase capability narrowing are now lint errors, not review notes.</li>
+<li>The cross-backend determinism property test (<code>packages/core/test/properties/cross-backend-determinism.property.test.ts</code>) was refreshed by PR #16 / issue #6 to drop the stale Phase-1 TODO and wire World-pairing through the Graph facade.</li>
+<li>The full Rust race-detection toolchain (<code>causl-check</code> + <code>causl-enumerate</code>) ships out of the parent monorepo and runs against the spreadsheet + async demos there. This repo's <code>tools/apalache-diff/</code> is the TLA+ differential surface that consumes the parent repo's enumerator verdicts.</li>
+</ul>
+<a id="the-wasm-engines-promotion-gate-spec-§18a7" class="tsd-anchor"></a><h4 class="tsd-anchor-link">The wasm engine's promotion gate (SPEC §18A.7)<a href="#the-wasm-engines-promotion-gate-spec-§18a7" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>The <code>causl-wasm</code> engine is the <strong>committed alternative</strong> today; its promotion to
+default / replacement of the TS floor is gated by <strong>five GO/NO-GO criteria</strong>
+(§18A.7) that must <strong>all</strong> pass, after which a <strong>dated governance amendment</strong> —
+never a CI auto-flip — records the promotion. Adopters reading the Phase-1
+wrapper disclosure should read these as the promotion roadmap, not guess at it:</p>
+<ol>
+<li><strong>Correctness — cross-backend byte-identity</strong> (MECHANICAL). TS and wasm
+engines produce byte-identical <code>Commit</code> records, snapshots, structural-query
+results, and subscriber fire-order, proven by the 1000-trial per-flush gate.</li>
+<li><strong>Completeness — full FFI surface</strong> (MECHANICAL). Every §12.1 canonical-seven
+<ul>
+<li>§12.2 second-tier-thirteen row is reachable over FFI with no JS-engine
+fallback for any row.</li>
+</ul>
+</li>
+<li><strong>Performance</strong> (MECHANICAL). Single commit ≤ 250 µs p95 marshal overhead;
+batch / large mutation ≤ 5 ms p95. <em>(The standing 78× wire tax and the ~85×
+per-commit engine-exec cost at current WASM maturity are the documented floor;
+epic #1133's A.1 perf-floor probe fired a STOP-VERDICT on 2026-05-13.)</em></li>
+<li><strong>Node target + real-world adoption</strong> (MECHANICAL artefact + adopter
+attestation). The <code>--target nodejs</code> artefact + ESM/<code>node:fs</code> loader ships
+(§18A.2), <strong>and</strong> at least one adopter has shipped a production workload on
+the <strong>real</strong> Rust engine at ≥Tier 2.</li>
+<li><strong>Governance</strong> (DESIGN-DISCIPLINE). The promotion is a named, dated amendment
+by the §13.8 authority — not mechanised, not a green-gate auto-flip.</li>
+</ol>
+<p>Until all five pass, the TS engine is the unconditional floor and the wasm
+engine is the documented alternative with its costs transparent. The current
+epoch is the opt-in <code>engine: 'rust-ssot'</code> work (epic #1515), <strong>default-off</strong> and
+not a perf win — see <a href="../media/integrating-causl-client.md"><code>docs/integrating-causl-client.md</code></a> §6.</p>
+<p>Pre-1.0 caveats remain — public APIs may evolve before a tagged release; published-package tooling is a separate epic. The closing section of the specification enumerates the eight team commitments the repo is held against — semantic foundation lands first; the composite statechart is drawn before conflict and resource code is written; the model/controller/engine layering is enforced at the package boundary; every discriminated union carries an exhaustiveness check; the race-class catalogue is kept current; the worked example is the gate for &quot;the engine is real&quot;; no enum tags ship whose transitions are unspecified; and the Rust race-detection toolchain (<code>causl-check</code> + <code>causl-enumerate</code>) ships as a required CI gate. <a href="http://CONTRIBUTING.md">CONTRIBUTING.md</a> documents how each commitment is enforced.</p>
+<hr>
+<a id="packages" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Packages<a href="#packages" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Package</th>
+<th style="text-align:center">Version</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>packages/core/</code></td>
+<td><code>@causl/core</code></td>
+<td style="text-align:center"><code>0.3.0</code></td>
+<td>Engine — Behaviors, derivations, transactions, snapshot/hydrate, retention, explain. Also exposes the opt-in <code>/wasm</code> subpath.</td>
+</tr>
+<tr>
+<td><code>packages/react/</code></td>
+<td><code>@causl/react</code></td>
+<td style="text-align:center"><code>0.2.0</code></td>
+<td>React bindings — <code>useCausl</code>, <code>useDispatch</code>, <code>useCauslFamily</code>, MVU runner, SSR.</td>
+</tr>
+<tr>
+<td><code>packages/sync/</code></td>
+<td><code>@causl/sync</code></td>
+<td style="text-align:center"><code>0.2.0</code></td>
+<td>Async resources + conflict registry as composed statecharts.</td>
+</tr>
+<tr>
+<td><code>packages/formula/</code></td>
+<td><code>@causl/formula</code></td>
+<td style="text-align:center"><code>0.2.0</code></td>
+<td>Spreadsheet patterns <em>on top of</em> the core — formulas, ranges, cycles.</td>
+</tr>
+<tr>
+<td><code>packages/persistence/</code></td>
+<td><code>@causl/persistence</code></td>
+<td style="text-align:center"><code>0.1.0</code></td>
+<td>Persisted-input adapter with structured <code>PersistenceError</code> reporting.</td>
+</tr>
+<tr>
+<td><code>packages/devtools/</code></td>
+<td><code>@causl/devtools</code></td>
+<td style="text-align:center"><code>0.1.0</code></td>
+<td>Inspection primitives (explain materialisation, liveDerivation, snapshot, statechart).</td>
+</tr>
+<tr>
+<td><code>packages/devtools-bridge/</code></td>
+<td><code>@causl/devtools-bridge</code></td>
+<td style="text-align:center"><code>0.1.0</code></td>
+<td>Redux DevTools Extension protocol bridge (zero-cost when absent).</td>
+</tr>
+<tr>
+<td><code>packages/migration-check/</code></td>
+<td><code>@causl/migration-check</code></td>
+<td style="text-align:center"><code>0.1.0</code></td>
+<td>Migration drift detector — flags unmigrated Jotai/MobX/Redux patterns in adopters.</td>
+</tr>
+<tr>
+<td><code>packages/hypothesis/</code></td>
+<td><code>@causl/hypothesis</code></td>
+<td style="text-align:center"><code>0.1.0</code></td>
+<td>Hypothesis combinators + state-space hooks (Apalache differential surface).</td>
+</tr>
+</tbody>
+</table>
+<p><code>@causl/core</code> carries the major-zero <code>0.3.x</code> line because it has absorbed the post-0.2.0 race-class catalogue refinements that the adapter packages have not yet had to chase. The adapter and tooling tier sits at <code>^0.2.0</code> / <code>^0.1.0</code> until those packages have their own breaking changes to ship.</p>
+<p>Internal-only workspace siblings:</p>
+<ul>
+<li><code>packages/core/testing/</code> — published as <code>@causl/core-testing-internal</code>; shared property-test seam helpers.</li>
+<li><code>packages/sync-testing-internal/</code> — <code>@causl/sync-testing-internal</code> (currently <code>0.0.0</code>); fc.Arbitrary generators for the resource/conflict event vocabulary, consumed by the sync property suites.</li>
+</ul>
+<p>The <code>causl-wasm</code> engine source — the Rust core (<code>engine-rs-core</code>), the FFI
+bridge (<code>engine-rs-bridge</code>), and the Python build/package tooling — lives <strong>out
+of this repo</strong> in <a href="https://github.com/causljs/causl-wasm"><code>causljs/causl-wasm</code></a>
+(SPEC §18A.10). The <code>causl-ts</code> floor and the experimental
+<code>DEFAULT_WASM_ENGINE_MODE=rust-ssot</code> + shared-memory-worker R&amp;D live in
+<a href="https://github.com/causljs/causl-ts-wasm-engine"><code>causljs/causl-ts-wasm-engine</code></a>.
+The interface and bridge contracts this repo exposes (<code>packages/core/wasm/index.ts</code>)
+are the stable FFI surface those repos are held byte-identical against by the
+cross-backend determinism gate.</p>
+<p>See each package's <code>README.md</code> for build and run instructions where they exist.</p>
+<hr>
+<a id="tools" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Tools<a href="#tools" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Build infrastructure, CI gates, lint rules, and release tooling live
+under <a href="./tools/"><code>tools/</code></a>. Brief role descriptions below; the
+authoritative documentation lives in each tool's own <code>README.md</code>
+where one ships, otherwise in the module-level header comments.</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="./tools/release/"><code>tools/release/</code></a></td>
+<td><code>release.py</code> — bundles the minimum-viable per-package npm tree at <code>RELEASE_VERSION</code> for the TypeScript-only path. Output ships on the <code>release</code> branch.</td>
+</tr>
+<tr>
+<td><a href="./tools/apalache-diff/"><code>tools/apalache-diff/</code></a></td>
+<td>Apalache differential runner that cross-checks the bounded enumerator against the EPIC-7 TLA+ corpus. The Rust enumerator + checker crates themselves live in the parent monorepo (<code>causljs/causl</code>); this directory holds the TS-side harness that consumes their verdicts.</td>
+</tr>
+<tr>
+<td><a href="./tools/audit/"><code>tools/audit/</code></a></td>
+<td>Governance / commitment-audit tooling (<code>pnpm audit:commitments</code>).</td>
+</tr>
+<tr>
+<td><a href="./tools/drift/"><code>tools/drift/</code></a></td>
+<td>Drift-telemetry helpers consumed by <code>@causl/migration-check</code>.</td>
+</tr>
+<tr>
+<td><a href="./tools/eslint-plugin-causl/"><code>tools/eslint-plugin-causl/</code></a></td>
+<td>ESLint plugin for causl-aware lint rules (e.g. <code>causl/no-graph-upcast</code> from PR #15 / issue #9).</td>
+</tr>
+<tr>
+<td><a href="./tools/lint/"><code>tools/lint/</code></a></td>
+<td>Project lint helpers (orchestrates <code>eslint-plugin-causl</code>, prettier, custom passes).</td>
+</tr>
+<tr>
+<td><a href="./tools/lint-fixtures/"><code>tools/lint-fixtures/</code></a></td>
+<td>Fixture corpus for the lint rules.</td>
+</tr>
+<tr>
+<td><a href="./tools/docs-postprocess/"><code>tools/docs-postprocess/</code></a></td>
+<td>TypeDoc / Markdown post-processing for the docs pipeline.</td>
+</tr>
+<tr>
+<td><a href="../media/migrate-ir-2-to-3.ts"><code>tools/migrate-ir-2-to-3.ts</code></a></td>
+<td>One-shot CauslModel IR schema-3 migration codemod.</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>causl-wasm</code> Rust engine (<code>engine-rs-core</code> + <code>engine-rs-bridge</code>) and the
+Python build/package tooling (<code>scripts/build_wasm.py</code> + <code>scripts/package_wasm.py</code>)
+live in <a href="https://github.com/causljs/causl-wasm"><code>causljs/causl-wasm</code></a> (SPEC
+§18A.10); the <code>causl-check</code> static IR linter and <code>causl-enumerate</code> bounded
+enumerator run from the race-detection toolchain. This repo
+(<code>causljs/causl-client</code>) carries the <strong>TypeScript API + Node loader</strong> over that
+engine, the TypeScript packages, the per-PR bundle-budget gate, the TLA+
+differential runner, and the lint plugin — and ships no Rust source.</p>
+<hr>
+<a id="development-setup" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Development setup<a href="#development-setup" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="prerequisites" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Prerequisites<a href="#prerequisites" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Version</th>
+<th>How to install</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node.js</td>
+<td>24.x (LTS Krypton)</td>
+<td>Use <a href="https://github.com/nvm-sh/nvm"><code>nvm</code></a> — <code>nvm install</code> reads <code>.nvmrc</code></td>
+</tr>
+<tr>
+<td>pnpm</td>
+<td>10.x</td>
+<td><code>corepack enable</code> (Node ships Corepack), or <code>npm i -g pnpm@10</code></td>
+</tr>
+<tr>
+<td>Rust</td>
+<td>stable</td>
+<td><a href="https://rustup.rs"><code>rustup</code></a> — only required to work on <code>tools/checker/</code></td>
+</tr>
+</tbody>
+</table>
+<p>The repository pins Node via <code>.nvmrc</code> and pnpm via <code>packageManager</code> in the root <code>package.json</code>. With <code>nvm</code> and Corepack on, switching into the directory and running <code>pnpm install</code> is enough.</p>
+<pre><code class="sh"><span class="hl-8"># one-time setup</span><br/><span class="hl-0">nvm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1">        </span><span class="hl-8"># installs Node 24 from .nvmrc</span><br/><span class="hl-0">nvm</span><span class="hl-1"> </span><span class="hl-2">use</span><span class="hl-1">            </span><span class="hl-8"># activates it for this shell</span><br/><span class="hl-0">corepack</span><span class="hl-1"> </span><span class="hl-2">enable</span><span class="hl-1">    </span><span class="hl-8"># makes the pinned pnpm available</span><br/><br/><span class="hl-8"># install workspace dependencies</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">install</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="common-commands" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Common commands<a href="#common-commands" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="sh"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1">        </span><span class="hl-8"># install workspace deps</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">build</span><span class="hl-1">          </span><span class="hl-8"># tsup builds for every package</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">test:run</span><span class="hl-1">       </span><span class="hl-8"># vitest --run across every workspace (single pass)</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">typecheck</span><span class="hl-1">      </span><span class="hl-8"># tsc --noEmit across packages</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">lint</span><span class="hl-1">           </span><span class="hl-8"># eslint across packages</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">size</span><span class="hl-1">           </span><span class="hl-8"># size-limit gate (uses the dist/ from `pnpm build`)</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">test</span><span class="hl-1">           </span><span class="hl-8"># vitest in watch mode (interactive)</span><br/><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">validate</span><span class="hl-1">       </span><span class="hl-8"># typecheck + build + test:run + docs:test (pre-publish)</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Smoke flow for a fresh clone:</p>
+<pre><code class="sh"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> &amp;&amp; </span><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">build</span><span class="hl-1"> &amp;&amp; </span><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">test:run</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="pre-commit--pre-push-hooks" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Pre-commit / pre-push hooks<a href="#pre-commit--pre-push-hooks" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Husky is wired up via the root <code>prepare</code> script (<code>husky</code> install runs on <code>pnpm install</code>). PR <a href="https://github.com/causljs/causl-ts/pull/25">#25</a> replaced the previous &quot;lint-staged only&quot; hook with the <strong>full CI-check union</strong> so passing locally implies passing CI:</p>
+<ul>
+<li><strong><code>.husky/pre-commit</code></strong> runs, in order: <code>lint-staged</code> (eslint --fix on staged TS) → <code>pnpm typecheck</code> → <code>pnpm build</code> → <code>pnpm lint</code> → <code>pnpm size</code> → <code>scripts/check-vendor-manifest.sh</code> (paths-filtered, fires only when vendored bytes are staged).</li>
+<li><strong><code>.husky/pre-push</code></strong> runs the <code>e2e/bundler-interop/</code> matrix (<code>webpack5-app</code>, <code>vite5-app</code>, <code>esbuild-app</code>) — <code>npm install --no-save</code> → <code>npm run build</code> → <code>npm run verify</code>. Mirrors <code>wasm.yml</code>'s <code>bundler-interop</code> CI job; the gate is the bundle-no-wasm-leak invariant from issue #689.</li>
+</ul>
+<p>Escape hatches: <code>SKIP_PRECOMMIT=1</code> / <code>SKIP_PREPUSH=1</code> env vars, or the standard <code>git commit --no-verify</code> / <code>git push --no-verify</code>. The <code>pnpm size</code> step is known-red on <code>main</code> until issue <a href="https://github.com/causljs/causl-ts/issues/22">#22</a> closes — see the bundle-budget paragraph below.</p>
+<a id="bundle-budget-status-post-pr-21--23" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Bundle-budget status (post PR #21 + #23)<a href="#bundle-budget-status-post-pr-21--23" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The <code>size-limit</code> cells in the root <code>package.json</code> gate dist-bundle ceilings on every PR. Current band:</p>
+<ul>
+<li><code>@causl/core</code> (full import) ≤ <strong>20 KB</strong>.</li>
+<li><code>@causl/core</code> (createCausl-only) ≤ <strong>16 KB</strong> — bumped 1 KB in PR <a href="https://github.com/causljs/causl-ts/pull/23">#23</a> to absorb the post-<code>invariant</code> overage.</li>
+<li><code>@causl/core/wasm</code> ≤ <strong>13 KB</strong> — still over per issue <a href="https://github.com/causljs/causl-ts/issues/22">#22</a>; the gate stays in the hook so the moment the cell goes green new drift starts being caught.</li>
+<li>WASM artefact ceilings (per-bridge, raw + Brotli) are documented in the root <code>package.json</code>'s <code>//size-limit-wasm</code> comment block — the <code>.wasm</code> artefacts themselves ship from the parent repo's <code>tools/wasm-build/</code> driver.</li>
+</ul>
+<p>PR <a href="https://github.com/causljs/causl-ts/pull/21">#21</a> dropped the dangling bench-fixture size-limit cells (closing issue <a href="https://github.com/causljs/causl-ts/issues/19">#19</a>); PR <a href="https://github.com/causljs/causl-ts/pull/14">#14</a> re-enabled the per-PR bundle-budget comment workflow.</p>
+<hr>
+<a id="try-it-live" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Try it live<a href="#try-it-live" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The interactive playground + spreadsheet demos that load <code>@causl/core</code> from <a href="http://esm.sh">esm.sh</a> ship out of the parent monorepo's <code>causl-org/</code> static-site tree, hosted at <code>https://causl.org</code>. The <code>@causl/core</code> build this repo publishes is exactly what those demos pull at runtime, so a local <code>pnpm build</code> is enough to dogfood adopter-shaped imports.</p>
+<hr>
+<a id="license" class="tsd-anchor"></a><h2 class="tsd-anchor-link">License<a href="#license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>MIT — see <a href="../media/LICENSE">LICENSE</a>.</p>
+<p>Copyright (c) 2026 Roman Goldmann <a href="mailto:roman@iasbuilt.com">roman@iasbuilt.com</a>.</p>
+</section></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#causl"><span>Causl</span></a><ul><li><a href="#quickstart"><span>Quickstart</span></a></li><li><a href="#why-does-this-need-to-exist"><span>Why does this need to exist?</span></a></li><li><a href="#what-causl-does-differently"><span>What causl does differently</span></a></li><li><a href="#how-causl-compares"><span>How causl compares</span></a></li><li><a href="#when-to-use-causl"><span>When to use causl</span></a></li><li><a href="#when-not-to-use-causl"><span>When not to use causl</span></a></li><li><a href="#what-causl-is-not"><span>What causl is not</span></a></li><li><a href="#status"><span>Status</span></a></li><li><ul><li><a href="#current-state-post-v090--the-two-engine-topology"><span>Current state (post v0.9.0) — the two-<wbr/>engine topology</span></a></li><li><ul><li><a href="#the-wasm-engines-promotion-gate-spec-§18a7"><span>The wasm engine&#39;s promotion gate (SPEC §18<wbr/>A.7)</span></a></li></ul></li></ul></li><li><a href="#packages"><span>Packages</span></a></li><li><a href="#tools"><span>Tools</span></a></li><li><a href="#development-setup"><span>Development setup</span></a></li><li><ul><li><a href="#prerequisites"><span>Prerequisites</span></a></li><li><a href="#common-commands"><span>Common commands</span></a></li><li><a href="#pre-commit--pre-push-hooks"><span>Pre-<wbr/>commit / pre-<wbr/>push hooks</span></a></li><li><a href="#bundle-budget-status-post-pr-21--23"><span>Bundle-<wbr/>budget status (post PR #21 + #23)</span></a></li></ul></li><li><a href="#try-it-live"><span>Try it live</span></a></li><li><a href="#license"><span>License</span></a></li></ul></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../../" class="tsd-nav-link">Home</a><a href="../" class="tsd-nav-link">Documentation</a><a href="https://github.com/iasbuilt/causl" class="tsd-nav-link">GitHub</a></nav><nav class="tsd-navigation"><a href="../index.html">Causl API Reference - v0.2.0</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer class="site-footer">
+    <div class="page">
+      <p>&copy; 2026 Causl contributors &middot; MIT License &middot; State with cause and effect.</p>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/pages/documentation/">Documentation</a>
+        <a href="/pages/benchmarks/">Benchmarks</a>
+        <a href="https://github.com/iasbuilt/causl" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer><div class="overlay"></div><script src="../../../../js/topbar.js" defer data-causl-bridge="topbar-js"></script></body></html>
