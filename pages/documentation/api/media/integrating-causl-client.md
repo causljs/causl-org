@@ -11,7 +11,9 @@ definition) and **§18A.2** (the Node-target requirement). It covers, in order:
 
 1. [What `causl-client` is](#1-what-causl-client-is) — the thin TS API over the
    wasm core, and what it is *not*.
-2. [Installing and using it in a TS/Node app](#2-installing-and-using-it).
+2. [Installing and using it in a TS/Node app](#2-installing-and-using-it) —
+   including the [preload + synchronous-construction pattern](#25-preload-once-then-construct-synchronously-18a12)
+   (§18A.12) for sync consumers.
 3. [Where the wasm artefact comes from](#3-the-wasm-artefact-placement-the-producerconsumer-split)
    — the producer/consumer split and the `causl-wasm` Python scripts.
 4. [The `node:fs` loader and host-tier matrix](#4-the-loader-and-the-host-tier-matrix).
@@ -203,6 +205,80 @@ of which engine is behind it. The `'js'`↔`'wasm'` choice lives at the
 piece of application logic has to know which engine it's running on, that is a
 bug — the only legitimate exception is the `read()`-identity migration (§5),
 which you fix *once*, defensively, so it is correct under both engines.
+
+### 2.5 Preload once, then construct synchronously (§18A.12)
+
+**Shipped today (in `causl-client` + the fork).** From a consumer's
+perspective the wasm engine is now **synchronous to construct**. The async
+work — compiling the `WebAssembly.Module`, caching the sidecar and the
+compute-imports snippet — is hoisted out of the call site into a **one-time
+preload** you run at app/init. After that, a wasm `Graph` is built with **zero
+`await`** at the point of use.
+
+This matters for synchronous consumers — a React render pass, the `xldatagrid`
+imperative API — that cannot `await` where they build the graph. The Node
+`--target nodejs` glue is already synchronous (it instantiates at
+`require`/`import` time, §4.2); this pattern brings the **browser/bundler**
+target to the same place by paying the one-time compile up front.
+
+```ts
+import {
+  preloadCauslWasm,
+  createCauslWasmSync,
+  isCauslWasmPreloaded,
+} from '@causl/core/wasm'
+
+// 1) ONCE, at app/init — compiles + caches the module, sidecar, and
+//    compute-imports snippet. Idempotent: calling it again is a no-op.
+await preloadCauslWasm(/* opts? */)
+
+// 2) ANYWHERE thereafter — fully synchronous. `new WebAssembly.Instance`
+//    from the cached module; zero await at the call site.
+function buildGraph() {
+  const graph = createCauslWasmSync()
+  const a = graph.input('a', 1)
+  // … no await anywhere in this function …
+  return graph
+}
+```
+
+**The preload surface.** `await preloadCauslWasm(opts?)` is the single async
+step. It is **idempotent** — repeated calls resolve immediately against the
+cache. Two companions let you branch without re-running it:
+
+- `isCauslWasmPreloaded(): boolean` — has the preload completed?
+- `getPreloadedCauslWasm()` — the cached handle, for passing explicitly.
+
+**The synchronous constructor.** `createCauslWasmSync(handle?, create?): Graph`
+is **fully synchronous** — it instantiates from the cached module and returns a
+ready `Graph` with no `await`. Two contract points:
+
+- If the preload has **not** completed, it throws **`CauslWasmNotPreloadedError`** —
+  a loud failure, never a silent async detour.
+- Pass **`{ fallbackToTs: true }`** to degrade to the TS floor
+  (`createCauslTs()`) instead of throwing when the host can't run wasm.
+
+**The retained one-shot.** `createCauslWasm(opts?)` is kept and is exactly
+**preload ∘ sync** — `await preloadCauslWasm` then `createCauslWasmSync` — for
+callers that *can* `await` at construction and don't want to split the two
+steps. Reach for the split form only when the construction site is synchronous.
+
+> **The trio at a glance.** `createCauslTs()` is the synchronous TS floor;
+> `createCauslWasm()` / `createCauslWasmSync()` build on the wasm core;
+> `createCausl()` is the wrapper that delegates to `createCauslTs()`. The
+> `loadWasmBackend()` / `backend: 'auto'` paths in §2.3 remain the
+> *backend-seam* route; the preload + sync pair here is the *construct-a-wasm-
+> graph-with-no-await* route. They reach the same engine from different call
+> shapes.
+
+> **Committed direction — `causl-client` is going wasm-only (§18A.13).** Scoped
+> to **`causl-client` only** (in progress via epic #31, **not shipped**), the
+> client is moving to a **wasm-only core**: `createCausl()` will resolve to the
+> wasm engine and `createCauslTs()` is removed there. This is the **committed
+> direction, not a done deal** — the gate-bypass is enterprise-only. The
+> **fork** keeps the dual-engine TS floor unconditionally and is **never**
+> wasm-only; the TS floor described throughout this guide stays the
+> unconditional floor in the fork.
 
 ---
 
@@ -460,7 +536,9 @@ costs transparent.
 - [`SPEC.md` §18A](../SPEC.md) — the two-engine contract (the governing source
   for everything above): §18A.1 equivalence, §18A.2 Node target, §18A.4 thin TS
   API, §18A.5 read-identity, §18A.6 FFI atomicity, §18A.7 GO/NO-GO criteria,
-  §18A.10 topology, §18A.11 Python tooling.
+  §18A.10 topology, §18A.11 Python tooling, §18A.12 preload +
+  synchronous construction, §18A.13 the committed `causl-client`-only wasm-only
+  direction (epic #31, not shipped).
 - [`packages/core/wasm/README.md`](../packages/core/wasm/README.md) — the
   `@causl/core/wasm` entry point: cost shape, host requirements, CSP, bundler
   interop, the H1 callout, the `WasmBackendUnavailableError` codes.

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wasm performance &amp; the perf ceiling — Causl</title>
-  <meta name="description" content="What the causl-wasm path costs and what it buys: the JS↔WASM marshal tax, the §18A.7 Criterion-3 250 µs/commit ceiling versus the §14 RAIL responsiveness budget (they measure different things), the freshly-corrected quiet-host benchmark numbers, and why the wasm engine's value is tail-latency and GC-pressure, not median parity." />
+  <meta name="description" content="What the causl-wasm path costs and what it buys: the JS↔WASM marshal tax, the §18A.7 Criterion-3 250 µs/commit ceiling versus the §14 RAIL responsiveness budget (they measure different things), the freshly-corrected quiet-host benchmark numbers, why the wasm engine's value is tail-latency and GC-pressure (not median parity), and why the §18A.12 synchronous-construction split leaves all of it unchanged." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../../css/site.css" />
@@ -119,6 +119,10 @@
 
     <p>These are the freshly-corrected, quiet-host figures. The end-to-end cascade numbers (single 2.5&nbsp;ms p95, batch 5.5&nbsp;ms p95, TACO-segment 15.9&nbsp;ms p95) are full engine-exec latencies — commit plus derive cascade — and must not be confused with the isolated marshal cost in the second table. Six of six cells pass the §14 RAIL budget with zero absolute breaches and zero regressions, which is what made Criterion 3 <strong>GO / RESOLVED</strong> on 2026-06-19.</p>
 
+    <blockquote>
+      <p><strong>The synchronous-construction split (SPEC §18A.12) does not move these numbers.</strong> Splitting the one unavoidable async (the WebAssembly <em>compile</em>) out of graph <em>construction</em> — see §7 — changes only <em>when</em> work happens, not how much: the per-graph instantiation cost (<code>new WebAssembly.Instance</code> from a cached <code>Module</code>) and every subsequent <code>commit()</code> are byte-for-byte the same code path they were before. The benchmark above was re-run after the §18A.12 seam landed and confirmed <strong>zero regression</strong> on every cell — the engine arithmetic on this page is unaffected by the sync separation.</p>
+    </blockquote>
+
     <h2>4. What the wasm path buys — and what it does not</h2>
 
     <p>Be honest about the trade. On <strong>median per-commit cost</strong>, the wasm engine is <em>slower</em>, not faster: roughly 7× to 30× the TS engine on the per-commit median (the smoke run read 6.85× to 28.84× p50). That is consistent with — and does not refute — the standing ~78×/~85× boundary-tax falsification. The marshal tax is real, it is named, and on the median axis the TypeScript engine wins outright. If your hot path is "single mutation, shallow graph, no batching," the wasm loader is paying for a capability you do not use.</p>
@@ -154,6 +158,66 @@
 
     <p>The per-flush marshal-cost axis — the quantity the 250&nbsp;µs ceiling actually bounds — is re-confirmed separately by the <code>op-rust-batch-boundary-{10,100,312,1000}</code> probes under the F-marshal.6 bidirectional-envelope methodology. The end-to-end RAIL figures and the isolated marshal figures are different measurements; re-run both if you want to reproduce the full Criterion-3 picture.</p>
 
+    <h2>7. Synchronous construction — why it costs nothing here</h2>
+
+    <p>A frequent worry when a wasm engine reaches a synchronous consumer — a React render, a hook body, a grid cell — is that the <code>await</code> the wasm path used to require would either block the call site or force the work onto a slower asynchronous path. SPEC §18A.12 removes that worry without touching any of the perf arithmetic above. It is purely a <em>seam relocation</em>: the one unavoidable asynchronous step (compiling the <code>WebAssembly.Module</code>) is split out of graph construction and moved to a one-time app/init preload, so construction itself becomes fully synchronous. This is <strong>shipped</strong> — in the differential-oracle fork (<code>causl-ts-wasm-engine</code>) and in <code>causl-client</code>.</p>
+
+    <p>The compile is hoisted once, then every graph is built synchronously from the cached module:</p>
+
+    <code class="codeblock-source" data-lang="typescript">// Once, at app/init — the single unavoidable await:
+await preloadCauslWasm()           // compiles + caches the Module (+ _bg.js
+                                   // sidecar + compute-imports snippet), keyed
+                                   // by bridge; idempotent (concurrent calls
+                                   // share one compile; a transient failure
+                                   // drops the cache so the next call retries).
+
+// Anywhere after, at a synchronous call site — zero await:
+const graph = createCauslWasmSync()        // new WebAssembly.Instance from the
+                                           // cached Module; throws
+                                           // CauslWasmNotPreloadedError if not
+                                           // preloaded. { fallbackToTs: true }
+                                           // returns createCauslTs() instead.</code>
+
+    <p>Sync peeks — <code>isCauslWasmPreloaded(bridge?)</code> and <code>getPreloadedCauslWasm(bridge?)</code> — let a synchronous consumer check the cache before deciding. The original async constructor is retained and now re-expressed as <code>preloadCauslWasm</code>&nbsp;∘&nbsp;<code>createCauslWasmSync</code> — one codepath, no second implementation:</p>
+
+    <code class="codeblock-source" data-lang="typescript">// createCauslWasm(opts?) is now just: preload, then construct synchronously.
+const graph = await createCauslWasm()      // retained; one async surface left.</code>
+
+    <p>Crucially for this page: the split changes only <em>when</em> the compile happens, not the cost of anything that follows. Per-graph instantiation and every <code>commit()</code> run the same code as before, so the marshal tax (§1), the ceilings (§2), and the measured latencies (§3) all carry over unchanged — see the re-run note under §3. On Node, the <code>--target nodejs</code> glue is already synchronous end-to-end, so no preload is needed on the server; the browser bundler target needs the one-time preload because that is where the compile would otherwise land mid-render.</p>
+
+    <h3>The factory trio</h3>
+
+    <p>Engine choice is explicit at the call site whenever you want it. Three factories cover the full surface:</p>
+
+    <table>
+      <thead>
+        <tr><th>Factory</th><th>Engine</th><th>Shape</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>createCauslTs()</code></td><td>pure-TypeScript floor</td><td>synchronous</td></tr>
+        <tr><td><code>createCauslWasm()</code> / <code>createCauslWasmSync()</code></td><td>wasm engine</td><td>async / synchronous</td></tr>
+        <tr><td><code>createCausl()</code></td><td>thin wrapper → <code>createCauslTs()</code></td><td>synchronous</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Where <code>causl-client</code> is heading: wasm-only</h3>
+
+    <p><code>causl-client</code> is committing to a <strong>wasm-only</strong> core (SPEC §18A.13): <code>createCausl</code> will route to the wasm engine, and the pure-TypeScript engine (<code>createCauslTs</code>) will be removed from <code>causl-client</code>. The driver is <strong>complexity elimination</strong> — one engine to ship, test, and reason about — and perf is explicitly accepted as immaterial to the decision (the arithmetic on this page is exactly why: the wasm path is already inside every responsiveness budget, and median parity was never the goal). This is the <strong>committed direction, not yet shipped</strong>: it is being executed wire-before-cut (epic #31, in progress), so <code>createCauslTs</code> is still present in <code>causl-client</code> today.</p>
+
+    <blockquote>
+      <p>This direction is scoped to <code>causl-client</code> only. The fork <code>causl-ts-wasm-engine</code> deliberately <strong>keeps</strong> the dual-engine TypeScript floor — it is the differential oracle that proves byte-identity (SPEC §18A.1.1) and the home of the benchmark suite behind every number on this page. The fork is not going wasm-only.</p>
+    </blockquote>
+
+    <h3>Build-script enforcement (causl-wasm)</h3>
+
+    <p>The §18A.12 seam is not left to convention; the <code>causl-wasm</code> build tooling asserts it and fails loud. <code>build_wasm.py</code> / <code>package_wasm.py</code> package the compute-imports snippet next to the <code>.wasm</code> and <code>_bg.js</code> artefacts and verify, at build time:</p>
+
+    <ul>
+      <li>the §18A.12 sync seam is present — construction goes through <code>new WebAssembly.Instance</code> from a cached module, not a per-graph compile;</li>
+      <li>the compute-imports snippet ships alongside the artefacts; and</li>
+      <li>node-loadability per bridge: the <code>wasmgc-classic</code> bridge loads under <code>--target nodejs</code>, while <code>wasmgc-builtins</code> emits <code>require("wasm:js-string")</code> — which stock Node cannot resolve — so it is bundler-target only.</li>
+    </ul>
+
     <h2>Related reading</h2>
 
     <ul>
@@ -163,6 +227,8 @@
       <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.7</a> — the GO/NO-GO criteria gating alternative → default promotion (Criterion 3 GO / RESOLVED).</li>
       <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §17.6 G.1</a> — the marshaling-cost measurement (the named 78× boundary tax).</li>
       <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §14</a> — the perceptual-perf / RAIL responsiveness budget.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.12</a> — the synchronous-construction seam (<code>preloadCauslWasm</code> / <code>createCauslWasmSync</code>); shipped, perf-neutral.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.13</a> — the committed wasm-only direction for <code>causl-client</code> (in progress; the fork keeps the dual-engine floor).</li>
     </ul>
   </main>
 

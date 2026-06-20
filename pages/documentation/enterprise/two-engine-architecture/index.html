@@ -76,8 +76,10 @@
         <li><a href="#floor">causl-ts: the floor &amp; oracle</a></li>
         <li><a href="#wasm">causl-wasm: the Rust core</a></li>
         <li><a href="#surface">One public surface</a></li>
+        <li><a href="#construction">Synchronous construction</a></li>
         <li><a href="#equivalence">The byte-identity gate</a></li>
         <li><a href="#client">causl-client: the thin TS API</a></li>
+        <li><a href="#wasm-only">The causl-client wasm-only direction</a></li>
         <li><a href="#topology">Repository topology</a></li>
         <li><a href="#tooling">Build &amp; packaging tooling</a></li>
         <li><a href="#migration">The read()-identity migration</a></li>
@@ -198,6 +200,90 @@
       (<a href="#migration">below</a>), which you fix once, defensively.
     </p>
 
+    <h2 id="construction">Synchronous construction: the preload seam (§18A.12)</h2>
+    <p>
+      Constructing a wasm graph used to be unavoidably <code>async</code>, because
+      compiling the <code>.wasm</code> module is an <code>await</code>. That single
+      asynchrony leaked into every call site — and the §12 <code>commit</code> /
+      <code>read</code> spine is and stays <strong>synchronous</strong> (§18A.6),
+      so a sync consumer (a React hook in render, an
+      <code>iasbuilt/xldatagrid</code> cell) had no clean way to build a wasm graph
+      without an <code>await</code> at the wrong place. §18A.12 splits the one
+      unavoidable async (the <code>WebAssembly</code> compile) <em>away from</em>
+      synchronous construction, so the seam offers a fully synchronous build path.
+      This is <strong>shipped</strong> in the engine repo and in
+      <code>causl-client</code>.
+    </p>
+    <p>
+      The split is a preload step you run <strong>once at app init</strong>, after
+      which construction is a zero-<code>await</code> synchronous call:
+    </p>
+    <pre><code class="language-typescript">// once, at app/init — the single await lives here
+await preloadCauslWasm()              // compiles + caches the WebAssembly.Module
+                                      // (+ the _bg.js sidecar + compute-imports
+                                      // snippet), keyed by bridge; idempotent —
+                                      // concurrent calls share one compile, and a
+                                      // transient failure drops the cache
+
+// anywhere after — fully synchronous, zero await, new instance from the cache
+const graph = createCauslWasmSync()   // throws CauslWasmNotPreloadedError if not
+                                      // preloaded; { fallbackToTs: true } returns
+                                      // createCauslTs() instead of throwing</code></pre>
+    <p>
+      <code>preloadCauslWasm(opts?)</code> compiles and caches the
+      <code>WebAssembly.Module</code> (plus the <code>_bg.js</code> sidecar and the
+      compute-imports snippet), keyed by bridge; it is idempotent — concurrent
+      calls share a single compile, and a transient failure drops the cache so a
+      retry recompiles. Its synchronous peek companions —
+      <code>isCauslWasmPreloaded(bridge?)</code> and
+      <code>getPreloadedCauslWasm(bridge?)</code> — let a caller branch without
+      awaiting. <code>createCauslWasmSync(handle?, create?)</code> then does a
+      <code>new WebAssembly.Instance</code> from the cached
+      <code>Module</code> with <strong>zero <code>await</code></strong>; if nothing
+      is preloaded it throws <code>CauslWasmNotPreloadedError</code>, and passing
+      <code>{ fallbackToTs: true }</code> returns <code>createCauslTs()</code>
+      rather than throwing.
+    </p>
+    <p>
+      The retained async factory <code>createCauslWasm(opts?): Promise&lt;Graph&gt;</code>
+      is now re-expressed as <code>preload ∘ createCauslWasmSync</code> — one
+      codepath, not two — so the async and sync constructors cannot drift. On the
+      server the seam is moot: Node's <code>--target nodejs</code> glue is already
+      synchronous end-to-end, so no preload is needed there. It is the browser
+      bundler target that needs the one-time preload, which is exactly where the
+      sync render constraint bites.
+    </p>
+    <p>
+      Construction therefore resolves into an explicit <strong>factory trio</strong>,
+      with engine choice made at the call site when you want it:
+    </p>
+    <table>
+      <thead>
+        <tr><th>Factory</th><th>Engine</th><th>Shape</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>createCauslTs()</code></td>
+          <td>The pure-TS floor.</td>
+          <td>Synchronous. No toolchain, no preload — runs anywhere JS runs.</td>
+        </tr>
+        <tr>
+          <td><code>createCauslWasm()</code> /<br><code>createCauslWasmSync()</code></td>
+          <td>The wasm engine.</td>
+          <td>Async / synchronous. The sync form needs a prior
+            <code>preloadCauslWasm()</code> on the browser target; both share one
+            codepath.</td>
+        </tr>
+        <tr>
+          <td><code>createCausl()</code></td>
+          <td>A thin wrapper.</td>
+          <td>Synchronous — routes to <code>createCauslTs()</code> in the fork's
+            dual-engine repo. (Its routing in <code>causl-client</code> is changing;
+            see <a href="#wasm-only">the wasm-only direction</a> below.)</td>
+        </tr>
+      </tbody>
+    </table>
+
     <h2 id="equivalence">The equivalence contract: byte-identity (§18A.1)</h2>
     <p>
       "Two interchangeable engines" is a contract, not a slogan, because of the
@@ -245,6 +331,42 @@
       consumer-side framing for TS/Node apps is the
       <a href="../integrating-causl-client/">Integrating causl-client</a> guide.
     </p>
+
+    <h2 id="wasm-only">The causl-client wasm-only direction (§18A.13)</h2>
+    <p>
+      <code>causl-client</code> is committing to a <strong>wasm-only core</strong>.
+      This is a <strong>committed direction, not yet shipped</strong>: it is
+      gate-bypassed and enterprise-only, and it is <strong>scoped to
+      <code>causl-client</code> alone</strong>. Once landed, <code>createCausl()</code>
+      in <code>causl-client</code> will route to the wasm engine, and the pure-TS
+      engine (<code>createCauslTs()</code>) will be <strong>removed from
+      <code>causl-client</code></strong>. The work is executed
+      <em>wire-before-cut</em> — the wasm path is fully wired before the TS engine
+      is removed — and is tracked under epic&nbsp;#31. It is <strong>in progress,
+      not done</strong>; describe it as the committed direction, not a shipped
+      state.
+    </p>
+    <p>
+      The driver is <strong>complexity elimination</strong>, not speed:
+      <code>causl-client</code> accepts the wasm engine's runtime characteristics
+      as the single core and sheds the dual-engine branching. Performance is
+      <strong>explicitly accepted as immaterial</strong> for this decision — the
+      JS↔WASM wire tax (named at <a href="#honest">honest status</a>) is paid
+      knowingly. The cut is a §18A.13 deviation from the §18A.7 promotion gate that
+      governs the <em>default</em> in the dual-engine repos; it does not move that
+      gate, it bypasses it for this one consumer-facing package.
+    </p>
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p>
+        The <strong>fork</strong> (<code>causljs/causl-ts-wasm-engine</code>) is
+        <em>not</em> going wasm-only. It keeps the dual-engine TS floor on purpose:
+        the TS engine is the <strong>differential oracle</strong> for the §18A.1.1
+        byte-identity gate and the benchmark / conformance harness. §18A.13 removes
+        the pure-TS engine from <code>causl-client</code> only — the fork retains
+        both engines, and <code>createCauslTs()</code> stays the floor there.
+      </p>
+    </aside>
 
     <h2 id="topology">Repository topology (§18A.10)</h2>
     <p>
@@ -320,9 +442,10 @@
           <td>The BUILD half. Compiles the Rust core to a size-optimised,
             node-target <code>.wasm</code> (<code>wasm-pack --target nodejs</code>
             then external <code>wasm-opt -Oz</code>), staging the optimised
-            <code>.wasm</code> + node glue + <code>.d.ts</code> typings. This is
-            the only place a <strong>Rust toolchain</strong> is needed — the
-            producer side.</td>
+            <code>.wasm</code> + node glue + <code>.d.ts</code> typings <em>and</em>
+            the §18A.12 compute-imports snippet next to the <code>.wasm</code> /
+            <code>_bg.js</code>. This is the only place a <strong>Rust
+            toolchain</strong> is needed — the producer side.</td>
         </tr>
         <tr>
           <td><code>scripts/package_wasm.py</code></td>
@@ -356,6 +479,20 @@ subprocess.run(
       a silent fall-through to a wrong or partial engine); and the
       <em>consuming</em> pipeline needs only CPython stdlib — no Rust toolchain,
       mirroring §18A.4's "<code>causl-client</code> ships no Rust source."
+    </p>
+    <p>
+      Both scripts <strong>fail loud</strong> on the §18A.12 sync seam, so a build
+      cannot quietly ship an artefact the synchronous constructor can't use. They
+      assert: that the <code>new WebAssembly.Instance</code> seam is present (the
+      sync path of §18A.12); that the compute-imports snippet was placed next to
+      the <code>.wasm</code> / <code>_bg.js</code>; and that the artefact is
+      <em>node-loadable</em> where it claims to be. The node-loadability check
+      encodes a real bridge distinction: the <code>gc-classic</code> bridge loads
+      as <code>--target nodejs</code>, but <code>gc-builtins</code> emits
+      <code>require("wasm:js-string")</code> — which stock Node cannot resolve — so
+      <code>gc-builtins</code> is asserted <strong>bundler-target only</strong>.
+      Any of these failing is a non-zero exit with a clear message, never a silent
+      pass.
     </p>
 
     <h2 id="migration">The read()-reference-identity migration (§18A.5)</h2>
@@ -515,6 +652,24 @@ subprocess.run(
         wasm-as-default is the §18A.7-gated, §18A.8-reversible future decision.
       </li>
       <li>
+        <strong>Synchronous construction is shipped.</strong> The §18A.12 preload
+        seam — <code>await preloadCauslWasm()</code> once at init, then
+        <code>createCauslWasmSync()</code> with zero <code>await</code> — is live in
+        the engine repo and in <code>causl-client</code>. The single unavoidable
+        async (the <code>WebAssembly</code> compile) is split off from
+        construction; the <code>commit</code> / <code>read</code> spine stays
+        synchronous as it always was.
+      </li>
+      <li>
+        <strong>The <code>causl-client</code> wasm-only cut is a committed
+        direction, not done.</strong> §18A.13 commits <code>causl-client</code> to
+        a wasm-only core (route <code>createCausl()</code> to wasm; remove
+        <code>createCauslTs()</code>) for complexity elimination, with perf
+        explicitly accepted as immaterial. It is in progress under epic&nbsp;#31,
+        executed wire-before-cut, and scoped to <code>causl-client</code> only — the
+        fork keeps both engines as the differential oracle.
+      </li>
+      <li>
         <strong>Today's <code>WasmBackend</code> is a TS-engine wrapper, not a
         real Rust engine</strong> (§18A.5 step&nbsp;1 / v0.9.0). The FFI seam, the
         bridge picker, the host-tier matrix, and the byte-identity gate are live
@@ -555,7 +710,13 @@ subprocess.run(
       <code>causl-wasm</code> via <code>causl-client</code> is the committed
       conformant alternative and the planned, gated, reversible future
       replacement — an acceleration for specific shapes, node-target-bound for the
-      integration path today, and not yet the default.
+      integration path today, and not yet the default. Construction is now
+      synchronous behind a one-time preload (§18A.12, shipped), so sync consumers
+      build a wasm graph with no <code>await</code> at the call site. And
+      <code>causl-client</code> — and only <code>causl-client</code> — is on a
+      committed, in-progress path to a wasm-only core (§18A.13, epic&nbsp;#31) for
+      complexity elimination, while the fork keeps both engines as the differential
+      oracle.
     </p>
 
     <h2 id="next">Related</h2>

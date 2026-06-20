@@ -105,12 +105,43 @@
       open-source floor and reference implementation. As an Enterprise
       feature it also ships a Rust→WebAssembly engine,
       <code>causl-wasm</code>, consumed through a thin TypeScript API,
-      <code>causl-client</code>. Both engines expose the same 7-method
-      public surface (SPEC §18A.4); the wasm path is a committed
+      <code>causl-client</code>. Both engines expose the same public
+      <code>Graph</code> surface — the seven canonical primitives plus the
+      thirteen second-tier extensions (SPEC §12.1 + §12.2), the full
+      contract the wasm core satisfies over FFI (SPEC §18A.4); the wasm
+      path is a committed
       conformant <em>alternative</em> today and the planned future
       replacement, promotion-gated by the 5-criterion GO/NO-GO in
       <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.7</a>.
     </p>
+
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p>
+        <strong>The wasm engine is now sync-from-consumer.</strong> The one
+        unavoidable async — the WebAssembly compile — is split from
+        synchronous construction (SPEC §18A.12, shipped):
+        <code>await preloadCauslWasm()</code> compiles and caches the module
+        once at app init, then <code>createCauslWasmSync()</code> builds a
+        wasm <code>Graph</code> with zero <code>await</code> at the call site,
+        so sync consumers (React render, xldatagrid) can use it directly.
+        <code>createCauslWasm()</code> is retained as
+        <code>preload ∘ createCauslWasmSync</code>. The
+        <code>--target nodejs</code> server glue is already synchronous
+        end-to-end and needs no preload; only the browser bundler target does.
+      </p>
+      <p>
+        Engine choice stays explicit at the call site:
+        <code>createCauslTs()</code> (the pure-TS floor) ·
+        <code>createCauslWasm()</code> / <code>createCauslWasmSync()</code>
+        (the wasm engine) · <code>createCausl()</code> (a thin wrapper). In
+        <code>causl-client</code> the committed direction (SPEC §18A.13) is
+        wasm-only — <code>createCausl()</code> will route to the wasm engine
+        and the pure-TS path will be removed — driven by complexity
+        elimination, with perf accepted as immaterial; this is in progress,
+        not yet shipped.
+      </p>
+    </aside>
 
     <div class="grid-2 enterprise-grid">
       <a class="card doc-card"
@@ -134,8 +165,9 @@
         <p>
           The <code>causl-ts</code> floor versus the
           <code>causl-wasm</code> production engine: the §18A contract,
-          the shared 7-method surface, and why both implementations are
-          byte-identical and conformant for all adopter code.
+          the shared public <code>Graph</code> surface (the §12.1 canonical
+          seven plus the §12.2 second tier), and why both implementations
+          are byte-identical and conformant for all adopter code.
         </p>
         <span class="doc-card-link">Read the contract</span>
       </a>
