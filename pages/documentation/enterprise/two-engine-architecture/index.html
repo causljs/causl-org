@@ -63,9 +63,10 @@
       Rust→WebAssembly production engine consumed through the thin
       <code>causl-client</code> TypeScript API. Both expose the same public
       surface and are held byte-identical by a cross-backend determinism gate.
-      The wasm path is an Enterprise feature: a committed conformant
-      <em>alternative</em> today and the planned future replacement,
-      promotion-gated and reversible. This page is the prose companion to
+      The wasm path is an Enterprise feature: in <code>causl-client</code> it is
+      the <em>unconditional production engine</em> (rust-ssot default), while
+      <code>causl-ts</code> is retained as the §12 conformance reference. This
+      page is the prose companion to
       <a href="../../api/media/SPEC.md">SPEC §18A</a>.
     </p>
 
@@ -97,11 +98,12 @@
         thin TS API are Enterprise-tier features. Using them requires a
         production Rust build (the <code>.wasm</code> artefact is compiled from
         the <code>engine-rs-core</code> crate) and a Node target
-        (<a href="../../api/media/SPEC.md">SPEC §18A.2</a>). The
-        <code>causl-ts</code> engine in <code>@causl/core</code> remains the
-        default and the unconditional floor — it needs no Rust toolchain, runs
-        on any host that runs JavaScript, and is byte-identical to the wasm
-        engine for all adopter code.
+        (<a href="../../api/media/SPEC.md">SPEC §18A.2</a>). In
+        <code>causl-client</code> (<code>@causl/core</code>) the wasm engine is
+        the unconditional production engine; the <code>causl-ts</code> engine is
+        retained as the unconditional floor and §12 conformance reference — it
+        needs no Rust toolchain, runs on any host that runs JavaScript, and is
+        byte-identical to the wasm engine for all adopter code.
       </p>
     </aside>
 
@@ -113,9 +115,10 @@
       the Rust-backed wasm engine as a <strong>conformant alternative</strong>
       to the TypeScript engine, with a named promotion path to
       <strong>replace</strong> the TS value-of-record once the GO/NO-GO criteria
-      in §18A.7 are met. Per §13.8 the old "NOT-PLANNED" label is retired for
-      this row; epic&nbsp;#1133 (the full Rust engine port) is now
-      "PLANNED with explicit gatekeeping."
+      in §18A.7 are met. Per §13.8 the old "NOT-PLANNED" label was retired for
+      this row; epic&nbsp;#1133 (the full Rust engine port) moved from
+      "PLANNED with explicit gatekeeping" to shipped — the wasm core is the
+      production engine in <code>causl-client</code>.
     </p>
     <p>
       The reopen fired now — not earlier and not as a slogan — because enough
@@ -127,10 +130,12 @@
       <strong>Commitment 15</strong> (two-engine byte-identity conformance and
       the thin-TS-API-over-wasm-core architecture); §18A is its full technical
       contract. Critically, §17.6 <strong>retired</strong> the earlier
-      "acceleration, not substitution" framing of Commitment 14 in favour of
-      "conformant alternative now, planned replacement under §18A.7" — the
-      thing behind the host-tier bridges is now a <em>second engine</em>, not
-      merely an accelerator of the first.
+      "acceleration, not substitution" framing of Commitment 14 in favour of a
+      real second engine promoted under §18A.7 — the thing behind the host-tier
+      bridges is a <em>second engine</em>, not merely an accelerator of the
+      first. That promotion has since landed: in <code>causl-client</code> the
+      wasm core is the production engine (rust-ssot default), and the §18A.3
+      FFI structural lift means every adopter operation resolves from Rust.
     </p>
 
     <h2 id="floor">causl-ts: the floor and the reference oracle</h2>
@@ -334,17 +339,18 @@ const graph = createCauslWasmSync()   // throws CauslWasmNotPreloadedError if no
 
     <h2 id="wasm-only">The causl-client wasm-only direction (§18A.13)</h2>
     <p>
-      <code>causl-client</code> is committing to a <strong>wasm-only core</strong>.
-      This is a <strong>committed direction, not yet shipped</strong>: it is
-      gate-bypassed and enterprise-only, and it is <strong>scoped to
-      <code>causl-client</code> alone</strong>. Once landed, <code>createCausl()</code>
-      in <code>causl-client</code> will route to the wasm engine, and the pure-TS
-      engine (<code>createCauslTs()</code>) will be <strong>removed from
-      <code>causl-client</code></strong>. The work is executed
-      <em>wire-before-cut</em> — the wasm path is fully wired before the TS engine
-      is removed — and is tracked under epic&nbsp;#31. It is <strong>in progress,
-      not done</strong>; describe it as the committed direction, not a shipped
-      state.
+      <code>causl-client</code> has a <strong>wasm-only core</strong>. This is
+      <strong>shipped and underway</strong>: it is gate-bypassed and
+      enterprise-only, and it is <strong>scoped to
+      <code>causl-client</code> alone</strong>. <code>createCausl()</code>
+      in <code>causl-client</code> routes to the wasm engine unconditionally
+      (rust-ssot default), and the §18A.3 FFI structural lift means every
+      adopter operation resolves from Rust. <code>createCauslTs()</code> is
+      retained as the §12 conformance reference, not the production engine. The
+      work was executed <em>wire-before-cut</em> — the wasm path was fully wired
+      before the cut — and is tracked under epic&nbsp;#31. Literal zero-TS
+      (removing the floor from <code>causl-client</code> entirely) is a scoped
+      future epic.
     </p>
     <p>
       The driver is <strong>complexity elimination</strong>, not speed:

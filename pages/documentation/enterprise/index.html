@@ -108,11 +108,13 @@
       <code>causl-client</code>. Both engines expose the same public
       <code>Graph</code> surface — the seven canonical primitives plus the
       thirteen second-tier extensions (SPEC §12.1 + §12.2), the full
-      contract the wasm core satisfies over FFI (SPEC §18A.4); the wasm
-      path is a committed
-      conformant <em>alternative</em> today and the planned future
-      replacement, promotion-gated by the 5-criterion GO/NO-GO in
-      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.7</a>.
+      contract the wasm core satisfies over FFI (SPEC §18A.4). In
+      <code>causl-client</code> the wasm path is the
+      <em>unconditional production engine</em> (rust-ssot default); the
+      pure-TypeScript engine is retained as the §12 conformance
+      reference. The promotion gate documented in
+      <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.7</a>
+      has been met.
     </p>
 
     <aside class="callout-enterprise">
@@ -135,11 +137,12 @@
         <code>createCauslTs()</code> (the pure-TS floor) ·
         <code>createCauslWasm()</code> / <code>createCauslWasmSync()</code>
         (the wasm engine) · <code>createCausl()</code> (a thin wrapper). In
-        <code>causl-client</code> the committed direction (SPEC §18A.13) is
-        wasm-only — <code>createCausl()</code> will route to the wasm engine
-        and the pure-TS path will be removed — driven by complexity
-        elimination, with perf accepted as immaterial; this is in progress,
-        not yet shipped.
+        <code>causl-client</code> the direction (SPEC §18A.13) is
+        wasm-only — <code>createCausl()</code> routes to the wasm engine
+        unconditionally (rust-ssot default) — driven by complexity
+        elimination, with perf accepted as immaterial. This is shipped and
+        underway; literal zero-TS (removing the floor entirely) is a scoped
+        future epic.
       </p>
     </aside>
 
