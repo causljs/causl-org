@@ -133,16 +133,19 @@
         end-to-end and needs no preload; only the browser bundler target does.
       </p>
       <p>
-        Engine choice stays explicit at the call site:
-        <code>createCauslTs()</code> (the pure-TS floor) ·
+        Explicit engine choice stays available:
         <code>createCauslWasm()</code> / <code>createCauslWasmSync()</code>
-        (the wasm engine) · <code>createCausl()</code> (a thin wrapper). In
-        <code>causl-client</code> the direction (SPEC §18A.13) is
-        wasm-only — <code>createCausl()</code> routes to the wasm engine
-        unconditionally (rust-ssot default) — driven by complexity
-        elimination, with perf accepted as immaterial. This is shipped and
-        underway; literal zero-TS (removing the floor entirely) is a scoped
-        future epic.
+        (the wasm engine) and the internal <code>engine: 'js-ssot'</code> opt.
+        In <code>causl-client</code> (SPEC §18A.13) the default public engine is
+        wasm — <code>createCausl()</code> routes to the wasm engine
+        (rust-ssot default) — driven by complexity elimination, with perf
+        accepted as immaterial. Per <strong>§18A.13.1 (2026-06-23)</strong> it is
+        <strong>wasm-default with a TS capability-fallback</strong>, not strictly
+        "wasm-only": the implicit <code>createCausl()</code> degrades
+        <strong>loudly</strong> to the retained internal
+        <code>createCauslTs</code> on a WasmGC-unavailable host, while explicit
+        wasm still fails loud. Deleting <code>createCauslTs</code> outright is
+        dropped from near-term scope.
       </p>
     </aside>
 
@@ -205,10 +208,13 @@
     <p style="margin-top: 2.4rem;">
       These Enterprise features require a production Rust build and a Node
       target (<a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.2</a>).
-      The TypeScript engine remains the default and unconditional floor:
-      it is byte-identical to the wasm engine for all adopter code and stays
-      supported regardless of whether the §18A.7 GO/NO-GO promotes the wasm
-      path to default.
+      The §18A.7 GO/NO-GO gate has been met (all five criteria GO, 2026-06-21),
+      so in <code>causl-client</code> the wasm path is the unconditional
+      production default (rust-ssot). The TypeScript engine is the retained
+      <strong>unconditional floor</strong> — byte-identical to the wasm engine
+      for all adopter code — kept as the §12 conformance reference and the
+      implicit-path capability fallback (§18A.13.1), and the value-of-record in
+      the fork, not the default.
     </p>
   </main>
 

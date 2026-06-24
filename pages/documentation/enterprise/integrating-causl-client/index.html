@@ -181,25 +181,39 @@ causljs/causl-ts-wasm-engine  causl-ts (the TS floor) + cross-backend bench/conf
     </blockquote>
 
     <blockquote>
-      <strong><code>causl-client</code> → wasm-only core (<a href="https://github.com/causljs/causl-client/blob/main/SPEC.md" rel="noopener">SPEC §18A.13</a>,
-      dated amendment 2026-06-19; <em>shipped / underway</em>).</strong> By a recorded
+      <strong><code>causl-client</code> → wasm-default with a TS capability-fallback (<a href="https://github.com/causljs/causl-client/blob/main/SPEC.md" rel="noopener">SPEC §18A.13</a> +
+      §18A.13.1; <em>shipped</em>).</strong> By a recorded
       governance decision, <code>causl-client</code> ships the <strong>wasm engine as its sole
-      default engine</strong> (rust-ssot is the default) and has <strong>removed the
-      pure-TypeScript engine (<code>createCauslTs</code>) from the public
+      default and public engine</strong> (rust-ssot is the default) and has
+      <strong>un-exported the pure-TypeScript factory (<code>createCauslTs</code>) from the public
       <code>@causl/core</code> barrel</strong>. The driver is complexity-elimination — one
       engine, one codepath — with perf explicitly accepted as immaterial here (it
-      deliberately bypasses the §18A.7 GO/NO-GO perf gate and says so plainly). The
+      deliberately bypasses the §18A.7 GO/NO-GO perf gate and says so plainly).
+      <strong>§18A.13.1 (2026-06-23)</strong> retains <code>createCauslTs</code> internally
+      and wires it as the implicit <code>createCausl()</code> path's WasmGC-unavailable
+      capability fallback: on a host where WasmGC cannot instantiate, the implicit
+      <code>createCausl()</code> degrades <strong>loudly</strong> (console.warn + telemetry,
+      never silent) to the TS floor, while <em>explicit</em> <code>createCauslWasm()</code> /
+      <code>engine: 'rust-ssot'</code> still fail loud (<code>CAUSL_WASM_ENGINE_UNAVAILABLE</code>).
+      So this is <strong>not</strong> strictly "wasm-only," and deleting <code>createCauslTs</code>
+      outright is dropped from near-term scope. (The WasmGC probe itself is still a
+      placeholder, #691.) The
       cut was executed <strong>wire-before-cut</strong>: the §18A.12 sync seam (below)
       landed first so <code>createCausl()</code> routes to the wasm engine
       <em>synchronously</em> at every call site (post-preload), and the public TS
-      engine was then removed (epic
+      factory was then un-exported (epic
       <a href="https://github.com/causljs/causl-client/issues/31"><code>causl-client#31</code></a>).
-      What remains underway is the deeper §18A.3 FFI lift that removes even the
-      <em>internal</em> TS scaffolding. <strong>Scope:</strong> the cut is
+      The §18A.3 FFI structural lift has since landed
+      (<a href="https://github.com/causljs/causl-wasm/issues/170"><code>causl-wasm#170</code></a>),
+      so every adopter operation resolves from Rust; the internal TS engine is
+      retained (not deleted) as the §12 reference and the §18A.13.1
+      capability fallback. <strong>Scope:</strong> the cut is
       <code>causl-client</code> <em>only</em>. The fork that hosts the §18A.1.1 differential
       oracle and the benchmark suite (<code>causljs/causl-ts-wasm-engine</code>)
-      deliberately <strong>keeps the dual-engine TS floor</strong> — it is not going
-      wasm-only and defaults to wasm/rust-ssot.
+      deliberately <strong>keeps the dual-engine TS floor as its DEFAULT</strong>
+      (<code>DEFAULT_WASM_ENGINE_MODE = 'js-ssot'</code>) and <em>adds</em> a
+      real-Rust differential leg as the byte-identity oracle — it does not flip
+      to rust-ssot.
     </blockquote>
 
     <hr />
@@ -305,7 +319,7 @@ const graph = createCausl({ backend: 'auto' })
 
     <blockquote>
       <strong>Accuracy note — the <code>createCausl</code> <code>backend</code> option.</strong> In
-      <code>causl-client</code> (wasm-only), the production path is the wasm engine reached
+      <code>causl-client</code> (wasm-default), the production path is the wasm engine reached
       through <code>preloadCauslWasm()</code> + the sync <code>createCausl()</code> / <code>createCauslWasmSync()</code>
       route (§18A.13) — <code>createCausl</code> resolves to the wasm engine post-preload, no
       per-call <code>backend</code> string needed. The historical <code>backend: 'js' | 'auto'</code>
@@ -314,7 +328,7 @@ const graph = createCausl({ backend: 'auto' })
       because loading the artefact requires the <code>import('@causl/core/wasm')</code> +
       <code>loadWasmBackend()</code>/preload seam. SPEC §18A.4/§18A.1 describe the seam as
       "<code>backend: await loadWasmBackend()</code> passed to <code>createCausl</code>"; on the
-      wasm-only distribution that seam is now the default, reached via the preload +
+      wasm-default distribution that seam is now the default, reached via the preload +
       sync split below.
     </blockquote>
 
@@ -369,7 +383,7 @@ const graph = createCausl({ backend: 'auto' })
         </tr>
         <tr>
           <td><code>createCausl()</code></td>
-          <td>In <code>causl-client</code> (wasm-only), routes to the wasm engine post-preload (§18A.13). On the fork's dual-engine distribution it is a thin wrapper → <code>createCauslTs()</code>.</td>
+          <td>In <code>causl-client</code> routes to the wasm engine post-preload (§18A.13), degrading loudly to the retained internal <code>createCauslTs()</code> on a WasmGC-unavailable host (§18A.13.1). On the fork's dual-engine distribution it routes to <code>createCauslTs()</code> by default (js-ssot).</td>
           <td>sync</td>
           <td><code>@causl/core</code></td>
         </tr>
@@ -758,22 +772,26 @@ const transformed = useMemo(() =&gt; expensiveTransform(value), [version])</code
         depth, large node counts where JS GC and hidden-class pressure dominate — not a
         universal wall-time win. Median parity was never the goal; complexity-elimination
         (one engine, one codepath) is the driver per §18A.13.</li>
-      <li><strong>The fork keeps the dual-engine floor.</strong> The TS reference engine and
+      <li><strong>The fork keeps the dual-engine floor as its DEFAULT.</strong> The TS reference engine and
         the §18A.1.1 differential oracle live in <code>causljs/causl-ts-wasm-engine</code>, which
-        defaults to wasm/rust-ssot and proves byte-identity at the §12 boundary. The
-        §18A.7 GO/NO-GO perf gate is bypassed by §18A.13 (perf accepted as immaterial),
+        keeps the TS floor as default (<code>DEFAULT_WASM_ENGINE_MODE = 'js-ssot'</code>)
+        and <em>adds</em> a real-Rust differential leg that proves byte-identity at the §12
+        boundary; it does not flip to rust-ssot. The
+        §18A.7 GO/NO-GO perf gate is bypassed by §18A.13 for <code>causl-client</code> (perf accepted as immaterial),
         and that bypass is stated plainly.</li>
     </ul>
 
     <p>
-      <strong>Promotion is governance, not a CI flip.</strong> The wasm engine becomes the default /
-      replacement only when <strong>all</strong> five §18A.7 GO/NO-GO criteria pass — byte-identity
+      <strong>Promotion was governance, not a CI flip — and it happened.</strong> The wasm engine becomes the
+      WASM-path default only when <strong>all</strong> five §18A.7 GO/NO-GO criteria pass — byte-identity
       (1), full FFI surface (2), the perf ceiling above (3), the Node target + a
-      real-Rust production adopter (4), and the §18A.7 governance criterion (5) — and a
-      <strong>dated amendment</strong> by the governance authority records the promotion. A green
-      gate never auto-flips the value-of-record. Until then, the TS engine is the
-      unconditional floor and the wasm engine is the documented alternative with its
-      costs transparent.
+      real-Rust production adopter (4), and the §18A.7 governance criterion (5) — recorded by a
+      <strong>dated amendment</strong>. That amendment landed on <strong>2026-06-21</strong>
+      (<a href="https://github.com/causljs/causl-wasm/issues/169"><code>causl-wasm#169</code></a>):
+      all five are GO, rust-ssot is the unconditional default, and the per-flush byte-compare
+      oracle + sticky-downgrade fail-safe were removed (§18A.8). The TS engine stays the
+      unconditional floor — retained in <code>causl-client</code> as the §12 reference and the
+      §18A.13.1 implicit-path capability fallback — but it is no longer the default.
     </p>
 
     <hr />
@@ -785,11 +803,12 @@ const transformed = useMemo(() =&gt; expensiveTransform(value), [version])</code
         for everything above): §18A.1 equivalence, §18A.2 Node target, §18A.4 thin TS
         API, §18A.5 read-identity, §18A.6 FFI atomicity, §18A.7 GO/NO-GO criteria,
         §18A.10 topology, §18A.11 Python tooling.</li>
-      <li><a href="https://github.com/causljs/causl-client/blob/main/SPEC.md" rel="noopener"><code>SPEC.md</code> §18A.12 / §18A.13</a>
-        — the dated 2026-06-19 amendments this guide adds: <strong>§18A.12</strong> the
+      <li><a href="https://github.com/causljs/causl-client/blob/main/SPEC.md" rel="noopener"><code>SPEC.md</code> §18A.12 / §18A.13 / §18A.13.1</a>
+        — the dated amendments this guide adds: <strong>§18A.12</strong> the
         <code>preloadCauslWasm()</code> + <code>createCauslWasmSync()</code> synchronous-construction split
-        (§2.5) and the build-script asserts (§3.1); <strong>§18A.13</strong> the committed
-        <code>causl-client</code> → wasm-only-core direction (§1). These two sections live in the
+        (§2.5) and the build-script asserts (§3.1); <strong>§18A.13</strong> the
+        <code>causl-client</code> wasm-default direction (§1); <strong>§18A.13.1 (2026-06-23)</strong>
+        the implicit-path loud TS capability fallback. These sections live in the
         <code>causl-client</code> / <code>causl-ts-wasm-engine</code> distributions' <code>SPEC.md</code> and are
         newer than the bundled local <code>SPEC.md</code> copy above, so linked to this repo's
         canonical <code>SPEC.md</code>.</li>

@@ -42,19 +42,32 @@
 </blockquote>
 <p><strong><code>causl-client</code> is the thin TypeScript API over the <code>causl-wasm</code> engine core</strong>
 (SPEC <a href="../media/SPEC.md">§18A.4</a>). <code>causl</code> is a reactive dependency-graph engine whose
-public contract — the §12 surface (the <code>input</code> / <code>derived</code> / <code>commit</code> / <code>read</code> /
+public contract is the §12 surface (the <code>input</code> / <code>derived</code> / <code>commit</code> / <code>read</code> /
 <code>subscribe</code> / <code>snapshot</code> spine plus the <code>dependencies</code> / <code>dependents</code> structural
-queries) — ships in <strong>two conformant engines</strong> held byte-identical at that
-boundary (§18A.1):</p>
-<ul>
-<li><strong><code>causl-ts</code></strong> — the TypeScript reference engine, the unconditional <strong>floor</strong>
-(lives in <a href="https://github.com/causljs/causl-ts-wasm-engine"><code>causljs/causl-ts-wasm-engine</code></a>).</li>
-<li><strong><code>causl-wasm</code></strong> — the Rust core (<code>engine-rs-core</code> + <code>engine-rs-bridge</code>)
-compiled to WebAssembly and reached over FFI: the <strong>committed alternative</strong> now
-and the <strong>planned replacement</strong> once all <a href="../media/SPEC.md">§18A.7</a> GO/NO-GO criteria
-are met (lives in <a href="https://github.com/causljs/causl-wasm"><code>causljs/causl-wasm</code></a>,
-which also owns the Python build/package tooling).</li>
-</ul>
+queries). <strong><code>causl-client</code> is wasm-default with a TS capability-fallback:</strong> the
+Rust→WebAssembly engine (<code>engine-rs-core</code> + <code>engine-rs-bridge</code>, reached over FFI)
+is the <strong>production engine</strong> (<code>rust-ssot</code> is the default), and every adopter
+operation —
+<code>commit</code> / <code>read</code> / <code>subscribe</code> / <code>derived</code> plus <code>dependencies</code> / <code>dependents</code> /
+<code>stats</code> / <code>commitLog</code> / <code>explain</code> / <code>exportModel</code> / <code>readAt</code> / <code>snapshotAt</code> /
+<code>subscribeCommits</code> — resolves from Rust (the §18A.3 FFI structural lift landed,
+<a href="https://github.com/causljs/causl-wasm/issues/170"><code>causljs/causl-wasm#170</code></a>). The
+only JS in the hot path is the user's own <code>derived()</code> compute lambda, which runs
+in JS over the bridge callback <strong>by design</strong>. On a host where the WasmGC engine
+cannot instantiate, the implicit <code>createCausl()</code> path degrades to a retained
+internal TS engine <strong>loudly</strong> (one-time <code>console.warn</code> +
+<code>onCauslCapabilityFallback</code> telemetry, never silent — SPEC §18A.13.1); explicit
+<code>createCauslWasm()</code> / <code>engine:'rust-ssot'</code> still fail loud. The Rust engine
+lives in <a href="https://github.com/causljs/causl-wasm"><code>causljs/causl-wasm</code></a>, which
+also owns the Python build/package tooling.</p>
+<p>The pure-TS engine (<code>createCauslTs</code>) is <strong>retained internally</strong> — as the §12
+conformance reference, the <code>backend: 'auto'</code> auto-adapt path, and the
+<code>WasmBackend</code> / <code>JsFallbackBackend</code> scaffolding — but is <strong>not</strong> the production
+engine and is not on the public surface. The two-engine topology (a TypeScript
+floor held byte-identical to wasm, plus the differential oracle and benchmarks)
+lives only in the
+<a href="https://github.com/causljs/causl-ts-wasm-engine"><code>causljs/causl-ts-wasm-engine</code></a>
+fork, not in <code>causl-client</code>.</p>
 <p>This repo (<code>causljs/causl-client</code>) is the <strong>TypeScript API + Node loader</strong> that
 lets a TS/Node.js app integrate the placed <code>causl-wasm</code> artefact over FFI. It is
 <strong>not</strong> a copy of the TS engine and ships <strong>no Rust source and no build tooling</strong>
@@ -63,7 +76,7 @@ loader, artefact placement via <code>causl-wasm</code>'s Python scripts, the rea
 migration, and the perf ceiling — see
 <a href="../media/integrating-causl-client.md"><code>docs/integrating-causl-client.md</code></a>.</p>
 <hr>
-<a id="quickstart" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Quickstart<a href="#quickstart" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The example in <a href="../media/SPEC.md#10-the-smallest-worked-example-i-will-support">SPEC §10</a> is the gate for &quot;the engine is real&quot; — two inputs, one derived value, one diamond derivation, one subscriber, two commits, three observed propagations. Everything else in the engine is downstream of getting this right.</p>
+<a id="quickstart" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Quickstart<a href="#quickstart" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The example in <a href="../media/SPEC.md#10-worked-example">SPEC §10</a> is the gate for &quot;the engine is real&quot; — two inputs, one derived value, one diamond derivation, one subscriber, two commits, three observed propagations. Everything else in the engine is downstream of getting this right.</p>
 <pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">createCausl</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@causl/core&#39;</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">a</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-2">&#39;a&#39;</span><span class="hl-1">, </span><span class="hl-7">1</span><span class="hl-1">)</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">b</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-2">&#39;b&#39;</span><span class="hl-1">, </span><span class="hl-7">2</span><span class="hl-1">)</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">sum</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">derived</span><span class="hl-1">(</span><span class="hl-2">&#39;sum&#39;</span><span class="hl-1">, (</span><span class="hl-4">get</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">a</span><span class="hl-1">) + </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">b</span><span class="hl-1">))</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">sumPlusOne</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">derived</span><span class="hl-1">(</span><span class="hl-2">&#39;sumPlusOne&#39;</span><span class="hl-1">, (</span><span class="hl-4">get</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">sum</span><span class="hl-1">) + </span><span class="hl-7">1</span><span class="hl-1">)</span><br/><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">subscribe</span><span class="hl-1">(</span><span class="hl-4">sumPlusOne</span><span class="hl-1">, (</span><span class="hl-4">v</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-4">v</span><span class="hl-1">))</span><br/><span class="hl-8">// 4</span><br/><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">commit</span><span class="hl-1">(</span><span class="hl-2">&#39;bump-a&#39;</span><span class="hl-1">, </span><span class="hl-4">tx</span><span class="hl-1"> </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">a</span><span class="hl-1">, </span><span class="hl-7">10</span><span class="hl-1">))</span><br/><span class="hl-8">// 13</span><br/><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">commit</span><span class="hl-1">(</span><span class="hl-2">&#39;bump-both&#39;</span><span class="hl-1">, </span><span class="hl-4">tx</span><span class="hl-1"> </span><span class="hl-5">=&gt;</span><span class="hl-1"> { </span><span class="hl-4">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">a</span><span class="hl-1">, </span><span class="hl-7">100</span><span class="hl-1">); </span><span class="hl-4">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">b</span><span class="hl-1">, </span><span class="hl-7">200</span><span class="hl-1">) })</span><br/><span class="hl-8">// 301  — exactly one notification, not two</span>
 </code><button type="button">Copy</button></pre>
 
@@ -378,10 +391,10 @@ migration, and the perf ceiling — see
 <li><strong>Not a CRDT.</strong> Multi-user merge semantics belong in a layer above this one.</li>
 <li><strong>Not a database, message bus, workflow engine, or rules engine.</strong></li>
 <li><strong>Not a competitor to Redux/MobX/etc.</strong> for problems they already handle well.</li>
-<li><strong>Not yet at 1.0.</strong> Phases 1–4 ship on <code>main</code>; <strong>v0.9.0 has shipped</strong> (WASM substrate Phase-0/Phase-1 in, Rust engine port deferred — see Status below); APIs are stable but not version-locked.</li>
+<li><strong>Not yet at 1.0.</strong> Phases 1–4 ship on <code>main</code>; <strong>v0.9.0 has shipped</strong> (the wasm-default core is in: the real Rust engine is the production default, with the §18A.3 FFI lift landed and a retained TS capability-fallback on the implicit path per §18A.13.1 — see Status below); APIs are stable but not version-locked.</li>
 </ul>
 <hr>
-<a id="status" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Status<a href="#status" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The full specification lives in <a href="../media/SPEC.md">the repo-root specification</a>. Phased epics and sub-tasks live as GitHub issues. <strong>Phases 1–4 have shipped on <code>main</code>, and v0.9.0 is out.</strong> Phase 1 (semantic core), Phase 2 (React surface + spreadsheet demo), and Phase 3 (resources, conflicts, devtools inspection primitives) landed first; Phase 4 (the CI race-detection toolchain) wrapped via the Phase-8 SPEC compliance audit (umbrella #564 closed). Phase-5 perf experiment umbrella #679 closed 22/22 sub-issues (the scrolling-viewport 654× regression is resolved). Phase-6 WASM substrate epic #680 closed: all 17 Phase-0 + Phase-1 sub-issues are merged, including SPEC §17 commitment 13 (capability-cost residual band 3.0×–8.0×, PR #1024) and commitment 14 (three-tier host matrix <code>wasmgc-builtins</code> / <code>wasmgc-classic</code> / <code>serde-json</code>, PR #1053). Both Rust binaries — <code>causl-check</code> (static IR linter) and <code>causl-enumerate</code> (bounded state-space enumerator) — run in CI against the spreadsheet and async demos. See <code>.github/workflows/ci.yml</code> and <code>.github/workflows/apalache-diff.yml</code>.</p>
+<a id="status" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Status<a href="#status" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The full specification lives in <a href="../media/SPEC.md">the repo-root specification</a>. Phased epics and sub-tasks live as GitHub issues. <strong>Phases 1–4 have shipped on <code>main</code>, and v0.9.0 is out.</strong> Phase 1 (semantic core), Phase 2 (React surface + spreadsheet demo), and Phase 3 (resources, conflicts, devtools inspection primitives) landed first; Phase 4 (the CI race-detection toolchain) wrapped via the Phase-8 SPEC compliance audit (umbrella #564 closed). Phase-5 perf experiment umbrella #679 closed 22/22 sub-issues (the scrolling-viewport 654× regression is resolved). Phase-6 WASM substrate epic #680 closed: all 17 Phase-0 + Phase-1 sub-issues are merged, including SPEC §17 commitment 13 (capability-cost residual band 3.0×–8.0×, PR #1024) and commitment 14 (three-tier host matrix <code>wasmgc-builtins</code> / <code>wasmgc-classic</code> / <code>serde-json</code>, PR #1053). Both Rust binaries — <code>causl-check</code> (static IR linter) and <code>causl-enumerate</code> (bounded state-space enumerator) — run in CI against the spreadsheet and async demos. See <a href="../media/four-way-classifier.yml"><code>.github/workflows/four-way-classifier.yml</code></a> (the enumerator + Apalache differential cross-check) and <a href="../media/wasm.yml"><code>.github/workflows/wasm.yml</code></a>.</p>
 <a id="current-state-post-v090--the-two-engine-topology" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Current state (post v0.9.0) — the two-engine topology<a href="#current-state-post-v090--the-two-engine-topology" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Per the repository topology recorded in SPEC <a href="../media/SPEC.md">§18A.10</a>, the
 two-engine contract spans three first-party <code>causljs</code> repos, each owning one
 artefact and none duplicating another's role:</p>
@@ -394,7 +407,9 @@ Rust side, and the <strong>Python build/package tooling</strong> (<code>scripts/
 places it where a consumer states.</li>
 <li><strong><code>causljs/causl-client</code></strong> (this repo) — the <strong>TypeScript API for
 <code>causl-wasm</code></strong>: the thin TS binding of §18A.4 (a binding over the FFI, <strong>not</strong> a
-copy of the TS engine), the loader hook that resolves the placed <code>.wasm</code>, and
+copy of the TS engine), the loader surface (the bundler-target lazy-instantiate
+path ships today; the consumer-side <code>node:fs</code> loader hook that resolves the
+placed <code>.wasm</code> is planned — §18A.2, see the SHIPPED-vs-PLANNED table below), and
 the adoption docs that let TS/Node.js web apps integrate it. Ships no Rust
 source. Named integration consumers: <code>iasbuilt/xldatagrid</code> and
 <code>iasbuilt/webapp</code>.</li>
@@ -406,7 +421,7 @@ historical wasm-cutover R&amp;D, including the experimental
 </ul>
 <p>Within this repo:</p>
 <ul>
-<li><strong>WASM Phase-1 is a TS wrapper, not a Rust engine.</strong> The <code>WasmBackend</code> returned by <code>loadWasmBackend()</code> is a TS engine wrapped in the FFI shape — the bridge interface and the cross-bridge byte-identity contract are stable, but runtime characteristics match the TS engine. The disclosure is repeated at the top of <code>packages/core/wasm/README.md</code>. The real Rust swap is the post-0.9.0 epic #1133, gated by the five §18A.7 GO/NO-GO criteria below.</li>
+<li><strong>The wasm engine is a real Rust engine and the production default.</strong> The engine returned by <code>loadWasmBackend()</code> is <code>engine-rs-core</code> compiled to WebAssembly; the §18A.3 FFI structural lift landed (<a href="https://github.com/causljs/causl-wasm/issues/170">causl-wasm#170</a>), so every adopter op resolves from Rust — orchestration in Rust, the user's <code>derived()</code> compute lambdas in JS over the bridge callback by design. The disclosure is repeated at the top of <code>packages/core/wasm/README.md</code>. <code>causl-client</code> made wasm its default engine via a dated §18A.13 governance amendment that deliberately bypassed the §18A.7 promotion gate; §18A.13.1 then re-extended a TS capability-fallback to the implicit <code>createCausl()</code> path (loud, never silent). Perf is explicitly immaterial (within the §14 RAIL budget).</li>
 <li><strong>Bundle-budget overage tracked in issue #22.</strong> The post-v0.9.0 size-limit cells were re-tuned in PR #23 (createCausl-only ratcheted from 15 KB to 16 KB to absorb the <code>invariant</code> option from PR #2 / issue #1); the <code>@causl/core/wasm</code> cell still sits ~2.5 KB over the 13 KB ceiling and is the only known-red gate. PR #21 dropped the dangling bench-fixture cells that were producing six consecutive red CI runs against unrelated PRs.</li>
 <li><strong>Pre-commit ↔ CI parity landed in PR #25.</strong> The full check union — typecheck, build, lint, size, vendor-manifest — now runs in <code>.husky/pre-commit</code>; the bundler-interop matrix moved to <code>.husky/pre-push</code>. See the <em>Pre-commit / pre-push hooks</em> subsection above.</li>
 </ul>
@@ -419,36 +434,238 @@ historical wasm-cutover R&amp;D, including the experimental
 <li>The cross-backend determinism property test (<code>packages/core/test/properties/cross-backend-determinism.property.test.ts</code>) was refreshed by PR #16 / issue #6 to drop the stale Phase-1 TODO and wire World-pairing through the Graph facade.</li>
 <li>The full Rust race-detection toolchain (<code>causl-check</code> + <code>causl-enumerate</code>) ships out of the parent monorepo and runs against the spreadsheet + async demos there. This repo's <code>tools/apalache-diff/</code> is the TLA+ differential surface that consumes the parent repo's enumerator verdicts.</li>
 </ul>
-<a id="the-wasm-engines-promotion-gate-spec-§18a7" class="tsd-anchor"></a><h4 class="tsd-anchor-link">The wasm engine's promotion gate (SPEC §18A.7)<a href="#the-wasm-engines-promotion-gate-spec-§18a7" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>The <code>causl-wasm</code> engine is the <strong>committed alternative</strong> today; its promotion to
-default / replacement of the TS floor is gated by <strong>five GO/NO-GO criteria</strong>
-(§18A.7) that must <strong>all</strong> pass, after which a <strong>dated governance amendment</strong> —
-never a CI auto-flip — records the promotion. Adopters reading the Phase-1
-wrapper disclosure should read these as the promotion roadmap, not guess at it:</p>
+<a id="the-§18a7-promotion-gate--and-why-causl-client-bypassed-it-§18a13" class="tsd-anchor"></a><h4 class="tsd-anchor-link">The §18A.7 promotion gate — and why <code>causl-client</code> bypassed it (§18A.13)<a href="#the-§18a7-promotion-gate--and-why-causl-client-bypassed-it-§18a13" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>The <strong>org-wide</strong> §18A.7 promotion narrative — five GO/NO-GO criteria that gate
+promoting the wasm engine to default over the TS floor — still governs the
+<strong>fork</strong> (<code>causl-ts-wasm-engine</code>), which stays dual-engine. <strong><code>causl-client</code>,
+however, did not wait for that gate:</strong> a dated §18A.13 governance amendment
+<strong>deliberately bypassed</strong> §18A.7 and shipped the wasm engine as the sole
+production default, on <strong>complexity-elimination</strong> grounds (perf explicitly
+immaterial — within the §14 RAIL budget). The five criteria, for reference:</p>
 <ol>
-<li><strong>Correctness — cross-backend byte-identity</strong> (MECHANICAL). TS and wasm
-engines produce byte-identical <code>Commit</code> records, snapshots, structural-query
-results, and subscriber fire-order, proven by the 1000-trial per-flush gate.</li>
+<li><strong>Correctness — cross-backend byte-identity</strong> (MECHANICAL). The Rust and TS
+reference engines produce byte-identical <code>Commit</code> records, snapshots,
+structural-query results, and subscriber fire-order, proven by the 1000-trial
+per-flush gate (run in the fork, which keeps both engines).</li>
 <li><strong>Completeness — full FFI surface</strong> (MECHANICAL). Every §12.1 canonical-seven
 <ul>
 <li>§12.2 second-tier-thirteen row is reachable over FFI with no JS-engine
-fallback for any row.</li>
+fallback for any row — the §18A.3 lift that <strong>landed</strong>
+(<a href="https://github.com/causljs/causl-wasm/issues/170">causl-wasm#170</a>).</li>
 </ul>
 </li>
 <li><strong>Performance</strong> (MECHANICAL). Single commit ≤ 250 µs p95 marshal overhead;
-batch / large mutation ≤ 5 ms p95. <em>(The standing 78× wire tax and the ~85×
-per-commit engine-exec cost at current WASM maturity are the documented floor;
-epic #1133's A.1 perf-floor probe fired a STOP-VERDICT on 2026-05-13.)</em></li>
+batch / large mutation ≤ 5 ms p95. <code>causl-client</code> does <strong>not</strong> treat perf as a
+promotion gate — it stays within the §14 RAIL responsiveness budget, which is
+the bar that matters for the adopter.</li>
 <li><strong>Node target + real-world adoption</strong> (MECHANICAL artefact + adopter
 attestation). The <code>--target nodejs</code> artefact + ESM/<code>node:fs</code> loader ships
-(§18A.2), <strong>and</strong> at least one adopter has shipped a production workload on
-the <strong>real</strong> Rust engine at ≥Tier 2.</li>
-<li><strong>Governance</strong> (DESIGN-DISCIPLINE). The promotion is a named, dated amendment
-by the §13.8 authority — not mechanised, not a green-gate auto-flip.</li>
+(§18A.2).</li>
+<li><strong>Governance</strong> (DESIGN-DISCIPLINE). Promotion is a named, dated amendment by
+the §13.8 authority — which is exactly what §18A.13 is for <code>causl-client</code>.</li>
 </ol>
-<p>Until all five pass, the TS engine is the unconditional floor and the wasm
-engine is the documented alternative with its costs transparent. The current
-epoch is the opt-in <code>engine: 'rust-ssot'</code> work (epic #1515), <strong>default-off</strong> and
-not a perf win — see <a href="../media/integrating-causl-client.md"><code>docs/integrating-causl-client.md</code></a> §6.</p>
+<a id="integrate-causl-wasm--causl-client-into-your-nodejs-app" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Integrate <code>causl-wasm</code> + <code>causl-client</code> into your Node.js app<a href="#integrate-causl-wasm--causl-client-into-your-nodejs-app" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>Your application programs against the §12 <code>Graph</code> surface only — never against
+an engine. <code>causl-client</code> is <strong>wasm-default with a TS capability-fallback</strong>: the
+Rust→WebAssembly engine is the production engine behind that surface, with the
+retained internal TS engine as the implicit <code>createCausl()</code> path's
+WasmGC-unavailable fallback (SPEC §18A.13.1). <strong><code>causl-wasm</code> + <code>causl-client</code>
+are the Enterprise-tier path.</strong> Two repos cooperate, and the boundary is the
+placed artefact:</p>
+<p><strong>Producer side — build &amp; place the artefact (Enterprise).</strong> The producer repo
+<a href="https://github.com/causljs/causl-wasm"><code>causljs/causl-wasm</code></a> owns the Rust
+engine plus two <strong>stdlib-only Python 3 scripts</strong> (no <code>pip install</code>, no Node;
+drops into any CI/CD pipeline — §18A.11). It builds the size-optimised
+<code>--target nodejs</code> <code>.wasm</code> <strong>once</strong> and places it, with a version + per-file
+sha256 manifest, where the consuming app states:</p>
+<pre><code class="sh"><span class="hl-8"># BUILD half — needs a Rust toolchain (cargo ≥1.89, wasm-pack 0.14, wasm-opt ≥119).</span><br/><span class="hl-8"># --bridge picks the string strategy: gc-classic → classic-strings (UTF-16</span><br/><span class="hl-8"># fallback, DEFAULT); gc-builtins → js-string-builtins (no-copy wasm:js-string).</span><br/><span class="hl-0">python3</span><span class="hl-1"> </span><span class="hl-2">scripts/build_wasm.py</span><span class="hl-1"> </span><span class="hl-5">--bridge</span><span class="hl-1"> </span><span class="hl-2">gc-classic</span><span class="hl-1">            </span><span class="hl-8"># → build/wasm-nodejs</span><br/><br/><span class="hl-8"># PACKAGE half — CPython stdlib only, NO Rust toolchain. --dest is REQUIRED.</span><br/><span class="hl-8"># Places the .wasm + node glue (.js) + .d.ts and writes causl-wasm.manifest.json</span><br/><span class="hl-8"># (schema &quot;causl-wasm/manifest@1&quot;: engineVersion, bridge, target:&quot;nodejs&quot;,</span><br/><span class="hl-8"># wasmOptFlags, files[] = {name, sha256, bytes}).</span><br/><span class="hl-0">python3</span><span class="hl-1"> </span><span class="hl-2">scripts/package_wasm.py</span><span class="hl-1"> </span><span class="hl-5">--build</span><span class="hl-1"> </span><span class="hl-5">--dest</span><span class="hl-1"> </span><span class="hl-2">apps/web/src/engine/wasm</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The single <code>--build --dest &lt;DIR&gt;</code> call does build + place in one step. The
+manifest is byte-reproducible (no <code>built-at</code> by default), so git-track it and
+add a <strong>loud, network-free verify gate</strong> (file existence + per-file sha256
+against the manifest) to CI and/or a pre-commit hook: a corrupt, missing, or
+version-skewed <code>.wasm</code> is a hard failure, never a silent fall-through. A
+consuming app needs only <strong>CPython stdlib and a checksum to vendor</strong> — <strong>never a
+Rust toolchain</strong>.</p>
+<p>The package step also drops the <strong>compute-imports snippet</strong> next to the <code>.wasm</code> /
+<code>_bg.js</code> and <strong>fails loud</strong> (<code>build_wasm.py</code> / <code>package_wasm.py</code> assert, never
+warn) on three things: the §18A.12 sync seam is present (the <code>new WebAssembly.Instance</code> construction path), the compute-imports snippet is present,
+and the artefact is node-loadable. Node-loadability is <strong>bridge-specific</strong>:
+<code>gc-classic</code> loads as <code>--target nodejs</code>, but <code>gc-builtins</code> emits
+<code>require(&quot;wasm:js-string&quot;)</code> which stock Node can't resolve, so it is
+<strong>bundler-target only</strong>.</p>
+<p><strong>Consumer side — install <code>@causl/core</code>, load over <code>@causl/core/wasm</code>.</strong> The
+published package is <strong><code>@causl/core</code></strong> (<code>causl-client</code> is the repo name; there is
+no separately-published <code>causl-client</code> npm package). Node ≥ 22, ESM-only:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> </span><span class="hl-2">@causl/core</span><span class="hl-1">        </span><span class="hl-8"># or: pnpm add @causl/core</span>
+</code><button type="button">Copy</button></pre>
+
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">createCausl</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@causl/core&#39;</span><br/><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">loadWasmBackend</span><span class="hl-1">, </span><span class="hl-4">WasmBackendUnavailableError</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@causl/core/wasm&#39;</span><br/><br/><span class="hl-8">// The wasm seam lives behind the `./wasm` subpath export. Importing the bare</span><br/><span class="hl-8">// `@causl/core` does NOT pull the wasm chunk — only an explicit</span><br/><span class="hl-8">// `import(&#39;@causl/core/wasm&#39;)` (or createCausl({ backend: &#39;auto&#39; | &#39;wasm&#39; })</span><br/><span class="hl-8">// past the auto threshold) pays the cost.</span><br/><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-5">function</span><span class="hl-1"> </span><span class="hl-0">makeBackend</span><span class="hl-1">() {</span><br/><span class="hl-1">  </span><span class="hl-3">try</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">loadWasmBackend</span><span class="hl-1">()        </span><span class="hl-8">// binds the FFI seam over the placed .wasm</span><br/><span class="hl-1">  } </span><span class="hl-3">catch</span><span class="hl-1"> (</span><span class="hl-4">err</span><span class="hl-1">) {</span><br/><span class="hl-1">    </span><span class="hl-8">// Acceleration, not substitution: any host that runs JS runs the TS floor.</span><br/><span class="hl-1">    </span><span class="hl-3">if</span><span class="hl-1"> (</span><span class="hl-4">err</span><span class="hl-1"> </span><span class="hl-5">instanceof</span><span class="hl-1"> </span><span class="hl-9">WasmBackendUnavailableError</span><span class="hl-1">) </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-2">&#39;js&#39;</span><span class="hl-1"> </span><span class="hl-3">as</span><span class="hl-1"> </span><span class="hl-5">const</span><br/><span class="hl-1">    </span><span class="hl-3">throw</span><span class="hl-1"> </span><span class="hl-4">err</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">({ </span><span class="hl-4">backend:</span><span class="hl-1"> </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">makeBackend</span><span class="hl-1">() })</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>loadWasmBackend(options?)</code> is the <strong>primary entry point</strong> of <code>@causl/core/wasm</code>
+— async, returns a <code>BackendEngine</code> (the canonical-seven <code>Graph</code> spine plus the
+second-tier methods), caches per bridge, and on a non-loadable pinned bridge
+throws <code>WasmBackendUnavailableError</code> (<code>code: 'CAUSL_WASM_NOT_BUILT'</code>) so adopters
+branch back to the TS floor. Honoured options include <code>bridge</code>
+(<code>'wasmgc-builtins'</code> | <code>'wasmgc-classic'</code>), <code>wasmBaseUrl</code> (CDN/CSP override),
+<code>fetch</code>, <code>graphName</code>, <code>batchedFlush</code>, and <code>engine</code> (<code>'rust-ssot'</code> default |
+<code>'js-ssot'</code> internal reference).</p>
+<p><strong>The factory surface — and the sync separation (§18A.12, shipped).</strong> From a
+consumer's perspective the wasm engine is now <strong>synchronous to construct</strong>. The
+one unavoidable async — the <code>WebAssembly.compile</code> — is split off from
+construction so the single <code>await</code> lives at app init, never at a render or hook
+call site:</p>
+<ul>
+<li><code>createCausl(options?): Graph</code> — the <strong>default public factory</strong>. It routes to
+the <strong>real wasm engine</strong> (synchronously) once <code>preloadCauslWasm()</code> has run for
+the default bridge, and otherwise builds a working sync <code>Graph</code> on the
+<strong>internal</strong> TS floor (a <em>silent</em> sync-ergonomics fallback, non-breaking for
+sync callers that never preload). On a host where the WasmGC engine cannot
+<strong>instantiate</strong> even though a module is preloaded, it degrades to the internal
+TS engine <strong>loudly</strong> (one-time <code>console.warn</code> + <code>onCauslCapabilityFallback</code>
+telemetry, never silent — SPEC §18A.13.1). <code>createCauslTs</code> is <strong>no longer a
+public engine choice</strong> (epic #31 / #34): the pure-TS floor survives only
+internally, as the §12 conformance reference / auto-adapt / fallback
+scaffolding and the implicit-path capability fallback. The §18A.3 FFI lift has
+<strong>landed</strong>
+(<a href="https://github.com/causljs/causl-wasm/issues/170"><code>causljs/causl-wasm#170</code></a>),
+so every adopter op resolves from Rust under rust-ssot; the literal zero-TS
+core (deleting <code>createCauslTs</code>) is <strong>dropped from near-term scope by §18A.13.1</strong>
+— the TS engine is kept, not deleted.</li>
+<li><code>await preloadCauslWasm(opts?)</code> — <strong>the one async seam, called once</strong> at
+app/init. Compiles + caches the <code>WebAssembly.Module</code> (plus the <code>_bg.js</code> sidecar
+and the compute-imports snippet), keyed by bridge. Idempotent: concurrent calls
+share one compile; a transient failure drops the cache entry for retry.
+Companions <code>isCauslWasmPreloaded(bridge?)</code> / <code>getPreloadedCauslWasm(bridge?)</code>
+peek the <em>resolved</em> state synchronously.</li>
+<li><code>createCauslWasmSync(handle?, create?): Graph</code> — <strong>fully synchronous</strong> (a fresh
+<code>new WebAssembly.Instance</code> from the cached <code>Module</code>, zero <code>await</code>). With nothing
+preloaded for the bridge it throws <code>CauslWasmNotPreloadedError</code> (naming
+<code>preloadCauslWasm()</code>) by default — a silent TS↔wasm swap would diverge in
+<code>read()</code>-identity / commit-clock, so the §18A loud-fail discipline holds — or,
+with <code>{ fallbackToTs: true }</code>, degrades to the <strong>internal</strong> TS floor (a
+sync-ergonomics fallback, not a public engine choice).</li>
+<li><code>createCauslWasm(opts?): Promise&lt;Graph&gt;</code> — <strong>retained</strong>, now re-expressed as
+<code>preload ∘ createCauslWasmSync</code> (one instantiate codepath, provably no drift).</li>
+</ul>
+<p>This is what lets <strong>sync consumers</strong> — React hooks/render, <code>iasbuilt/xldatagrid</code> —
+build a wasm graph with <strong>no <code>await</code> at the call site</strong>: the single <code>await</code> is
+hoisted to bootstrap, outside any commit envelope (Theorem 2's single-tick
+invariant is untouched). On Node/SSR the <code>--target nodejs</code> glue is synchronous at
+require-time, so <code>createCauslWasmSync</code> works with <strong>no prior preload</strong> — server
+render stays synchronous end-to-end; only the <strong>browser bundler target</strong> needs the
+one-time <code>await preloadCauslWasm()</code> before the first render that constructs a wasm
+graph. The lower-level <code>loadWasmBackend()</code> + <code>createCausl({ backend })</code> seam shown
+above remains, and the <code>createCauslWasm()</code> / <code>createCauslWasmSync()</code> factories are
+exported from this repo's own <code>@causl/core/wasm</code>
+(<a href="_causl_core.wasm.html"><code>packages/core/wasm/index.ts</code></a>) — and from the
+<a href="https://github.com/causljs/causl-ts-wasm-engine"><code>causljs/causl-ts-wasm-engine</code></a>
+fork of <code>@causl/core/wasm</code> that wasm-capable consumers link against. Use whichever
+your linked <code>@causl/core</code> exposes.</p>
+<p><strong>Node-target status — SHIPPED (be precise).</strong> On Node today:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Producer <code>--target nodejs</code> build + placement (<code>build_wasm.py</code> / <code>package_wasm.py</code>, sha256 manifest)</td>
+<td><strong>SHIPPED</strong> (§18A.11)</td>
+</tr>
+<tr>
+<td>Sync construction seam — <code>preloadCauslWasm()</code> + <code>createCauslWasmSync()</code> (one <code>await</code> at init, sync at every call site)</td>
+<td><strong>SHIPPED</strong> (§18A.12 — in the fork <em>and</em> in <code>causl-client</code>)</td>
+</tr>
+<tr>
+<td>Consumer <code>@causl/core/wasm</code> loader, bridge picker, instantiate path</td>
+<td><strong>SHIPPED</strong> (epic #680)</td>
+</tr>
+<tr>
+<td>Engine runtime = the <strong>real <code>engine-rs-core</code> Rust engine</strong> compiled to WebAssembly; every adopter op resolves from Rust</td>
+<td><strong>SHIPPED</strong> — §18A.3 FFI lift landed (<a href="https://github.com/causljs/causl-wasm/issues/170">causl-wasm#170</a>)</td>
+</tr>
+<tr>
+<td>Multi-instance isolation via <code>engine_id</code> multiplexing</td>
+<td><strong>SHIPPED</strong></td>
+</tr>
+<tr>
+<td><code>read()</code> returns a fresh object per call (deserialised across FFI) — reference identity is <strong>not</strong> contractual</td>
+<td><strong>SHIPPED</strong> (§18A.5) — memoise on <code>commit.time</code> / node-version, never on the read reference.</td>
+</tr>
+<tr>
+<td><code>engine: 'rust-ssot'</code> (the default)</td>
+<td><strong>SHIPPED</strong> — the production engine. <code>'js-ssot'</code> is the internal conformance reference only.</td>
+</tr>
+<tr>
+<td>Implicit-path TS capability fallback (<code>createCausl()</code> degrades loudly on a WasmGC-unavailable host; explicit wasm still fails loud)</td>
+<td><strong>SHIPPED</strong> (§18A.13.1)</td>
+</tr>
+<tr>
+<td>Literal zero-TS core (deleting <code>createCauslTs</code> outright)</td>
+<td><strong>DROPPED from near-term scope by §18A.13.1</strong> — the TS engine is retained as the §12 conformance reference + the implicit-path capability fallback.</td>
+</tr>
+</tbody>
+</table>
+<p>So today: the <strong>producer node-target tooling and the consumer loader are real and
+shipped</strong>, and the engine they reach is the <strong>real Rust <code>engine-rs-core</code></strong> —
+orchestration in Rust, the user's <code>derived()</code> compute lambdas in JS over the
+bridge callback. Per-commit wall-time stays inside the §14 RAIL responsiveness
+budget; perf is <strong>not</strong> the reason this engine ships. The full walkthrough
+(install, the loader hook, the read-identity migration, and the perf ceiling)
+lives in
+<a href="../media/integrating-causl-client.md"><code>docs/integrating-causl-client.md</code></a>; the
+seam-level disclosure and option reference are in
+<a href="../media/README-1.md"><code>packages/core/wasm/README.md</code></a> and
+<a href="../media/wasm-adoption-guide.md"><code>docs/wasm-adoption-guide.md</code></a>.</p>
+<a id="causl-client-is-wasm-default-with-a-ts-capability-fallback-spec-§18a13--§18a131--shipped" class="tsd-anchor"></a><h4 class="tsd-anchor-link"><code>causl-client</code> is wasm-default with a TS capability-fallback (SPEC §18A.13 + §18A.13.1 — shipped)<a href="#causl-client-is-wasm-default-with-a-ts-capability-fallback-spec-§18a13--§18a131--shipped" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>A dated governance amendment (<a href="../media/SPEC.md">§18A.13</a>) records the <strong>committed and
+now-executed</strong> direction for this repo — distinct from the §18A.7 promotion gate
+above, which it deliberately bypasses. <strong>Scoped to <code>causl-client</code> only:</strong> this
+distribution ships a <strong>wasm-default core</strong>. <code>createCausl()</code> <strong>routes to the wasm
+engine</strong> (synchronously, via the §18A.12 <code>preloadCauslWasm()</code> +
+<code>createCauslWasmSync()</code> split — one <code>await</code> at app init, sync <code>createCausl()</code> at
+every render/hook site thereafter), and the pure-TS <code>createCauslTs()</code> engine <strong>has
+been removed from the public <code>causl-client</code> surface</strong>. Consumers calling
+<code>createCausl()</code> keep their call sites <strong>unchanged</strong> and transparently get wasm
+(e.g. <code>iasbuilt/xldatagrid</code>'s sync <code>createCausl()</code> sites need no async refactor —
+just one <code>await preloadCauslWasm()</code> at boot). The driver is
+<strong>complexity-elimination</strong> — collapsing the dual-engine roster — with perf
+<strong>explicitly accepted as immaterial</strong> here (never a gate); this is not a promotion
+on performance grounds.</p>
+<p><strong>SPEC §18A.13.1 (2026-06-23) partially reversed the fail-loud stance for the
+implicit path only.</strong> <code>createCauslTs</code> is <strong>retained</strong> (not deleted) and <strong>wired</strong>
+as the implicit <code>createCausl()</code> path's WasmGC-unavailable <strong>capability fallback</strong>:
+on a host where the WasmGC engine cannot instantiate (Safari &lt; 18 / macOS &lt; 15,
+policy-pinned pre-119 Chromium/WebView2, Node ≤ 20), <code>createCausl()</code> degrades to
+the internal TS engine <strong>loudly</strong> (one-time <code>console.warn</code> +
+<code>onCauslCapabilityFallback</code> telemetry, never silent), so a no-wasm enterprise
+user gets a working app. The <strong>explicit</strong> <code>createCauslWasm()</code> /
+<code>createCauslWasmSync()</code> / <code>engine:'rust-ssot'</code> factories <strong>still fail loud</strong>
+(<code>CAUSL_WASM_ENGINE_UNAVAILABLE</code>) — a consumer that explicitly asked for wasm
+must never silently run on JS.</p>
+<p>The <strong>public</strong> strip shipped <strong>2026-06-20</strong> (epic
+<a href="https://github.com/causljs/causl-client/issues/31">#31</a>), executed
+<strong>wire-before-cut</strong>: <a href="https://github.com/causljs/causl-client/issues/32">#32</a> WIRE
+(port the authoritative loader) → <a href="https://github.com/causljs/causl-client/issues/33">#33</a>
+FLIP (<code>createCausl()</code> → wasm, sync) → <a href="https://github.com/causljs/causl-client/issues/34">#34</a>
+CUT (un-export <code>createCauslTs</code>). The <strong>§18A.3 FFI structural lift has since
+landed</strong> (<a href="https://github.com/causljs/causl-wasm/issues/170"><code>causljs/causl-wasm#170</code></a>):
+every adopter op resolves from Rust, with the user's <code>derived()</code> compute lambdas
+running in JS over the bridge callback by design. The literal <strong>zero-TS core</strong>
+(deleting <code>createCauslTs</code> outright) is <strong>dropped from near-term scope by SPEC
+§18A.13.1</strong> — the TS engine is kept as the §12 conformance reference + the
+implicit-path capability fallback, not deleted. The
+§18A.1.1 cross-backend byte-identity oracle is differential and needs two
+engines, so it <strong>cannot run inside <code>causl-client</code></strong> (whose public surface
+exposes only the wasm engine) — it is <strong>preserved in
+<a href="https://github.com/causljs/causl-ts-wasm-engine"><code>causljs/causl-ts-wasm-engine</code></a></strong>,
+which keeps <code>causl-ts</code> + the byte-identity harness (it is the differential oracle
+and benchmark repo) plus a frozen golden-vector corpus captured before the cut.
+<strong>The fork stays dual-engine; <code>causl-client</code> is wasm-default with a TS
+capability-fallback.</strong> Removing <code>causl-ts</code> from this repo's <em>public</em> surface
+does not remove the proof of correctness from the org.</p>
 <p>Pre-1.0 caveats remain — public APIs may evolve before a tagged release; published-package tooling is a separate epic. The closing section of the specification enumerates the eight team commitments the repo is held against — semantic foundation lands first; the composite statechart is drawn before conflict and resource code is written; the model/controller/engine layering is enforced at the package boundary; every discriminated union carries an exhaustiveness check; the race-class catalogue is kept current; the worked example is the gate for &quot;the engine is real&quot;; no enum tags ship whose transitions are unspecified; and the Rust race-detection toolchain (<code>causl-check</code> + <code>causl-enumerate</code>) ships as a required CI gate. <a href="http://CONTRIBUTING.md">CONTRIBUTING.md</a> documents how each commitment is enforced.</p>
 <hr>
 <a id="packages" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Packages<a href="#packages" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><table>
@@ -630,26 +847,26 @@ differential runner, and the lint plugin — and ships no Rust source.</p>
 <pre><code class="sh"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> &amp;&amp; </span><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">build</span><span class="hl-1"> &amp;&amp; </span><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">test:run</span>
 </code><button type="button">Copy</button></pre>
 
-<a id="pre-commit--pre-push-hooks" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Pre-commit / pre-push hooks<a href="#pre-commit--pre-push-hooks" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Husky is wired up via the root <code>prepare</code> script (<code>husky</code> install runs on <code>pnpm install</code>). PR <a href="https://github.com/causljs/causl-ts/pull/25">#25</a> replaced the previous &quot;lint-staged only&quot; hook with the <strong>full CI-check union</strong> so passing locally implies passing CI:</p>
+<a id="pre-commit--pre-push-hooks" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Pre-commit / pre-push hooks<a href="#pre-commit--pre-push-hooks" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Husky is wired up via the root <code>prepare</code> script (<code>husky</code> install runs on <code>pnpm install</code>). PR <a href="https://github.com/causljs/causl-client/pull/25">#25</a> replaced the previous &quot;lint-staged only&quot; hook with the <strong>full CI-check union</strong> so passing locally implies passing CI:</p>
 <ul>
 <li><strong><code>.husky/pre-commit</code></strong> runs, in order: <code>lint-staged</code> (eslint --fix on staged TS) → <code>pnpm typecheck</code> → <code>pnpm build</code> → <code>pnpm lint</code> → <code>pnpm size</code> → <code>scripts/check-vendor-manifest.sh</code> (paths-filtered, fires only when vendored bytes are staged).</li>
 <li><strong><code>.husky/pre-push</code></strong> runs the <code>e2e/bundler-interop/</code> matrix (<code>webpack5-app</code>, <code>vite5-app</code>, <code>esbuild-app</code>) — <code>npm install --no-save</code> → <code>npm run build</code> → <code>npm run verify</code>. Mirrors <code>wasm.yml</code>'s <code>bundler-interop</code> CI job; the gate is the bundle-no-wasm-leak invariant from issue #689.</li>
 </ul>
-<p>Escape hatches: <code>SKIP_PRECOMMIT=1</code> / <code>SKIP_PREPUSH=1</code> env vars, or the standard <code>git commit --no-verify</code> / <code>git push --no-verify</code>. The <code>pnpm size</code> step is known-red on <code>main</code> until issue <a href="https://github.com/causljs/causl-ts/issues/22">#22</a> closes — see the bundle-budget paragraph below.</p>
+<p>Escape hatches: <code>SKIP_PRECOMMIT=1</code> / <code>SKIP_PREPUSH=1</code> env vars, or the standard <code>git commit --no-verify</code> / <code>git push --no-verify</code>. The <code>pnpm size</code> step is known-red on <code>main</code> until issue <a href="https://github.com/causljs/causl-client/issues/22">#22</a> closes — see the bundle-budget paragraph below.</p>
 <a id="bundle-budget-status-post-pr-21--23" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Bundle-budget status (post PR #21 + #23)<a href="#bundle-budget-status-post-pr-21--23" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The <code>size-limit</code> cells in the root <code>package.json</code> gate dist-bundle ceilings on every PR. Current band:</p>
 <ul>
 <li><code>@causl/core</code> (full import) ≤ <strong>20 KB</strong>.</li>
-<li><code>@causl/core</code> (createCausl-only) ≤ <strong>16 KB</strong> — bumped 1 KB in PR <a href="https://github.com/causljs/causl-ts/pull/23">#23</a> to absorb the post-<code>invariant</code> overage.</li>
-<li><code>@causl/core/wasm</code> ≤ <strong>13 KB</strong> — still over per issue <a href="https://github.com/causljs/causl-ts/issues/22">#22</a>; the gate stays in the hook so the moment the cell goes green new drift starts being caught.</li>
+<li><code>@causl/core</code> (createCausl-only) ≤ <strong>16 KB</strong> — bumped 1 KB in PR <a href="https://github.com/causljs/causl-client/pull/23">#23</a> to absorb the post-<code>invariant</code> overage.</li>
+<li><code>@causl/core/wasm</code> ≤ <strong>13 KB</strong> — still over per issue <a href="https://github.com/causljs/causl-client/issues/22">#22</a>; the gate stays in the hook so the moment the cell goes green new drift starts being caught.</li>
 <li>WASM artefact ceilings (per-bridge, raw + Brotli) are documented in the root <code>package.json</code>'s <code>//size-limit-wasm</code> comment block — the <code>.wasm</code> artefacts themselves ship from the parent repo's <code>tools/wasm-build/</code> driver.</li>
 </ul>
-<p>PR <a href="https://github.com/causljs/causl-ts/pull/21">#21</a> dropped the dangling bench-fixture size-limit cells (closing issue <a href="https://github.com/causljs/causl-ts/issues/19">#19</a>); PR <a href="https://github.com/causljs/causl-ts/pull/14">#14</a> re-enabled the per-PR bundle-budget comment workflow.</p>
+<p>PR <a href="https://github.com/causljs/causl-client/pull/21">#21</a> dropped the dangling bench-fixture size-limit cells (closing issue <a href="https://github.com/causljs/causl-client/issues/19">#19</a>); PR <a href="https://github.com/causljs/causl-client/pull/14">#14</a> re-enabled the per-PR bundle-budget comment workflow.</p>
 <hr>
 <a id="try-it-live" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Try it live<a href="#try-it-live" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The interactive playground + spreadsheet demos that load <code>@causl/core</code> from <a href="http://esm.sh">esm.sh</a> ship out of the parent monorepo's <code>causl-org/</code> static-site tree, hosted at <code>https://causl.org</code>. The <code>@causl/core</code> build this repo publishes is exactly what those demos pull at runtime, so a local <code>pnpm build</code> is enough to dogfood adopter-shaped imports.</p>
 <hr>
 <a id="license" class="tsd-anchor"></a><h2 class="tsd-anchor-link">License<a href="#license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>MIT — see <a href="../media/LICENSE">LICENSE</a>.</p>
 <p>Copyright (c) 2026 Roman Goldmann <a href="mailto:roman@iasbuilt.com">roman@iasbuilt.com</a>.</p>
-</section></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#causl"><span>Causl</span></a><ul><li><a href="#quickstart"><span>Quickstart</span></a></li><li><a href="#why-does-this-need-to-exist"><span>Why does this need to exist?</span></a></li><li><a href="#what-causl-does-differently"><span>What causl does differently</span></a></li><li><a href="#how-causl-compares"><span>How causl compares</span></a></li><li><a href="#when-to-use-causl"><span>When to use causl</span></a></li><li><a href="#when-not-to-use-causl"><span>When not to use causl</span></a></li><li><a href="#what-causl-is-not"><span>What causl is not</span></a></li><li><a href="#status"><span>Status</span></a></li><li><ul><li><a href="#current-state-post-v090--the-two-engine-topology"><span>Current state (post v0.9.0) — the two-<wbr/>engine topology</span></a></li><li><ul><li><a href="#the-wasm-engines-promotion-gate-spec-§18a7"><span>The wasm engine&#39;s promotion gate (SPEC §18<wbr/>A.7)</span></a></li></ul></li></ul></li><li><a href="#packages"><span>Packages</span></a></li><li><a href="#tools"><span>Tools</span></a></li><li><a href="#development-setup"><span>Development setup</span></a></li><li><ul><li><a href="#prerequisites"><span>Prerequisites</span></a></li><li><a href="#common-commands"><span>Common commands</span></a></li><li><a href="#pre-commit--pre-push-hooks"><span>Pre-<wbr/>commit / pre-<wbr/>push hooks</span></a></li><li><a href="#bundle-budget-status-post-pr-21--23"><span>Bundle-<wbr/>budget status (post PR #21 + #23)</span></a></li></ul></li><li><a href="#try-it-live"><span>Try it live</span></a></li><li><a href="#license"><span>License</span></a></li></ul></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../../" class="tsd-nav-link">Home</a><a href="../" class="tsd-nav-link">Documentation</a><a href="https://github.com/iasbuilt/causl" class="tsd-nav-link">GitHub</a></nav><nav class="tsd-navigation"><a href="../index.html">Causl API Reference - v0.2.0</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer class="site-footer">
+</section></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#causl"><span>Causl</span></a><ul><li><a href="#quickstart"><span>Quickstart</span></a></li><li><a href="#why-does-this-need-to-exist"><span>Why does this need to exist?</span></a></li><li><a href="#what-causl-does-differently"><span>What causl does differently</span></a></li><li><a href="#how-causl-compares"><span>How causl compares</span></a></li><li><a href="#when-to-use-causl"><span>When to use causl</span></a></li><li><a href="#when-not-to-use-causl"><span>When not to use causl</span></a></li><li><a href="#what-causl-is-not"><span>What causl is not</span></a></li><li><a href="#status"><span>Status</span></a></li><li><ul><li><a href="#current-state-post-v090--the-two-engine-topology"><span>Current state (post v0.9.0) — the two-<wbr/>engine topology</span></a></li><li><ul><li><a href="#the-§18a7-promotion-gate--and-why-causl-client-bypassed-it-§18a13"><span>The §18<wbr/>A.7 promotion gate — and why causl-<wbr/>client bypassed it (§18<wbr/>A.13)</span></a></li><li><a href="#integrate-causl-wasm--causl-client-into-your-nodejs-app"><span>Integrate causl-<wbr/>wasm + causl-<wbr/>client into your <wbr/>Node.js app</span></a></li><li><a href="#causl-client-is-wasm-default-with-a-ts-capability-fallback-spec-§18a13--§18a131--shipped"><span>causl-<wbr/>client is wasm-<wbr/>default with a TS capability-<wbr/>fallback (SPEC §18<wbr/>A.13 + §18<wbr/>A.13.1 — shipped)</span></a></li></ul></li></ul></li><li><a href="#packages"><span>Packages</span></a></li><li><a href="#tools"><span>Tools</span></a></li><li><a href="#development-setup"><span>Development setup</span></a></li><li><ul><li><a href="#prerequisites"><span>Prerequisites</span></a></li><li><a href="#common-commands"><span>Common commands</span></a></li><li><a href="#pre-commit--pre-push-hooks"><span>Pre-<wbr/>commit / pre-<wbr/>push hooks</span></a></li><li><a href="#bundle-budget-status-post-pr-21--23"><span>Bundle-<wbr/>budget status (post PR #21 + #23)</span></a></li></ul></li><li><a href="#try-it-live"><span>Try it live</span></a></li><li><a href="#license"><span>License</span></a></li></ul></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../../" class="tsd-nav-link">Home</a><a href="../" class="tsd-nav-link">Documentation</a><a href="https://github.com/iasbuilt/causl" class="tsd-nav-link">GitHub</a></nav><nav class="tsd-navigation"><a href="../index.html">Causl API Reference - v0.2.0</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer class="site-footer">
     <div class="page">
       <p>&copy; 2026 Causl contributors &middot; MIT License &middot; State with cause and effect.</p>
       <div class="footer-links">

@@ -340,7 +340,7 @@
       <li><strong>Not a CRDT.</strong> Multi-user merge semantics belong in a layer above this one.</li>
       <li><strong>Not a database, message bus, workflow engine, or rules engine.</strong></li>
       <li><strong>Not a competitor</strong> to Redux/MobX/Jotai/XState for problems they already handle well.</li>
-      <li><strong>Not yet at 1.0.</strong> Phases 1–4 ship on <code>main</code>; APIs are stable but not version-locked. The Rust engine port is deferred to post-0.9.0 behind documented GO / NO-GO criteria; the current WASM backend is a Phase-1 TS-engine wrapper.</li>
+      <li><strong>Not yet at 1.0.</strong> Phases 1–4 ship on <code>main</code>; APIs are stable but not version-locked. The pure-TypeScript engine is the open-source floor you install from <code>@causl/core</code>. A production Rust→WebAssembly engine also exists and is the <a href="../../enterprise/">Enterprise path</a> (via <code>causl-client</code>, where rust-ssot is the unconditional default since 2026-06-21) — a real Rust engine, not a TS wrapper.</li>
     </ul>
 
     <h2>Where to go next</h2>
