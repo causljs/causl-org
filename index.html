@@ -278,7 +278,7 @@
              rel="noopener">View on GitHub</a>
         </div>
         <div class="hero-meta">
-          <div><strong>Engine</strong>@causl/core · TypeScript</div>
+          <div><strong>Engine</strong>@causl/core · Rust&nbsp;&rarr;&nbsp;WASM (TS fallback)</div>
           <div><strong>Race detection</strong>causl-check · causl-enumerate</div>
           <div><strong>License</strong>MIT</div>
         </div>
@@ -761,8 +761,8 @@ graph.<span class="tok-fn">commit</span>(<span class="tok-str">'bump-both'</span
         Each package owns one concern. Adopters install only the pieces
         they need; the engine has no React dependency. Six sibling
         repos round out the cross-org topology (Rust engine, WASM
-        bridge, TS fork that defaults to it, bench harness, static
-        analysis, this site) — see the
+        bridge, dual-engine TS fork that defaults to wasm (rust-ssot),
+        bench harness, static analysis, this site) — see the
         <a href="/documentation/#cross-org">documentation page</a>.
       </p>
     </div>

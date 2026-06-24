@@ -369,8 +369,9 @@
         <code>causl-wasm</code> core, written in Rust and compiled to
         WebAssembly, reached through <code>causl-client</code> — a thin
         TypeScript API over the same public surface as
-        <code>@causl/core</code>. It is a gated alternative to the
-        TypeScript floor and the planned replacement for it
+        <code>@causl/core</code>. In <code>causl-client</code> it is the
+        unconditional production engine (rust-ssot default); the
+        TypeScript floor is retained as the §12 conformance reference
         (SPEC&nbsp;§18A).
       </p>
     </div>
@@ -384,8 +385,9 @@
           The landing page for the Enterprise tier — the Rust→WASM
           engine (<code>causl-wasm</code>) behind a thin TypeScript API
           (<code>causl-client</code>), exposing the same public surface
-          as <code>@causl/core</code>. A gated alternative to the
-          TypeScript floor and its planned replacement (SPEC&nbsp;§18A).
+          as <code>@causl/core</code>. The production engine of
+          <code>causl-client</code>; the TypeScript floor is retained as
+          the §12 conformance reference (SPEC&nbsp;§18A).
         </p>
         <span class="doc-card-link">Read the overview</span>
       </a>
@@ -410,8 +412,9 @@
         <p>
           Why Causl runs two conformant engines — the TypeScript floor
           and the Rust→WASM <code>causl-wasm</code> core — and how the
-          shared public surface lets the gated WASM engine stand in as
-          the planned replacement for the floor (SPEC&nbsp;§18A).
+          shared public surface lets the WASM engine serve as the
+          production engine in <code>causl-client</code> while the floor
+          stays the §12 conformance reference (SPEC&nbsp;§18A).
         </p>
         <span class="doc-card-link">Read the architecture</span>
       </a>

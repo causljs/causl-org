@@ -31,87 +31,95 @@ story; the docs site (`causl.org/documentation`) is the longer one.
 
 ## The causljs/* repos (cross-org topology)
 
-Causl was split out of a single monorepo into seven repositories that
-each own one concern. The split keeps CI fast, lets the Rust and
-TypeScript halves move at independent cadences, and lets adopters
-depend only on the surface they need.
+Causl is split across nine repositories under the
+[`causljs`](https://github.com/causljs) org, each owning one concern —
+there is **no** `causljs/causl` parent monorepo. The split keeps CI
+fast, lets the Rust and TypeScript halves move at independent cadences,
+and lets adopters depend only on the surface they need.
+
+The one-line truth the whole topology rests on: **`rust-ssot` (the
+`causl-wasm` Rust→WebAssembly engine) is the unconditional production
+default for the WASM path** (since 2026-06-21, all five SPEC §18A.7
+GO/NO-GO criteria GO). `causl-client` ships wasm as its sole
+default/public engine and is **wasm-default with a TS
+capability-fallback** — implicit `createCausl()` degrades *loudly* to a
+retained internal `createCauslTs` on a WasmGC-unavailable host
+(§18A.13.1), while explicit `createCauslWasm()` / `engine:'rust-ssot'`
+fails loud. The pure-TS `causl-ts` engine is the **open-source floor /
+§12 conformance reference**, not the production engine.
 
 | Repo                                                                            | Role                                                                                                                                                                                                                                          |
 | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`causljs/causl-ts`](https://github.com/causljs/causl-ts)                       | The TypeScript engine + adapter packages: `@causl/core`, `@causl/react`, `@causl/formula`, `@causl/sync`, `@causl/devtools`, `@causl/devtools-bridge`, `@causl/persistence`, `@causl/checker` (npm wrapper for the Rust linter), `@causl/bench` scenario taxonomy, `@causl/migration-check`. |
-| [`causljs/causl-wasm`](https://github.com/causljs/causl-wasm)                   | The Rust engine port + its single consolidated WASM bridge. Hosts `engine-rs-core` (pure-algorithm `no_std + alloc` crate carrying the SPEC §16.4.1 `State` / `Action` / `Event` / `Commit` types and `transition_phased`) and the active bridge cdylib that exposes it to JS. |
-| [`causljs/causl-ts-wasm-engine`](https://github.com/causljs/causl-ts-wasm-engine) | The TypeScript-engine fork whose intent is to default to the WASM substrate, wired through the consolidated `@causljs/causl-wasm` bridge. Where `causl-ts` keeps the JS engine as the SSOT and treats WASM as an opt-in backend, this fork is the staging ground for inverting that default — the `DEFAULT_WASM_ENGINE_MODE` flip (`'js-ssot'` → `'rust-ssot'`) is the fork's defining cutover, but the shipped constant is still `'js-ssot'` and the flip stays gated behind the §18A.7 criteria (per its README). |
-| [`causljs/causl-bench`](https://github.com/causljs/causl-bench)                 | The cross-library benchmark suite. Compares causl-ts / causl-ts-wasm-engine / Jotai / RTK / MobX across the SPEC-derived scenario taxonomy; emits the JSON that powers the dashboard on this site. Honours the `CAUSL_TS_SOURCE` env var (see below) so a single run can A/B the two TypeScript-side engines. |
-| [`causljs/causl-check`](https://github.com/causljs/causl-check)                 | The Rust-backed static-analysis half: `causl-check` (twelve-pass IR linter), `causl-enumerate` (SPEC §16.4 bounded state-space enumerator), the Apalache differential runner, the EPIC-7 TLA+ corpus, and the Tier-3 Apalache S-row corpus. RFCs 0001 (adopter race classes) and 0002 (federated race detection across `causljs/*`) live here. |
-| [`causljs/causl-org`](https://github.com/causljs/causl-org)                     | **This repo.** Static site source (HTML + CSS + JS) for `causl.org`, brand assets, the playground and spreadsheet demos, the generated TypeDoc API reference, the benchmark dashboard front-end, and the hand-written docs (getting-started, tutorial, usage, best-practices, FAQ). |
-| [`causljs/causl-org-srv`](https://github.com/causljs/causl-org-srv)             | The tiny static-site server used during local development for the demos in this repo. Was previously vendored into `causl-ts/tools/causl-org-srv/`; lives standalone now. |
+| [`causljs/causl-wasm`](https://github.com/causljs/causl-wasm)                   | **The Rust engine source of truth.** Owns `tools/engine-rs-core` (the from-scratch Rust engine — generational `NodeId{slot,gen}`, `BTreeMap`-keyed JSON values, seven-named-struct cells), `tools/engine-rs-bridge` (the JS↔WASM bridge), the §18A.3 FFI surface, the byte-identity gate's Rust side, **and** the stdlib-only CPython build/package tooling (`scripts/build_wasm.py` + `scripts/package_wasm.py`, §18A.11). `rust-ssot` is the unconditional default here. |
+| [`causljs/causl-client`](https://github.com/causljs/causl-client)               | **The thin TS API consumer.** The §18A.4 thin TypeScript binding over the `causl-wasm` FFI (publishes `@causl/core` + adapter packages `@causl/react` / `@causl/formula` / `@causl/sync` / `@causl/devtools` / `@causl/persistence` / `@causl/migration-check`). Implements the §12 `Graph` facade by delegating to the wasm engine; ships **no** Rust source and **no** build tooling. Wasm-default with a TS capability-fallback (§18A.13.1). Named adopters: `iasbuilt/xldatagrid`, `iasbuilt/webapp`. |
+| [`causljs/causl-ts`](https://github.com/causljs/causl-ts)                       | **The OSS pure-TypeScript floor / §12 conformance reference** — `@causl/core` + adapter packages on the public npm distribution, where the pure-TS engine is the default. It is the open-source floor, **not** the production engine (the Enterprise/production engine is `causl-wasm` via `causl-client`). |
+| [`causljs/causl-ts-wasm-engine`](https://github.com/causljs/causl-ts-wasm-engine) | **The dual-engine differential reference (the fork).** Retains `causl-ts` (the §13.8 unconditional TS floor) as its default (`DEFAULT_WASM_ENGINE_MODE = 'js-ssot'`) and *adds* a real-Rust differential leg as the §18A.1.1 byte-identity oracle; also hosts `@causl/benchmarks`. It does **not** flip to rust-ssot — the production cutover happened in `causl-client`. "Not where you start for production." |
+| [`causljs/causl-bench`](https://github.com/causljs/causl-bench)                 | The cross-library benchmark suite. Compares causl against Jotai / RTK / MobX across the SPEC-derived scenario taxonomy; emits the JSON that powers the dashboard on this site. (Distinct from the in-fork `@causl/benchmarks` causl-ts-vs-wasm suite.) |
+| [`causljs/causl-check`](https://github.com/causljs/causl-check)                 | The Rust-backed static-analysis half: `causl-check` (twelve-pass IR linter), `causl-enumerate` (SPEC §16.4 bounded state-space enumerator), the Apalache differential runner, and the TLA+ corpus. The static half of SPEC §17 pre-runtime race detection. |
+| [`causljs/causl-server`](https://github.com/causljs/causl-server)               | The **Enterprise** server layer above the single-writer OSS engine — the client↔server transport seam, permissions middleware (PolicyGate), and a git-like VCS (CommitSink + reconciler). Early-spec / authoring in progress. |
+| [`causljs/causl-org`](https://github.com/causljs/causl-org)                     | **This repo.** Static site source (HTML + CSS + JS) for `causl.org`, brand assets, the playground and spreadsheet demos, the generated TypeDoc API reference, the benchmark dashboard front-end, the hand-written docs, and a dedicated [Enterprise section](./pages/documentation/enterprise/) for the wasm/causl-client depth. |
+| [`causljs/causl-org-srv`](https://github.com/causljs/causl-org-srv)             | The tiny stdlib-Python static-site server used during local development for the demos in this repo. |
 
 ---
 
-## Wasm-engine zero-boundary architecture
+## Wasm-engine architecture: rust-ssot is the production default
 
-The Rust engine port in `causljs/causl-wasm` has converged on a
-single-bridge story. Two pieces of history are worth knowing:
+The production engine is the **real Rust engine** in
+`causljs/causl-wasm` — `engine-rs-core`, a from-scratch Rust engine
+(not a transliteration of the TS engine, §18A.4/§18A.9) compiled to
+WebAssembly and reached over FFI through the `engine-rs-bridge`. As of
+**2026-06-21** all five SPEC §18A.7 GO/NO-GO criteria are GO
+([`causl-wasm#169`](https://github.com/causljs/causl-wasm/issues/169)),
+so `rust-ssot` is the unconditional default for the WASM path:
+`DEFAULT_WASM_ENGINE_MODE = 'rust-ssot'`. The §18A.8 fail-safe-removal
+amendment removed the per-flush TS-vs-Rust byte-compare oracle and the
+K=1 sticky-downgrade — the Rust `commit_batch` post-state is applied
+unconditionally, validated by the cross-backend determinism gate at
+0-byte divergence over 100,000 trials.
 
-1. **Bridge consolidation (PR #74).** The legacy two-cdylib design —
-   `engine-rs-bridge-serde` (the universal-fallback serde-wasm-bindgen
-   crate) plus `engine-rs-bridge-gc` (the WasmGC + `wasm:js-string`
-   crate that shipped two artefacts) — was deleted in
-   [`causl-wasm#74`](https://github.com/causljs/causl-wasm/pull/74) in
-   favour of a single consolidated bridge. The Tier-1/2/3 host matrix
-   that older docs referenced lives behind feature flags in that one
-   bridge now, not as separate crates.
-2. **`epic/1` — zero-boundary migration.** The hot-path traversal
-   modules (`mutate`, `recompute`, `publish`, `kahn::drain`) were
-   migrated to a `&mut dyn CellAccess` trait object that abstracts the
-   cell-storage backing. The migration lets the Rust engine talk to
-   either a flat-vector cell store (current) or a future
-   externally-owned cell pool (for WasmGC + JS-side ownership) without
-   re-stamping the algorithm code. The PoC landed in
-   [`causl-wasm#76`](https://github.com/causljs/causl-wasm/pull/76),
-   the four follow-ups in `#79`/`#80`/`#81`/`#82`, and the
-   value-pool optimisation for `DispatchMsg` payloads in `#77`.
+The §18A.3 FFI structural lift has **landed**
+([`causl-wasm#170`](https://github.com/causljs/causl-wasm/issues/170)):
+every adopter operation — commit / read / subscribe / derived plus the
+structural surface (dependencies, dependents, stats, commit-log,
+explain, exportModel, readAt / snapshotAt, subscribeCommits) — resolves
+from the Rust engine. The only JS in the hot path is the user's own
+`derived()` compute lambda, which runs in JS over the bridge callback
+by design.
 
-The practical consequence for adopters is that the TS-side surface
-the `wasm-engine` fork imports (`loadWasmBackend()` → consolidated
-bridge → `engine-rs-core`) does not change as the bridge internals
-evolve. The byte-identity cross-bridge gate that older releases
-referenced still holds; it just runs against one bridge now.
+`causl-client` is **wasm-default with a TS capability-fallback**, not
+strictly "wasm-only":
+
+- The implicit `createCausl()` factory routes to the wasm engine
+  (rust-ssot) and, on a host where the WasmGC engine cannot instantiate
+  (Safari < 18 / macOS < 15, policy-pinned pre-119 Chromium/WebView2,
+  Node ≤ 20), degrades **loudly** to the retained internal
+  `createCauslTs` (one-time `console.warn` + telemetry, never silent —
+  SPEC §18A.13.1). The WasmGC capability probe itself is still a
+  placeholder (`#691`), so the auto-degrade is wired in design, not yet
+  a fully-runtime-proven probe.
+- The **explicit** `createCauslWasm()` / `createCauslWasmSync()` /
+  `engine:'rust-ssot'` factories still **fail loud**
+  (`CAUSL_WASM_ENGINE_UNAVAILABLE`) — a consumer that explicitly asked
+  for wasm must never silently run on JS.
+- `createCauslTs` is **retained internally** (un-exported from the
+  public barrel) as the §12 conformance reference and the implicit-path
+  fallback; deleting it outright is **dropped from near-term scope** by
+  §18A.13.1.
 
 The adopter-facing how-to for the **Enterprise-tier** wasm path —
 building and vendoring a pinned, checksummed `.wasm` with `causl-wasm`'s
-CPython-stdlib tooling, and reaching it from an app through the
-`@causl/core/wasm` seam — lives in the
+CPython-stdlib tooling (`build_wasm.py` / `package_wasm.py`, SPEC
+§18A.11, `--target nodejs` shipped), and reaching it from a TS/Node app
+through the `@causl/core/wasm` seam — lives in the
 [Enterprise docs section](./pages/documentation/enterprise/)
 (`pages/documentation/enterprise/`), with pages on the
 [two-engine architecture](./pages/documentation/enterprise/two-engine-architecture/),
 [integrating causl-client](./pages/documentation/enterprise/integrating-causl-client/),
 and [wasm performance status](./pages/documentation/enterprise/wasm-performance/).
-Those guides keep **shipped today** and **planned (§…)** strictly
-separated:
 
-- The `@causl/core/wasm` seam ships today — the loader
-  (`loadWasmBackend()`), bridge picker, and the Phase-1 `WasmBackend`.
-  But that `WasmBackend` is a TS engine wrapped in the FFI shape, **not
-  a Rust engine** — so wall-time today is ~0% off the TS floor, and the
-  Rust-engine perf win is gated post-0.9.0 work.
-- On the producer side, `causl-wasm`'s `build_wasm.py` /
-  `package_wasm.py` tooling ships its `--target nodejs` build and
-  checksummed artefact placement today (SPEC §18A.11).
-- On the consumer side, the only artefacts vendored in `causl-client`
-  today are `--target bundler` builds (Vite / webpack 5 / esbuild). The
-  Node-target consumer **`node:fs` loader hook is planned, not yet
-  merged** — SPEC §18A.2 names it "the missing piece," and it remains
-  ungated under §18A.7 Criterion 4 (Node target + real-world adoption).
-  Until it lands, the placed `.wasm` is resolved through the
-  bundler `new URL(..., import.meta.url)` path rather than a `node:fs`
-  read — and at the Phase-1 stage the loader never calls
-  `WebAssembly.instantiate` at all, so the artefact is referenced for
-  forward-compat resolution but not executed at runtime.
-
-The pure-TS engine remains the default, open-source floor; the wasm
-engine is the opt-in Enterprise alternative, not a default or
-replacement.
+The pure-TS `causl-ts` engine is the **open-source floor / §12
+conformance reference** on the public npm distribution; the wasm engine
+is the Enterprise production default via `causl-client`.
 
 ---
 
@@ -138,44 +146,46 @@ numbers from the same run.
 
 ## What landed recently
 
-Work that has landed across the org since the split, in rough
-reverse-chronological order:
+Work that has landed across the org, in rough reverse-chronological
+order:
 
-- **causl-check** — RFC 0001 (adopter-defined race classes, Phase 2
-  loader + SARIF integration), RFC 0002 (federated race detection
-  across `causljs/*` repos), the resource-origin-bound lint pass, the
-  `causl-check-replay` SARIF counterexample tool, and the Tier-3
-  Apalache TLA+ corpus for the SPEC.async §9.1.1 S-rows (`spec_s1.tla`
-  / `spec_s2.tla` / `spec_s3.tla`).
-- **causl-wasm** — `epic/1` zero-boundary migration to `&mut dyn
-  CellAccess` across the hot-path traversal modules; deletion of the
-  two legacy bridge cdylibs (PR #74) in favour of one consolidated
-  bridge; split CI workflow (fast main, heavy release verification).
-- **causl-ts-wasm-engine** — the TS-engine fork staging the
-  WASM-substrate default (the `'rust-ssot'` cutover wiring is exercised
-  end-to-end, but the shipped `DEFAULT_WASM_ENGINE_MODE` is still
-  `'js-ssot'`, gated behind §18A.7); consolidated-bridge wiring through
-  `loadWasmBackend()`; `graph.snapshotBlob()` / `hydrateBlob(blob)`
-  bulk-serialisation boundary API (throwing stub, pending the
-  causl-wasm side of the contract in #85); per-PR bundle-budget
-  comment workflow; the `causl/no-graph-upcast` S-3 lint gate.
-- **causl-bench** — `CAUSL_TS_SOURCE` engine-selector + the bench-row
-  property suite + dispatching `backend='wasm'` to the actual
-  `WasmBackend` constructor (the Phase-1 TS-engine-wrapped backend, not
-  a mock); zero-boundary scenario `run()` bodies for the first ten
-  taxonomy entries; functional workspace scaffold.
-- **causl-org-srv** — extracted to standalone repo; previously lived
-  at `causl-ts/tools/causl-org-srv/`.
+- **causl-wasm — rust-ssot promoted to the unconditional default
+  (2026-06-21).** All five §18A.7 GO/NO-GO criteria GO
+  ([`causl-wasm#169`](https://github.com/causljs/causl-wasm/issues/169));
+  `DEFAULT_WASM_ENGINE_MODE = 'rust-ssot'`, the per-flush byte-compare
+  oracle and K=1 sticky-downgrade removed (§18A.8).
+- **causl-wasm — the §18A.3 deep FFI lift landed**
+  ([`causl-wasm#170`](https://github.com/causljs/causl-wasm/issues/170)):
+  the four projection reads (read_at, export, subscribeCommits, explain)
+  plus read/now/structural-query all answer from Rust, so every adopter
+  op resolves from Rust.
+- **causl-wasm — ChangeTokens `u16`→`u32` ceiling lifted**
+  ([`causl-wasm#175`](https://github.com/causljs/causl-wasm/pull/175)):
+  single commits over ~8191 nodes now work via a payload-len
+  sentinel-escape; sub-ceiling records stay byte-identical.
+- **causl-wasm — dead serde JSON value-pool channel deleted**
+  ([`causl-wasm#174`](https://github.com/causljs/causl-wasm/pull/174)):
+  the D1 oracle (`[NaN,+Inf,-Inf,1]`) is now an exact byte round-trip on
+  the production serde-free path.
+- **causl-client — §18A.13.1 capability fallback shipped (2026-06-23).**
+  `createCauslTs` is retained (not deleted) and wired as the implicit
+  `createCausl()` path's loud WasmGC-unavailable fallback; the literal
+  zero-TS core is dropped from near-term scope.
+- **causl-ts-wasm-engine (the fork) — the differential gate now drives
+  REAL Rust** ([`#46`](https://github.com/causljs/causl-ts-wasm-engine/pull/46)):
+  the cross-backend byte-identity gate runs the real Rust engine against
+  `createCauslTs()` as oracle (no longer a TS-vs-TS shim), 0-byte
+  divergence at 1k default / 100k nightly. The fork keeps `js-ssot` as
+  its default and adds the Rust leg.
+- **causl-check** — the twelve-pass IR linter, `causl-enumerate`
+  bounded enumerator, Apalache differential runner, and TLA+ corpus.
 - **causl-org** (this repo) — dashboard with auto-adaptive Y-axis,
-  mouse-drag rescale, wheel-zoom / drag-pan charts, 0-anchored
-  baseline, honest skip-box surface for libraries that can't run a
-  given scenario; codeblock pipeline that pre-renders the wrapper
-  into the static HTML site-wide and preserves TypeDoc-baked syntax
-  tokens; brand-spec consolidation on the geometric Causl mark.
-- **All seven repos** — CI parity pre-commit hooks (`pre-commit ↔ CI
-  parity` PRs across `causl-ts`, `causl-wasm`, `causl-check`,
-  `causl-bench`, `causl-ts-wasm-engine`), so a `git commit` runs the
-  same gate union the CI workflow does.
+  mouse-drag rescale, wheel-zoom / drag-pan charts, honest skip-box
+  surface for libraries that can't run a given scenario; codeblock
+  pipeline that pre-renders the wrapper into the static HTML site-wide;
+  brand-spec consolidation on the geometric Causl mark. This pass
+  re-synced the topology + engine narrative to the rust-ssot-default
+  reality and regenerated the TypeDoc API reference.
 
 ---
 

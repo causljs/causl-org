@@ -360,16 +360,18 @@ return (
     <h2 id="h1-hazard">9. The H1 hazard: <code>useMemo</code> on <code>read()</code> values</h2>
 
     <p>This is the single most important adopter pitfall in the React binding. Per
-    <strong>SPEC §15.1</strong>, <code>graph.read(node)</code> is <strong>not</strong>
-    contractually required to return the same JavaScript reference across calls. Today's
-    <code>WasmBackend</code> is a TS-engine wrapper, so <code>read()</code> returns
-    identical references trivially &mdash; but the day the real Rust
-    <code>serde</code>/<code>wasmgc</code> bridges land per SPEC §17.6, every
-    <code>read()</code> returns a fresh object as the value crosses the FFI boundary.</p>
+    <strong>SPEC §15.1 / §18A.5</strong>, <code>graph.read(node)</code> is
+    <strong>not</strong> contractually required to return the same JavaScript reference
+    across calls — and under the real Rust engine (rust-ssot, the production default in
+    <code>causl-client</code>), this hazard is <strong>live, not hypothetical</strong>:
+    every <code>read()</code> deserialises a fresh object as the value crosses the FFI
+    boundary, so reference identity across commits is <em>not</em> guaranteed. On the
+    pure-TS floor the same reference happened to be reused, but that was never the
+    contract.</p>
 
     <p>Adopters who key <code>useMemo</code> / <code>React.memo</code> / dependency
-    arrays off the return reference will silently re-compute every commit after
-    <code>migrate('wasm')</code>:</p>
+    arrays off the return reference will silently re-compute every commit on the wasm
+    engine:</p>
 
     <code class="codeblock-source" data-lang="jsx">// WRONG &mdash; reference may change on every commit after WASM migration.
 function Chart() {
@@ -385,9 +387,9 @@ function Chart() {
     <code>EngineTelemetry</code> surfaces. The version counter is the cheaper option in
     a tight loop &mdash; it is exposed as the public accessor
     <code>engine.stats().nodeVersion(node)</code>. Pinning a downstream cache key to that
-    integer gives you a stable memoisation surface that survives the engine's per-read
-    <code>structuredClone</code> boundary, with byte-identical behaviour across the TS
-    engine and the Phase-1 WasmBackend wrapper for the same commit sequence.</p>
+    integer gives you a stable memoisation surface that survives the wasm engine's
+    per-read FFI deserialisation boundary, with byte-identical behaviour across the TS
+    floor and the Rust engine for the same commit sequence.</p>
 
     <code class="codeblock-source" data-lang="jsx">// RIGHT &mdash; key memoisation on the per-node version, not the reference.
 import { useCausl, useCauslNode } from '@causl/react';
@@ -412,14 +414,14 @@ function Chart() {
     <blockquote>
       <strong>Detailed explanation &mdash; why this is a SPEC clarification, not a
       breaking change.</strong> An external ship-verdict review surfaced the
-      H1 hazard from the WASM adopter audit as the load-bearing pre-Rust-swap
-      risk. Today's TS-engine wrapper produces identical references "by accident";
-      adopters writing against the current behavior have a working component that turns
-      into a perf regression on a future <code>migrate('wasm')</code> call. The
+      H1 hazard from the WASM adopter audit as a load-bearing risk. The pure-TS floor
+      reused the same reference "by accident"; adopters who wrote against that behaviour
+      have a working component that becomes a perf regression on the Rust engine, where
+      every <code>read()</code> returns a fresh deserialised object (§18A.5). The
       amendment makes the always-implied contract explicit &mdash; identity across
       commits was never promised &mdash; and points adopters at the stable keys
-      (<code>commit.time</code>, per-node version) before the Rust swap lands. The
-      property test <code>read-no-identity-contract.property.test.ts</code> enrolls a
+      (<code>commit.time</code>, per-node version). The
+      property test <code>read-no-identity-contract.property.test.ts</code> enrols a
       <code>BackendEngine</code> wrapper that returns deep-copies on every
       <code>read()</code>; the engine itself never relies on identity, so internal
       code is unaffected.
