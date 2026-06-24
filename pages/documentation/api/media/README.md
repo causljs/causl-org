@@ -244,7 +244,7 @@ What that means concretely for adopters:
 - `@causl/core` 0.3.0 carries the runtime `invariant` callback on `graph.input(id, initial, { invariant })` added in PR #2 / issue #1.
 - The `causl/no-graph-upcast` ESLint rule (PR #15 / issue #9) is the third gate in the S-3 layering enforcement chain — `as Graph` upcasts that erase capability narrowing are now lint errors, not review notes.
 - The cross-backend determinism property test (`packages/core/test/properties/cross-backend-determinism.property.test.ts`) was refreshed by PR #16 / issue #6 to drop the stale Phase-1 TODO and wire World-pairing through the Graph facade.
-- The full Rust race-detection toolchain (`causl-check` + `causl-enumerate`) ships out of the parent monorepo and runs against the spreadsheet + async demos there. This repo's `tools/apalache-diff/` is the TLA+ differential surface that consumes the parent repo's enumerator verdicts.
+- The full Rust race-detection toolchain ships out of the standalone causljs repos — the bounded enumerator is the `enumerator` feature of the Rust engine core in [`causljs/causl-wasm`](https://github.com/causljs/causl-wasm) (`tools/engine-rs-core`), and the static-IR checker is [`causljs/causl-check`](https://github.com/causljs/causl-check) — and runs against the spreadsheet + async demos. This repo's `tools/apalache-diff/` is the TLA+ differential surface that consumes those enumerator verdicts. There is no parent monorepo; the causljs org is a standalone repo split.
 
 #### The §18A.7 promotion gate — and why `causl-client` bypassed it (§18A.13)
 
@@ -538,7 +538,7 @@ where one ships, otherwise in the module-level header comments.
 | Path | Purpose |
 | --- | --- |
 | [`tools/release/`](./tools/release/) | `release.py` — bundles the minimum-viable per-package npm tree at `RELEASE_VERSION` for the TypeScript-only path. Output ships on the `release` branch. |
-| [`tools/apalache-diff/`](./tools/apalache-diff/) | Apalache differential runner that cross-checks the bounded enumerator against the EPIC-7 TLA+ corpus. The Rust enumerator + checker crates themselves live in the parent monorepo (`causljs/causl`); this directory holds the TS-side harness that consumes their verdicts. |
+| [`tools/apalache-diff/`](./tools/apalache-diff/) | Apalache differential runner that cross-checks the bounded enumerator against the EPIC-7 TLA+ corpus. The Rust enumerator + checker crates themselves live in [`causljs/causl-wasm`](https://github.com/causljs/causl-wasm) (the engine core's `enumerator` feature) and [`causljs/causl-check`](https://github.com/causljs/causl-check) (the static-IR checker), not in any parent monorepo; this directory holds the TS-side harness that consumes their verdicts. |
 | [`tools/audit/`](./tools/audit/) | Governance / commitment-audit tooling (`pnpm audit:commitments`). |
 | [`tools/drift/`](./tools/drift/) | Drift-telemetry helpers consumed by `@causl/migration-check`. |
 | [`tools/eslint-plugin-causl/`](./tools/eslint-plugin-causl/) | ESLint plugin for causl-aware lint rules (e.g. `causl/no-graph-upcast` from PR #15 / issue #9). |
@@ -623,7 +623,7 @@ PR [#21](https://github.com/causljs/causl-client/pull/21) dropped the dangling b
 
 ## Try it live
 
-The interactive playground + spreadsheet demos that load `@causl/core` from esm.sh ship out of the parent monorepo's `causl-org/` static-site tree, hosted at `https://causl.org`. The `@causl/core` build this repo publishes is exactly what those demos pull at runtime, so a local `pnpm build` is enough to dogfood adopter-shaped imports.
+The interactive playground + spreadsheet demos that load `@causl/core` from esm.sh ship out of the [`causljs/causl-org`](https://github.com/causljs/causl-org) static-site tree (there is no parent monorepo), hosted at `https://causl.org`. The `@causl/core` build this repo publishes is exactly what those demos pull at runtime, so a local `pnpm build` is enough to dogfood adopter-shaped imports.
 
 ---
 
