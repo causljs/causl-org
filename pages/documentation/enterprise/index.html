@@ -205,6 +205,46 @@
       </a>
     </div>
 
+    <h2 id="distribution">Distribution</h2>
+    <p>
+      The Enterprise <code>@causl/*</code> packages are distributed through a
+      <strong>self-hosted, private npm registry</strong> at
+      <code>iasbuilt-npm.opsite.ca</code> — not the public npm registry. The
+      registry is <strong>fully private</strong>: every package requires
+      authentication to read, and nothing is listed publicly. Anonymous
+      requests are rejected; you authenticate to browse and to install.
+    </p>
+    <p>
+      The full engine is published there — the <code>causl-client</code>
+      surface plus the packaged Rust→WebAssembly core. The current line is
+      <code>@causl/core@0.3.3</code>, which ships the wasm engine in-tarball and
+      is <strong>wasm-default (rust-ssot)</strong> with the retained
+      <code>createCauslTs</code> capability-fallback
+      (<a href="https://github.com/causljs/causl-client/blob/main/SPEC.md" rel="noopener">SPEC §18A.13 / §18A.13.1</a>).
+      Published packages:
+    </p>
+    <ul>
+      <li><code>@causl/core</code></li>
+      <li><code>@causl/persistence</code></li>
+      <li><code>@causl/devtools</code></li>
+      <li><code>@causl/devtools-bridge</code></li>
+      <li><code>@causl/migration-check</code></li>
+      <li><code>@causl/formula</code></li>
+      <li><code>@causl/hypothesis</code></li>
+      <li><code>@causl/sync</code></li>
+      <li><code>@causl/react</code></li>
+      <li><code>@causl/wasm</code> — the packaged Rust&rarr;WebAssembly engine artefact</li>
+    </ul>
+    <p>
+      To consume them, point the <code>@causl</code> scope at the registry in
+      your <code>.npmrc</code>
+      (<code>@causl:registry=https://iasbuilt-npm.opsite.ca/</code>), add the
+      auth token issued during Enterprise onboarding, then install with your
+      usual package manager (<code>pnpm add @causl/core</code>). Authentication
+      is required for every read; the public npm registry does not carry these
+      packages.
+    </p>
+
     <p style="margin-top: 2.4rem;">
       These Enterprise features require a production Rust build and a Node
       target (<a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.2</a>).
