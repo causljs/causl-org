@@ -222,16 +222,24 @@ causljs/causl-ts-wasm-engine  causl-ts (the TS floor) + cross-backend bench/conf
 
     <h3 id="21-install">2.1 Install</h3>
 
-    <code class="codeblock-source" data-lang="bash">pnpm add @causl/core        # or: npm i @causl/core / yarn add @causl/core</code>
+    <code class="codeblock-source" data-lang="bash"># @causl/* ships from the private Enterprise registry (auth required) — see
+# Enterprise → Distribution. Point the @causl scope at it in .npmrc first:
+#   @causl:registry=https://iasbuilt-npm.opsite.ca/
+pnpm add @causl/core        # or: npm i @causl/core / yarn add @causl/core</code>
 
     <p>
-      The wasm path is an <strong>opt-in subpath</strong>. Importing <code>@causl/core</code> pulls in only the
-      TS engine and a tiny loader stub (~1 KB); the wasm bundle cost is paid only by
-      callers who explicitly <code>import('@causl/core/wasm')</code>. Node 22+ is required
+      These packages are distributed through the
+      <a href="../#distribution">private Enterprise registry</a>, which requires
+      authentication for every read; the public npm registry does not carry
+      them. <code>@causl/core@0.3.3</code> ships the wasm engine in-tarball and
+      is wasm-default (rust-ssot). The wasm entry is exposed as an
+      <strong>opt-in subpath</strong>: the extra wasm bundle cost at the browser
+      target is paid only by callers who explicitly
+      <code>import('@causl/core/wasm')</code>. Node 22+ is required
       (<code>engines.node: "&gt;=22"</code>).
     </p>
 
-    <h3 id="22-the-smallest-worked-example-ts-engine--the-floor">2.2 The smallest worked example (TS engine — the floor)</h3>
+    <h3 id="22-the-smallest-worked-example-ts-engine--the-floor">2.2 The smallest worked example</h3>
 
     <p>
       Identical to <a href="../../api/media/SPEC.md">SPEC §10</a>. Two inputs, one derived, one diamond, one
@@ -240,7 +248,7 @@ causljs/causl-ts-wasm-engine  causl-ts (the TS floor) + cross-backend bench/conf
 
     <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core'
 
-const graph = createCausl() // backend: 'js' is the default
+const graph = createCausl() // in causl-client, createCausl() defaults to the wasm engine (rust-ssot); see §2.3
 const a = graph.input('a', 1)
 const b = graph.input('b', 2)
 const sum = graph.derived('sum', (get) =&gt; get(a) + get(b))
