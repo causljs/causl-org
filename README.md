@@ -14,6 +14,41 @@ spreadsheet), and the benchmark dashboard.
 
 ---
 
+## Development access
+
+This repository's primary remote is **GitHub** (`github.com/causljs/causl-org`); it is mirrored to the self-hosted Gitea. The private `@causl` / `@iasbuilt` npm packages, however, are served by the **Gitea** registry at `git.opsite.ca`, so installing them needs a Gitea account and token even though the source lives on GitHub.
+
+### Clone
+
+```bash
+git clone https://github.com/causljs/causl-org.git
+```
+
+### Private packages (`@causl/*`, `@iasbuilt/*`)
+
+These scopes are served by Gitea's npm registry, not npmjs — needed whether you install this repo's dependencies or consume its published packages elsewhere. Create a token at **git.opsite.ca → Settings → Applications → Generate New Token** with the `read:package` scope, export it, and add the registry lines to your `~/.npmrc` (or a repo-root `.npmrc`):
+
+```bash
+export GITEA_PACKAGES_TOKEN=<your read:package token>
+```
+
+```ini
+@causl:registry=https://git.opsite.ca/api/packages/causl/npm/
+//git.opsite.ca/api/packages/causl/npm/:_authToken=${GITEA_PACKAGES_TOKEN}
+@iasbuilt:registry=https://git.opsite.ca/api/packages/iasbuilt/npm/
+//git.opsite.ca/api/packages/iasbuilt/npm/:_authToken=${GITEA_PACKAGES_TOKEN}
+always-auth=true
+```
+
+Then install as usual — `pnpm install` (or `npm install`) resolves `@causl/*` and `@iasbuilt/*` from Gitea.
+
+### Releases & published versions
+
+- Releases / tags: https://github.com/causljs/causl-org/releases
+- Published package versions: https://git.opsite.ca/causl/-/packages
+
+---
+
 ## What is Causl?
 
 Causl is a state engine for applications whose model is a live graph
