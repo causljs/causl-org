@@ -61,7 +61,7 @@ function renderStatechartMermaid(config) {
 }
 
 // src/why.ts
-import { assertNever } from "@causl/core/internal";
+import { assertNever } from "@causl/client-ts/internal";
 function withBecause(partial) {
   return { ...partial, because: renderWhy(partial) };
 }
@@ -201,7 +201,7 @@ function whyNotUpdated(graph, node) {
 }
 
 // src/liveDerivation.ts
-import { CommitInProgressError } from "@causl/core";
+import { CommitInProgressError } from "@causl/client-ts";
 var REGISTRY2 = /* @__PURE__ */ new WeakMap();
 function registerInternal(graph, id, internal) {
   let map = REGISTRY2.get(graph);
@@ -225,37 +225,45 @@ function liveDerived(graph, id, initial) {
     },
     { tag: "live" }
   );
+  const bumpVersion = () => {
+    try {
+      graph.commit(`replace:${id}`, (tx) => tx.set(version, graph.read(version) + 1));
+    } catch (e) {
+      if (e instanceof CommitInProgressError) {
+        queueMicrotask(bumpVersion);
+        return;
+      }
+      throw e;
+    }
+  };
   const handle = {
     node,
     id,
     replace(next) {
       if (slot.compute === next) return;
       slot.compute = next;
-      try {
-        graph.commit(`replace:${id}`, (tx) => tx.set(version, graph.read(version) + 1));
-      } catch (e) {
-        if (e instanceof CommitInProgressError) return;
-        throw e;
-      }
+      bumpVersion();
     }
   };
   registerInternal(graph, id, { handle, current: slot, version });
   return handle;
 }
 function replaceMany(graph, edits) {
-  const internals = [];
+  const resolved = [];
   for (const { handle, next } of edits) {
     const internal = getInternal(graph, handle.id);
     if (!internal) {
       throw new Error(`replaceMany: handle ${handle.id} is not registered with this graph`);
     }
+    resolved.push({ internal, next });
+  }
+  for (const { internal, next } of resolved) {
     internal.current.compute = next;
-    internals.push(internal);
   }
   graph.commit(
     `replaceMany:${edits.map((e) => e.handle.id).join(",")}`,
     (tx) => {
-      for (const internal of internals) {
+      for (const { internal } of resolved) {
         tx.set(internal.version, graph.read(internal.version) + 1);
       }
     }

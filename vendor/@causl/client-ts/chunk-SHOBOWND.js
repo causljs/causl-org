@@ -7,7 +7,7 @@ function lookupTestingDispatch(graph) {
   const d = registry.get(graph);
   if (!d) {
     throw new Error(
-      "Graph was not produced by createCausl() \u2014 testing dispatch unavailable. Did you pass an unrelated object to an @causl/core/testing helper?"
+      "Graph was not produced by createCausl() \u2014 testing dispatch unavailable. Did you pass an unrelated object to an @causl/client-ts/testing helper?"
     );
   }
   return d;
@@ -17,4 +17,4 @@ export {
   registerTestingDispatch,
   lookupTestingDispatch
 };
-//# sourceMappingURL=chunk-6AT5T6LD.js.map
+//# sourceMappingURL=chunk-SHOBOWND.js.map

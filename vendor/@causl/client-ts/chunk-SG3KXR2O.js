@@ -7,19 +7,22 @@ function lookupInternalDispatch(graph) {
   const d = registry.get(graph);
   if (!d) {
     throw new Error(
-      "Graph was not produced by createCausl() \u2014 internal dispatch unavailable. Did you pass an unrelated object to an @causl/core/internal helper?"
+      "Graph was not produced by createCausl() \u2014 internal dispatch unavailable. Did you pass an unrelated object to an @causl/client-ts/internal helper?"
     );
   }
   return d;
 }
 
 // src/internal.ts
-var INTERNAL_ENTRYPOINT = "@causl/core/internal";
+var INTERNAL_ENTRYPOINT = "@causl/client-ts/internal";
 function dispose(graph, node) {
   lookupInternalDispatch(graph).dispose(node);
 }
 function _migrateFrom(graph, snap) {
   lookupInternalDispatch(graph)._migrateFrom(snap);
+}
+function __causlAdapterRead(graph, fn) {
+  return lookupInternalDispatch(graph).__causlAdapterRead(fn);
 }
 function assertNever(value, hint = "unhandled discriminator") {
   throw new Error(`${hint}: ${JSON.stringify(value)}`);
@@ -34,6 +37,11 @@ var CapabilityViolation = class extends Error {
     this.attempt = attempt;
   }
 };
+var PROTOCOL_PROBES = /* @__PURE__ */ new Set([
+  "then",
+  "toJSON",
+  "inspect"
+]);
 function narrowCapability(graph) {
   const allowed = {
     read(node) {
@@ -52,6 +60,9 @@ function narrowCapability(graph) {
   return new Proxy(allowed, {
     get(target, prop, receiver) {
       if (prop in target) return Reflect.get(target, prop, receiver);
+      if (typeof prop === "symbol" || PROTOCOL_PROBES.has(prop)) {
+        return void 0;
+      }
       throw new CapabilityViolation(String(prop));
     },
     set(_target, prop) {
@@ -68,8 +79,9 @@ export {
   INTERNAL_ENTRYPOINT,
   dispose,
   _migrateFrom,
+  __causlAdapterRead,
   assertNever,
   CapabilityViolation,
   narrowCapability
 };
-//# sourceMappingURL=chunk-NZKNVSHZ.js.map
+//# sourceMappingURL=chunk-SG3KXR2O.js.map
