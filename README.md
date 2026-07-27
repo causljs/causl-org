@@ -10,12 +10,12 @@ The causl packages are published from:
 |---|---|
 | `causl-core-rs` | `@causl/core-rs` — the Rust engine (WebAssembly) |
 | `causl-core-ts` | `@causl/core-ts` — the TypeScript engine |
-| `causl-client-ts` | `@causl/client-ts` — the TypeScript client, plus the satellite packages |
+| `causl-wasm-ts` | `@causl/causl-wasm-ts` — the TypeScript client, plus the satellite packages |
 | `causl-check` | `@causl/checker` and its per-platform binaries |
 
 Registry: Gitea npm registry — `https://git.opsite.ca/api/packages/causl/npm/`
 
-> Naming follows the scheme in [`causl-client-ts` / `docs/repo-naming-decision.md`](https://git.opsite.ca/causl/causl-client-ts/src/branch/main/docs/repo-naming-decision.md): **engines are named by substrate** (`causl-core-rs`, `causl-core-ts`), **clients by consumer language** (`causl-client-ts`, future `causl-client-cpp`).
+> Naming follows the scheme in [`causl-wasm-ts` / `docs/repo-naming-decision.md`](https://git.opsite.ca/causl/causl-wasm-ts/src/branch/main/docs/repo-naming-decision.md): **engines are named by substrate** (`causl-core-rs`, `causl-core-ts`), **clients by consumer language** (`causl-wasm-ts`, future `causl-client-cpp`).
 
 
 > Source for [causl.org](https://causl.org) — the public-facing
