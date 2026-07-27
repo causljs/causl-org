@@ -224,7 +224,25 @@
          selectors.
          ============================================================ -->
     <section id="dual-engine-panel" aria-labelledby="dual-engine-heading">
-      <h2 id="dual-engine-heading">Engine comparison: <code>causl-ts</code> vs <code>causl-ts-wasm-engine</code> <span class="badge-enterprise">Enterprise</span></h2>
+      <h2 id="dual-engine-heading">Engine comparison: <code>causl-ts</code> vs <code>causl-ts-wasm-engine</code> <span style="color:#b42318">[WITHDRAWN]</span> <span class="badge-enterprise">Enterprise</span></h2>
+      <aside class="callout-withdrawn" style="border:2px solid #b42318;background:#fef3f2;padding:1rem 1.25rem;margin:1rem 0;border-radius:6px">
+        <p style="margin:0 0 .6rem"><strong style="color:#b42318;font-size:1.05em">⚠ These numbers are withdrawn pending re-measurement (2026-07-27).</strong></p>
+        <p style="margin:0 0 .6rem">This panel did not compare a TypeScript engine against a WebAssembly engine. Both
+          series were produced by the <strong>same TypeScript engine</strong>. The series labelled
+          <code>causl-ts-wasm-engine</code> ran through a compatibility shim whose own source documents it as
+          <em>&ldquo;NOT the authoritative Rust engine&rdquo;</em> and warns <em>&ldquo;Do NOT route the real wasm engine through
+          this.&rdquo;</em> The benchmark called that shim ten times and the authoritative Rust path zero times.</p>
+        <p style="margin:0 0 .6rem">The panel below states its own validity criterion &mdash;
+          <em>&ldquo;<code>causl-ts-wasm-engine</code> should be &gt; 0 on every cell&rdquo;</em> for JS&#8596;WASM crossings.
+          The published data fails it: <strong>62 of 80 cells recorded zero crossings</strong>, and the cells that did
+          record traffic reported an identical 15 crossings / 195 bytes at scales 100, 1&#8239;000 and 10&#8239;000 &mdash;
+          boundary traffic unchanged under a 100&times; workload, which is only possible if the work never crossed the
+          boundary.</p>
+        <p style="margin:0">Nothing here is deleted, so anyone who cited these figures can see exactly what changed and why.
+          The repair is tracked as
+          <a href="https://git.opsite.ca/causl/causl-bench/issues/85">causl-bench#85</a>; no replacement numbers will be
+          published until the engine serving each cell is attested at runtime rather than asserted by configuration.</p>
+      </aside>
       <aside class="callout-enterprise">
         <span class="badge-enterprise">Enterprise</span>
         <p><strong>The wasm engine is an Enterprise feature.</strong> This two-engine
