@@ -1,14 +1,14 @@
 {
-  "@causl/core": {
-    "version": "0.0.0",
+  "@causl/client-ts": {
+    "version": "0.3.6",
     "source": "packages/core/dist/",
     "files": [
-      "chunk-6AT5T6LD.js",
-      "chunk-6AT5T6LD.js.map",
-      "chunk-IYUJL32F.js",
-      "chunk-IYUJL32F.js.map",
-      "chunk-NZKNVSHZ.js",
-      "chunk-NZKNVSHZ.js.map",
+      "chunk-BJBUOM2F.js",
+      "chunk-BJBUOM2F.js.map",
+      "chunk-SG3KXR2O.js",
+      "chunk-SG3KXR2O.js.map",
+      "chunk-SHOBOWND.js",
+      "chunk-SHOBOWND.js.map",
       "index.js",
       "index.js.map",
       "internal.js",
@@ -19,51 +19,51 @@
       "wasm.js.map"
     ],
     "sha256": {
-      "chunk-6AT5T6LD.js": "da894f48da6916592c6846bf6ee10c759499c94c4d750267148423379fa3a08d",
-      "chunk-6AT5T6LD.js.map": "40a52c1ac987f86715a2b109c50acedbcd9c6c4d706d29c1011457da95032b4c",
-      "chunk-IYUJL32F.js": "51f96635341666edea47b047659312e623a475bbe6bdd49e2dcc622bef9fe757",
-      "chunk-IYUJL32F.js.map": "4c6b8433489548062743a5e9f36b6618bdd0a8289dc52f2362ec949ef1ede5a4",
-      "chunk-NZKNVSHZ.js": "56f5f823b87eb719b5cccbe3af05dbedc3e8fd7267e577f4140742bf56abbd05",
-      "chunk-NZKNVSHZ.js.map": "77600ff05c3d47b68ced3166c53812be173397f3a4c3b073d2f95ad2d681a4c3",
-      "index.js": "8aff4262fe84fd831bdee8bd1b1b991d7b5690028c39ddea14af70a8c19126bf",
+      "chunk-BJBUOM2F.js": "5900be42c95d74f674061a5aa5368a937f0a4963af19f4f35a0ee5590a494e86",
+      "chunk-BJBUOM2F.js.map": "33f3dd16bccef7fb86ea87aa3f8e294f96bba456f110e850f712f870f84ac7cb",
+      "chunk-SG3KXR2O.js": "aaacb6bc2f2aa3fc31740cfae7d6d5adf8fd5a43379fe6a7becfad04fa22cbee",
+      "chunk-SG3KXR2O.js.map": "6c77ce6aff243a4f2049ad4fe1df4803f4e142900e361b7f1a109a58543c2148",
+      "chunk-SHOBOWND.js": "eb05149724fbbf003567457cb69ce636c65595c9405aeaa1b74603e8b70bce9f",
+      "chunk-SHOBOWND.js.map": "71e930f61d39074e0c67a1a0235491a7ca16bb9aae0a36074767e5d579dd3da5",
+      "index.js": "36b9de8e171603a757efedf470d41762622b44e3aa590b509e74148c6860189c",
       "index.js.map": "cba81f7ad4d5b1b629bf43823f1082e73a10d0c3114c937515e7f8c1047629b3",
-      "internal.js": "403c5f7cbaa2b5d30e90fa295d50a8eab32fce11115cbfc0cd4c48ba581851eb",
+      "internal.js": "e4c124fd13e1adcb8c7a7e04ef16f6b42dff93d3ead88bd656d37c5d7d185181",
       "internal.js.map": "cba81f7ad4d5b1b629bf43823f1082e73a10d0c3114c937515e7f8c1047629b3",
-      "testing.js": "0dc20f01c6c2ce7871392567a244836e3102a1872e4006c4c67f13644647e09f",
-      "testing.js.map": "8a37dcea23ac52a8040b53f8a06ec9b09e983d119fdebba80a7619afcfb8a28a",
-      "wasm.js": "e1469f253cdc919230ae89dfd82f07ce521991e283f58d2ac7e2e1c7e41215ef",
-      "wasm.js.map": "63fd2aea93b2fb641b5ce4d84763fea41592089891fc76d931579d1a56308ccb"
+      "testing.js": "cac39021242ee1c0c0924fc350b428fa7ef3868105b4874d1d4af847e595e2aa",
+      "testing.js.map": "4e46629d33e78f542ab98b50e45ba6be34f5084fa0496cf2aa8d1e5faecbbfa3",
+      "wasm.js": "8539b887786dd5aa5d34f229bd5f239a1dc267f73cc8e0878d5e21e699709526",
+      "wasm.js.map": "8579e542f4bc288fee52366e1834018523246bf3d0658c8eaba05c4c01731f26"
     },
-    "generatedAt": "2026-05-12T00:00:00Z",
-    "generatedFrom": "8392d014e0e279f7d2716124d7171bf55146785f"
+    "generatedAt": "2026-07-27T04:19:26Z",
+    "generatedFrom": "a599dab9758fcd6f7188e4f478f114321273593d"
   },
   "@causl/devtools": {
-    "version": "0.0.0",
+    "version": "0.1.3",
     "source": "packages/devtools/dist/",
     "files": [
       "index.js",
       "index.js.map"
     ],
     "sha256": {
-      "index.js": "f889c7d38384908dfedd906e13dcc5f2f6233c9ed26ee209e6eef43acc386d96",
-      "index.js.map": "6d8adecdb0550d4f5003939816b32aa0c654b524a0859201e2d3493f9c347a1e"
+      "index.js": "fb7ab4de723d1399de1cbfc41d4241bc7d3cac75fbf2333e73b3ebb46e26e236",
+      "index.js.map": "854eb3ec3476a3c06c07cc8beda0175460d283d028791f58128cc0d8b110dc66"
     },
-    "generatedAt": "2026-05-12T00:00:00Z",
-    "generatedFrom": "8392d014e0e279f7d2716124d7171bf55146785f"
+    "generatedAt": "2026-07-27T04:19:26Z",
+    "generatedFrom": "a599dab9758fcd6f7188e4f478f114321273593d"
   },
   "@causl/formula": {
-    "version": "0.1.0",
+    "version": "0.2.1",
     "source": "packages/formula/dist/",
     "files": [
       "index.js",
       "index.js.map"
     ],
     "sha256": {
-      "index.js": "74b8107c49a34404180df5c3c7ad364c187d08fe943e11db88c3469207effa6a",
-      "index.js.map": "efb579b6f654eba335968354b44a63ebcb5807d6d82e505da519319df462679e"
+      "index.js": "a44ec6d6af4502c3478b8a814b609bc528127b676cb01fb00078b9dc364944f4",
+      "index.js.map": "87ff10d349567927fd66dca988be0be8824ea1179fa12e7eef98d6cab918db8c"
     },
-    "generatedAt": "2026-05-12T00:00:00Z",
-    "generatedFrom": "8392d014e0e279f7d2716124d7171bf55146785f"
+    "generatedAt": "2026-07-27T04:19:26Z",
+    "generatedFrom": "a599dab9758fcd6f7188e4f478f114321273593d"
   },
   "prismjs": {
     "version": "1.30.0",
@@ -94,7 +94,7 @@
       "prism-tsx.min.js": "752c15ed4ff1d03e042b407b332892e1097d5f5e348861e2e26db20d71b349bf",
       "prism-typescript.min.js": "852f5513bb9ca9db247f86ecfce74acc91c541749d34929157240518fef8152a"
     },
-    "generatedAt": "2026-05-12T00:00:00Z",
-    "generatedFrom": "8392d014e0e279f7d2716124d7171bf55146785f"
+    "generatedAt": "2026-07-27T04:19:26Z",
+    "generatedFrom": "a599dab9758fcd6f7188e4f478f114321273593d"
   }
 }

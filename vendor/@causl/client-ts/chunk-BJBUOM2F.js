@@ -1,10 +1,13 @@
 import {
   assertNever,
   registerInternalDispatch
-} from "./chunk-NZKNVSHZ.js";
+} from "./chunk-SG3KXR2O.js";
 import {
   registerTestingDispatch
-} from "./chunk-6AT5T6LD.js";
+} from "./chunk-SHOBOWND.js";
+
+// package.json
+var version = "0.3.6";
 
 // src/errors.ts
 var CauslError = class extends Error {
@@ -17,6 +20,8 @@ var DuplicateNodeError = class extends CauslError {
   }
   id;
   name = "DuplicateNodeError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "DuplicateNode";
 };
 var UnknownNodeError = class extends CauslError {
   constructor(id) {
@@ -25,6 +30,8 @@ var UnknownNodeError = class extends CauslError {
   }
   id;
   name = "UnknownNodeError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "UnknownNode";
 };
 var NotAnInputNodeError = class extends CauslError {
   constructor(id) {
@@ -33,9 +40,13 @@ var NotAnInputNodeError = class extends CauslError {
   }
   id;
   name = "NotAnInputNodeError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "NotAnInputNode";
 };
 var CommitInProgressError = class extends CauslError {
   name = "CommitInProgressError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "CommitInProgress";
   constructor() {
     super("A commit is already in progress; commits do not nest.");
   }
@@ -47,9 +58,47 @@ var CycleError = class extends CauslError {
   }
   path;
   name = "CycleError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "Cycle";
 };
+var UNDECLARED_DEPENDENCY_MARKER = "causl:undeclared-dependency";
+var UndeclaredDependencyError = class extends CauslError {
+  constructor(derivedId, depId) {
+    super(
+      `derived '${derivedId}' read dependency '${depId}', which is not a registered node on the graph (${UNDECLARED_DEPENDENCY_MARKER})`
+    );
+    this.derivedId = derivedId;
+    this.depId = depId;
+  }
+  derivedId;
+  depId;
+  name = "UndeclaredDependencyError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "UndeclaredDependency";
+};
+var DerivedComputeError = class extends CauslError {
+  constructor(derivedId, cause) {
+    const causeMsg = cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause);
+    super(
+      `Derived ${JSON.stringify(derivedId)} compute threw: ${causeMsg}`
+    );
+    this.derivedId = derivedId;
+    this.cause = cause;
+  }
+  derivedId;
+  cause;
+  name = "DerivedComputeError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "DerivedCompute";
+};
+function asDerivedComputeError(derivedId, err) {
+  if (err instanceof CauslError) return err;
+  return new DerivedComputeError(derivedId, err);
+}
 var StaleTxError = class extends CauslError {
   name = "StaleTxError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "StaleTx";
   constructor() {
     super("Tx used outside its commit callback.");
   }
@@ -142,6 +191,61 @@ var InvalidGraphNameError = class extends CauslError {
   /** Discriminated tag for exhaustive matching. */
   kind = "InvalidGraphName";
 };
+var InvariantViolationError = class extends CauslError {
+  constructor(nodeId, value, cause) {
+    const causeMsg = cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause);
+    super(
+      `Invariant violated for input node ${JSON.stringify(nodeId)}: ${causeMsg}`
+    );
+    this.nodeId = nodeId;
+    this.value = value;
+    this.cause = cause;
+  }
+  nodeId;
+  value;
+  cause;
+  name = "InvariantViolationError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "InvariantViolation";
+};
+var WasmInstancePoisonedError = class extends CauslError {
+  constructor(cause) {
+    super(
+      `The shared wasm instance is poisoned: a Rust trap (panic) aborted mid-mutation with no unwinding, leaving the engine's state undefined. This is NOT a \xA75.2 atomic rollback \u2014 every engine multiplexed on this instance now fails loud rather than silently serving state that diverges from the poisoned engine. Rebuild the graph on a fresh instance to recover.`
+    );
+    this.cause = cause;
+  }
+  cause;
+  name = "WasmInstancePoisonedError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "WasmInstancePoisoned";
+};
+var RetainedValueUnavailableError = class extends CauslError {
+  constructor(nodeId, time) {
+    super(
+      `Historical container value for input node ${JSON.stringify(nodeId)} at time ${time} is unavailable: the wasm engine retains containers only as a structural content-hash, and this row's value is no longer the live reference held host-side. The value was not retained and cannot be reconstructed.`
+    );
+    this.nodeId = nodeId;
+    this.time = time;
+  }
+  nodeId;
+  time;
+  name = "RetainedValueUnavailableError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "RetainedValueUnavailable";
+};
+var InvalidInjectedBackendError = class extends CauslError {
+  constructor(missing) {
+    super(
+      missing.length === 0 ? `Invalid authoritative backend: expected an object implementing the InjectedBackend contract, received a non-object.` : `Invalid authoritative backend: missing required member(s) ${missing.map((m) => JSON.stringify(m)).join(", ")}. The injected backend must implement the full InjectedBackend contract (commit, read, subscribe, registerInput, registerDerived, has).`
+    );
+    this.missing = missing;
+  }
+  missing;
+  name = "InvalidInjectedBackendError";
+  /** Discriminated tag for exhaustive matching. */
+  kind = "InvalidInjectedBackend";
+};
 
 // src/backend.ts
 var JsBackend = class {
@@ -167,8 +271,8 @@ var JsBackend = class {
   hydrate(s) {
     this.#ops.hydrate(s);
   }
-  exportModel() {
-    return this.#ops.exportModel();
+  exportModel(opts) {
+    return this.#ops.exportModel(opts);
   }
   readAt(node, time) {
     return this.#ops.readAt(node, time);
@@ -186,6 +290,111 @@ var JsBackend = class {
     return this.#ops.now();
   }
 };
+
+// src/wasm-registry.ts
+var registration;
+function registerWasmSyncEngine(reg) {
+  registration = reg;
+}
+var capabilityFallbackHook;
+function onCauslCapabilityFallback(hook) {
+  const prior = capabilityFallbackHook;
+  capabilityFallbackHook = hook;
+  return () => {
+    capabilityFallbackHook = prior;
+  };
+}
+var capabilityFallbackNotified = false;
+var firstPrePreloadTsFallSite;
+var mixedEngineNotified = false;
+function captureConstructSite() {
+  const stack = new Error("causl construct site").stack;
+  if (typeof stack !== "string" || stack.length === 0) {
+    return "<construct site unavailable: no stack on this host>";
+  }
+  const frames = stack.split("\n");
+  for (const raw of frames) {
+    const line = raw.trim();
+    if (!line.startsWith("at ")) continue;
+    if (line.includes("wasm-registry") || /\bcreateCausl\b/.test(line)) {
+      continue;
+    }
+    return line;
+  }
+  const firstAt = frames.find((f) => f.trim().startsWith("at "));
+  return firstAt !== void 0 ? firstAt.trim() : "<construct site unavailable: unrecognised stack format>";
+}
+function recordPrePreloadTsFall() {
+  if (firstPrePreloadTsFallSite !== void 0) return;
+  firstPrePreloadTsFallSite = captureConstructSite();
+}
+function warnMixedEngineOnce() {
+  if (mixedEngineNotified) return;
+  if (firstPrePreloadTsFallSite === void 0) return;
+  mixedEngineNotified = true;
+  console.warn(
+    `causl: MIXED-ENGINE startup race (\xA718A.5) \u2014 an implicit createCausl() built a pure-TS graph BEFORE preloadCauslWasm() resolved, then a later createCausl() built a wasm graph. The engines differ in read()-identity and commit-clock, so mixing them is a glitch-freedom hazard. First pre-preload site:
+    ${firstPrePreloadTsFallSite}
+Fix the boot ordering: await preloadCauslWasm() once at init BEFORE the first createCausl(), or pin engine:'rust-ssot'/'js-ssot' per call.`
+  );
+}
+function emitCapabilityFallbackOnce(cause) {
+  if (capabilityFallbackNotified) return;
+  capabilityFallbackNotified = true;
+  console.warn(
+    "causl: WasmGC engine unavailable on this host \u2014 falling back to the TypeScript engine (engine:'js-ssot'). This is the \xA718A.13.1 capability fallback (implicit createCausl() path only); explicit createCauslWasm() / engine:'rust-ssot' still fail loud. Affected hosts: Safari < 18 / macOS < 15, policy-pinned pre-119 Chromium/WebView2, Node <= 20."
+  );
+  const hook = capabilityFallbackHook;
+  if (hook !== void 0) {
+    try {
+      hook({
+        type: "causl:capability-fallback",
+        spec: "\xA718A.13.1",
+        fallbackEngine: "js-ssot",
+        cause
+      });
+    } catch {
+    }
+  }
+}
+function createWasmSyncIfPreloaded(createOptions) {
+  const reg = registration;
+  if (reg === void 0) {
+    recordPrePreloadTsFall();
+    return void 0;
+  }
+  if (!reg.isPreloadedForDefaultBridge()) {
+    recordPrePreloadTsFall();
+    return void 0;
+  }
+  try {
+    const graph = reg.createSync(createOptions);
+    warnMixedEngineOnce();
+    return graph;
+  } catch (err) {
+    if (reg.isCapabilityFailure(err)) {
+      emitCapabilityFallbackOnce(err);
+      return void 0;
+    }
+    throw err;
+  }
+}
+var WasmEngineUnavailableError = class extends Error {
+  code = "CAUSL_WASM_ENGINE_UNAVAILABLE";
+  constructor(detail) {
+    super(detail);
+    this.name = "WasmEngineUnavailableError";
+  }
+};
+function createWasmExplicitOrThrow(createOptions) {
+  const reg = registration;
+  if (reg === void 0) {
+    throw new WasmEngineUnavailableError(
+      "createCausl({ engine: 'rust-ssot' }): the wasm engine was explicitly requested but the @causl/client-ts/wasm subpath has not been imported, so no wasm engine is available on this host \u2014 refusing to silently fall back to the TS engine. Import @causl/client-ts/wasm and call preloadCauslWasm() once at init, or drop the explicit engine to use the implicit createCausl() capability fallback."
+    );
+  }
+  return reg.createSync(createOptions);
+}
 
 // src/statechart-evaluator.ts
 function evaluateConflict(state, event, time, id) {
@@ -231,17 +440,14 @@ function evaluateResource(state, event, time, id) {
           promise: event.promise
         }
       };
-    // `Loading → Loaded | Stale` is legal only from `loading`. Every
-    // other source state is a forbidden edge.
+    // `Loading → Loaded | Stale` applies only to the *current* loading
+    // episode. A settle whose `episode` token no longer matches the
+    // loading state (superseded by a newer fetch, or the resource left
+    // `loading` via a host `fail()`/refetch) is a chart no-op, NOT a
+    // forbidden throw — issue #109.
     case "fetch-resolve": {
-      if (state.state !== "loading") {
-        const reason = {
-          region: "resource",
-          from: state.state,
-          to: "loaded",
-          id
-        };
-        return { kind: "forbidden", reason };
+      if (state.state !== "loading" || state.promise !== event.episode) {
+        return { kind: "ok", next: state };
       }
       const isStale = event.stalenessGuard && time > event.loadingAt;
       return {
@@ -259,17 +465,13 @@ function evaluateResource(state, event, time, id) {
         }
       };
     }
-    // `Loading → Errored` via the loader's rejection branch. Legal
-    // only from `loading`.
+    // `Loading → Errored` via the loader's rejection branch. Legal only
+    // for the *current* loading episode; a superseded/host-cancelled
+    // rejection is a chart no-op so the loader's real error is neither
+    // swallowed nor allowed to overwrite a newer state — issue #109.
     case "fetch-reject": {
-      if (state.state !== "loading") {
-        const reason = {
-          region: "resource",
-          from: state.state,
-          to: "errored",
-          id
-        };
-        return { kind: "forbidden", reason };
+      if (state.state !== "loading" || state.promise !== event.episode) {
+        return { kind: "ok", next: state };
       }
       return {
         kind: "ok",
@@ -362,6 +564,37 @@ function mergeFlags(overrides) {
   return Object.freeze({ ...MODULE_FLAGS, ...overrides });
 }
 
+// src/injected-backend.ts
+var INJECTED_BACKEND = /* @__PURE__ */ Symbol(
+  "causl.internal.injectedBackend"
+);
+function withInjectedBackend(options, backend) {
+  return { ...options, [INJECTED_BACKEND]: backend };
+}
+function readInjectedBackend(options) {
+  return options[INJECTED_BACKEND];
+}
+var REQUIRED_MEMBERS = [
+  "commit",
+  "read",
+  "subscribe",
+  "registerInput",
+  "registerDerived",
+  "has"
+];
+function assertValidInjectedBackend(backend) {
+  if (typeof backend !== "object" || backend === null) {
+    throw new InvalidInjectedBackendError([]);
+  }
+  const bag = backend;
+  const missing = REQUIRED_MEMBERS.filter(
+    (member) => typeof bag[member] !== "function"
+  );
+  if (missing.length > 0) {
+    throw new InvalidInjectedBackendError(missing);
+  }
+}
+
 // src/ir.ts
 var CAUSL_MODEL_SCHEMA = 3;
 function parseCauslModel(input) {
@@ -434,7 +667,486 @@ function parseCauslModel(input) {
   return { ok: true, value: input };
 }
 
+// src/env.ts
+var NODE_ENV_IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+// src/value-domain.ts
+function isWireNull(value) {
+  if (value === null || value === void 0) return true;
+  const t = typeof value;
+  return t === "bigint" || t === "symbol" || t === "function";
+}
+function inputValueChanged(before, after) {
+  if (Object.is(before, after)) return false;
+  if (isWireNull(before) && isWireNull(after)) return false;
+  return true;
+}
+
+// wasm/cyclic-guard.ts
+var MAX_ENCODE_DEPTH = 256;
+var CyclicValueError = class extends RangeError {
+  constructor(context, maxDepth = MAX_ENCODE_DEPTH) {
+    super(
+      `cyclic or over-nested value: encode step "${context}" exceeded the maximum value-nesting depth of ${maxDepth} \u2014 the value is cyclic (a container reachable from itself) or nested too deeply to cross the wasm value boundary`
+    );
+    this.context = context;
+    this.maxDepth = maxDepth;
+  }
+  context;
+  maxDepth;
+  name = "CyclicValueError";
+};
+function guardEncodeDepth(depth, context) {
+  if (depth >= MAX_ENCODE_DEPTH) {
+    throw new CyclicValueError(context);
+  }
+}
+
+// wasm/tagged-types.ts
+var CAUSL_TYPE_KEY = "__causlType";
+var KNOWN_TAGS = /* @__PURE__ */ new Set([
+  "Set",
+  "Map",
+  "Date",
+  "Temporal"
+]);
+var injectedTemporal;
+var warnedNoTemporal = false;
+function currentTemporalImpl() {
+  return injectedTemporal;
+}
+function resolveTemporal(temporal) {
+  if (temporal !== void 0) return temporal;
+  if (injectedTemporal !== void 0) return injectedTemporal;
+  const g = globalThis.Temporal;
+  return g;
+}
+function looksLikeTag(v) {
+  if (v === null || typeof v !== "object" || Array.isArray(v)) return false;
+  const tag = v[CAUSL_TYPE_KEY];
+  return typeof tag === "string" && KNOWN_TAGS.has(tag);
+}
+function temporalKindOf(v) {
+  const tag = v[Symbol.toStringTag];
+  if (typeof tag !== "string" || !tag.startsWith("Temporal.")) return void 0;
+  const kind = tag.slice("Temporal.".length);
+  switch (kind) {
+    case "Instant":
+    case "PlainDate":
+    case "PlainTime":
+    case "PlainDateTime":
+    case "PlainYearMonth":
+    case "PlainMonthDay":
+    case "ZonedDateTime":
+    case "Duration":
+      return kind;
+    default:
+      return void 0;
+  }
+}
+function hasTaggedTypes(value, depth = 0) {
+  if (value === null || typeof value !== "object") return false;
+  if (value instanceof Set || value instanceof Map || value instanceof Date) {
+    return true;
+  }
+  if (temporalKindOf(value) !== void 0) return true;
+  guardEncodeDepth(depth, "hasTaggedTypes");
+  if (Array.isArray(value)) {
+    for (const el of value) if (hasTaggedTypes(el, depth + 1)) return true;
+    return false;
+  }
+  for (const k in value) {
+    if (Object.prototype.hasOwnProperty.call(value, k)) {
+      if (hasTaggedTypes(value[k], depth + 1)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+function encodeTagged(value, depth = 0) {
+  if (value === null || typeof value !== "object") return value;
+  guardEncodeDepth(depth, "encodeTagged");
+  if (value instanceof Set) {
+    return {
+      [CAUSL_TYPE_KEY]: "Set",
+      values: Array.from(value, (el) => encodeTagged(el, depth + 1))
+    };
+  }
+  if (value instanceof Map) {
+    const entries = [];
+    for (const [k, v] of value) {
+      entries.push([encodeTagged(k, depth + 1), encodeTagged(v, depth + 1)]);
+    }
+    return { [CAUSL_TYPE_KEY]: "Map", entries };
+  }
+  if (value instanceof Date) {
+    return { [CAUSL_TYPE_KEY]: "Date", epochMs: value.getTime() };
+  }
+  const temporalKind = temporalKindOf(value);
+  if (temporalKind !== void 0) {
+    return {
+      [CAUSL_TYPE_KEY]: "Temporal",
+      kind: temporalKind,
+      iso: value.toString()
+    };
+  }
+  if (Array.isArray(value)) {
+    return value.map((el) => encodeTagged(el, depth + 1));
+  }
+  const out = {};
+  for (const k in value) {
+    if (Object.prototype.hasOwnProperty.call(value, k)) {
+      out[k] = encodeTagged(value[k], depth + 1);
+    }
+  }
+  return out;
+}
+function reviveDate(tag) {
+  const epochMs = tag.epochMs;
+  return new Date(typeof epochMs === "number" ? epochMs : NaN);
+}
+function reviveTemporal(tag, temporal) {
+  const iso = tag.iso;
+  const kind = tag.kind;
+  if (typeof iso !== "string" || typeof kind !== "string") return iso;
+  const Temporal = resolveTemporal(temporal);
+  const ctor = Temporal?.[kind];
+  if (ctor === void 0 || typeof ctor.from !== "function") {
+    if (!warnedNoTemporal) {
+      warnedNoTemporal = true;
+      console.warn(
+        `@causl/client-ts/wasm: a Temporal.${kind} value round-tripped through the wasm value path but no Temporal impl is available to reconstruct it (call setTemporalImpl(Temporal) at wasm graph construction). Falling back to the ISO string '${iso}'.`
+      );
+    }
+    return iso;
+  }
+  try {
+    return ctor.from(iso);
+  } catch {
+    return iso;
+  }
+}
+function reviveTagged(value, temporal) {
+  if (value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) {
+    return value.map((el) => reviveTagged(el, temporal));
+  }
+  if (looksLikeTag(value)) {
+    const tag = value;
+    switch (tag[CAUSL_TYPE_KEY]) {
+      case "Set": {
+        const values = Array.isArray(tag.values) ? tag.values : [];
+        return new Set(values.map((el) => reviveTagged(el, temporal)));
+      }
+      case "Map": {
+        const entries = Array.isArray(tag.entries) ? tag.entries : [];
+        const map = /* @__PURE__ */ new Map();
+        for (const entry of entries) {
+          if (Array.isArray(entry) && entry.length === 2) {
+            map.set(
+              reviveTagged(entry[0], temporal),
+              reviveTagged(entry[1], temporal)
+            );
+          }
+        }
+        return map;
+      }
+      case "Date":
+        return reviveDate(tag);
+      case "Temporal":
+        return reviveTemporal(tag, temporal);
+      // istanbul ignore next — KNOWN_TAGS gates looksLikeTag.
+      default:
+        break;
+    }
+  }
+  const out = {};
+  for (const k in value) {
+    if (Object.prototype.hasOwnProperty.call(value, k)) {
+      out[k] = reviveTagged(value[k], temporal);
+    }
+  }
+  return out;
+}
+
+// wasm/content-hash.ts
+var SOH = "";
+var CONTENT_HASH_MARKER_PREFIX = `${SOH}causl-content-hash:`;
+var CONTENT_HASH_MARKER_LEN = CONTENT_HASH_MARKER_PREFIX.length + 32;
+var INPUT_EPOCH_MARKER_PREFIX = `${SOH}ie:`;
+var INPUT_EPOCH_HEX_LEN = 16;
+var INPUT_EPOCH_MARKER_LEN = INPUT_EPOCH_MARKER_PREFIX.length + INPUT_EPOCH_HEX_LEN;
+function packInputEpoch(slot, epoch) {
+  return BigInt(slot >>> 0) << 32n | BigInt(epoch >>> 0);
+}
+function inputEpochMarkerForPacked(payload) {
+  const hex = (payload & 0xffffffffffffffffn).toString(16).padStart(INPUT_EPOCH_HEX_LEN, "0");
+  return `${INPUT_EPOCH_MARKER_PREFIX}${hex}`;
+}
+function inputEpochMarker(slot, epoch) {
+  return inputEpochMarkerForPacked(packInputEpoch(slot, epoch));
+}
+function parseInputEpoch(s) {
+  if (s.length !== INPUT_EPOCH_MARKER_LEN) return void 0;
+  if (!s.startsWith(INPUT_EPOCH_MARKER_PREFIX)) return void 0;
+  const tail = s.slice(INPUT_EPOCH_MARKER_PREFIX.length);
+  if (!/^[0-9a-f]{16}$/.test(tail)) return void 0;
+  return BigInt(`0x${tail}`);
+}
+var textEncoder = new TextEncoder();
+var SHA256_K = new Uint32Array([
+  1116352408,
+  1899447441,
+  3049323471,
+  3921009573,
+  961987163,
+  1508970993,
+  2453635748,
+  2870763221,
+  3624381080,
+  310598401,
+  607225278,
+  1426881987,
+  1925078388,
+  2162078206,
+  2614888103,
+  3248222580,
+  3835390401,
+  4022224774,
+  264347078,
+  604807628,
+  770255983,
+  1249150122,
+  1555081692,
+  1996064986,
+  2554220882,
+  2821834349,
+  2952996808,
+  3210313671,
+  3336571891,
+  3584528711,
+  113926993,
+  338241895,
+  666307205,
+  773529912,
+  1294757372,
+  1396182291,
+  1695183700,
+  1986661051,
+  2177026350,
+  2456956037,
+  2730485921,
+  2820302411,
+  3259730800,
+  3345764771,
+  3516065817,
+  3600352804,
+  4094571909,
+  275423344,
+  430227734,
+  506948616,
+  659060556,
+  883997877,
+  958139571,
+  1322822218,
+  1537002063,
+  1747873779,
+  1955562222,
+  2024104815,
+  2227730452,
+  2361852424,
+  2428436474,
+  2756734187,
+  3204031479,
+  3329325298
+]);
+function rotr32(x, n) {
+  return x >>> n | x << 32 - n;
+}
+function newHasher() {
+  return {
+    // SHA-256 IV: first 32 bits of the square roots of the first 8 primes.
+    h: Uint32Array.of(
+      1779033703,
+      3144134277,
+      1013904242,
+      2773480762,
+      1359893119,
+      2600822924,
+      528734635,
+      1541459225
+    ),
+    block: new Uint8Array(64),
+    blockLen: 0,
+    totalLen: 0
+  };
+}
+var W = new Uint32Array(64);
+function compress(hh) {
+  const h = hh.h;
+  const b = hh.block;
+  for (let i = 0; i < 16; i++) {
+    const j = i << 2;
+    W[i] = (b[j] << 24 | b[j + 1] << 16 | b[j + 2] << 8 | b[j + 3]) >>> 0;
+  }
+  for (let i = 16; i < 64; i++) {
+    const x = W[i - 15];
+    const y = W[i - 2];
+    const s0 = rotr32(x, 7) ^ rotr32(x, 18) ^ x >>> 3;
+    const s1 = rotr32(y, 17) ^ rotr32(y, 19) ^ y >>> 10;
+    W[i] = W[i - 16] + s0 + W[i - 7] + s1 | 0;
+  }
+  let a = h[0];
+  let b0 = h[1];
+  let c = h[2];
+  let d = h[3];
+  let e = h[4];
+  let f = h[5];
+  let g = h[6];
+  let hw = h[7];
+  for (let i = 0; i < 64; i++) {
+    const s1 = rotr32(e, 6) ^ rotr32(e, 11) ^ rotr32(e, 25);
+    const ch = e & f ^ ~e & g;
+    const t1 = hw + s1 + ch + SHA256_K[i] + W[i] | 0;
+    const s0 = rotr32(a, 2) ^ rotr32(a, 13) ^ rotr32(a, 22);
+    const maj = a & b0 ^ a & c ^ b0 & c;
+    const t2 = s0 + maj | 0;
+    hw = g;
+    g = f;
+    f = e;
+    e = d + t1 | 0;
+    d = c;
+    c = b0;
+    b0 = a;
+    a = t1 + t2 | 0;
+  }
+  h[0] = h[0] + a | 0;
+  h[1] = h[1] + b0 | 0;
+  h[2] = h[2] + c | 0;
+  h[3] = h[3] + d | 0;
+  h[4] = h[4] + e | 0;
+  h[5] = h[5] + f | 0;
+  h[6] = h[6] + g | 0;
+  h[7] = h[7] + hw | 0;
+}
+function updateByte(h, byte) {
+  h.block[h.blockLen++] = byte;
+  h.totalLen++;
+  if (h.blockLen === 64) {
+    compress(h);
+    h.blockLen = 0;
+  }
+}
+function updateBytes(h, bytes) {
+  for (let i = 0; i < bytes.length; i++) updateByte(h, bytes[i]);
+}
+function updateU32(h, n) {
+  updateByte(h, n & 255);
+  updateByte(h, n >>> 8 & 255);
+  updateByte(h, n >>> 16 & 255);
+  updateByte(h, n >>> 24 & 255);
+}
+function updateU32be(h, n) {
+  updateByte(h, n >>> 24 & 255);
+  updateByte(h, n >>> 16 & 255);
+  updateByte(h, n >>> 8 & 255);
+  updateByte(h, n & 255);
+}
+function hex32(n) {
+  return (n >>> 0).toString(16).padStart(8, "0");
+}
+function finalizeHex128(h) {
+  const totalBytes = h.totalLen;
+  const bitLenHi = Math.floor(totalBytes / 536870912);
+  const bitLenLo = totalBytes * 8 >>> 0;
+  updateByte(h, 128);
+  while (h.blockLen !== 56) updateByte(h, 0);
+  updateU32be(h, bitLenHi);
+  updateU32be(h, bitLenLo);
+  return hex32(h.h[0]) + hex32(h.h[1]) + hex32(h.h[2]) + hex32(h.h[3]);
+}
+var TAG_NULL = 0;
+var TAG_BOOL = 1;
+var TAG_NUMBER = 2;
+var TAG_STRING = 3;
+var TAG_ARRAY = 4;
+var TAG_OBJECT = 5;
+var f64buf = new ArrayBuffer(8);
+var f64view = new DataView(f64buf);
+var f64u32 = new Uint32Array(f64buf);
+f64view.setFloat64(0, NaN, true);
+var NAN_LO = f64u32[0];
+var NAN_HI = f64u32[1];
+function hashValue(h, value, depth = 0) {
+  if (value === null || value === void 0) {
+    updateByte(h, TAG_NULL);
+    return;
+  }
+  if (typeof value === "boolean") {
+    updateByte(h, TAG_BOOL);
+    updateByte(h, value ? 1 : 0);
+    return;
+  }
+  if (typeof value === "number") {
+    updateByte(h, TAG_NUMBER);
+    if (Number.isNaN(value)) {
+      updateU32(h, NAN_LO);
+      updateU32(h, NAN_HI);
+    } else {
+      f64view.setFloat64(0, value, true);
+      updateU32(h, f64u32[0]);
+      updateU32(h, f64u32[1]);
+    }
+    return;
+  }
+  if (typeof value === "string") {
+    updateByte(h, TAG_STRING);
+    const bytes = textEncoder.encode(value);
+    updateU32(h, bytes.length);
+    updateBytes(h, bytes);
+    return;
+  }
+  guardEncodeDepth(depth, "hashValue");
+  if (Array.isArray(value)) {
+    updateByte(h, TAG_ARRAY);
+    updateU32(h, value.length);
+    for (const el of value) hashValue(h, el, depth + 1);
+    return;
+  }
+  if (typeof value === "object") {
+    updateByte(h, TAG_OBJECT);
+    const keys = Object.keys(value).sort();
+    updateU32(h, keys.length);
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i];
+      const keyBytes = textEncoder.encode(k);
+      updateU32(h, keyBytes.length);
+      updateBytes(h, keyBytes);
+      hashValue(h, value[k], depth + 1);
+    }
+    return;
+  }
+  updateByte(h, TAG_NULL);
+}
+function contentHashMarker(value) {
+  const tagged = hasTaggedTypes(value) ? encodeTagged(value) : value;
+  const h = newHasher();
+  hashValue(h, tagged);
+  return `${CONTENT_HASH_MARKER_PREFIX}${finalizeHex128(h)}`;
+}
+
 // src/graph.ts
+function derivedValueChanged(before, after) {
+  if (Object.is(before, after)) return false;
+  if (isWireNull(before) && isWireNull(after)) return false;
+  const beforeIsContainer = typeof before === "object" && before !== null;
+  const afterIsContainer = typeof after === "object" && after !== null;
+  if (beforeIsContainer && afterIsContainer) {
+    return contentHashMarker(before) !== contentHashMarker(after);
+  }
+  return true;
+}
 var DEFAULT_COMMIT_HISTORY_CAP = 0;
 var DEFAULT_SNAPSHOT_RETENTION_CAP = 0;
 function makeFreezeIfDev(flags) {
@@ -472,7 +1184,13 @@ function makeInputEntry(id, value, lastWriteTime, node) {
     // stage. See InputEntry's field comment for the lifecycle
     // rationale.
     lastStagedAt: -1,
-    lastStagedRow: -1
+    lastStagedRow: -1,
+    // #1303 — every freshly-registered input starts with no
+    // transitively-downstream subscriber. `subscribe` flips this true
+    // when the per-node refcount crosses 0 → ≥1 (either by a direct
+    // subscriber on this input or by a `setDeps` edge that newly
+    // routes a subscribed-derived's path through this input).
+    hasDownstreamSubscriber: false
   };
 }
 var pretenureLatchTripped = false;
@@ -485,17 +1203,75 @@ function pretenureInputAllocationSites() {
     const node = makeInputNode(id);
     makeInputEntry(id, i, 0, node);
   }
+  const warmupGraph = createCausl();
+  for (let i = 0; i < PRETENURE_WARMUP_COUNT; i++) {
+    warmupGraph.input(`__causl_pretenure_input__:${i}`, i);
+  }
 }
 var GRAPH_ID_REGEX = /^[A-Za-z0-9_.:-]{1,256}$/;
+var autoBackendDeprecationWarned = false;
+function warnAutoBackendDeprecatedOnce() {
+  if (autoBackendDeprecationWarned) return;
+  autoBackendDeprecationWarned = true;
+  console.warn(
+    "[causl] createCausl({ backend: 'auto' }) is deprecated: it is now an alias for the default engine selection (the real wasm engine when preloaded, else the pure-TS floor) and no longer performs a runtime TS\u2192TS migration. Drop the `backend` option, or call preloadCauslWasm() once at init for the wasm engine."
+  );
+}
 function createCausl(options = {}) {
+  if (readInjectedBackend(options) === void 0) {
+    if (options.backend === "auto") warnAutoBackendDeprecatedOnce();
+    if (options.engine === "rust-ssot") {
+      return createWasmExplicitOrThrow(options);
+    }
+    if (options.engine !== "js-ssot") {
+      const wasmGraph = createWasmSyncIfPreloaded(options);
+      if (wasmGraph !== void 0) return wasmGraph;
+    }
+  }
+  return createCauslTs(options);
+}
+function createCauslTs(options = {}) {
+  const injectedBackend = readInjectedBackend(options);
+  if (injectedBackend !== void 0) {
+    assertValidInjectedBackend(injectedBackend);
+  }
+  const mirroredDerivedIds = /* @__PURE__ */ new Set();
+  let materialized = false;
+  function flushSeed() {
+    if (injectedBackend === void 0) return;
+    if (materialized) return;
+    materialized = true;
+    injectedBackend.materialize?.();
+  }
+  const rustSsotBackend = injectedBackend !== void 0 && injectedBackend.engineMode === "rust-ssot" && typeof injectedBackend.dependencies === "function" && typeof injectedBackend.dependents === "function" && typeof injectedBackend.stats === "function" ? injectedBackend : void 0;
+  function rustOwns(id) {
+    return rustSsotBackend !== void 0 && rustSsotBackend.has(id);
+  }
+  const explainsTopologyFromRust = injectedBackend !== void 0 && injectedBackend.explainsLineageFromRust?.() === true && injectedBackend.explainNode !== void 0;
+  const explainsTimestampsFromRust = explainsTopologyFromRust && injectedBackend.explainsTimestampsFromRust?.() === true && injectedBackend.nodeMeta !== void 0;
   pretenureInputAllocationSites();
   const commitHistoryCap = options.commitHistoryCap ?? DEFAULT_COMMIT_HISTORY_CAP;
+  injectedBackend?.setCommitHistoryCap?.(commitHistoryCap);
+  const engineCommitLogWindow = injectedBackend?.ownsCommitLog?.() ? injectedBackend.commitLogWindow?.bind(injectedBackend) : void 0;
+  function backendOwnsCommitLog() {
+    return engineCommitLogWindow !== void 0 && commitMetadataIds.size === 0;
+  }
   const snapshotRetentionCap = options.snapshotRetentionCap ?? DEFAULT_SNAPSHOT_RETENTION_CAP;
+  injectedBackend?.setSnapshotRetentionCap?.(
+    commitHistoryCap > 0 ? snapshotRetentionCap : 0
+  );
+  const backendOwnsRetention = commitHistoryCap > 0 && injectedBackend?.ownsRetention?.() === true && injectedBackend.readAt !== void 0;
   const disposedTombstoneCap = options.disposedTombstoneCap ?? DEFAULT_DISPOSED_TOMBSTONE_CAP;
   const onObserverError = options.onObserverError ?? defaultOnObserverError;
   const _strictCyclesDeprecated = options.strictCycles ?? true;
   const flags = mergeFlags(options.experimentalFlags);
   const freezeIfDev = makeFreezeIfDev(flags);
+  const enableH1HazardWarning = options.enableH1HazardWarning ?? false;
+  let h1HazardTrack = null;
+  if (!NODE_ENV_IS_PRODUCTION) {
+    h1HazardTrack = enableH1HazardWarning ? [] : null;
+  }
+  let adapterReadDepth = 0;
   if (options.name !== void 0 && !GRAPH_ID_REGEX.test(options.name)) {
     throw new InvalidGraphNameError(options.name);
   }
@@ -539,11 +1315,13 @@ function createCausl(options = {}) {
     return out;
   }
   const entries = /* @__PURE__ */ new Map();
+  const inputInvariants = /* @__PURE__ */ new Map();
   const inputRegisteredAtMap = /* @__PURE__ */ new Map();
   const inputSerializableMemo = /* @__PURE__ */ new Map();
   const commitMetadataIds = /* @__PURE__ */ new Set();
   const explainHandles = /* @__PURE__ */ new Map();
   const dependents = /* @__PURE__ */ new Map();
+  const subscriberRefcount = /* @__PURE__ */ new Map();
   const disposed = /* @__PURE__ */ new Map();
   const subscriptions = /* @__PURE__ */ new Set();
   const subscriptionsByNode = /* @__PURE__ */ new Map();
@@ -553,14 +1331,33 @@ function createCausl(options = {}) {
   const subscribeReadsByNode = /* @__PURE__ */ new Map();
   let activeReadTracker = null;
   const commitHistory = [];
+  let phaseFRingAppendCount = 0;
+  let phaseBCellPublishCount = 0;
   const COMMIT_LOG_ID = "__causl_commit_log__";
   const commitLogNode = makeDerivedNode(COMMIT_LOG_ID);
   let commitLogConsumerCount = 0;
+  let phaseDDerivedWalkCount = 0;
+  let phaseDStructuralWalkCount = 0;
   let inputCount = 0;
   let derivedCount = 0;
+  const nodeVersions = /* @__PURE__ */ new Map();
+  const nodeVersionAccessor = (node) => nodeVersions.get(node.id) ?? 0;
+  let preFireBumpedThisCommit;
+  injectedBackend?.onPreFireChangedSet?.((changedNodes) => {
+    const bumped = /* @__PURE__ */ new Set();
+    for (const id of changedNodes) {
+      nodeVersions.set(id, (nodeVersions.get(id) ?? 0) + 1);
+      bumped.add(id);
+    }
+    preFireBumpedThisCommit = bumped;
+  });
+  injectedBackend?.onObserverError?.((error, ctx) => {
+    reportObserverError(error, ctx);
+  });
   let transientSubscriberCount = 0;
   let now = 0;
   let committing = false;
+  let inBackendDispatchWindow = false;
   const stagedWriteEntries = [];
   const stagedWriteValues = [];
   let stagedActive = false;
@@ -582,6 +1379,9 @@ function createCausl(options = {}) {
   };
   entries.set(COMMIT_LOG_ID, commitLogEntry);
   function buildCommitLogValue() {
+    if (backendOwnsCommitLog()) {
+      return engineCommitLogWindow();
+    }
     return Object.freeze(
       commitHistory.map(
         (row) => (
@@ -621,6 +1421,12 @@ function createCausl(options = {}) {
     const e = getEntry(node.id);
     return readEntryFromResolved(e, node);
   }
+  function readDispatchValue(node) {
+    if (injectedBackend !== void 0 && mirroredDerivedIds.has(node.id) && injectedBackend.has(node.id)) {
+      return injectedBackend.read(node.id);
+    }
+    return readEntry(node);
+  }
   function readEntryFromResolved(e, node) {
     if (activeReadTracker !== null) {
       activeReadTracker.add(e.id);
@@ -628,6 +1434,9 @@ function createCausl(options = {}) {
     if (e.kind === "input") {
       if (stagedActive && e.lastStagedAt === now) {
         return stagedWriteValues[e.lastStagedRow];
+      }
+      if (engineOwnsWriteCells && commitMetadataIds.size === 0 && injectedBackend.has(e.id)) {
+        return injectedBackend.read(e.id);
       }
       return e.value;
     }
@@ -656,6 +1465,41 @@ function createCausl(options = {}) {
     }
     return false;
   }
+  function anyChangedInputHasSubscriber(changedInputIds) {
+    if (changedInputIds.length === 0) return false;
+    for (const id of changedInputIds) {
+      const e = entries.get(id);
+      if (e !== void 0 && e.kind === "input" && e.hasDownstreamSubscriber) {
+        return true;
+      }
+    }
+    return false;
+  }
+  function bumpSubscriberRefcountUp(startId, delta) {
+    if (delta === 0) return;
+    const stack = [startId];
+    while (stack.length > 0) {
+      const cur = stack.pop();
+      const e = entries.get(cur);
+      if (e === void 0) continue;
+      const prev = subscriberRefcount.get(cur) ?? 0;
+      const next = prev + delta;
+      if (next === 0) {
+        subscriberRefcount.delete(cur);
+        if (e.kind === "input" && e.hasDownstreamSubscriber) {
+          e.hasDownstreamSubscriber = false;
+        }
+      } else {
+        subscriberRefcount.set(cur, next);
+        if (e.kind === "input" && !e.hasDownstreamSubscriber && next > 0) {
+          e.hasDownstreamSubscriber = true;
+        }
+      }
+      if (e.kind === "derived") {
+        for (const dep of e.deps) stack.push(dep);
+      }
+    }
+  }
   function setDeps(derivedId, nextDeps) {
     const prev = entries.get(derivedId);
     if (!prev || prev.kind !== "derived") return;
@@ -672,6 +1516,7 @@ function createCausl(options = {}) {
         return;
       }
     }
+    const derivedSubCount = subscriberRefcount.get(derivedId) ?? 0;
     for (const oldDep of prev.deps) {
       if (!nextDeps.has(oldDep)) {
         const bucket = dependents.get(oldDep);
@@ -683,6 +1528,9 @@ function createCausl(options = {}) {
               upstream.hasDependents = false;
             }
           }
+        }
+        if (derivedSubCount > 0) {
+          bumpSubscriberRefcountUp(oldDep, -derivedSubCount);
         }
       }
     }
@@ -699,6 +1547,9 @@ function createCausl(options = {}) {
         if (upstream !== void 0 && upstream.kind === "input") {
           upstream.hasDependents = true;
         }
+      }
+      if (derivedSubCount > 0 && !prev.deps.has(newDep)) {
+        bumpSubscriberRefcountUp(newDep, +derivedSubCount);
       }
     }
     if (prev.tag !== "commit-metadata") {
@@ -725,6 +1576,7 @@ function createCausl(options = {}) {
     }
     const next = /* @__PURE__ */ new Set();
     for (let i = 0; i < len; i++) next.add(arr[i]);
+    const derivedSubCount = subscriberRefcount.get(derivedId) ?? 0;
     for (const oldDep of prevDeps) {
       if (!next.has(oldDep)) {
         const bucket = dependents.get(oldDep);
@@ -736,6 +1588,9 @@ function createCausl(options = {}) {
               upstream.hasDependents = false;
             }
           }
+        }
+        if (derivedSubCount > 0) {
+          bumpSubscriberRefcountUp(oldDep, -derivedSubCount);
         }
       }
     }
@@ -753,6 +1608,9 @@ function createCausl(options = {}) {
         if (upstream !== void 0 && upstream.kind === "input") {
           upstream.hasDependents = true;
         }
+      }
+      if (derivedSubCount > 0 && !prevDeps.has(newDep)) {
+        bumpSubscriberRefcountUp(newDep, +derivedSubCount);
       }
     }
     if (prev.tag !== "commit-metadata") {
@@ -902,6 +1760,8 @@ function createCausl(options = {}) {
     let next;
     try {
       next = e.compute(recordingGet);
+    } catch (err) {
+      throw asDerivedComputeError(e.id, err);
     } finally {
       activeRecording = prevRecording;
     }
@@ -981,7 +1841,7 @@ function createCausl(options = {}) {
         }
         for (const f of stack) inFlight.delete(f.entry.id);
         stack.length = 0;
-        throw computeErr;
+        throw asDerivedComputeError(frame.entry.id, computeErr);
       }
       if (captured !== null) {
         const verifyGet = (n) => {
@@ -1029,9 +1889,12 @@ function createCausl(options = {}) {
       stack.pop();
     }
   }
-  function input(id, initial) {
+  function input(id, initial, options2) {
     if (entries.has(id)) throw new DuplicateNodeError(id);
     const node = makeInputNode(id);
+    if (options2?.invariant !== void 0) {
+      inputInvariants.set(id, options2.invariant);
+    }
     entries.set(id, makeInputEntry(id, initial, now, node));
     inputCount++;
     if (now !== 0) inputRegisteredAtMap.set(id, now);
@@ -1041,6 +1904,9 @@ function createCausl(options = {}) {
           snap.delta.set(id, initial);
         }
       }
+    }
+    if (injectedBackend !== void 0) {
+      injectedBackend.registerInput(id, initial);
     }
     return node;
   }
@@ -1070,6 +1936,19 @@ function createCausl(options = {}) {
     };
     entries.set(id, entry);
     if (options2?.tag === "commit-metadata") {
+      if (backendOwnsCommitLog() && commitHistoryCap > 0) {
+        commitHistory.length = 0;
+        for (const row of engineCommitLogWindow()) {
+          commitHistory.push({ ...row, graphId });
+        }
+      }
+      if (engineOwnsWriteCells) {
+        for (const e of entries.values()) {
+          if (e.kind !== "input") continue;
+          e.value = injectedBackend.read(e.id);
+          inputSerializableMemo.delete(e.id);
+        }
+      }
       commitMetadataIds.add(id);
       commitLogConsumerCount++;
     }
@@ -1085,6 +1964,14 @@ function createCausl(options = {}) {
       throw err;
     }
     derivedCount++;
+    if (injectedBackend !== void 0 && options2?.tag !== "commit-metadata") {
+      const depIds = [...entry.deps];
+      const bridgedCompute = (get) => compute(
+        ((depNode) => get(depNode.id))
+      );
+      injectedBackend.registerDerived(id, depIds, bridgedCompute, options2?.tag);
+      mirroredDerivedIds.add(id);
+    }
     return node;
   }
   function isStackOverflowRangeError(err) {
@@ -1096,18 +1983,108 @@ function createCausl(options = {}) {
     return derived(id, compute, { tag: "commit-metadata" });
   }
   function read(node) {
-    return readEntry(node);
+    const value = readEntry(node);
+    if (!NODE_ENV_IS_PRODUCTION) {
+      recordH1HazardRead(value, node.id);
+    }
+    return value;
   }
-  function recomputeAffected(seedChanged, rollback) {
-    const affected = /* @__PURE__ */ new Set();
+  function recordH1HazardRead(value, nodeId) {
+    if (h1HazardTrack !== null && activeReadTracker === null && adapterReadDepth === 0 && value !== null && (typeof value === "object" || typeof value === "function")) {
+      h1HazardTrack.push({
+        ref: new WeakRef(value),
+        nodeId,
+        capturedAt: now
+      });
+      if (h1HazardTrack.length > H1_HAZARD_TRACK_CAP) {
+        pruneH1HazardTrack();
+      }
+    }
+  }
+  const H1_HAZARD_TRACK_CAP = 4096;
+  function pruneH1HazardTrack() {
+    if (NODE_ENV_IS_PRODUCTION) return;
+    if (h1HazardTrack === null) return;
+    let write = 0;
+    for (let read2 = 0; read2 < h1HazardTrack.length; read2++) {
+      const rec = h1HazardTrack[read2];
+      if (rec.ref.deref() !== void 0) {
+        h1HazardTrack[write++] = rec;
+      }
+    }
+    h1HazardTrack.length = write;
+  }
+  function checkH1HazardOnCommit() {
+    if (NODE_ENV_IS_PRODUCTION) return;
+    if (h1HazardTrack === null || h1HazardTrack.length === 0) return;
+    let write = 0;
+    for (let read2 = 0; read2 < h1HazardTrack.length; read2++) {
+      const rec = h1HazardTrack[read2];
+      const referent = rec.ref.deref();
+      if (referent === void 0) continue;
+      if (rec.capturedAt < now) {
+        console.warn(
+          `[causl] H1 hazard: graph.read(node '${rec.nodeId}') return value held across commit \u2014 reference identity not guaranteed (SPEC \xA715.1)`
+        );
+        continue;
+      }
+      h1HazardTrack[write++] = rec;
+    }
+    h1HazardTrack.length = write;
+  }
+  function runInAdapterReadMode(fn) {
+    if (NODE_ENV_IS_PRODUCTION) {
+      return fn();
+    }
+    adapterReadDepth++;
+    try {
+      return fn();
+    } finally {
+      adapterReadDepth--;
+    }
+  }
+  function recordDerivedRollback(h, id, makeRec) {
+    const m = h.map;
+    if (m !== void 0) {
+      if (!m.has(id)) m.set(id, makeRec());
+      return;
+    }
+    if (h.singleId === void 0) {
+      h.singleId = id;
+      h.single = makeRec();
+      return;
+    }
+    if (h.singleId === id) {
+      return;
+    }
+    const promoted = /* @__PURE__ */ new Map();
+    promoted.set(h.singleId, h.single);
+    promoted.set(id, makeRec());
+    h.map = promoted;
+    h.singleId = void 0;
+    h.single = void 0;
+  }
+  function derivedRollbackIsEmpty(h) {
+    return h.map === void 0 && h.singleId === void 0;
+  }
+  function forEachDerivedRollback(h, fn) {
+    if (h.singleId !== void 0) fn(h.singleId, h.single);
+    const m = h.map;
+    if (m !== void 0) {
+      for (const [id, prior] of m) fn(id, prior);
+    }
+  }
+  function recomputeAffected(seedChanged, rollback, runMirrored = false, backendOwnsCycleCheck = false) {
+    if (!runMirrored && backendOwnsCycleCheck && injectedBackend !== void 0 && commitMetadataIds.size === 0) {
+      return [];
+    }
     const indegree = /* @__PURE__ */ new Map();
     const queue = [];
     for (const id of seedChanged) {
       const downstream = dependents.get(id);
       if (!downstream) continue;
       for (const d of downstream) {
-        if (!affected.has(d)) {
-          affected.add(d);
+        if (!indegree.has(d)) {
           indegree.set(d, 0);
           queue.push(d);
         }
@@ -1119,10 +2096,10 @@ function createCausl(options = {}) {
       const downstream = dependents.get(id);
       if (!downstream) continue;
       for (const d of downstream) {
-        if (affected.has(d)) {
-          indegree.set(d, indegree.get(d) + 1);
+        const cur = indegree.get(d);
+        if (cur !== void 0) {
+          indegree.set(d, cur + 1);
         } else {
-          affected.add(d);
           indegree.set(d, 1);
           queue.push(d);
         }
@@ -1137,10 +2114,10 @@ function createCausl(options = {}) {
     while (rHead < ready.length) {
       const id = ready[rHead++];
       ordered.push(id);
+      phaseDStructuralWalkCount++;
       const downstream = dependents.get(id);
       if (!downstream) continue;
       for (const d of downstream) {
-        if (!affected.has(d)) continue;
         const cur = indegree.get(d);
         if (cur === void 0) continue;
         const next = cur - 1;
@@ -1148,36 +2125,55 @@ function createCausl(options = {}) {
         if (next === 0) ready.push(d);
       }
     }
-    if (ordered.length < affected.size) {
+    if (ordered.length < indegree.size) {
       const orderedSet = new Set(ordered);
       const residue = [];
-      for (const id of affected) {
+      for (const id of indegree.keys()) {
         if (!orderedSet.has(id)) residue.push(id);
       }
       throw new CycleError(recoverCyclePath(residue));
     }
+    if (!runMirrored && injectedBackend !== void 0 && commitMetadataIds.size === 0) {
+      return [];
+    }
     const processedThisPass = /* @__PURE__ */ new Set();
     const changedThisCommit = [];
+    const cutoffStable = /* @__PURE__ */ new Set();
     for (const id of ordered) {
       const e = entries.get(id);
       if (!e || e.kind !== "derived") continue;
+      phaseDDerivedWalkCount++;
+      if (!runMirrored && mirroredDerivedIds.has(id)) {
+        cutoffStable.add(id);
+        continue;
+      }
+      if (e.computed) {
+        let allStable = true;
+        for (const dp of e.deps) {
+          if (seedChanged.has(dp)) {
+            allStable = false;
+            break;
+          }
+          if (indegree.has(dp) && !cutoffStable.has(dp)) {
+            allStable = false;
+            break;
+          }
+        }
+        if (allStable) {
+          cutoffStable.add(id);
+          continue;
+        }
+      }
       const before = e.value;
       const wasComputed = e.computed;
       const prevDeps = e.deps;
       if (rollback !== void 0) {
-        let m = rollback.map;
-        if (m === void 0) {
-          m = /* @__PURE__ */ new Map();
-          rollback.map = m;
-        }
-        if (!m.has(id)) {
-          m.set(id, {
-            value: e.value,
-            deps: e.deps,
-            computed: e.computed,
-            lastTime: e.lastTime
-          });
-        }
+        recordDerivedRollback(rollback, id, () => ({
+          value: e.value,
+          deps: e.deps,
+          computed: e.computed,
+          lastTime: e.lastTime
+        }));
       }
       computeDerived(e);
       processedThisPass.add(id);
@@ -1194,8 +2190,10 @@ function createCausl(options = {}) {
           throw new CycleError(cyclePath);
         }
       }
-      if (!wasComputed || !Object.is(before, e.value)) {
+      if (!wasComputed || derivedValueChanged(before, e.value)) {
         changedThisCommit.push(id);
+      } else {
+        cutoffStable.add(id);
       }
     }
     return changedThisCommit;
@@ -1208,27 +2206,20 @@ function createCausl(options = {}) {
       if (!e || e.kind !== "derived") continue;
       const before = e.value;
       const wasComputed = e.computed;
-      let m = rollback.map;
-      if (m === void 0) {
-        m = /* @__PURE__ */ new Map();
-        rollback.map = m;
-      }
-      if (!m.has(id)) {
-        m.set(id, {
-          value: e.value,
-          // #703 Win 3 — capture by reference; `setDeps` swaps the
-          // reference rather than mutating in place, so the prior
-          // set stays a valid pre-recompute snapshot for the
-          // commit() catch-arm rollback. Same invariant as Phase D's
-          // capture site above; same property-test gate
-          // (`test/properties/setDeps-immutability.test.ts`).
-          deps: e.deps,
-          computed: e.computed,
-          lastTime: e.lastTime
-        });
-      }
+      recordDerivedRollback(rollback, id, () => ({
+        value: e.value,
+        // #703 Win 3 — capture by reference; `setDeps` swaps the
+        // reference rather than mutating in place, so the prior
+        // set stays a valid pre-recompute snapshot for the
+        // commit() catch-arm rollback. Same invariant as Phase D's
+        // capture site above; same property-test gate
+        // (`test/properties/setDeps-immutability.test.ts`).
+        deps: e.deps,
+        computed: e.computed,
+        lastTime: e.lastTime
+      }));
       computeDerived(e);
-      if (!wasComputed || !Object.is(before, e.value)) {
+      if (!wasComputed || derivedValueChanged(before, e.value)) {
         changedThisPhase.push(id);
       }
     }
@@ -1238,7 +2229,7 @@ function createCausl(options = {}) {
     return commitInternal(intent, run);
   }
   function phaseD_recomputeAffected(changed, derivedRollback) {
-    return recomputeAffected(changed, derivedRollback);
+    return recomputeAffected(changed, derivedRollback, false, true);
   }
   function phaseF4_refreshCommitLog(currentNow, changed) {
     commitLogEntry.value = buildCommitLogValue();
@@ -1247,10 +2238,16 @@ function createCausl(options = {}) {
   }
   function phaseF6_retainInputSnapshot(currentNow, changedInputIds) {
     const delta = /* @__PURE__ */ new Map();
-    for (const id of changedInputIds) {
-      const e = entries.get(id);
-      if (e && e.kind === "input" && isInputValueSerializable(e, inputSerializableMemo)) {
-        delta.set(id, e.value);
+    if (!backendOwnsRetention) {
+      for (const id of changedInputIds) {
+        const e = entries.get(id);
+        if (e === void 0 || e.kind !== "input") continue;
+        if (engineOwnsWriteCells) {
+          const v = committedInputValue(e);
+          if (isSerializable(v)) delta.set(id, v);
+        } else if (isInputValueSerializable(e, inputSerializableMemo)) {
+          delta.set(id, e.value);
+        }
       }
     }
     const head = retainedSnapshots.length > 0 ? retainedSnapshots[retainedSnapshots.length - 1] : null;
@@ -1281,7 +2278,7 @@ function createCausl(options = {}) {
           if (sub.manyGroup.disposed) continue;
           if (firedManyGroups !== void 0 && firedManyGroups.has(sub.manyGroup)) continue;
         }
-        const v = readEntry(sub.node);
+        const v = readDispatchValue(sub.node);
         if (!sub.hasFired || !Object.is(sub.lastValue, v)) {
           sub.lastValue = v;
           sub.hasFired = true;
@@ -1350,29 +2347,36 @@ function createCausl(options = {}) {
       }
     }
   }
-  function commitInternal(intent, run, originatedAt) {
+  function commitInternal(intent, run, originatedAt, acceptAuthoritative) {
     if (committing) throw new CommitInProgressError();
     committing = true;
+    const gatedWrites = engineOwnsWriteCells && commitMetadataIds.size === 0;
     stagedWriteEntries.length = 0;
     stagedWriteValues.length = 0;
     stagedActive = true;
     const inputRollbackEntries = [];
     const inputRollbackPriorValues = [];
     const inputRollbackPriorLastWrite = [];
+    let fastInputRollbackActive = false;
+    let fastInputRollbackEntry;
+    let fastInputRollbackPriorValue;
+    let fastInputRollbackPriorLastWrite = 0;
     const beforeNow = now;
     let txAlive = true;
     const tx = {
       set(node, value) {
         if (!txAlive) throw new StaleTxError();
+        if (value === void 0) value = null;
         const id = node.id;
         const e = getEntry(id);
         if (e.kind !== "input") throw new NotAnInputNodeError(id);
-        if (!e.hasDependents) {
+        if (!gatedWrites && !e.hasDependents) {
           if (Object.is(e.value, value)) return;
           if (e.lastWriteTime > now) {
             e.value = value;
             return;
           }
+          phaseBCellPublishCount++;
           inputRollbackEntries.push(e);
           inputRollbackPriorValues.push(e.value);
           inputRollbackPriorLastWrite.push(e.lastWriteTime);
@@ -1386,7 +2390,8 @@ function createCausl(options = {}) {
           stagedWriteValues[idx] = value;
           return;
         }
-        if (Object.is(e.value, value)) return;
+        if (Object.is(gatedWrites ? committedInputValue(e) : e.value, value))
+          return;
         e.lastStagedAt = now;
         e.lastStagedRow = stagedWriteEntries.length;
         stagedWriteEntries.push(e);
@@ -1394,7 +2399,11 @@ function createCausl(options = {}) {
       }
     };
     const changedInputIds = [];
-    const derivedRollback = { map: void 0 };
+    const derivedRollback = {
+      map: void 0,
+      singleId: void 0,
+      single: void 0
+    };
     let commitHistorySnapshot = null;
     const commitLogValueBeforeF4 = commitLogEntry.value;
     const commitLogLastTimeBeforeF4 = commitLogEntry.lastTime;
@@ -1418,7 +2427,7 @@ function createCausl(options = {}) {
             inputRollbackPriorLastWrite[writeIdx] = priorLastWrite;
           }
           writeIdx++;
-          changedInputIds.push(e.id);
+          if (inputValueChanged(priorValue, e.value)) changedInputIds.push(e.id);
           inputSerializableMemo.delete(e.id);
         }
         if (writeIdx !== fastPathLen) {
@@ -1427,9 +2436,87 @@ function createCausl(options = {}) {
           inputRollbackPriorLastWrite.length = writeIdx;
         }
       }
+      if (inputInvariants.size > 0) {
+        if (gatedWrites) {
+          for (let pass = 0; pass < 2; pass++) {
+            const wantFast = pass === 0;
+            for (let i = 0, n = stagedWriteEntries.length; i < n; i++) {
+              const e = stagedWriteEntries[i];
+              if (e.hasDependents === wantFast) continue;
+              const inv = inputInvariants.get(e.id);
+              if (inv === void 0) continue;
+              const v = stagedWriteValues[i];
+              if (wantFast && Object.is(committedInputValue(e), v)) continue;
+              try {
+                inv(v);
+              } catch (cause) {
+                if (cause instanceof CauslError) throw cause;
+                throw new InvariantViolationError(e.id, v, cause);
+              }
+            }
+          }
+        } else {
+          for (let i = 0, n = inputRollbackEntries.length; i < n; i++) {
+            const e = inputRollbackEntries[i];
+            const inv = inputInvariants.get(e.id);
+            if (inv === void 0) continue;
+            try {
+              inv(e.value);
+            } catch (cause) {
+              if (cause instanceof CauslError) throw cause;
+              throw new InvariantViolationError(e.id, e.value, cause);
+            }
+          }
+          for (let i = 0, n = stagedWriteEntries.length; i < n; i++) {
+            const e = stagedWriteEntries[i];
+            const inv = inputInvariants.get(e.id);
+            if (inv === void 0) continue;
+            const v = stagedWriteValues[i];
+            try {
+              inv(v);
+            } catch (cause) {
+              if (cause instanceof CauslError) throw cause;
+              throw new InvariantViolationError(e.id, v, cause);
+            }
+          }
+        }
+      }
       const stagedLen = stagedWriteEntries.length;
       let rollbackLen = inputRollbackEntries.length;
-      if (stagedLen > 0) {
+      if (gatedWrites) {
+        for (let pass = 0; pass < 2; pass++) {
+          const wantFast = pass === 0;
+          for (let i = 0; i < stagedLen; i++) {
+            const e = stagedWriteEntries[i];
+            if (e.hasDependents === wantFast) continue;
+            const v = stagedWriteValues[i];
+            const baseline = committedInputValue(e);
+            if (Object.is(baseline, v)) continue;
+            const fires = inputValueChanged(baseline, v);
+            inputRollbackEntries.push(e);
+            inputRollbackPriorValues.push(e.value);
+            inputRollbackPriorLastWrite.push(e.lastWriteTime);
+            rollbackLen++;
+            e.value = null;
+            inputSerializableMemo.delete(e.id);
+            if (fires) changedInputIds.push(e.id);
+          }
+        }
+      } else if (stagedLen === 1 && rollbackLen === 0) {
+        const e = stagedWriteEntries[0];
+        const v = stagedWriteValues[0];
+        if (!Object.is(e.value, v)) {
+          phaseBCellPublishCount++;
+          const fires = inputValueChanged(e.value, v);
+          fastInputRollbackActive = true;
+          fastInputRollbackEntry = e;
+          fastInputRollbackPriorValue = e.value;
+          fastInputRollbackPriorLastWrite = e.lastWriteTime;
+          e.value = v;
+          inputSerializableMemo.delete(e.id);
+          if (fires) changedInputIds.push(e.id);
+        }
+      } else if (stagedLen > 0) {
         const cap = rollbackLen + stagedLen;
         inputRollbackEntries.length = cap;
         inputRollbackPriorValues.length = cap;
@@ -1438,13 +2525,15 @@ function createCausl(options = {}) {
           const e = stagedWriteEntries[i];
           const v = stagedWriteValues[i];
           if (!Object.is(e.value, v)) {
+            phaseBCellPublishCount++;
+            const fires = inputValueChanged(e.value, v);
             inputRollbackEntries[rollbackLen] = e;
             inputRollbackPriorValues[rollbackLen] = e.value;
             inputRollbackPriorLastWrite[rollbackLen] = e.lastWriteTime;
             rollbackLen++;
             e.value = v;
             inputSerializableMemo.delete(e.id);
-            changedInputIds.push(e.id);
+            if (fires) changedInputIds.push(e.id);
           }
         }
         if (rollbackLen !== cap) {
@@ -1454,6 +2543,9 @@ function createCausl(options = {}) {
         }
       }
       now += 1;
+      if (fastInputRollbackActive) {
+        fastInputRollbackEntry.lastWriteTime = now;
+      }
       for (let i = 0, n = inputRollbackEntries.length; i < n; i++) {
         inputRollbackEntries[i].lastWriteTime = now;
       }
@@ -1463,6 +2555,8 @@ function createCausl(options = {}) {
         downstreamChanged = phaseD_recomputeAffected(changed, derivedRollback);
         for (const id of downstreamChanged) changed.add(id);
       }
+      if (acceptAuthoritative !== void 0) inBackendDispatchWindow = true;
+      const authoritativeChangedNodes = acceptAuthoritative?.() ?? void 0;
       if (changedInputIds.length === 0 && downstreamChanged.length === 0 && commitObservers.size === 0 && commitMetadataIds.size === 0 && commitHistoryCap === 0 && !anyInputSubscriberIn(changedInputIds) && !anyProjectionDepIn(changedInputIds)) {
         return Object.freeze({
           time: now,
@@ -1483,15 +2577,18 @@ function createCausl(options = {}) {
         commitHistorySnapshot = commitHistory.slice();
       }
       if (commitHistoryCap > 0) {
-        commitHistory.push({
-          time: c.time,
-          graphId,
-          intent: c.intent,
-          changedNodes: c.changedNodes,
-          originatedAt: c.originatedAt
-        });
-        if (commitHistory.length > commitHistoryCap) {
-          commitHistory.splice(0, commitHistory.length - commitHistoryCap);
+        if (!backendOwnsCommitLog()) {
+          phaseFRingAppendCount++;
+          commitHistory.push({
+            time: c.time,
+            graphId,
+            intent: c.intent,
+            changedNodes: authoritativeChangedNodes ?? c.changedNodes,
+            originatedAt: c.originatedAt
+          });
+          if (commitHistory.length > commitHistoryCap) {
+            commitHistory.splice(0, commitHistory.length - commitHistoryCap);
+          }
         }
       }
       if (commitHistoryCap > 0 && commitLogConsumerCount > 0) {
@@ -1501,17 +2598,41 @@ function createCausl(options = {}) {
         const metadataChanged = recomputeCommitMetadata(derivedRollback);
         for (const id of metadataChanged) changed.add(id);
       }
+      for (const id of changed) {
+        if (preFireBumpedThisCommit?.has(id) === true) continue;
+        nodeVersions.set(id, (nodeVersions.get(id) ?? 0) + 1);
+      }
       if (commitHistoryCap > 0) {
         phaseF6_retainInputSnapshot(now, changedInputIds);
       }
-      if (changed.size > 0) {
-        phaseG_dispatchPerNodeSubscribers(changed, c, now);
+      if (changed.size > 0 && (anyChangedInputHasSubscriber(changedInputIds) || changed.has(COMMIT_LOG_ID) && (subscriberRefcount.get(COMMIT_LOG_ID) ?? 0) > 0 || subscribeReadsRegistrations.size > 0)) {
+        let changedForDispatch = changed;
+        if (preFireBumpedThisCommit !== void 0) {
+          let extended;
+          for (const id of preFireBumpedThisCommit) {
+            if (!changed.has(id)) {
+              if (extended === void 0) extended = new Set(changed);
+              extended.add(id);
+            }
+          }
+          if (extended !== void 0) changedForDispatch = extended;
+        }
+        phaseG_dispatchPerNodeSubscribers(changedForDispatch, c, now);
       }
       if (commitObservers.size > 0) {
         phaseH_dispatchCommitObservers(c, now);
       }
+      if (!NODE_ENV_IS_PRODUCTION) {
+        if (h1HazardTrack !== null) checkH1HazardOnCommit();
+      }
       return c;
     } catch (err) {
+      if (fastInputRollbackActive) {
+        const e = fastInputRollbackEntry;
+        e.value = fastInputRollbackPriorValue;
+        inputSerializableMemo.delete(e.id);
+        e.lastWriteTime = fastInputRollbackPriorLastWrite;
+      }
       for (let i = 0, n = inputRollbackEntries.length; i < n; i++) {
         const e = inputRollbackEntries[i];
         e.value = inputRollbackPriorValues[i];
@@ -1521,8 +2642,8 @@ function createCausl(options = {}) {
       for (let i = 0, n = stagedWriteEntries.length; i < n; i++) {
         stagedWriteEntries[i].lastStagedAt = -1;
       }
-      if (derivedRollback.map !== void 0) {
-        for (const [id, prior] of derivedRollback.map) {
+      if (!derivedRollbackIsEmpty(derivedRollback)) {
+        forEachDerivedRollback(derivedRollback, (id, prior) => {
           const e = entries.get(id);
           if (e && e.kind === "derived") {
             e.value = prior.value;
@@ -1530,7 +2651,7 @@ function createCausl(options = {}) {
             e.computed = prior.computed;
             e.lastTime = prior.lastTime;
           }
-        }
+        });
       }
       if (commitHistorySnapshot !== null) {
         commitHistory.length = 0;
@@ -1553,6 +2674,7 @@ function createCausl(options = {}) {
             b.delete(sub);
             if (b.size === 0) subscriptionsByNode.delete(sub.node.id);
           }
+          if (wasPresent) bumpSubscriberRefcountUp(sub.node.id, -1);
           if (wasPresent && sub.node.id === COMMIT_LOG_ID) {
             commitLogConsumerCount--;
           }
@@ -1562,6 +2684,7 @@ function createCausl(options = {}) {
       }
       txAlive = false;
       committing = false;
+      inBackendDispatchWindow = false;
       stagedActive = false;
       stagedWriteEntries.length = 0;
       stagedWriteValues.length = 0;
@@ -1581,6 +2704,7 @@ function createCausl(options = {}) {
     const tx = {
       set(node, value) {
         if (!txAlive) throw new StaleTxError();
+        if (value === void 0) value = null;
         const id = node.id;
         const e = getEntry(id);
         if (e.kind !== "input") throw new NotAnInputNodeError(id);
@@ -1611,7 +2735,11 @@ function createCausl(options = {}) {
       }
     };
     const changedInputIds = [];
-    const derivedRollback = { map: void 0 };
+    const derivedRollback = {
+      map: void 0,
+      singleId: void 0,
+      single: void 0
+    };
     let prediction = null;
     let predictedError = null;
     try {
@@ -1634,7 +2762,7 @@ function createCausl(options = {}) {
             inputRollbackPriorLastWrite[writeIdx] = priorLastWrite;
           }
           writeIdx++;
-          changedInputIds.push(e.id);
+          if (inputValueChanged(priorValue, e.value)) changedInputIds.push(e.id);
           inputSerializableMemo.delete(e.id);
         }
         if (writeIdx !== fastPathLen) {
@@ -1647,12 +2775,13 @@ function createCausl(options = {}) {
         const e = stagedWriteEntries[i];
         const v = stagedWriteValues[i];
         if (!Object.is(e.value, v)) {
+          const fires = inputValueChanged(e.value, v);
           inputRollbackEntries.push(e);
           inputRollbackPriorValues.push(e.value);
           inputRollbackPriorLastWrite.push(e.lastWriteTime);
           e.value = v;
           inputSerializableMemo.delete(e.id);
-          changedInputIds.push(e.id);
+          if (fires) changedInputIds.push(e.id);
         }
       }
       now += 1;
@@ -1662,7 +2791,25 @@ function createCausl(options = {}) {
       const changed = new Set(changedInputIds);
       const derivedDiff = [];
       if (changedInputIds.length > 0) {
-        const downstreamChanged = recomputeAffected(changed, derivedRollback);
+        if (injectedBackend !== void 0 && mirroredDerivedIds.size > 0) {
+          for (const id of mirroredDerivedIds) {
+            const e = entries.get(id);
+            if (!e || e.kind !== "derived") continue;
+            recordDerivedRollback(derivedRollback, id, () => ({
+              value: e.value,
+              deps: e.deps,
+              computed: e.computed,
+              lastTime: e.lastTime
+            }));
+            e.value = injectedBackend.read(id);
+            e.computed = true;
+          }
+        }
+        const downstreamChanged = recomputeAffected(
+          changed,
+          derivedRollback,
+          true
+        );
         for (const id of downstreamChanged) {
           changed.add(id);
           derivedDiff.push(id);
@@ -1685,8 +2832,8 @@ function createCausl(options = {}) {
         inputSerializableMemo.delete(e.id);
         e.lastWriteTime = inputRollbackPriorLastWrite[i];
       }
-      if (derivedRollback.map !== void 0) {
-        for (const [id, prior] of derivedRollback.map) {
+      if (!derivedRollbackIsEmpty(derivedRollback)) {
+        forEachDerivedRollback(derivedRollback, (id, prior) => {
           const e = entries.get(id);
           if (e && e.kind === "derived") {
             e.value = prior.value;
@@ -1694,7 +2841,7 @@ function createCausl(options = {}) {
             e.computed = prior.computed;
             e.lastTime = prior.lastTime;
           }
-        }
+        });
       }
       now = beforeNow;
       txAlive = false;
@@ -1719,6 +2866,28 @@ function createCausl(options = {}) {
       error: predictedError,
       stagedDiff: Object.freeze(changedInputIds.slice())
     };
+  }
+  const engineSimulateReroute = injectedBackend?.buildSimulateReroute?.({
+    isCommitting: () => committing,
+    setCommitting: (value) => {
+      committing = value;
+    },
+    resolveInputEntry: (id) => {
+      const e = getEntry(id);
+      if (e.kind !== "input") throw new NotAnInputNodeError(id);
+      return e;
+    },
+    isDerived: (id) => entries.get(id)?.kind === "derived",
+    inputValueChanged,
+    flushSeed,
+    freezeIfDev
+  });
+  function backendOwnsSimulate() {
+    return engineSimulateReroute !== void 0 && commitMetadataIds.size === 0;
+  }
+  const engineOwnsWriteCells = engineSimulateReroute !== void 0 && injectedBackend?.ownsWriteCells?.() === true;
+  function committedInputValue(e) {
+    return engineOwnsWriteCells ? injectedBackend.read(e.id) : e.value;
   }
   function subscribe(node, observer, options2) {
     getEntry(node.id);
@@ -1748,6 +2917,7 @@ function createCausl(options = {}) {
       subscriptionsByNode.set(node.id, bucket);
     }
     bucket.add(sub);
+    bumpSubscriberRefcountUp(node.id, 1);
     if (node.id === COMMIT_LOG_ID) commitLogConsumerCount++;
     if (sub.transient) transientSubscriberCount++;
     try {
@@ -1767,6 +2937,7 @@ function createCausl(options = {}) {
         b.delete(sub);
         if (b.size === 0) subscriptionsByNode.delete(node.id);
       }
+      if (wasPresent) bumpSubscriberRefcountUp(node.id, -1);
       if (wasPresent && node.id === COMMIT_LOG_ID) commitLogConsumerCount--;
       if (wasPresent && sub.transient) transientSubscriberCount--;
     };
@@ -1781,6 +2952,7 @@ function createCausl(options = {}) {
         b.delete(entry);
         if (b.size === 0) subscriptionsByNode.delete(entry.node.id);
       }
+      if (wasPresent) bumpSubscriberRefcountUp(entry.node.id, -1);
       if (entry.node.id === COMMIT_LOG_ID) commitLogConsumerCount--;
       if (wasPresent && entry.transient) transientSubscriberCount--;
     }
@@ -1803,12 +2975,12 @@ function createCausl(options = {}) {
       if (group.disposed) return;
       const values = new Array(group.nodes.length);
       for (let i = 0; i < group.nodes.length; i++) {
-        values[i] = readEntry(group.nodes[i]);
+        values[i] = readDispatchValue(group.nodes[i]);
       }
       observerErased(values);
     };
     for (const node of nodes) {
-      const initialValue = readEntry(node);
+      const initialValue = readDispatchValue(node);
       const sub = {
         node,
         observer: fireGroupOnce,
@@ -1825,6 +2997,7 @@ function createCausl(options = {}) {
         subscriptionsByNode.set(node.id, bucket);
       }
       bucket.add(sub);
+      bumpSubscriberRefcountUp(node.id, 1);
       if (node.id === COMMIT_LOG_ID) commitLogConsumerCount++;
       if (transient) transientSubscriberCount++;
       group.entries.add(sub);
@@ -1938,43 +3111,66 @@ function createCausl(options = {}) {
     }
     const entry = entries.get(id);
     if (!entry) return { via: "cycle", node: id, cycleBackTo: id };
-    if (entry.kind === "input") {
-      const value2 = get(entry.node);
+    const rustTopo = explainsTopologyFromRust && rustOwns(id) ? rustSsotBackend.explainNode(id) : void 0;
+    if (explainsTopologyFromRust && rustOwns(id) && rustTopo === void 0) {
+      return { via: "cycle", node: id, cycleBackTo: id };
+    }
+    const rustMeta = explainsTimestampsFromRust && rustTopo !== void 0 ? rustSsotBackend.nodeMeta(id) : void 0;
+    const kind = rustTopo !== void 0 ? rustTopo.kind : entry.kind;
+    if (kind === "input") {
+      const value2 = get({ id });
       return Object.freeze({
         via: "input",
         node: id,
+        // #83 — `computedAt` (the input `lastWriteTime`) resolves from the TS
+        // `entries` mirror, NOT the Rust `node_meta` extern. `explain` reads
+        // run INSIDE a dispatch frame (the `__explain__` derivation computes in
+        // `__causl_compute`), where the extern serves a STALE stamp (the
+        // in-dispatch state view carries the topology + kind but not the
+        // in-flight write time). The `entries` map is the transactionally-
+        // maintained client stamp mirror (#75/#77 rollback; stamped at Phase
+        // C.5 before the Phase-G/H observer fires) the js-ssot oracle also
+        // reads — byte-identical, zero wasm hops. Topology (kind + deps) + the
+        // `via` tag stay Rust-authoritative (the extern serves those live).
         value: value2,
-        computedAt: entry.lastWriteTime,
+        computedAt: entry.kind === "input" ? entry.lastWriteTime : entry.lastTime,
         deps: freezeIfDev([])
       });
     }
+    if (entry.kind !== "derived") {
+      return { via: "cycle", node: id, cycleBackTo: id };
+    }
+    const derivedEntry = entry;
     const value = get({ id });
     stack.add(id);
     const deps = [];
-    for (const depId of Array.from(entry.deps).sort()) {
+    const depIds = rustTopo !== void 0 ? rustTopo.deps : Array.from(derivedEntry.deps).sort();
+    for (const depId of depIds) {
       const childEntry = entries.get(depId);
       if (!childEntry) continue;
-      const subExplanation = buildExplanation(depId, get, stack);
       const contributedAt = childEntry.kind === "input" ? childEntry.lastWriteTime : childEntry.lastTime;
+      const subExplanation = buildExplanation(depId, get, stack);
       deps.push(freezeIfDev({ node: depId, contributedAt, explanation: subExplanation }));
     }
     stack.delete(id);
-    const via = entry.tag === "live" ? "live" : "derived";
+    const via = rustMeta !== void 0 ? rustMeta.tag === "live" ? "live" : "derived" : derivedEntry.tag === "live" ? "live" : "derived";
     return Object.freeze({
       via,
       node: id,
       value,
-      computedAt: entry.lastTime,
+      computedAt: derivedEntry.lastTime,
       deps: freezeIfDev(deps)
     });
   }
   function dependenciesOf(node) {
     const entry = getEntry(node.id);
     if (entry.kind === "input") return Object.freeze([]);
+    if (rustOwns(node.id)) return rustSsotBackend.dependencies(node.id);
     return Object.freeze([...entry.deps].sort());
   }
   function dependentsOf(node) {
     getEntry(node.id);
+    if (rustOwns(node.id)) return rustSsotBackend.dependents(node.id);
     const set = dependents.get(node.id);
     if (!set || set.size === 0) return Object.freeze([]);
     return Object.freeze([...set].sort());
@@ -2064,6 +3260,12 @@ function createCausl(options = {}) {
     const inputs = {};
     for (const e of entries.values()) {
       if (e.kind !== "input") continue;
+      if (engineOwnsWriteCells) {
+        const v = committedInputValue(e);
+        if (!isSerializable(v)) continue;
+        inputs[e.id] = v;
+        continue;
+      }
       if (!isInputValueSerializable(e, inputSerializableMemo)) continue;
       inputs[e.id] = e.value;
     }
@@ -2127,15 +3329,37 @@ function createCausl(options = {}) {
       if (!e || e.kind !== "input") continue;
       writes.push([id, value]);
     }
-    commitInternal(
+    let wasmCommit;
+    const tsCommit = commitInternal(
       "hydrate",
       (tx) => {
         for (const [id, value] of writes) {
           tx.set({ id }, value);
         }
       },
-      snap.time
+      snap.time,
+      injectedBackend === void 0 ? void 0 : () => {
+        flushSeed();
+        wasmCommit = injectedBackend.hydrate !== void 0 ? injectedBackend.hydrate(new Map(writes), snap.time) : injectedBackend.commit("hydrate", new Map(writes));
+        return wasmCommit.changedNodes;
+      }
     );
+    if (injectedBackend !== void 0) {
+      if (wasmCommit === void 0) {
+        throw new Error(
+          "[causl] injected-backend hydrate facade: the acceptance gate did not run \u2014 commitInternal returned without driving the authoritative backend. This is a wiring bug."
+        );
+      }
+      if (wasmCommit.changedNodes.length > 0) {
+        const tsCounted = new Set(tsCommit.changedNodes);
+        for (const id of wasmCommit.changedNodes) {
+          if (!tsCounted.has(id) && preFireBumpedThisCommit?.has(id) !== true) {
+            nodeVersions.set(id, (nodeVersions.get(id) ?? 0) + 1);
+          }
+        }
+      }
+      preFireBumpedThisCommit = void 0;
+    }
   }
   function _migrateFrom(snap) {
     if (snap.schema !== 1) {
@@ -2176,10 +3400,12 @@ function createCausl(options = {}) {
     }
     if (commitHistoryCap > 0 && snapshotRetentionCap > 0) {
       const delta = /* @__PURE__ */ new Map();
-      for (const id of changedInputIds) {
-        const e = entries.get(id);
-        if (e && e.kind === "input" && isInputValueSerializable(e, inputSerializableMemo)) {
-          delta.set(id, e.value);
+      if (!backendOwnsRetention) {
+        for (const id of changedInputIds) {
+          const e = entries.get(id);
+          if (e && e.kind === "input" && isInputValueSerializable(e, inputSerializableMemo)) {
+            delta.set(id, e.value);
+          }
         }
       }
       const head = retainedSnapshots.length > 0 ? retainedSnapshots[retainedSnapshots.length - 1] : null;
@@ -2216,6 +3442,11 @@ function createCausl(options = {}) {
     if (e && e.kind === "derived" && time < e.derivedRegisteredAt) {
       return { status: "evicted", oldestRetainedTime: e.derivedRegisteredAt };
     }
+    if (inBackendDispatchWindow && time === now && commitHistoryCap > 0 && e && e.kind === "derived") {
+      const inFlightRow = { time: now, delta: /* @__PURE__ */ new Map(), prev: null };
+      const value = recomputeFromSnapshot(e.id, inFlightRow);
+      return { status: "retained", value, time: now };
+    }
     if (retainedSnapshots.length === 0) {
       return { status: "evicted", oldestRetainedTime: now };
     }
@@ -2243,6 +3474,24 @@ function createCausl(options = {}) {
       };
     }
     if (e && e.kind === "derived") {
+      if (backendOwnsRetention && injectedBackend?.readAt !== void 0) {
+        let engineRow;
+        try {
+          engineRow = injectedBackend.readAt(e.id, time);
+        } catch (err) {
+          if (!(err instanceof RetainedValueUnavailableError)) throw err;
+          engineRow = void 0;
+        }
+        if (engineRow !== void 0 && engineRow.status === "retained") {
+          return {
+            status: "retained",
+            value: engineRow.value,
+            time: chosen.time
+          };
+        }
+        const value2 = recomputeFromEngineHistory(e.id, time);
+        return { status: "retained", value: value2, time: chosen.time };
+      }
       const value = recomputeFromSnapshot(e.id, chosen);
       return { status: "retained", value, time: chosen.time };
     }
@@ -2254,7 +3503,7 @@ function createCausl(options = {}) {
     if (!e) throw new UnknownNodeError(id);
     if (e.kind === "input") {
       const lookup = resolveRetained(snapshotRow, id);
-      const v = lookup.found ? lookup.value : e.value;
+      const v = lookup.found ? lookup.value : committedInputValue(e);
       memo.set(id, v);
       return v;
     }
@@ -2263,6 +3512,26 @@ function createCausl(options = {}) {
     }
     inFlight.add(id);
     const get = (n) => recomputeFromSnapshot(n.id, snapshotRow, memo, inFlight);
+    const value = e.compute(get);
+    inFlight.delete(id);
+    memo.set(id, value);
+    return value;
+  }
+  function recomputeFromEngineHistory(id, time, memo = /* @__PURE__ */ new Map(), inFlight = /* @__PURE__ */ new Set()) {
+    if (memo.has(id)) return memo.get(id);
+    const e = entries.get(id);
+    if (!e) throw new UnknownNodeError(id);
+    if (e.kind === "input") {
+      const row = injectedBackend.readAt(id, time);
+      const v = row.status === "retained" ? row.value : committedInputValue(e);
+      memo.set(id, v);
+      return v;
+    }
+    if (inFlight.has(id)) {
+      throw new CycleError([...inFlight, id]);
+    }
+    inFlight.add(id);
+    const get = (n) => recomputeFromEngineHistory(n.id, time, memo, inFlight);
     const value = e.compute(get);
     inFlight.delete(id);
     memo.set(id, value);
@@ -2277,6 +3546,7 @@ function createCausl(options = {}) {
     if (downstream && downstream.size > 0) {
       throw new NodeHasDependentsError(id, [...downstream]);
     }
+    injectedBackend?.disposeNode?.(id);
     if (e.kind === "derived") {
       for (const dep of e.deps) {
         const bucket = dependents.get(dep);
@@ -2300,6 +3570,7 @@ function createCausl(options = {}) {
     for (const sub of subscriptions) {
       if (sub.node.id === id) {
         subscriptions.delete(sub);
+        bumpSubscriberRefcountUp(sub.node.id, -1);
         if (id === COMMIT_LOG_ID) commitLogConsumerCount--;
         if (sub.transient) transientSubscriberCount--;
       }
@@ -2321,6 +3592,9 @@ function createCausl(options = {}) {
     inputRegisteredAtMap.delete(id);
     inputSerializableMemo.delete(id);
     commitMetadataIds.delete(id);
+    mirroredDerivedIds.delete(id);
+    nodeVersions.delete(id);
+    subscriberRefcount.delete(id);
     disposed.set(id, now);
     while (disposed.size > disposedTombstoneCap) {
       const oldest = disposed.keys().next().value;
@@ -2329,18 +3603,39 @@ function createCausl(options = {}) {
     }
   }
   function stats() {
+    const rust = rustSsotBackend?.stats();
     return {
-      inputs: inputCount,
-      deriveds: derivedCount,
-      subscribersTotal: subscriptions.size,
-      subscribersByNodeKeys: subscriptionsByNode.size,
-      transientSubscribers: transientSubscriberCount,
+      inputs: rust ? rust.inputs : inputCount,
+      deriveds: rust ? rust.deriveds + commitMetadataIds.size : derivedCount,
+      subscribersTotal: rust ? rust.subscribersTotal + subscriptions.size : subscriptions.size,
+      subscribersByNodeKeys: rust ? rust.subscribersByNodeKeys + subscriptionsByNode.size : subscriptionsByNode.size,
+      transientSubscribers: rust ? rust.transientSubscribers + transientSubscriberCount : transientSubscriberCount,
       commitObservers: commitObservers.size,
       commitMetadataDeriveds: commitMetadataIds.size,
       commitLogConsumerCount,
       entries: entries.size,
       lastCommitTime: now,
-      retainedCommits: commitHistory.length
+      // #129 — under the engine-owned commitLog gate the TS ring is never
+      // appended, so serve the retained count from the ENGINE horizon: the
+      // cap-bounded engine log's adopter-visible row count, the same
+      // `min(user commits ever, commitHistoryCap)` the floor's ring length
+      // reports (the horizons are one — SetCommitLogCap threaded the cap).
+      retainedCommits: (backendOwnsCommitLog() ? engineCommitLogWindow() : commitHistory).length,
+      // #1242 — per-node version accessor (SPEC §15.1). Closure-captured
+      // lookup against the `nodeVersions` Map maintained alongside the
+      // existing `changed` set in `commitInternal`'s success arm (post
+      // Phase F.5 / pre Phase G). Returns `0` for a never-changed node,
+      // including nodes the engine has never seen, so adopters can
+      // safely call `nodeVersion(node)` without preconditioning on
+      // registration. Disposed nodes have their entry deleted in
+      // `_dispose`, so a future reuse under generational NodeId (#1164)
+      // starts from a fresh counter at 0. Function reference is hoisted
+      // (see `nodeVersionAccessor` declaration above) so sequential
+      // `stats()` snapshots share the same closure identity — the leak-
+      // gate `expect(s1).toEqual(s2)` test in `stats.test.ts` compares
+      // function-typed fields by reference under vitest's deep-equal,
+      // and a fresh closure per call would defeat that gate.
+      nodeVersion: nodeVersionAccessor
     };
   }
   const backend = new JsBackend({
@@ -2349,16 +3644,116 @@ function createCausl(options = {}) {
         tx.set({ id }, value);
       }
     }),
-    read: (node) => read(node),
-    subscribe: (node, observer) => subscribe(node, observer),
-    subscribeCommits: (observer) => subscribeCommits(observer),
+    // WIRE — when an authoritative backend is injected the four target
+    // ops (read / subscribe / commit / derived-compute) resolve from it.
+    // `read` returns the wasm-side value; `subscribe` registers the
+    // observer for wasm Phase-G firing. Reads/subscribes for nodes the
+    // injected backend does not own (e.g. the engine-owned `commitLog`, or
+    // commit-metadata deriveds that were NOT mirrored) fall back to the TS
+    // closure so those affordances keep working. `commit` is mirrored at
+    // the public `commit` seam below (it needs the tx-callback validation
+    // path), not here.
+    read: (node) => {
+      if (injectedBackend !== void 0 && !entries.has(node.id) && disposed.has(node.id)) {
+        return read(node);
+      }
+      if (injectedBackend !== void 0 && injectedBackend.has(node.id)) {
+        flushSeed();
+        if (activeReadTracker !== null) {
+          activeReadTracker.add(node.id);
+        }
+        const value = injectedBackend.read(node.id);
+        if (!NODE_ENV_IS_PRODUCTION) {
+          recordH1HazardRead(value, node.id);
+        }
+        return value;
+      }
+      return read(node);
+    },
+    subscribe: (node, observer) => {
+      if (injectedBackend !== void 0 && !entries.has(node.id) && disposed.has(node.id)) {
+        return subscribe(node, observer);
+      }
+      if (injectedBackend !== void 0 && injectedBackend.has(node.id)) {
+        flushSeed();
+        return injectedBackend.subscribe(node.id, observer);
+      }
+      return subscribe(node, observer);
+    },
+    // lift-subscribecommits (causljs/causl-wasm#170) — under rust-ssot the
+    // commit-level observers are fired FROM the Rust apply path (the §5.5
+    // Phase-H `__causl_on_commit` crossing, once per commit, AFTER the
+    // Phase-G per-node firing), NOT the TS `#graph` Phase-H dispatch. The
+    // injected backend reproduces the TS `subscribeCommits` `Commit`
+    // (time/intent/changedNodes/originatedAt) byte-identically; there is NO
+    // TS `#graph` Phase-H consult on this path once the backend reports the
+    // rebuilt commit channel is present. Falls back to the TS closure on a
+    // legacy artefact (sidecar commit-handler registry absent).
+    subscribeCommits: (observer) => injectedBackend !== void 0 && injectedBackend.firesCommitsFromRust?.() === true && injectedBackend.subscribeCommits !== void 0 ? injectedBackend.subscribeCommits(observer) : subscribeCommits(observer),
     snapshot: () => snapshot(),
     hydrate: (snap) => {
       hydrate(snap);
     },
-    exportModel: () => exportModel(),
-    readAt: (node, time) => readAt(node, time),
-    snapshotAt: (time) => snapshotAt(time),
+    // lift-export (causljs/causl-wasm#170) — under rust-ssot the whole
+    // `CauslModel` IR resolves FROM the Rust §18A.3 deep export (nodes +
+    // deps + commit-log-with-originatedAt + the IRSubscribe event stream),
+    // NOT the TS closure. The `graphId` (the IR foreign key) is this
+    // closure's `graphId` — a marshaling-layer concern (the adopter's graph
+    // name) the facade supplies; the backend does not consult the `#graph`.
+    // The only TS on the rerouted path is the marshaling `serializable`
+    // shim over the Rust values. Falls back to the TS closure on a legacy
+    // artefact (extern absent).
+    exportModel: (opts) => {
+      if (injectedBackend !== void 0 && injectedBackend.exportsModelFromRust?.() === true && injectedBackend.exportModel !== void 0) {
+        flushSeed();
+        const model = injectedBackend.exportModel(graphId, opts);
+        const maxCommits = opts?.maxCommits ?? 100;
+        const commits = commitHistoryCap <= 0 ? [] : model.commits.slice(-Math.min(commitHistoryCap, maxCommits));
+        return { ...model, commits };
+      }
+      return exportModel(opts);
+    },
+    // lift-readat (causljs/causl-wasm#170) — under the ownership gate the
+    // discriminated historical INPUT reads resolve FROM the Rust retention
+    // chain (the §12.2 `read_at_result` extern), NOT the TS closure. The
+    // Rust resolver reproduces the TS `readAt`/`snapshotAt`
+    // `RetentionResult` byte-identically for input cells. Falls back to
+    // the TS closure on a legacy artefact (extern absent).
+    //
+    // #80 → #252 — DERIVED nodes route through THIS closure's `readAt`,
+    // whose derived branch is ownership-aware: the pre-#252 Rust chain
+    // carried input rows only, so a derived read-at-time was
+    // definitionally the reference RECOMPUTE over the retained input row
+    // (`recomputeFromSnapshot`); the #80 comment's "future artefact that
+    // retains derived cell rows engine-side" is the causljs/causl-wasm#321
+    // `RetainDerivedRows` opt-in this facade now threads at boot, so under
+    // ownership the derived value serves from the engine-retained row
+    // (recompute-free), with the reference recompute over ENGINE-retained
+    // input history covering the in-window miss + container-row classes.
+    // The retained arm's `time` breadcrumb is the chosen ENVELOPE row's
+    // time — the TS reference's attribution — on every path.
+    //
+    // In-frame caveat (documented, same class as the cc#71 in-observer
+    // corner): a Phase-G/H observer calling `readAt` for the NOTIFYING
+    // commit's time reads this closure's retention BEFORE Phase F.6
+    // retains that commit's row (TS publication follows backend
+    // acceptance, #77) — commit-boundary reads, the pinned surface, are
+    // byte-identical.
+    // #252 — the reroute gate is now the retention-SSOT OWNERSHIP gate
+    // (`backendOwnsRetention`): rust-ssot + a #321/#323-era artefact +
+    // the adopter's effective window threaded at construction +
+    // `commitHistoryCap > 0`. Pre-#252 the gate was the bare
+    // `readsHistoryFromRust` capability probe, which resolved INPUT
+    // reads from the engine's hardcoded-1024 window while DERIVED reads
+    // stayed on the TS `snapshotRetentionCap` window — adopter-visibly
+    // inconsistent at any non-1024 cap (the #129 deferral analysis).
+    // Under ownership both namespaces resolve from the ONE threaded
+    // window; disarmed (js-ssot, legacy artefact, or `commitHistoryCap
+    // === 0`, whose frozen-genesis floor shape no engine window can
+    // represent) EVERY historical read keeps the TS closure — byte-
+    // identical to the floor by construction.
+    readAt: (node, time) => backendOwnsRetention && injectedBackend.readAt !== void 0 && injectedBackend.has(node.id) && entries.get(node.id)?.kind !== "derived" ? injectedBackend.readAt(node.id, time) : readAt(node, time),
+    snapshotAt: (time) => backendOwnsRetention && injectedBackend.snapshotAt !== void 0 ? injectedBackend.snapshotAt(time) : snapshotAt(time),
     dispose: (node) => {
       _dispose(node);
     },
@@ -2374,24 +3769,107 @@ function createCausl(options = {}) {
     // `tools/engine-rs-core/src/statechart_reducers.rs` enums (gated
     // behind `feature = "future"`).
     evaluateStatechart: (input2) => evaluateStatechart(input2),
-    now: () => now
+    // WIRE — the authoritative clock is the wasm commit time when a
+    // backend is injected. Both clocks advance exactly one tick per commit
+    // (SPEC §5 — one transaction, one `t`), so they stay in lockstep;
+    // routing through the injected backend makes the wasm side the SSOT
+    // for `graph.now`.
+    //
+    // #91 — in-frame corner (sibling of #86). The wasm Phase-G/H observer
+    // fan fires INSIDE `apply_commands`, within the #77 dispatch window that
+    // opens at Phase C.5 (see `inBackendDispatchWindow`) — AFTER Phase C
+    // already advanced the engine-closure `now` to the committing tick, but
+    // BEFORE `apply_commands` returns and promotes `injectedBackend.now`.
+    // So a `graph.now` read issued from a wasm observer would route through
+    // `injectedBackend.now` and see the LAST-PROMOTED tick — one behind the
+    // committing time the fire records and `__causl_on_commit` stamps already
+    // carry (PR #85). While the window is open resolve the engine-closure
+    // `now` (the staged committing tick), byte-identical to the TS reference,
+    // whose observers read the same closure clock post-Phase-C. Gated on
+    // `inBackendDispatchWindow` (set only across the injected `acceptAuthoritative`
+    // call, never Phase D — see the flag) so the commit-BOUNDARY read (window
+    // closed) keeps routing through `injectedBackend.now`, and the no-backend
+    // closure (`createCausl`/`createCauslTs`) is byte-untouched. Cap-independent:
+    // the clock ticks regardless of retention cap, so no cap guard (unlike the
+    // #86 readAt corner, which needed one because at cap=0 there is no `now` row).
+    now: () => injectedBackend !== void 0 ? inBackendDispatchWindow ? now : injectedBackend.now : now
   });
+  const commitFacade = injectedBackend === void 0 ? commit : (intent, run) => {
+    const writes = /* @__PURE__ */ new Map();
+    let wasmCommit;
+    const tsCommit = commitInternal(
+      intent,
+      (tx) => {
+        const recordingTx = {
+          set: (node, value) => {
+            writes.set(node.id, value);
+            tx.set(node, value);
+          }
+        };
+        run(recordingTx);
+      },
+      void 0,
+      () => {
+        flushSeed();
+        wasmCommit = injectedBackend.commit(intent, writes);
+        return wasmCommit.changedNodes;
+      }
+    );
+    if (wasmCommit === void 0) {
+      throw new Error(
+        "[causl] injected-backend commit facade: the acceptance gate did not run \u2014 commitInternal returned without driving the authoritative backend. This is a wiring bug."
+      );
+    }
+    if (wasmCommit.changedNodes.length > 0) {
+      const tsCounted = new Set(tsCommit.changedNodes);
+      for (const id of wasmCommit.changedNodes) {
+        if (!tsCounted.has(id) && preFireBumpedThisCommit?.has(id) !== true) {
+          nodeVersions.set(id, (nodeVersions.get(id) ?? 0) + 1);
+        }
+      }
+    }
+    preFireBumpedThisCommit = void 0;
+    return wasmCommit.intent === intent ? wasmCommit : { ...wasmCommit, intent: tsCommit.intent };
+  };
   const graph = {
     input,
     derived,
     commitMetadataDerived,
-    commit,
-    simulate,
+    commit: commitFacade,
+    // #129 (write-SSOT cutover) — under the engine-owned dry-run gate
+    // (rust-ssot + the cw#320 extern + no commit-metadata derived) the §5
+    // dry-run reroutes to the engine's `simulate_commands`; every other
+    // shape (js-ssot, legacy artefact, the metadata shape, the pure-TS
+    // floor) keeps the TS pipeline byte-identically.
+    simulate: (intent, run) => backendOwnsSimulate() ? engineSimulateReroute(intent, run) : simulate(intent, run),
     read: (node) => backend.read(node),
-    subscribe: (node, observer, options2) => (
-      // The Graph surface's `subscribe` accepts a `transient: true`
-      // option (#766) that the BackendEngine seam does not carry —
-      // transient observers are an adopter-facing convenience, not a
-      // backend-storage concept. Route the no-options arity through
-      // the backend; fall back to the closure's full surface when
-      // options are present.
-      options2 === void 0 ? backend.subscribe(node, observer) : subscribe(node, observer, options2)
-    ),
+    subscribe: (node, observer, options2) => {
+      if (options2 === void 0) return backend.subscribe(node, observer);
+      if (injectedBackend === void 0) {
+        return subscribe(node, observer, options2);
+      }
+      if (options2.transient !== true) {
+        return backend.subscribe(node, observer);
+      }
+      let fireCount = 0;
+      let done = false;
+      let unsub = () => {
+      };
+      unsub = backend.subscribe(node, (value, time) => {
+        observer(value, time);
+        fireCount += 1;
+        if (fireCount >= 2 && !done) {
+          done = true;
+          unsub();
+        }
+      });
+      return () => {
+        if (!done) {
+          done = true;
+          unsub();
+        }
+      };
+    },
     subscribeMany,
     subscribeCommits: (observer) => backend.subscribeCommits(observer),
     subscribeReads,
@@ -2399,11 +3877,12 @@ function createCausl(options = {}) {
     dependencies: dependenciesOf,
     dependents: dependentsOf,
     exportModel: (opts) => (
-      // The Graph surface's `exportModel` accepts caller tuning
-      // (commit-log cap); the BackendEngine seam takes no options.
-      // Route the no-options arity through the backend; fall back to
-      // the closure for the tuned form.
-      opts === void 0 ? backend.exportModel() : exportModel(opts)
+      // #117 — the BackendEngine seam now threads `ExportModelOptions`, so
+      // BOTH the no-options and tuned forms route through the backend. Under
+      // rust-ssot this keeps the whole export (nodes + commit-window)
+      // Rust-authoritative; a legacy artefact / js-ssot falls back to the TS
+      // closure inside the reroute.
+      backend.exportModel(opts)
     ),
     snapshot: () => backend.snapshot(),
     snapshotAt: (time) => backend.snapshotAt(time),
@@ -2417,11 +3896,37 @@ function createCausl(options = {}) {
   };
   registerInternalDispatch(graph, {
     dispose: (node) => backend.dispose(node),
-    _migrateFrom: (snap) => _migrateFrom(snap)
+    _migrateFrom: (snap) => _migrateFrom(snap),
+    // #1241 — adapter-exemption seam. Routes through the
+    // closure-scoped `runInAdapterReadMode` helper which manages the
+    // H1 hazard tracker's depth counter. See
+    // `InternalDispatch.__causlAdapterRead` for the contract.
+    __causlAdapterRead: (fn) => runInAdapterReadMode(fn)
   });
   registerTestingDispatch(graph, {
     disposedTombstoneSize: () => disposed.size,
     commitLogConsumerCount: () => commitLogConsumerCount,
+    // #129 — cumulative count of derived entries the Phase-D recompute
+    // fixpoint has visited over this engine's lifetime. Tests snapshot it
+    // before/after a commit: the delta is |affected deriveds| on the pure-TS
+    // floor and 0 on a fully-mirrored wasm-backed graph (the reduction).
+    phaseDDerivedWalkCount: () => phaseDDerivedWalkCount,
+    phaseDStructuralWalkCount: () => phaseDStructuralWalkCount,
+    // #129 (commit-SSOT cutover) — cumulative count of rows pushed onto the
+    // TS `commitHistory` ring. Tests snapshot it before/after a commit: the
+    // delta is 1 per accepted commit at cap > 0 on the pure-TS floor and 0
+    // under the engine-owned commitLog gate (the Phase-F ring append is
+    // deleted; the engine's cap-bounded log is the single storage).
+    phaseFRingAppendCount: () => phaseFRingAppendCount,
+    // #129 (write-SSOT cutover) — Phase-B outer-cell publication counter
+    // (0 per backed commit under the write-cells gate; 1 per publishing
+    // input on the floor) + the raw cell probe (the AC2 release pin: the
+    // cell holds `null` under the gate, the committed value on the floor).
+    phaseBCellPublishCount: () => phaseBCellPublishCount,
+    inputCellRawValue: (id) => {
+      const e = entries.get(id);
+      return e !== void 0 && e.kind === "input" ? e.value : void 0;
+    },
     // #703 Win 3 — expose the live deps Set so the
     // setDeps-immutability property suite can capture a reference
     // and verify subsequent commits leave it byte-identical.
@@ -2878,15 +4383,15 @@ function readBridgeOverride() {
   try {
     const proc = globalThis.process;
     const raw = proc?.env?.CAUSL_WASM_BRIDGE;
-    if (raw === "gc" || raw === "serde" || raw === "auto") return raw;
+    if (raw === "gc" || raw === "auto") return raw;
     return void 0;
   } catch {
     return void 0;
   }
 }
-function makeSerdeJsonPlaceholder() {
+function makeDefaultBridgePlaceholder() {
   const placeholderError = () => new Error(
-    "[@causl/core] serde-json bridge is a placeholder pending #693. Real implementation lands with the wasm-pack pipeline."
+    "[@causl/core] wasmgc-classic bridge is a placeholder pending #692. Real implementation lands with the wasm-pack pipeline."
   );
   const features = Object.freeze({
     gc: false,
@@ -2895,7 +4400,7 @@ function makeSerdeJsonPlaceholder() {
     stringView: false
   });
   return Object.freeze({
-    id: "serde-json",
+    id: "wasmgc-classic",
     features,
     abiVersion: 0,
     toWasmObject() {
@@ -2927,9 +4432,6 @@ async function detectBridge() {
     });
   }
   const explicit = readBridgeOverride();
-  if (explicit === "serde") {
-    return loadSerdeBridge(features);
-  }
   if (explicit === "gc" || features.gc && features.jsStringBuiltins) {
     try {
       return await loadGcBridge(features);
@@ -2942,18 +4444,15 @@ async function detectBridge() {
     } catch {
     }
   }
-  return loadSerdeBridge(features);
+  return loadGcClassicBridge(features);
 }
 async function loadGcBridge(_features) {
   await Promise.resolve();
-  return makeSerdeJsonPlaceholder();
+  return makeDefaultBridgePlaceholder();
 }
 async function loadGcClassicBridge(_features) {
   await Promise.resolve();
-  return makeSerdeJsonPlaceholder();
-}
-function loadSerdeBridge(_features) {
-  return makeSerdeJsonPlaceholder();
+  return makeDefaultBridgePlaceholder();
 }
 
 // src/auto-adapt.ts
@@ -3039,7 +4538,7 @@ function loadThresholdsFromEnv() {
 var MODULE_THRESHOLD_OVERRIDES = Object.freeze(loadThresholdsFromEnv());
 
 // src/index.ts
-var VERSION = "0.0.0";
+var VERSION = version;
 
 export {
   CauslError,
@@ -3048,6 +4547,10 @@ export {
   NotAnInputNodeError,
   CommitInProgressError,
   CycleError,
+  UNDECLARED_DEPENDENCY_MARKER,
+  UndeclaredDependencyError,
+  DerivedComputeError,
+  asDerivedComputeError,
   StaleTxError,
   NodeDisposedError,
   NodeHasDependentsError,
@@ -3056,10 +4559,27 @@ export {
   NonDeterministicComputeError,
   DerivedRegistrationStackOverflowError,
   InvalidGraphNameError,
+  InvariantViolationError,
+  WasmInstancePoisonedError,
+  RetainedValueUnavailableError,
+  InvalidInjectedBackendError,
+  registerWasmSyncEngine,
+  onCauslCapabilityFallback,
+  evaluateStatechart,
+  withInjectedBackend,
   CAUSL_MODEL_SCHEMA,
   parseCauslModel,
+  currentTemporalImpl,
+  hasTaggedTypes,
+  encodeTagged,
+  reviveTagged,
+  inputEpochMarkerForPacked,
+  inputEpochMarker,
+  parseInputEpoch,
+  contentHashMarker,
   GRAPH_ID_REGEX,
   createCausl,
+  createCauslTs,
   causlModelJsonSchema,
   detectFeatures,
   detectBridge,
@@ -3067,4 +4587,4 @@ export {
   shouldMigrate,
   VERSION
 };
-//# sourceMappingURL=chunk-IYUJL32F.js.map
+//# sourceMappingURL=chunk-BJBUOM2F.js.map

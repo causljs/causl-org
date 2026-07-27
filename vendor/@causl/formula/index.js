@@ -1,3 +1,6 @@
+// src/ir.ts
+var FORMULA_IR_VERSION = "0.1.0";
+
 // src/grammar.ts
 function cellRefToA1(ref) {
   return colToLetters(ref.col) + String(ref.row + 1);
@@ -392,10 +395,10 @@ function emptyWorkbook(id) {
 }
 
 // src/adapter.ts
-import { assertNever as assertNever2 } from "@causl/core/internal";
+import { assertNever as assertNever2, dispose } from "@causl/client-ts/internal";
 
 // src/result.ts
-import { assertNever } from "@causl/core/internal";
+import { assertNever } from "@causl/client-ts/internal";
 var ok = (value) => ({ kind: "value", value });
 var errResult = (error) => ({
   kind: "error",
@@ -428,8 +431,8 @@ function valueOr(result, fallback) {
 var EvalError = class extends Error {
   /**
    * @param result - The tagged {@link FormulaResult} to surface to the
-   *   compute boundary. The `Error.message` is filled from the carried
-   *   error for compatibility with default error reporters.
+   *   evaluation boundary. The `Error.message` is filled from the
+   *   carried error for compatibility with default error reporters.
    */
   constructor(result) {
     super(result.kind === "error" ? result.error.message : "unexpected");
@@ -437,62 +440,95 @@ var EvalError = class extends Error {
   }
   result;
 };
+function evaluate(ast, host) {
+  try {
+    return ok(evalNode(ast, host));
+  } catch (e) {
+    if (e instanceof EvalError) return e.result;
+    const message = e instanceof Error ? e.message : String(e);
+    return err("argument-error", message);
+  }
+}
 function createFormulaAdapter(graph, options) {
   const registeredIds = /* @__PURE__ */ new Set();
+  const nodesById = /* @__PURE__ */ new Map();
+  const epochId = `formula-dir-epoch:${options.workbook}:${options.sheet}:${nextAdapterSeq()}`;
+  const epoch = graph.input(epochId, 0);
   const compute = (ast) => {
-    return (get) => {
-      try {
-        const value = evaluate(ast, options.resolve, get);
-        return ok(value);
-      } catch (e) {
-        if (e instanceof EvalError) return e.result;
-        const message = e instanceof Error ? e.message : String(e);
-        return err("argument-error", message);
-      }
-    };
+    return (get) => evaluate(ast, makeGraphHost(options.resolve, get, epoch));
+  };
+  const register = (ref, ast) => {
+    const id = cellId(options.workbook, options.sheet, ref);
+    const node = graph.derived(id, compute(ast));
+    registeredIds.add(id);
+    nodesById.set(id, node);
+    return node;
   };
   return {
     registerFormula(ref, ast) {
+      return register(ref, ast);
+    },
+    editFormula(ref, ast) {
       const id = cellId(options.workbook, options.sheet, ref);
-      registeredIds.add(id);
-      return graph.derived(id, compute(ast));
+      const existing = nodesById.get(id);
+      if (existing) {
+        dispose(graph, existing);
+        registeredIds.delete(id);
+        nodesById.delete(id);
+      }
+      return register(ref, ast);
+    },
+    refreshDirectory() {
+      const next = graph.read(epoch) + 1;
+      graph.commit("formula-directory-refresh", (tx) => tx.set(epoch, next));
     },
     registered() {
       return Array.from(registeredIds);
     }
   };
 }
-function evaluate(ast, resolve, get) {
+var adapterSeq = 0;
+function nextAdapterSeq() {
+  adapterSeq += 1;
+  return adapterSeq;
+}
+function makeGraphHost(resolve, get, epoch) {
+  return {
+    readNumber(cellLabel) {
+      const ref = a1ToCellRef(cellLabel);
+      const node = resolve(ref);
+      if (!node) {
+        get(epoch);
+        return {
+          kind: "unresolved-ref",
+          message: `Unresolved cell reference ${cellLabel}`,
+          ref: cellLabel
+        };
+      }
+      return coerceCellValue(get(node), cellLabel);
+    }
+  };
+}
+function evalNode(ast, host) {
   switch (ast.type) {
     case "num":
       return ast.value;
     case "cell": {
-      const node = resolve(ast.ref);
-      if (!node) {
-        const refLabel = cellRefToA1(ast.ref);
-        throw new EvalError(
-          errResult({
-            kind: "unresolved-ref",
-            message: `Unresolved cell reference ${refLabel}`,
-            ref: refLabel
-          })
-        );
-      }
-      return readNumber(get(node), ast.ref);
+      const refLabel = cellRefToA1(ast.ref);
+      return readOrThrow(host, refLabel);
     }
     case "range": {
       let sum = 0;
       for (const ref of expandRange(ast.from, ast.to)) {
-        const node = resolve(ref);
-        if (!node) continue;
-        sum += readNumber(get(node), ref);
+        sum += rangeReadOrThrow(host, cellRefToA1(ref));
       }
       return sum;
     }
     case "binop": {
-      const l = evaluate(ast.left, resolve, get);
-      const r = evaluate(ast.right, resolve, get);
-      switch (ast.op) {
+      const l = evalNode(ast.left, host);
+      const r = evalNode(ast.right, host);
+      const op = ast.op;
+      switch (op) {
         case "+":
           return l + r;
         case "-":
@@ -505,22 +541,22 @@ function evaluate(ast, resolve, get) {
           }
           return l / r;
         default:
-          return assertNever2(ast, "unhandled binop");
+          return assertNever2(op, "unhandled binop");
       }
     }
     case "unary":
-      return -evaluate(ast.operand, resolve, get);
+      return -evalNode(ast.operand, host);
     case "call":
-      return evaluateCall(ast.name, ast.args, resolve, get);
+      return evaluateCall(ast.name, ast.args, host);
     default:
       return assertNever2(ast, "unhandled AST node");
   }
 }
-function evaluateCall(name, args, resolve, get) {
+function evaluateCall(name, args, host) {
   switch (name) {
     case "SUM": {
       let sum = 0;
-      for (const arg of args) sum += sumArg(arg, resolve, get);
+      for (const arg of args) sum += sumArg(arg, host);
       return sum;
     }
     case "AVG":
@@ -528,7 +564,7 @@ function evaluateCall(name, args, resolve, get) {
       let total = 0;
       let count = 0;
       for (const arg of args) {
-        const [s, n] = sumAndCount(arg, resolve, get);
+        const [s, n] = sumAndCount(arg, host);
         total += s;
         count += n;
       }
@@ -541,7 +577,7 @@ function evaluateCall(name, args, resolve, get) {
     }
     case "MIN":
     case "MAX": {
-      const values = collectValues(args, resolve, get);
+      const values = collectValues(args, host);
       if (values.length === 0) {
         throw new EvalError(
           err("argument-error", `${name}() requires at least one numeric argument`)
@@ -554,48 +590,67 @@ function evaluateCall(name, args, resolve, get) {
       throw new EvalError(err("unknown-function", `Unknown function: ${name}`));
   }
 }
-function sumArg(arg, resolve, get) {
+function sumArg(arg, host) {
   if (arg.type === "range") {
     let s = 0;
     for (const ref of expandRange(arg.from, arg.to)) {
-      const node = resolve(ref);
-      if (!node) continue;
-      s += readNumber(get(node), ref);
+      s += rangeReadOrThrow(host, cellRefToA1(ref));
     }
     return s;
   }
-  return evaluate(arg, resolve, get);
+  return evalNode(arg, host);
 }
-function sumAndCount(arg, resolve, get) {
+function sumAndCount(arg, host) {
   if (arg.type === "range") {
     let s = 0;
     let n = 0;
     for (const ref of expandRange(arg.from, arg.to)) {
-      const node = resolve(ref);
-      if (!node) continue;
-      s += readNumber(get(node), ref);
-      n += 1;
+      const refLabel = cellRefToA1(ref);
+      const read = host.readNumber(refLabel);
+      if (typeof read === "number") {
+        s += read;
+        n += 1;
+        continue;
+      }
+      if (read.kind === "unresolved-ref") continue;
+      throw new EvalError(errResult(read));
     }
     return [s, n];
   }
-  return [evaluate(arg, resolve, get), 1];
+  return [evalNode(arg, host), 1];
 }
-function collectValues(args, resolve, get) {
+function collectValues(args, host) {
   const out = [];
   for (const arg of args) {
     if (arg.type === "range") {
       for (const ref of expandRange(arg.from, arg.to)) {
-        const node = resolve(ref);
-        if (!node) continue;
-        out.push(readNumber(get(node), ref));
+        const refLabel = cellRefToA1(ref);
+        const read = host.readNumber(refLabel);
+        if (typeof read === "number") {
+          out.push(read);
+          continue;
+        }
+        if (read.kind === "unresolved-ref") continue;
+        throw new EvalError(errResult(read));
       }
     } else {
-      out.push(evaluate(arg, resolve, get));
+      out.push(evalNode(arg, host));
     }
   }
   return out;
 }
-function readNumber(value, ref) {
+function readOrThrow(host, refLabel) {
+  const read = host.readNumber(refLabel);
+  if (typeof read === "number") return read;
+  throw new EvalError(errResult(read));
+}
+function rangeReadOrThrow(host, refLabel) {
+  const read = host.readNumber(refLabel);
+  if (typeof read === "number") return read;
+  if (read.kind === "unresolved-ref") return 0;
+  throw new EvalError(errResult(read));
+}
+function coerceCellValue(value, refLabel) {
   if (typeof value === "number") return value;
   if (value === null || value === void 0) return 0;
   if (typeof value === "boolean") return value ? 1 : 0;
@@ -603,14 +658,11 @@ function readNumber(value, ref) {
     if (value.trim() === "") return 0;
     const n = Number(value);
     if (Number.isFinite(n)) return n;
-    const refLabel2 = cellRefToA1(ref);
-    throw new EvalError(
-      errResult({
-        kind: "non-numeric",
-        message: `Cell ${refLabel2} has non-numeric value: ${value}`,
-        ref: refLabel2
-      })
-    );
+    return {
+      kind: "non-numeric",
+      message: `Cell ${refLabel} has non-numeric value: ${value}`,
+      ref: refLabel
+    };
   }
   if (typeof value === "object" && value !== null && "kind" in value) {
     const tagged = value;
@@ -620,34 +672,18 @@ function readNumber(value, ref) {
     if (tagged.kind === "error" && tagged.error) {
       const cause = tagged.error;
       const causeRef = cause.kind === "unknown-function" || cause.kind === "argument-error" ? void 0 : cause.ref;
-      throw new EvalError(
-        errResult(
-          causeRef !== void 0 ? {
-            kind: "propagated",
-            message: cause.message,
-            cause,
-            ref: causeRef
-          } : {
-            kind: "propagated",
-            message: cause.message,
-            cause
-          }
-        )
-      );
+      return causeRef !== void 0 ? { kind: "propagated", message: cause.message, cause, ref: causeRef } : { kind: "propagated", message: cause.message, cause };
     }
   }
-  const refLabel = cellRefToA1(ref);
-  throw new EvalError(
-    errResult({
-      kind: "non-numeric",
-      message: `Cell ${refLabel} has unsupported value type`,
-      ref: refLabel
-    })
-  );
+  return {
+    kind: "non-numeric",
+    message: `Cell ${refLabel} has unsupported value type`,
+    ref: refLabel
+  };
 }
 
 // src/cycle.ts
-import { assertNever as assertNever3 } from "@causl/core/internal";
+import { assertNever as assertNever3 } from "@causl/client-ts/internal";
 function staticReferences(ast) {
   const out = [];
   function walk(node) {
@@ -691,40 +727,45 @@ function addFormula(g, target, formula) {
 }
 function detectCycle(g) {
   const visited = /* @__PURE__ */ new Set();
-  const stack = [];
   const onStack = /* @__PURE__ */ new Set();
-  function dfs(node) {
+  const path = [];
+  const NO_EDGES = /* @__PURE__ */ new Set();
+  function enter(node, stack) {
     visited.add(node);
-    stack.push(node);
     onStack.add(node);
-    const deps = g.deps.get(node);
-    if (deps) {
-      for (const dep of deps) {
-        if (!visited.has(dep)) {
-          const found = dfs(dep);
-          if (found) return found;
-        } else if (onStack.has(dep)) {
-          const idx = stack.indexOf(dep);
-          if (idx >= 0) return [...stack.slice(idx), dep];
-        }
-      }
-    }
-    stack.pop();
-    onStack.delete(node);
-    return null;
+    path.push(node);
+    stack.push({ node, iter: (g.deps.get(node) ?? NO_EDGES).values() });
   }
-  for (const node of g.deps.keys()) {
-    if (!visited.has(node)) {
-      const cycle = dfs(node);
-      if (cycle) return cycle;
+  for (const seed of g.deps.keys()) {
+    if (visited.has(seed)) continue;
+    const stack = [];
+    enter(seed, stack);
+    while (stack.length > 0) {
+      const frame = stack[stack.length - 1];
+      if (frame === void 0) break;
+      const step = frame.iter.next();
+      if (step.done) {
+        onStack.delete(frame.node);
+        path.pop();
+        stack.pop();
+        continue;
+      }
+      const dep = step.value;
+      if (!visited.has(dep)) {
+        enter(dep, stack);
+      } else if (onStack.has(dep)) {
+        const idx = path.indexOf(dep);
+        if (idx >= 0) return [...path.slice(idx), dep];
+      }
     }
   }
   return null;
 }
 
 // src/index.ts
-var VERSION = "0.0.0";
+var VERSION = "0.1.0";
 export {
+  FORMULA_IR_VERSION,
   FormulaParseError,
   VERSION,
   a1ToCellRef,
@@ -737,6 +778,7 @@ export {
   emptyFormulaGraph,
   emptySheet,
   emptyWorkbook,
+  evaluate,
   expandRange,
   formulaCell,
   err as formulaError,
