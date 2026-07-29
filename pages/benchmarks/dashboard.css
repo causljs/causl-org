@@ -1364,3 +1364,102 @@ details.status-callout > summary:focus-visible {
   font-family: var(--mono);
   font-size: 0.85em;
 }
+
+/* ==============================================================
+   Generated results tables (`render-latest.mjs`).
+
+   These are static, checked-in HTML rather than anything this
+   dashboard renders, so they get their own class rather than
+   reusing `table.compare` from site.css — that table centres
+   every cell and forces a 320px first column, which is right for
+   a feature matrix and wrong for 81 rows of numbers.
+
+   The rule the numbers follow: measurements are right-aligned in
+   the mono face so digits line up column-wise and an outlier is
+   visible without reading any of them.
+   ============================================================== */
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  font-family: var(--mono);
+}
+
+.results-table th,
+.results-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid rgba(143, 162, 170, 0.14);
+  white-space: nowrap;
+}
+
+.results-table thead th {
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  color: var(--text-on-base-muted);
+  border-bottom: 1px solid rgba(17, 217, 255, 0.28);
+}
+
+.results-table tbody th[scope="row"] {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-on-base);
+  white-space: normal;
+}
+
+.results-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* The fastest cell in a ranked row. Cyan is the brand's own colour and
+   is not a state semantic, so marking "best" with it does not read as
+   "pass" — which matters because a slower library here is not failing
+   anything. */
+.results-table td.best {
+  color: var(--causal-cyan);
+  font-weight: 600;
+}
+
+/* A cell that produced no number. Muted rather than red: an
+   `inapplicable` cell is a fact about the library's architecture, not
+   a defect, and colouring it like an error would editorialise. */
+.results-table td.absent,
+.results-table .row-absent td {
+  color: var(--text-on-base-subtle);
+  font-style: italic;
+  white-space: normal;
+}
+
+/* Confidence chip. `low` is the driver's own verdict that its median
+   should not be quoted, so it is legible rather than decorative. */
+.results-table .conf {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.05em 0.4em;
+  border-radius: var(--radius-sm, 3px);
+  color: var(--text-on-base-subtle);
+}
+
+.results-table .conf-high {
+  color: var(--success-mint);
+  background: rgba(94, 230, 168, 0.10);
+}
+
+.results-table .conf-low {
+  color: var(--commit-amber);
+  background: rgba(240, 180, 41, 0.12);
+}
+
+:root[data-theme="light"] .results-table thead th,
+:root[data-theme="light"] .results-table td.absent,
+:root[data-theme="light"] .results-table .row-absent td {
+  color: var(--text-on-base);
+}
+
+/* Measured, but not ranked. Struck through rather than hidden: the cell has a
+   real number and the reader is entitled to it — what it does not have is the
+   aggregator's permission to be compared. */
+.results-table td.unranked { color: var(--text-on-base-subtle); }
+.results-table td.unranked s { text-decoration-thickness: 1px; opacity: 0.85; }
