@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark light" />
   <title>Causl — Benchmarks</title>
-  <meta name="description" content="Live benchmarks dashboard — per-cell history (median + p95) for @causl/core vs Jotai, Redux Toolkit, and MobX across the canonical scenario taxonomy in packages/bench/." />
+  <meta name="description" content="Benchmarks for the two causl engines — @causlts/core (TypeScript) and @causl/causl-wasm-ts (Rust/WebAssembly) — against Jotai, Redux Toolkit and MobX, measured per cell with the engine attested at runtime." />
 
   <!-- Lighthouse polish:
        - icon as SVG: scales without raster cost, no separate favicon.ico fetch.
@@ -84,21 +84,24 @@
   <section class="hero page" aria-labelledby="page-title">
     <h1 id="page-title">Benchmarks.</h1>
     <p class="lede">
-      Per-cell history for <code>causl-ts</code> — the default pure-TypeScript
-      engine — against Jotai, Redux Toolkit, and MobX across the canonical
-      scenario taxonomy in <code>causljs/causl-bench</code>. Each card shows one
-      (library × scenario × scale) cell — median wall-time as the
-      solid line, p95 as the translucent band, run-by-run, with a
-      regression verdict computed from the latest two runs. The
-      <code>causl-wasm</code> Rust production engine <span class="badge-enterprise">Enterprise</span>
-      is benchmarked separately under a two-engine comparison; that data
-      and its analysis ship with the Enterprise
-      <a href="../documentation/enterprise/wasm-performance/">wasm-performance guide</a>.
+      Both causl engines — <code>@causlts/core</code> in TypeScript and
+      <code>@causl/causl-wasm-ts</code> in Rust/WebAssembly — measured against Jotai,
+      Redux Toolkit and MobX by
+      <a href="https://git.opsite.ca/causl/causl-bench"><code>causl-bench</code></a>.
+      Each cell is one (library × scenario × scale), timed on a world built fresh for
+      the step, in its own process. Charts above show median and p95 run by run;
+      <a href="#attested-engines">the section below</a> reports the latest sweep in full,
+      cell by cell.
+      <br /><br />
+      Every causl cell carries a <strong>runtime attestation</strong> of the engine that
+      executed the graph that was timed, so the engine label is an observation rather than
+      a configuration flag. That distinction is not academic: an earlier two-engine
+      comparison on this page was published for months before anyone noticed both of its
+      series were the same TypeScript engine. It is retracted in place below.
     </p>
     <div class="hero-actions">
-      <a class="button primary"
-         href="https://github.com/causljs/causl-bench"
-         rel="noopener">View causljs/causl-bench</a>
+      <a class="button primary" href="#attested-engines">Latest full sweep</a>
+      <a class="button" href="./history.json">Raw data (history.json)</a>
     </div>
   </section>
 
@@ -188,8 +191,11 @@
       <p><strong>The wasm engine is an Enterprise feature.</strong> The two-engine
         comparison measures the JS↔WASM marshal tax per crossing and the
         tail-latency wins it buys on large-tree commits, bounded by the §18A.7
-        performance ceiling — the full boundary-cost methodology and the
-        withdrawn-then-validated Phase L1 numbers live in the Enterprise guide.</p>
+        performance ceiling. The Phase L1 numbers this once cited as
+        &ldquo;withdrawn-then-validated&rdquo; are <strong>withdrawn and not
+        revalidated</strong> &mdash; they were the TypeScript engine measured against
+        itself, and the retraction below carries the evidence. The boundary-cost
+        methodology in the Enterprise guide stands; the numbers do not.</p>
       <p><a href="../documentation/enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling →</a></p>
     </aside>
 
@@ -224,7 +230,27 @@
          selectors.
          ============================================================ -->
     <section id="dual-engine-panel" aria-labelledby="dual-engine-heading">
-      <h2 id="dual-engine-heading">Engine comparison: <code>causl-ts</code> vs <code>causl-ts-wasm-engine</code> <span class="badge-enterprise">Enterprise</span></h2>
+      <h2 id="dual-engine-heading">Engine comparison: <code>causl-ts</code> vs <code>causl-ts-wasm-engine</code> <span style="color:#b42318">[WITHDRAWN]</span> <span class="badge-enterprise">Enterprise</span></h2>
+      <aside class="callout-withdrawn" style="border:2px solid #b42318;background:#fef3f2;padding:1rem 1.25rem;margin:1rem 0;border-radius:6px">
+        <p style="margin:0 0 .6rem"><strong style="color:#b42318;font-size:1.05em">⚠ These numbers are withdrawn pending re-measurement (2026-07-27).</strong></p>
+        <p style="margin:0 0 .6rem">This panel did not compare a TypeScript engine against a WebAssembly engine. Both
+          series were produced by the <strong>same TypeScript engine</strong>. The series labelled
+          <code>causl-ts-wasm-engine</code> ran through a compatibility shim whose own source documents it as
+          <em>&ldquo;NOT the authoritative Rust engine&rdquo;</em> and warns <em>&ldquo;Do NOT route the real wasm engine through
+          this.&rdquo;</em> The benchmark called that shim ten times and the authoritative Rust path zero times.</p>
+        <p style="margin:0 0 .6rem">The panel below states its own validity criterion &mdash;
+          <em>&ldquo;<code>causl-ts-wasm-engine</code> should be &gt; 0 on every cell&rdquo;</em> for JS&#8596;WASM crossings.
+          The published data fails it: <strong>62 of 80 cells recorded zero crossings</strong>, and the cells that did
+          record traffic reported an identical 15 crossings / 195 bytes at scales 100, 1&#8239;000 and 10&#8239;000 &mdash;
+          boundary traffic unchanged under a 100&times; workload, which is only possible if the work never crossed the
+          boundary.</p>
+        <p style="margin:0">Nothing here is deleted, so anyone who cited these figures can see exactly what changed and why.
+          The repair is tracked as
+          <a href="https://git.opsite.ca/causl/causl-bench/issues/85">causl-bench#85</a>. The condition this notice
+          originally set — that no replacement numbers be published until the engine serving each cell is attested at
+          runtime rather than asserted by configuration — has since been met, and the replacement is reported
+          separately rather than in this panel: <a href="#attested-engines">Engine comparison, re-measured &rarr;</a></p>
+      </aside>
       <aside class="callout-enterprise">
         <span class="badge-enterprise">Enterprise</span>
         <p><strong>The wasm engine is an Enterprise feature.</strong> This two-engine
@@ -249,534 +275,735 @@
         engines is dominated by boundary cost per crossing × number of crossings.
       </p>
 
-      <table id="dual-engine-table" aria-busy="true">
-        <thead>
-          <tr>
-            <th scope="col">Scenario</th>
-            <th scope="col" data-series="causl-ts" data-engine="causl-ts">causl-ts</th>
-            <th scope="col" data-series="causl-wasm" data-engine="causl-ts-wasm-engine">causl-ts-wasm-engine <span class="badge-enterprise">Enterprise</span></th>
-            <th scope="col" data-perf-column="boundaryCrossings">JS↔WASM crossings<br><small class="dual-engine-th-sub">+ payload bytes min/median/max</small></th>
-            <th scope="col" data-perf-column="wallMs">wall&nbsp;(ms)</th>
-            <th scope="col" data-perf-column="cpuUserMs">CPU&nbsp;user&nbsp;(ms)</th>
-            <th scope="col" data-perf-column="cpuSystemMs">CPU&nbsp;sys&nbsp;(ms)</th>
-            <th scope="col" data-perf-column="heapPeakBytes">heap&nbsp;peak&nbsp;(B)</th>
-            <th scope="col" data-perf-column="hotPath">hot&nbsp;path</th>
-            <th scope="col" data-perf-column="coldPath">cold&nbsp;path</th>
-          </tr>
-        </thead>
-        <tbody id="dual-engine-tbody">
-          <tr class="dual-engine-loading"><td colspan="10">Loading <code>dual-engine.json</code> from <code>causljs/causl-bench</code>&hellip;</td></tr>
-        </tbody>
-      </table>
+      <!-- ============================================================
+           The table this panel used to render is gone, and so is the
+           file it rendered. Until now the panel fetched
 
-      <p class="dual-engine-meta" id="dual-engine-meta" data-engines="" data-generated-at=""></p>
-      <p class="dual-engine-coverage-note" id="dual-engine-coverage-note" hidden></p>
-      <div class="dual-engine-staleness-warn" id="dual-engine-staleness-warn" role="status" hidden></div>
+             raw.githubusercontent.com/causljs/causl-bench/main/
+               packages/bench/report/dual-engine.json
+
+           which returns 404, as does `github.com/causljs/causl-bench`
+           itself — the repository moved to `git.opsite.ca/causl`, and
+           `packages/bench/report/dual-engine.json` was deleted along
+           with the rest of that harness. The panel's `.catch` printed
+           `Failed to load dual-engine.json: HTTP 404` into the table on
+           every page load, directly beneath the withdrawal notice
+           above. A red error row under a red retraction told a reader
+           nothing except that the page was broken.
+
+           So the fetch and the table are removed and this static note
+           replaces them. The retraction above stays exactly as it was:
+           the claim was public and wrong, and it gets a visible
+           correction rather than a quiet deletion (causl-org#41).
+
+           Replacement numbers are NOT spliced in here. They are a
+           different experiment, from a different harness, measuring a
+           different unit, against a genuinely different engine — and
+           putting them where the withdrawn ones stood would invite the
+           reading that the old numbers were merely refreshed. They get
+           their own section further down the page.
+           ============================================================ -->
+      <div class="status-callout" role="note">
+        <p><strong>The table that stood here has been removed, and its data source no longer exists.</strong></p>
+        <p>
+          This panel fetched <code>dual-engine.json</code> from the <code>causl-bench</code> repository on
+          GitHub. That URL returns <code>404</code>, the GitHub repository returns <code>404</code> — the
+          project moved to <a href="https://git.opsite.ca/causl/causl-bench">git.opsite.ca/causl/causl-bench</a>
+          — and the file itself was deleted when the harness that produced it was retired. Every visitor
+          since then has been shown <code>Failed to load dual-engine.json: HTTP 404</code> in place of the
+          table, underneath the notice above.
+        </p>
+        <p>
+          Nothing has been deleted from the record. The heading, the retraction and its evidence stay where
+          they are, because a public performance claim that turns out to be wrong should be visibly
+          corrected rather than quietly removed.
+        </p>
+        <p>
+          A replacement measurement now exists and it is a <em>different experiment</em>, not a refresh of
+          this one — a different harness, a different measured unit, and for the first time an engine whose
+          identity is proven at runtime rather than asserted by configuration. It is reported separately:
+          <a href="#attested-engines">Engine comparison, re-measured &rarr;</a>
+        </p>
+      </div>
     </section>
 
-    <script>
-      // Dual-engine renderer (causl-bench#21). Fetches the report
-      // from the causl-bench repo's main branch on GitHub raw, then
-      // paints per-scenario rows into #dual-engine-tbody. Each row
-      // carries `data-engine` (per-engine value cell) and
-      // `data-perf-column` (per-metric value cell) so the Playwright
-      // contract pins the rendered shape, not the DOM ordering.
-      //
-      // Renders honestly when the inner-bench output capture is not
-      // yet wired (`scenarios` empty per causl-bench#24): one
-      // explicit "scaffold" row referencing the issue.
-      //
-      // -----------------------------------------------------------
-      // Series-id vocabulary (causl-org#13 / Audit K).
-      // -----------------------------------------------------------
-      // Every per-engine cell this IIFE emits is tagged with the
-      // engine it represents. Pre-#13 the tag was `data-engine`
-      // (here) vs `data-library` (in dashboard.js) — the same
-      // concept under two different attribute names with two
-      // different (undocumented) translation tables.
-      //
-      // After #13 every emission writes BOTH attributes for one
-      // release cycle: `data-series` (the new canonical, carrying
-      // the dashboard SeriesId defined by the 3-axis vocabulary in
-      // `causljs/causl-bench:packages/bench/src/series-id.ts`) and
-      // `data-engine` (the legacy attribute the Playwright contract
-      // in `causljs/causl-bench/e2e/playwright/dashboard.spec.ts`
-      // pins via `[data-engine="causl-ts"]` /
-      // `[data-engine="causl-ts-wasm-engine"]`). Both attributes
-      // carry IDENTICAL strings — for the dual-engine panel the
-      // tag IS the sibling-repo slug, which IS the SeriesId for
-      // the engine-source axis, so the two attributes are
-      // synonyms in this panel. A follow-up PR drops `data-engine`
-      // once the release cycle ships; consumers should migrate to
-      // `[data-series=...]` selectors in the interim.
-      //
-      // The three axes the SeriesId encodes (same vocabulary as
-      // dashboard.js's header comment): harness / profile /
-      // repoSlug. The dual-engine panel only ever spans the
-      // repoSlug axis (the harness is implied per-engine: causl-ts
-      // → causl-js harness, causl-ts-wasm-engine → causl-wasm
-      // harness), so the SeriesId here always parses to a
-      // (harness, undefined, repoSlug) triple per
-      // `parseSeriesId()`.
-      (function dualEnginePanel() {
-        const URL = 'https://raw.githubusercontent.com/causljs/causl-bench/main/packages/bench/report/dual-engine.json';
-        const tbody = document.getElementById('dual-engine-tbody');
-        const meta = document.getElementById('dual-engine-meta');
-        const coverageNote = document.getElementById('dual-engine-coverage-note');
-        const stalenessWarn = document.getElementById('dual-engine-staleness-warn');
-        const table = document.getElementById('dual-engine-table');
-        if (!tbody || !meta || !table) return;
-
-        // Engine ↔ library mapping for skipped-row lookup.
-        // dual-engine.json's `series` is keyed by ENGINE id
-        // (`causl-ts`, `causl-ts-wasm-engine`); the `skipped[]` rows
-        // (per Audit K + the cross-library report shape) are keyed by
-        // LIBRARY id (`causl-ts`, `causl-wasm`). Translate before we
-        // index so a (scenario, scale, secondEng) lookup hits the
-        // right row.
-        //
-        // Post-causl-org#13: the LIBRARY id IS the dashboard SeriesId
-        // — the centralised vocabulary in
-        // `causljs/causl-bench:packages/bench/src/series-id.ts`
-        // expresses the same rule via `seriesForRepoSlug()`. This
-        // table is the IIFE-layer expression of that rule; the
-        // helper below (`engineToSeries`) is the explicit alias
-        // every new emission goes through to produce a `data-series`
-        // attribute value. The legacy `data-library` / `data-engine`
-        // call-sites still carry the engine slug for the duration of
-        // the one-release-cycle compat shim — see the IIFE-header
-        // comment for the shim policy.
-        const ENGINE_TO_LIBRARY = {
-          'causl-ts': 'causl-ts',
-          'causl-ts-wasm-engine': 'causl-wasm',
-        };
-        function engineToLibrary(eng) {
-          return ENGINE_TO_LIBRARY[eng] || eng;
-        }
-        // Canonical SeriesId for a given engine slug. Same table as
-        // ENGINE_TO_LIBRARY above — kept separate so the call-sites
-        // that produce `data-series` are visually traceable to the
-        // 3-axis vocabulary rather than to the legacy skip-row index.
-        function engineToSeries(eng) {
-          return ENGINE_TO_LIBRARY[eng] || eng;
-        }
-
-        // causljs/causl-org#12 — freshness watermark for the
-        // dual-engine.json envelope. Surface a yellow banner once the
-        // file's `generatedAt` slips past the 7-day staleness budget;
-        // adopters land on the dashboard via a search-result link
-        // long after the data went stale, and the silent-stale-render
-        // failure mode (issue #15) was the wedge that made #12's
-        // "— ms" cells look broken rather than uncovered.
-        const STALE_BUDGET_HOURS = 168;
-        function renderStalenessBanner(generatedAt) {
-          if (!stalenessWarn) return;
-          if (!generatedAt) return;
-          const genMs = new Date(generatedAt).getTime();
-          if (!Number.isFinite(genMs)) return;
-          const ageHours = (Date.now() - genMs) / 3600000;
-          if (ageHours <= STALE_BUDGET_HOURS) return;
-          const days = Math.floor(ageHours / 24);
-          stalenessWarn.hidden = false;
-          stalenessWarn.setAttribute('data-age-hours', ageHours.toFixed(1));
-          stalenessWarn.innerHTML =
-            '<strong>Stale benchmark data:</strong> <code>dual-engine.json</code> is ' +
-            days + ' days old (generated ' + generatedAt + '). ' +
-            'Refresh via <code>pnpm bench</code> in ' +
-            '<a href="https://github.com/causljs/causl-bench"><code>causljs/causl-bench</code></a>.';
-        }
-
-        fetch(URL, { cache: 'no-store' }).then(function (r) {
-          if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.json();
-        }).then(function (doc) {
-          const engines = Array.isArray(doc.engines) ? doc.engines : [];
-          const series = (doc.series && typeof doc.series === 'object') ? doc.series : {};
-          const ts = doc.generatedAt || '';
-
-          meta.setAttribute('data-engines', engines.join(','));
-          meta.setAttribute('data-generated-at', ts);
-          meta.textContent = 'Generated at ' + ts + ' for engines: ' + engines.join(', ') +
-            (doc.meta && doc.meta.gitShas ? ' (' + Object.entries(doc.meta.gitShas).map(function (e) { return e[0] + '@' + e[1]; }).join(', ') + ')' : '');
-
-          renderStalenessBanner(ts);
-
-          // causljs/causl-org#12 — build a (library × scenario × scale)
-          // → skip-row index from `doc.skipped[]`. The dual-engine
-          // report MAY (per causl-bench#37 follow-up) carry skipped
-          // rows with `status: 'SKIP'` + a typed `reason` enum drawn
-          // from {artefact-missing, feature-not-wired,
-          // engine-incompatible, timeout, oom}, plus a free-form
-          // `detail`. Pre-#37 rows carry only `reason` as a free
-          // string. We honour both: typed → typed pill (colour from
-          // the brand palette); legacy → muted "skipped" pill with
-          // the reason on hover. Absent rows (no entry at all) render
-          // a plain em-dash with a "not in coverage today" tooltip.
-          const skipIndex = new Map();
-          const skippedArr = Array.isArray(doc.skipped) ? doc.skipped : [];
-          // Also fold any per-engine `series[eng].skipped` if a future
-          // schema rev puts them there — defensive, not load-bearing.
-          engines.forEach(function (eng) {
-            const perEng = series[eng] && Array.isArray(series[eng].skipped) ? series[eng].skipped : [];
-            perEng.forEach(function (row) { skippedArr.push(row); });
-          });
-          function skipKey(library, scenario, scale) {
-            return library + '|' + scenario + '|' + (scale == null ? '' : scale);
-          }
-          const TYPED_SKIP_REASONS = ['artefact-missing', 'feature-not-wired', 'engine-incompatible', 'timeout', 'oom'];
-          const TYPED_SKIP_LABEL = {
-            'artefact-missing': 'artefact missing',
-            'feature-not-wired': 'feature not wired',
-            'engine-incompatible': 'engine incompatible',
-            'timeout': 'timeout',
-            'oom': 'OOM',
-          };
-          skippedArr.forEach(function (row) {
-            if (!row || typeof row !== 'object') return;
-            const lib = row.library;
-            const scn = row.scenario;
-            const scale = row.scale;
-            if (!lib || !scn) return;
-            skipIndex.set(skipKey(lib, scn, scale), row);
-          });
-          function lookupSkip(secondEng, scn, scale) {
-            // Try (library, scenario, scale) first; fall back to a
-            // scale-agnostic match so a skipped row that didn't pin
-            // a scale still surfaces.
-            const lib = engineToLibrary(secondEng);
-            return (
-              skipIndex.get(skipKey(lib, scn, scale)) ||
-              skipIndex.get(skipKey(lib, scn, '')) ||
-              null
-            );
-          }
-          function escapeAttr(s) {
-            return String(s)
-              .replace(/&/g, '&amp;')
-              .replace(/"/g, '&quot;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;');
-          }
-          function renderSkipPill(skip) {
-            // Typed taxonomy → coloured pill; legacy free-form →
-            // muted "skipped" pill. Both carry the reason/detail
-            // string on the title attribute so the operator can
-            // hover and read the long-form prose.
-            const reason = skip && skip.reason;
-            const detail = (skip && skip.detail) || (typeof reason === 'string' ? reason : '');
-            if (typeof reason === 'string' && TYPED_SKIP_REASONS.indexOf(reason) !== -1) {
-              return '<span class="dual-engine-skip-pill dual-engine-skip-pill--' + reason + '" ' +
-                'title="' + escapeAttr(detail) + '">' + TYPED_SKIP_LABEL[reason] + '</span>';
-            }
-            return '<span class="dual-engine-skip-pill dual-engine-skip-pill--legacy" ' +
-              'title="' + escapeAttr(detail) + '">skipped</span>';
-          }
-
-          // Union the scenario names across all engines so we never
-          // hide a row that only one engine emitted.
-          const scenarioNames = new Set();
-          engines.forEach(function (eng) {
-            const scns = (series[eng] && series[eng].scenarios) || {};
-            Object.keys(scns).forEach(function (n) { scenarioNames.add(n); });
-          });
-
-          if (scenarioNames.size === 0) {
-            // Scaffold state: schema-correct file but no per-cell
-            // data yet (inner-bench wiring tracked in #24).
-            tbody.innerHTML = '<tr class="dual-engine-scaffold"><td colspan="10">' +
-              'Scaffold state: <code>dual-engine.json</code> carries the schema (engines list, per-engine <code>scenarios</code> map) but no per-cell rows yet. ' +
-              'The inner bench skips causl-library cells until the wasm-engine fork\'s <code>apply_commands</code> extern is wired (see <a href="https://github.com/causljs/causl-bench/issues/24">causl-bench#24</a> for the runner ↔ inner-bench wiring gap and <a href="https://github.com/causljs/causl-wasm/issues/85">causl-wasm#85</a> for the wasm-side prerequisite).' +
-              '</td></tr>';
-            table.removeAttribute('aria-busy');
-            return;
-          }
-
-          // Real per-scenario rendering. The published schema nests
-          // metrics under `scenarios[name].result.runtime` (median /
-          // mean / cpuNs / gcPauses) and `scenarios[name].{heapDeltaBytes,
-          // peakRssBytes}`; project those into the flat columns the
-          // Playwright contract pins (`data-perf-column="<key>"`).
-          function fmt(v, digits) { return (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(typeof digits === 'number' ? digits : 2) : '—'; }
-          function fmtBytes(n) {
-            if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
-            if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MiB';
-            if (n >= 1024) return (n / 1024).toFixed(1) + ' KiB';
-            return n + ' B';
-          }
-          // Compact byte-formatter for the per-row distribution
-          // triple. `null`/non-finite → em-dash; small values stay as
-          // a thousands-separated integer; large values collapse to
-          // `1.2K` / `12M` so a long-tail max doesn't blow the cell
-          // width. Returned as a plain string (the caller wraps in
-          // markup). Mirrors the `<= 3 figures + suffix` rule the
-          // task spec laid out.
-          function fmtBytesCompact(n) {
-            if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
-            if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-            if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-            // <1000: emit as plain integer with thousands separators
-            // (1k cap means this branch never adds a separator, but the
-            // toLocaleString is cheap and keeps the formatter uniform).
-            return Math.round(n).toLocaleString('en-US');
-          }
-          function project(cell) {
-            // `cell` is `scenarios[name]` for one engine. Returns the
-            // flat view the renderer consumes; missing fields stay
-            // undefined so fmt() emits an em-dash.
-            const c = cell || {};
-            const rt = (c.result && c.result.runtime) || {};
-            const gc = Array.isArray(rt.gcPauses) ? rt.gcPauses.slice() : [];
-            gc.sort(function (a, b) { return (b.totalMs || 0) - (a.totalMs || 0); });
-            const hot = gc.length ? (gc[0].kind + ' ' + (gc[0].totalMs || 0).toFixed(1) + 'ms') : undefined;
-            const cold = gc.length > 1 ? (gc[1].kind + ' ' + (gc[1].totalMs || 0).toFixed(1) + 'ms') : undefined;
-            // causljs/causl-org#6 addition 2 — pull the per-row
-            // distribution triple. Each field carries its own null
-            // semantics: a wasm cell with crossings>0 has numbers; a
-            // non-wasm / zero-crossings cell carries explicit `null`;
-            // pre-#33-add-on cells have no field at all. The renderer
-            // treats both null and absent the same (em-dash).
-            const m = c?.meta || {};
-            return {
-              wallMs: rt.median,
-              cpuUserMs: typeof rt.cpuNs === 'number' ? rt.cpuNs / 1e6 : undefined,
-              cpuSystemMs: undefined, // not collected by the current inner bench
-              heapPeakBytes: c.peakRssBytes,
-              hotPath: hot,
-              coldPath: cold,
-              boundaryCrossings: m.boundaryCrossings,
-              boundaryBytes: m.boundaryBytes,
-              boundaryBytesMin: m.boundaryBytesMin,
-              boundaryBytesMedian: m.boundaryBytesMedian,
-              boundaryBytesMax: m.boundaryBytesMax,
-            };
-          }
-          // Render a single metric cell's value with both causl
-          // engines stacked vertically. `topVal` / `bottomVal` are
-          // the formatted strings (caller picks the digits + unit);
-          // `topEngine` / `bottomEngine` carry the engine ids for
-          // the hover tag + data attribute. If one side's value is
-          // null/undefined, render ONLY the other side at its color
-          // (don't show "—" stacked above a number — the task spec
-          // calls this out explicitly).
-          //
-          // The two engines correspond to `engines[0]` and
-          // `engines[1]` in the dual-engine.json envelope — typically
-          // `causl-ts` + `causl-ts-wasm-engine` today; the prior PR
-          // also landed the `causl-wasm` / `causl-wasm-all` legend
-          // entries so the dashboard's color palette and tags are
-          // consistent across the two pair conventions. Color is the
-          // primary signal (top = solid causl-ts cyan, bottom = paler
-          // mint with a dashed-underline cue); the engine id surfaces
-          // on hover via the `title` attribute as the secondary
-          // signal.
-          function dualStack(topVal, topEngine, bottomVal, bottomEngine) {
-            const topHas = topVal !== '—' && topVal !== '' && topVal != null;
-            const botHas = bottomVal !== '—' && bottomVal !== '' && bottomVal != null;
-            if (topHas && botHas) {
-              return (
-                '<span class="dual-engine-stack">' +
-                  '<span class="dual-engine-stack-top" data-series="' + engineToSeries(topEngine) + '" data-engine="' + topEngine + '" title="' + topEngine + ' (selective)">' + topVal + '</span>' +
-                  '<span class="dual-engine-stack-bot" data-series="' + engineToSeries(bottomEngine) + '" data-engine="' + bottomEngine + '" title="' + bottomEngine + ' (all)">' + bottomVal + '</span>' +
-                '</span>'
-              );
-            }
-            if (topHas) {
-              return '<span class="dual-engine-stack dual-engine-stack--solo-top" data-series="' + engineToSeries(topEngine) + '" data-engine="' + topEngine + '" title="' + topEngine + '">' + topVal + '</span>';
-            }
-            if (botHas) {
-              return '<span class="dual-engine-stack dual-engine-stack--solo-bot" data-series="' + engineToSeries(bottomEngine) + '" data-engine="' + bottomEngine + '" title="' + bottomEngine + '">' + bottomVal + '</span>';
-            }
-            return '—';
-          }
-          // Tally coverage so the meta strip can surface "N of M
-          // scenarios covered by the wasm-engine fork today" — the
-          // explanatory note the absent cells now point readers
-          // toward (causl-bench#24).
-          const totalScenarios = scenarioNames.size;
-          let secondEngCoveredCount = 0;
-          const rows = Array.from(scenarioNames).sort().map(function (scn) {
-            const firstEng = engines[0];
-            const secondEng = engines[1] || engines[0];
-            const firstCell = (series[firstEng] && series[firstEng].scenarios && series[firstEng].scenarios[scn]) || null;
-            const secondCell = (series[secondEng] && series[secondEng].scenarios && series[secondEng].scenarios[scn]) || null;
-            const firstMetrics = project(firstCell);
-            const secondMetrics = project(secondCell);
-            // The second-engine row's scale lives at
-            // `cell.result.scale` per the schema; fall back to the
-            // first-engine cell's scale when the second engine is
-            // entirely absent, so the skip-row lookup still has a
-            // scale axis to match against.
-            const secondScale = (secondCell && secondCell.result && secondCell.result.scale)
-              || (firstCell && firstCell.result && firstCell.result.scale)
-              || null;
-            const secondAbsent = typeof secondMetrics.wallMs !== 'number';
-            if (!secondAbsent) secondEngCoveredCount++;
-            const secondSkip = secondAbsent ? lookupSkip(secondEng, scn, secondScale) : null;
-            let deltaCls = '';
-            let deltaTxt = '';
-            if (typeof firstMetrics.wallMs === 'number' && typeof secondMetrics.wallMs === 'number' && firstMetrics.wallMs > 0) {
-              const pct = ((secondMetrics.wallMs - firstMetrics.wallMs) / firstMetrics.wallMs) * 100;
-              deltaTxt = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
-              if (pct <= -5) deltaCls = ' class="dual-engine-faster"';
-              else if (pct >= 5) deltaCls = ' class="dual-engine-slower"';
-              else deltaCls = ' class="dual-engine-same"';
-            }
-            // Boundary-crossings (star metric): pick the wasm-engine row's
-            // count when present; fall back to firstMetrics. 0 renders as
-            // an em-dash (no boundary). Class scales: none / low / high.
-            const bcRaw = (typeof secondMetrics.boundaryCrossings === 'number' ? secondMetrics.boundaryCrossings : firstMetrics.boundaryCrossings);
-            const bc = (typeof bcRaw === 'number' && Number.isFinite(bcRaw)) ? bcRaw : 0;
-            const bcCls = bc === 0 ? 'dual-engine-boundary-none' : (bc < 1000 ? 'dual-engine-boundary-low' : 'dual-engine-boundary-high');
-            const bcTxt = bc === 0 ? '<small>—</small>' : bc.toLocaleString();
-
-            // causljs/causl-org#6 addition 2 — render the bytes
-            // distribution as a `min / median / max` triple under the
-            // crossings count, subdued so it doesn't crowd the row.
-            // Pull from the wasm-engine row first (it carries the
-            // accumulator); fall back to firstMetrics. Each field is
-            // independently nullable — render `—` per null. Compact
-            // 3-figure format (`1.2K` / `12M`) keeps the triple
-            // single-line even on a long-tail max.
-            function pickDist(key) {
-              const v = (secondMetrics[key] !== undefined && secondMetrics[key] !== null)
-                ? secondMetrics[key]
-                : firstMetrics[key];
-              return (typeof v === 'number' && Number.isFinite(v)) ? v : null;
-            }
-            const bbMin = pickDist('boundaryBytesMin');
-            const bbMed = pickDist('boundaryBytesMedian');
-            const bbMax = pickDist('boundaryBytesMax');
-            const allBytesAbsent = bbMin === null && bbMed === null && bbMax === null;
-            const bytesTripleHtml = allBytesAbsent
-              ? ''
-              : (
-                '<div class="dual-engine-bytes-triple" data-perf-column="boundaryBytesDistribution" ' +
-                'data-min="' + (bbMin === null ? '' : bbMin) + '" ' +
-                'data-median="' + (bbMed === null ? '' : bbMed) + '" ' +
-                'data-max="' + (bbMax === null ? '' : bbMax) + '" ' +
-                'title="payload bytes per crossing — min / median / max">' +
-                '<small>' +
-                  '<span class="dual-engine-bytes-min">' + fmtBytesCompact(bbMin) + '</span>' +
-                  ' / ' +
-                  '<span class="dual-engine-bytes-median">' + fmtBytesCompact(bbMed) + '</span>' +
-                  ' / ' +
-                  '<span class="dual-engine-bytes-max">' + fmtBytesCompact(bbMax) + '</span>' +
-                '</small>' +
-                '</div>'
-              );
-
-            // causljs/causl-org#6 addition 3 — every metric column
-            // starting at wall-ms renders BOTH causl engines stacked.
-            // The first column (causl-ts engine col) keeps the single-
-            // engine view (it IS the engine-only readout); the metric
-            // columns from wallMs onward stack `firstEng` (causl-ts)
-            // on top and `secondEng` (causl-ts-wasm-engine) on the
-            // bottom. Where only one is present (the prior PR's
-            // engines[1] === engines[0] degenerate case, or one
-            // engine's scenarios map missing a key), `dualStack`
-            // renders solo — no em-dash above a real value.
-            const wallStack = dualStack(
-              fmt(firstMetrics.wallMs, 3),
-              firstEng,
-              fmt(secondMetrics.wallMs, 3),
-              secondEng,
-            );
-            const cpuUserStack = dualStack(
-              fmt(firstMetrics.cpuUserMs, 3),
-              firstEng,
-              fmt(secondMetrics.cpuUserMs, 3),
-              secondEng,
-            );
-            const cpuSysStack = dualStack(
-              fmt(firstMetrics.cpuSystemMs),
-              firstEng,
-              fmt(secondMetrics.cpuSystemMs),
-              secondEng,
-            );
-            const heapStack = dualStack(
-              fmtBytes(firstMetrics.heapPeakBytes),
-              firstEng,
-              fmtBytes(secondMetrics.heapPeakBytes),
-              secondEng,
-            );
-            const hotStack = dualStack(
-              firstMetrics.hotPath || '',
-              firstEng,
-              secondMetrics.hotPath || '',
-              secondEng,
-            );
-            const coldStack = dualStack(
-              firstMetrics.coldPath || '',
-              firstEng,
-              secondMetrics.coldPath || '',
-              secondEng,
-            );
-            // causljs/causl-org#12 — conditional render for the
-            // second-engine cell. When the engine has no sample for
-            // this scenario, emit either a typed-skip pill (if a
-            // matching `skipped[]` row exists) or a muted em-dash
-            // with a "not in coverage today" tooltip. Either way
-            // we never concatenate ` ms` onto an em-dash again.
-            const firstWallTd = '<td data-series="' + engineToSeries(firstEng) + '" data-engine="' + firstEng + '">' +
-              (typeof firstMetrics.wallMs === 'number'
-                ? fmt(firstMetrics.wallMs, 3) + ' ms'
-                : '<span class="dual-engine-absent" title="no sample emitted on this run">—</span>') +
-              '</td>';
-            let secondWallTd;
-            if (typeof secondMetrics.wallMs === 'number') {
-              secondWallTd = '<td data-series="' + engineToSeries(secondEng) + '" data-engine="' + secondEng + '"' + deltaCls + '>' +
-                fmt(secondMetrics.wallMs, 3) + ' ms' +
-                (deltaTxt ? ' <small>(' + deltaTxt + ')</small>' : '') +
-                '</td>';
-            } else if (secondSkip) {
-              secondWallTd = '<td data-series="' + engineToSeries(secondEng) + '" data-engine="' + secondEng + '" class="dual-engine-absent dual-engine-absent--skipped">' +
-                renderSkipPill(secondSkip) +
-                '</td>';
-            } else {
-              secondWallTd = '<td data-series="' + engineToSeries(secondEng) + '" data-engine="' + secondEng + '" class="dual-engine-absent" ' +
-                'title="not in causl-ts-wasm-engine coverage today — see causljs/causl-bench#24">—</td>';
-            }
-            return '<tr data-scenario="' + scn + '">' +
-              '<th scope="row"><code>' + scn + '</code></th>' +
-              firstWallTd +
-              secondWallTd +
-              '<td data-perf-column="boundaryCrossings" class="' + bcCls + '">' +
-                '<div class="dual-engine-primary-metric">' + bcTxt + '</div>' +
-                bytesTripleHtml +
-              '</td>' +
-              '<td data-perf-column="wallMs">' + wallStack + '</td>' +
-              '<td data-perf-column="cpuUserMs">' + cpuUserStack + '</td>' +
-              '<td data-perf-column="cpuSystemMs">' + cpuSysStack + '</td>' +
-              '<td data-perf-column="heapPeakBytes">' + heapStack + '</td>' +
-              '<td data-perf-column="hotPath">' + hotStack + '</td>' +
-              '<td data-perf-column="coldPath">' + coldStack + '</td>' +
-              '</tr>';
-          });
-          tbody.innerHTML = rows.join('');
-
-          // causljs/causl-org#12 — surface the coverage gap as a
-          // factual one-liner. Only render when the second engine
-          // covers strictly fewer scenarios than the union (the
-          // common case today: causl-ts-wasm-engine fork ships 13 of
-          // 25 scenarios per causl-bench#24).
-          const secondEng = engines[1] || engines[0];
-          if (coverageNote && secondEng !== engines[0] && secondEngCoveredCount < totalScenarios) {
-            coverageNote.hidden = false;
-            coverageNote.innerHTML =
-              secondEngCoveredCount + ' of ' + totalScenarios +
-              ' scenarios covered by <code>' + secondEng + '</code> today — ' +
-              'see <a href="https://github.com/causljs/causl-bench/issues/24">causljs/causl-bench#24</a> ' +
-              'for the wiring gap that gates the remaining cells.';
-          }
-
-          table.removeAttribute('aria-busy');
-        }).catch(function (err) {
-          tbody.innerHTML = '<tr class="dual-engine-error"><td colspan="10">Failed to load <code>dual-engine.json</code>: ' + err.message + '</td></tr>';
-          table.removeAttribute('aria-busy');
-        });
-      })();
-    </script>
   </section>
+
+  <!-- ============================================================
+       Re-measured engine comparison + full sweep results.
+
+       Everything between the two GENERATED markers below is written
+       by `render-latest.mjs` from the last entry in `history.json`,
+       which `import-run.mjs` put there from an ARCHIVED causl-bench
+       run. Do not hand-edit inside the markers — the next import
+       overwrites it. Edit the generator instead.
+
+       It is generated rather than fetched on purpose. The panel this
+       replaces fetched its numbers from a URL in another repository
+       at page load, and when that repository moved the panel broke
+       silently for every visitor. A generated section is checked in,
+       diffable, reviewable, renders with JavaScript disabled, and
+       cannot 404.
+       ============================================================ -->
+  <!-- GENERATED:attested-engines:BEGIN -->
+  <section class="page section" id="attested-engines" aria-labelledby="attested-engines-title">
+  <div class="section-head">
+      <div>
+        <div class="section-kicker">Re-measured &mdash; 2026-07-29</div>
+        <h2 id="attested-engines-title">Every cell, and which engine actually ran it.</h2>
+      </div>
+      <p class="lead">
+        One archived <code>causl-bench</code> sweep, reported in full: 364 measured cells and
+        41 that produced no number, across 5 runners. Each causl cell carries a
+        runtime attestation of the engine that executed the graph that was timed, so the engine label is an
+        observation rather than a configuration flag &mdash; which is the specific failure the withdrawn panel
+        above was built on.
+      </p>
+    </div>
+
+    <div class="status-callout" role="note">
+      <p style="margin:0 0 .5rem"><strong>Provenance.</strong></p>
+      <ul style="margin:0">
+        <li>run <code>20260729T070923Z-cd1bb84-9924ee38</code>, captured <code>2026-07-29T07:39:57.988Z</code></li>
+        <li>host <code>Apple M5</code> · <code>darwin/arm64</code> · node <code>v26.5.0</code></li>
+        <li><code>causl-ts</code> &rarr; <code>@causlts/core@0.3.3</code> · engine <code>js-ssot</code> <span class="conf conf-high">attested</span></li>
+        <li><code>causl-wasm-ts</code> &rarr; <code>@causl/causl-wasm-ts@0.3.6</code> · engine <code>rust-ssot</code> <span class="conf conf-high">attested</span></li>
+        <li><code>jotai</code> &rarr; <code>jotai@2.20.2</code></li>
+        <li><code>mobx</code> &rarr; <code>mobx@6.16.1</code></li>
+        <li><code>redux-rtk</code> &rarr; <code>@reduxjs/toolkit@2.9.0</code></li>
+      </ul>
+      <p style="margin:.6rem 0 0">
+        The full aggregate, its four integrity digests and the per-runner inputs are archived in
+        <code>causl-bench</code> under <code>runners/archive/20260729T070923Z-cd1bb84-9924ee38/</code>. The raw rows behind every
+        table below are in <a href="./history.json"><code>history.json</code></a>.
+      </p>
+    </div>
+
+    <h3>Cross-library comparison &mdash; 4 runners, 21 ranked groups</h3>
+    <p>
+      Median wall-time in milliseconds for one step on a world built fresh for that step. Fastest in each row is
+      marked; rows whose winner falls inside the tie band read <em>tied</em>, and rows the aggregator refused to
+      crown read <em>withheld</em>. Rank comes from the aggregate, not from sorting these medians &mdash; it
+      applies the tie band and the work-equivalence exclusions, and a table that sorted for itself would quietly
+      disagree with both.
+    </p>
+    <p><strong><code>causl-wasm-ts</code> is not in this table.</strong> See the section below for why, and for its numbers.</p>
+    <div style="overflow-x:auto">
+      <table class="results-table">
+        <thead>
+          <tr><th scope="col">Cell</th><th scope="col"><code>causl-ts</code></th><th scope="col"><code>jotai</code></th><th scope="col"><code>mobx</code></th><th scope="col"><code>redux-rtk</code></th><th scope="col">fastest</th></tr>
+        </thead>
+        <tbody>
+        <tr><th scope="row"><code>async-race</code> @ 100</th><td class="num absent" title="the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library">inapplicable</td><td class="num">0.0048 <span class="conf conf-high">high</span></td><td class="num best">0.0028 <span class="conf conf-high">high</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0084</s> <span class="conf conf-low">low</span></td><td><code>mobx</code></td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 1000</th><td class="num">0.0231 <span class="conf conf-high">high</span></td><td class="num">0.0393 <span class="conf conf-high">high</span></td><td class="num best">0.0149 <span class="conf conf-high">high</span></td><td class="num">0.0284 <span class="conf conf-high">high</span></td><td><code>mobx</code></td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 10000</th><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.1623</s> <span class="conf conf-low">low</span></td><td class="num">0.2903 <span class="conf conf-high">high</span></td><td class="num best">0.0757 <span class="conf conf-high">high</span></td><td class="num">0.2597 <span class="conf conf-high">high</span></td><td><code>mobx</code></td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 10000</th><td class="num best">0.0077 <span class="conf conf-high">high</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0125</s> <span class="conf conf-low">low</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0084</s> <span class="conf conf-low">low</span></td><td class="num">0.0305 <span class="conf conf-high">high</span></td><td><code>causl-ts</code></td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 1000</th><td class="num best">0.0071 <span class="conf conf-high">high</span></td><td class="num">0.0108 <span class="conf conf-high">high</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0083</s> <span class="conf conf-low">low</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0331</s> <span class="conf conf-low">low</span></td><td><code>causl-ts</code></td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 10000</th><td class="num best">0.0083 <span class="conf conf-high">high</span></td><td class="num">0.0106 <span class="conf conf-high">high</span></td><td class="num">0.0090 <span class="conf conf-high">high</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0102</s> <span class="conf conf-low">low</span></td><td><code>causl-ts</code></td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 100</th><td class="num best">0.0024 <span class="conf conf-high">high</span></td><td class="num">0.0524 <span class="conf conf-high">high</span></td><td class="num">0.0031 <span class="conf conf-high">high</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0293</s> <span class="conf conf-low">low</span></td><td><code>causl-ts</code></td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 1000</th><td class="num best">0.0020 <span class="conf conf-high">high</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.4320</s> <span class="conf conf-low">low</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0142</s> <span class="conf conf-low">low</span></td><td class="num">0.2837 <span class="conf conf-high">high</span></td><td><code>causl-ts</code></td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 100</th><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0490</s> <span class="conf conf-low">low</span></td><td class="num">0.1116 <span class="conf conf-high">high</span></td><td class="num best">0.0337 <span class="conf conf-high">high</span></td><td class="num best">0.0346 <span class="conf conf-high">high</span></td><td><span class="conf">tied</span></td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 1000</th><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.5475</s> <span class="conf conf-low">low</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.8796</s> <span class="conf conf-low">low</span></td><td class="num best">0.1711 <span class="conf conf-high">high</span></td><td class="num">0.2838 <span class="conf conf-high">high</span></td><td><code>mobx</code></td></tr>
+        <tr><th scope="row"><code>mux</code> @ 100</th><td class="num unranked" title="measured, not ranked: low-confidence"><s>3.598</s> <span class="conf conf-low">low</span></td><td class="num">10.24 <span class="conf conf-high">high</span></td><td class="num best">2.244 <span class="conf conf-high">high</span></td><td class="num">4.111 <span class="conf conf-high">high</span></td><td><code>mobx</code></td></tr>
+        <tr><th scope="row"><code>mux</code> @ 1000</th><td class="num unranked" title="measured, not ranked: low-confidence"><s>3.480</s> <span class="conf conf-low">low</span></td><td class="num">10.15 <span class="conf conf-high">high</span></td><td class="num best">2.230 <span class="conf conf-high">high</span></td><td class="num">4.096 <span class="conf conf-high">high</span></td><td><code>mobx</code></td></tr>
+        <tr><th scope="row"><code>mux</code> @ 10000</th><td class="num unranked" title="measured, not ranked: low-confidence"><s>3.505</s> <span class="conf conf-low">low</span></td><td class="num">10.43 <span class="conf conf-high">high</span></td><td class="num best">2.089 <span class="conf conf-high">high</span></td><td class="num">3.983 <span class="conf conf-high">high</span></td><td><code>mobx</code></td></tr>
+        <tr><th scope="row"><code>op-no-subscriber-firehose-1k</code> @ 1000</th><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.3376</s> <span class="conf conf-low">low</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.5785</s> <span class="conf conf-low">low</span></td><td class="num best">0.0463 <span class="conf conf-high">high</span></td><td class="num">37.72 <span class="conf conf-high">high</span></td><td><code>mobx</code></td></tr>
+        <tr><th scope="row"><code>op-subscribe-dispose-1k-pairs</code> @ 1000</th><td class="num">0.1982 <span class="conf conf-high">high</span></td><td class="num">0.4500 <span class="conf conf-high">high</span></td><td class="num best">0.0395 <span class="conf conf-high">high</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0819</s> <span class="conf conf-low">low</span></td><td><code>mobx</code></td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 100</th><td class="num">0.0067 <span class="conf conf-high">high</span></td><td class="num">0.0180 <span class="conf conf-high">high</span></td><td class="num best">0.0062 <span class="conf conf-high">high</span></td><td class="num">0.0080 <span class="conf conf-high">high</span></td><td><code>mobx</code></td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 10000</th><td class="num best">0.0042 <span class="conf conf-high">high</span></td><td class="num">0.1075 <span class="conf conf-high">high</span></td><td class="num">0.0099 <span class="conf conf-high">high</span></td><td class="num">30.94 <span class="conf conf-high">high</span></td><td><code>causl-ts</code></td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 100</th><td class="num best">0.0213 <span class="conf conf-high">high</span></td><td class="num">6.651 <span class="conf conf-high">high</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.1886</s> <span class="conf conf-low">low</span></td><td class="num">0.8738 <span class="conf conf-high">high</span></td><td><code>causl-ts</code></td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 10000</th><td class="num best">0.1742 <span class="conf conf-high">high</span></td><td class="num">6.389 <span class="conf conf-high">high</span></td><td class="num">14.72 <span class="conf conf-high">high</span></td><td class="num">61.55 <span class="conf conf-high">high</span></td><td><code>causl-ts</code></td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 1000</th><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0260</s> <span class="conf conf-low">low</span></td><td class="num">0.0614 <span class="conf conf-high">high</span></td><td class="num">0.0209 <span class="conf conf-high">high</span></td><td class="num best">0.0135 <span class="conf conf-high">high</span></td><td><code>redux-rtk</code></td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 10000</th><td class="num">0.2795 <span class="conf conf-high">high</span></td><td class="num">0.4032 <span class="conf conf-high">high</span></td><td class="num unranked" title="measured, not ranked: low-confidence"><s>0.0990</s> <span class="conf conf-low">low</span></td><td class="num best">0.0682 <span class="conf conf-high">high</span></td><td><code>redux-rtk</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="held-out-causl-wasm-ts"><code>causl-wasm-ts</code> &mdash; measured, published, not compared</h3>
+    <div class="status-callout" role="note">
+      <p style="margin:0 0 .5rem"><strong>These numbers are real measurements of a real Rust engine, and they are
+        deliberately not placed beside any other runner.</strong></p>
+      <p style="margin:0 0 .5rem">
+        @causl/causl-wasm-ts@0.3.6 is below the 0.3.7 engine floor — the defect is causl-core-rs#331; the release that clears this floor is causl-wasm-ts#294. The cells are measured and published; they are not ranked against other libraries.
+      </p>
+      <p style="margin:0">
+        <code>causl-bench</code>'s aggregator states the consequence directly: cells from a runner below the floor
+        are <em>&ldquo;measured, published and accounted for in <code>ranking[].absent</code>&hellip; not ranked
+        against other libraries, and no chart may compare them.&rdquo;</em> This is not a low-confidence verdict and
+        more repetitions will not lift it &mdash; the artefact is what it is until the release lands. The fix is
+        <a href="https://git.opsite.ca/causl/causl-core-rs/issues/331">causl-core-rs#331</a>, awaiting a republish at
+        <a href="https://git.opsite.ca/causl/causl-wasm-ts/issues/294">causl-wasm-ts#294</a>. When that ships, these
+        rows join the table above.
+      </p>
+    </div>
+    <p>71 measured cells, 10 that produced no number.</p>
+    <div style="overflow-x:auto">
+      <table class="results-table">
+        <thead>
+          <tr><th scope="col">Cell</th><th scope="col">median (ms)</th><th scope="col">95% interval</th>
+              <th scope="col">CoV</th><th scope="col">confidence</th><th scope="col">recomputes</th>
+              <th scope="col">peak RSS (MB)</th></tr>
+        </thead>
+        <tbody>
+        <tr><th scope="row"><code>linear-chain</code> @ 100</th><td class="num">0.5063</td><td class="num">0.4911&ndash;0.5193</td><td class="num">5.8%</td><td><span class="conf conf-low">low</span></td><td class="num">100</td><td class="num">105.2</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 1000</th><td class="num">19.95</td><td class="num">19.86&ndash;20.13</td><td class="num">4.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td><td class="num">157.1</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 10000</th><td class="num">1700</td><td class="num">1684&ndash;1742</td><td class="num">2.9%</td><td><span class="conf conf-low">low</span></td><td class="num">10000</td><td class="num">630.1</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 100</th><td class="num">0.0504</td><td class="num">0.0486&ndash;0.0528</td><td class="num">12.9%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td><td class="num">99.9</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 1000</th><td class="num">0.0509</td><td class="num">0.0492&ndash;0.0525</td><td class="num">10.0%</td><td><span class="conf conf-high">high</span></td><td class="num">3</td><td class="num">100.1</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 10000</th><td class="num">0.0518</td><td class="num">0.0494&ndash;0.0551</td><td class="num">9.5%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td><td class="num">100.5</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 100</th><td class="num">0.0503</td><td class="num">0.0486&ndash;0.0538</td><td class="num">13.5%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td><td class="num">103.1</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 1000</th><td class="num">0.0843</td><td class="num">0.0788&ndash;0.0884</td><td class="num">14.2%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td><td class="num">112.9</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 10000</th><td class="num">0.2797</td><td class="num">0.2771&ndash;0.2850</td><td class="num">2.3%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td><td class="num">283.8</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 100</th><td class="num">0.0327</td><td class="num">0.0304&ndash;0.0356</td><td class="num">49.7%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td><td class="num">103.4</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 1000</th><td class="num">0.0414</td><td class="num">0.0403&ndash;0.0431</td><td class="num">6.4%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td><td class="num">118.5</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 10000</th><td class="num">0.0692</td><td class="num">0.0653&ndash;0.0719</td><td class="num">8.0%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td><td class="num">283.5</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 100</th><td class="num">0.0517</td><td class="num">0.0495&ndash;0.0556</td><td class="num">10.1%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">104.3</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 1000</th><td class="num">0.0737</td><td class="num">0.0676&ndash;0.0768</td><td class="num">9.6%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">110.3</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 10000</th><td class="num">0.2228</td><td class="num">0.2151&ndash;0.2335</td><td class="num">8.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">292.6</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 100</th><td class="num">0.2253</td><td class="num">0.2198&ndash;0.2318</td><td class="num">5.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">103.0</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 1000</th><td class="num">1.593</td><td class="num">1.582&ndash;1.621</td><td class="num">2.7%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">122.3</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 10000</th><td class="num">14.58</td><td class="num">14.52&ndash;14.68</td><td class="num">1.2%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">441.8</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 100</th><td class="num">0.0919</td><td class="num">0.0860&ndash;0.0938</td><td class="num">36.1%</td><td><span class="conf conf-low">low</span></td><td class="num">10</td><td class="num">101.0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 1000</th><td class="num">0.4892</td><td class="num">0.4790&ndash;0.4989</td><td class="num">4.0%</td><td><span class="conf conf-low">low</span></td><td class="num">100</td><td class="num">105.7</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 10000</th><td class="num">19.70</td><td class="num">19.66&ndash;19.73</td><td class="num">0.8%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td><td class="num">157.1</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 100</th><td class="num">0.0270</td><td class="num">0.0249&ndash;0.0285</td><td class="num">30.5%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td><td class="num">100.5</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 1000</th><td class="num">0.0320</td><td class="num">0.0298&ndash;0.0327</td><td class="num">8.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td><td class="num">105.5</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 10000</th><td class="num">0.0719</td><td class="num">0.0700&ndash;0.0801</td><td class="num">25.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td><td class="num">160.7</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 100</th><td class="num">0.2887</td><td class="num">0.2781&ndash;0.2932</td><td class="num">4.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">121.9</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 1000</th><td class="num">2.230</td><td class="num">2.202&ndash;2.265</td><td class="num">2.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">415.0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 10000</th><td class="num">2.200</td><td class="num">2.193&ndash;2.216</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">415.1</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 100</th><td class="num">0.0605</td><td class="num">0.0550&ndash;0.0635</td><td class="num">32.2%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">108.3</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 1000</th><td class="num">0.1308</td><td class="num">0.1280&ndash;0.1353</td><td class="num">6.3%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">171.4</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 10000</th><td class="num">0.6818</td><td class="num">0.6594&ndash;0.7064</td><td class="num">5.9%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">706.5</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 100</th><td class="num">0.3221</td><td class="num">0.3153&ndash;0.3280</td><td class="num">6.2%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">408.6</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 1000</th><td class="num">0.3312</td><td class="num">0.3210&ndash;0.3368</td><td class="num">19.8%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">425.2</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 10000</th><td class="num">0.3211</td><td class="num">0.3135&ndash;0.3300</td><td class="num">5.0%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">425.2</td></tr>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 100</th><td class="num">0.0744</td><td class="num">0.0708&ndash;0.0772</td><td class="num">8.6%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">103.5</td></tr>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 1000</th><td class="num">0.0833</td><td class="num">0.0761&ndash;0.0880</td><td class="num">29.5%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">104.4</td></tr>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 10000</th><td class="num">0.0735</td><td class="num">0.0698&ndash;0.0770</td><td class="num">12.1%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">102.9</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 100</th><td class="num">0.1254</td><td class="num">0.1230&ndash;0.1261</td><td class="num">5.5%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td><td class="num">100.0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 1000</th><td class="num">0.9206</td><td class="num">0.8857&ndash;0.9736</td><td class="num">6.4%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td><td class="num">100.0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 10000</th><td class="num">0.9268</td><td class="num">0.9129&ndash;1.089</td><td class="num">9.7%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td><td class="num">100.7</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 100</th><td class="num">0.2001</td><td class="num">0.1990&ndash;0.2044</td><td class="num">5.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">100.5</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 1000</th><td class="num">1.312</td><td class="num">1.284&ndash;1.411</td><td class="num">10.6%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">100.7</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 10000</th><td class="num">1.273</td><td class="num">1.257&ndash;1.306</td><td class="num">5.1%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">100.6</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 100</th><td class="num">0.0490</td><td class="num">0.0477&ndash;0.0510</td><td class="num">8.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">103.2</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 1000</th><td class="num">0.0490</td><td class="num">0.0469&ndash;0.0517</td><td class="num">10.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">106.2</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 10000</th><td class="num">0.0470</td><td class="num">0.0447&ndash;0.0523</td><td class="num">12.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">103.2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 100</th><td class="num">0.0484</td><td class="num">0.0447&ndash;0.0501</td><td class="num">53.3%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td><td class="num">101.8</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 1000</th><td class="num">0.1184</td><td class="num">0.1165&ndash;0.1258</td><td class="num">16.1%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td><td class="num">104.7</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 10000</th><td class="num">0.7121</td><td class="num">0.7023&ndash;0.7247</td><td class="num">14.1%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td><td class="num">161.8</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 100</th><td class="num">0.0552</td><td class="num">0.0519&ndash;0.0569</td><td class="num">14.9%</td><td><span class="conf conf-high">high</span></td><td class="num">4</td><td class="num">100.1</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 1000</th><td class="num">0.1704</td><td class="num">0.1619&ndash;0.1734</td><td class="num">13.0%</td><td><span class="conf conf-high">high</span></td><td class="num">22</td><td class="num">101.5</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 10000</th><td class="num">1.619</td><td class="num">1.605&ndash;1.636</td><td class="num">1.6%</td><td><span class="conf conf-high">high</span></td><td class="num">202</td><td class="num">113.4</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 100</th><td class="num">0.0356</td><td class="num">0.0339&ndash;0.0367</td><td class="num">8.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">100.3</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 1000</th><td class="num">0.0632</td><td class="num">0.0622&ndash;0.0671</td><td class="num">8.0%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td><td class="num">100.7</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 10000</th><td class="num">0.3312</td><td class="num">0.3237&ndash;0.3354</td><td class="num">2.5%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">100.5</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 100</th><td class="num">68.76</td><td class="num">68.68&ndash;69.04</td><td class="num">0.8%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td><td class="num">171.3</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 1000</th><td class="num">69.47</td><td class="num">69.37&ndash;69.54</td><td class="num">0.7%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td><td class="num">171.2</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 10000</th><td class="num">69.74</td><td class="num">69.61&ndash;69.96</td><td class="num">0.7%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td><td class="num">171.0</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 100</th><td class="num">1.229</td><td class="num">1.219&ndash;1.247</td><td class="num">2.0%</td><td><span class="conf conf-high">high</span></td><td class="num">200</td><td class="num">108.8</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 1000</th><td class="num">71.30</td><td class="num">71.20&ndash;71.42</td><td class="num">0.6%</td><td><span class="conf conf-high">high</span></td><td class="num">2000</td><td class="num">240.7</td></tr>
+        <tr><th scope="row"><code>op-input-create-1k</code> @ 1000</th><td class="num">1.079</td><td class="num">1.066&ndash;1.112</td><td class="num">4.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td><td class="num">109.4</td></tr>
+        <tr><th scope="row"><code>op-derived-create-1k-fresh</code> @ 1000</th><td class="num">11.81</td><td class="num">11.70&ndash;11.86</td><td class="num">2.1%</td><td><span class="conf conf-high">high</span></td><td class="num">2000</td><td class="num">133.1</td></tr>
+        <tr><th scope="row"><code>op-commit-noderived-1k</code> @ 1000</th><td class="num">4.416</td><td class="num">4.211&ndash;4.718</td><td class="num">7.3%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td><td class="num">104.2</td></tr>
+        <tr><th scope="row"><code>op-subscribe-dispose-1k-pairs</code> @ 1000</th><td class="num">0.9521</td><td class="num">0.9327&ndash;1.037</td><td class="num">6.6%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td><td class="num">100.0</td></tr>
+        <tr><th scope="row"><code>op-read-cold-1k</code> @ 1000</th><td class="num">0.0638</td><td class="num">0.0539&ndash;0.0701</td><td class="num">22.3%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td><td class="num">100.1</td></tr>
+        <tr><th scope="row"><code>op-tx-set-equal-1k</code> @ 1000</th><td class="num">3.004</td><td class="num">2.985&ndash;3.050</td><td class="num">7.4%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td><td class="num">105.1</td></tr>
+        <tr><th scope="row"><code>op-tx-set-isolated-1k</code> @ 1000</th><td class="num">4.248</td><td class="num">4.145&ndash;4.480</td><td class="num">7.1%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td><td class="num">103.6</td></tr>
+        <tr><th scope="row"><code>op-commit-rollback-1k</code> @ 1000</th><td class="num">5.053</td><td class="num">4.904&ndash;5.278</td><td class="num">4.9%</td><td><span class="conf conf-low">low</span></td><td class="num">499</td><td class="num">102.6</td></tr>
+        <tr><th scope="row"><code>op-derived-rollback-1k</code> @ 1000</th><td class="num">16.51</td><td class="num">16.36&ndash;16.68</td><td class="num">1.7%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td><td class="num">103.2</td></tr>
+        <tr><th scope="row"><code>op-derived-recompute-1k</code> @ 1000</th><td class="num">19.77</td><td class="num">19.70&ndash;19.83</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td><td class="num">156.9</td></tr>
+        <tr><th scope="row"><code>op-phase-d-bfs-1k</code> @ 1000</th><td class="num">20.74</td><td class="num">20.70&ndash;20.76</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1001</td><td class="num">161.1</td></tr>
+        <tr><th scope="row"><code>op-no-subscriber-firehose-1k</code> @ 1000</th><td class="num">4.404</td><td class="num">4.257&ndash;4.498</td><td class="num">7.4%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td><td class="num">125.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Full results &mdash; every cell, every runner</h3>
+    <p>
+      One block per runner, 81 cells each. <code>p95</code> is the 95th percentile of the
+      repetitions the runner kept, not a model fitted to the median. 148 of 364 measured cells
+      declare themselves low-confidence; the chip on each row says which, and a low-confidence median is a number
+      whose own driver says not to quote it.
+    </p>
+    <details class="status-callout">
+      <summary><strong><code>causl-ts</code></strong> &mdash; 75 measured, 6 not measured · <code>@causlts/core@0.3.3</code></summary>
+      <div style="overflow-x:auto">
+        <table class="results-table">
+          <thead>
+            <tr><th scope="col">Cell</th><th scope="col">median (ms)</th><th scope="col">p95 (ms)</th>
+                <th scope="col">95% interval</th><th scope="col">CoV</th><th scope="col">confidence</th>
+                <th scope="col">recomputes</th></tr>
+          </thead>
+          <tbody>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 100</th><td class="num">0.0208</td><td class="num">0.0506</td><td class="num">0.0201&ndash;0.0230</td><td class="num">43.4%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 1000</th><td class="num">0.0219</td><td class="num">0.0241</td><td class="num">0.0208&ndash;0.0229</td><td class="num">7.0%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 10000</th><td class="num">0.0222</td><td class="num">0.0563</td><td class="num">0.0205&ndash;0.0242</td><td class="num">45.4%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr class="row-absent"><th scope="row"><code>async-race</code> @ 100</th><td colspan="6"><strong>inapplicable</strong> &mdash; the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library</td></tr>
+        <tr class="row-absent"><th scope="row"><code>async-race</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library</td></tr>
+        <tr class="row-absent"><th scope="row"><code>async-race</code> @ 10000</th><td colspan="6"><strong>inapplicable</strong> &mdash; the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 100</th><td class="num">0.0096</td><td class="num">0.0113</td><td class="num">0.0076&ndash;0.0101</td><td class="num">18.4%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 1000</th><td class="num">0.0231</td><td class="num">0.0284</td><td class="num">0.0227&ndash;0.0243</td><td class="num">11.2%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 10000</th><td class="num">0.1623</td><td class="num">0.2266</td><td class="num">0.1483&ndash;0.1812</td><td class="num">18.2%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 100</th><td class="num">0.0490</td><td class="num">0.0845</td><td class="num">0.0465&ndash;0.0524</td><td class="num">26.2%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 1000</th><td class="num">1.350</td><td class="num">1.489</td><td class="num">1.304&ndash;1.413</td><td class="num">10.0%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 10000</th><td class="num">101.67</td><td class="num">104.10</td><td class="num">101.33&ndash;102.83</td><td class="num">1.2%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 100</th><td class="num">0.0222</td><td class="num">0.0244</td><td class="num">0.0217&ndash;0.0229</td><td class="num">6.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 1000</th><td class="num">0.0207</td><td class="num">0.0232</td><td class="num">0.0202&ndash;0.0214</td><td class="num">5.8%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 10000</th><td class="num">0.0225</td><td class="num">0.0246</td><td class="num">0.0214&ndash;0.0231</td><td class="num">6.8%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 100</th><td class="num">0.0081</td><td class="num">0.0097</td><td class="num">0.0077&ndash;0.0084</td><td class="num">10.5%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 1000</th><td class="num">0.0081</td><td class="num">0.0088</td><td class="num">0.0077&ndash;0.0083</td><td class="num">26.3%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 10000</th><td class="num">0.0077</td><td class="num">0.0088</td><td class="num">0.0075&ndash;0.0078</td><td class="num">9.5%</td><td><span class="conf conf-high">high</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 100</th><td class="num">0.0070</td><td class="num">0.0092</td><td class="num">0.0066&ndash;0.0071</td><td class="num">22.2%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 1000</th><td class="num">0.0071</td><td class="num">0.0086</td><td class="num">0.0066&ndash;0.0078</td><td class="num">12.8%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 10000</th><td class="num">0.0083</td><td class="num">0.0095</td><td class="num">0.0075&ndash;0.0087</td><td class="num">11.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 100</th><td class="num">0.0124</td><td class="num">0.0154</td><td class="num">0.0121&ndash;0.0127</td><td class="num">10.9%</td><td><span class="conf conf-high">high</span></td><td class="num">10</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 1000</th><td class="num">0.0526</td><td class="num">0.0744</td><td class="num">0.0491&ndash;0.0683</td><td class="num">20.1%</td><td><span class="conf conf-low">low</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 10000</th><td class="num">0.6250</td><td class="num">0.6822</td><td class="num">0.6161&ndash;0.6472</td><td class="num">17.8%</td><td><span class="conf conf-low">low</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 100</th><td class="num">0.0236</td><td class="num">0.0546</td><td class="num">0.0219&ndash;0.0251</td><td class="num">46.6%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 1000</th><td class="num">0.7309</td><td class="num">0.7482</td><td class="num">0.7294&ndash;0.7384</td><td class="num">2.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 10000</th><td class="num">96.43</td><td class="num">97.99</td><td class="num">95.96&ndash;96.70</td><td class="num">1.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 100</th><td class="num">0.0024</td><td class="num">0.0027</td><td class="num">0.0023&ndash;0.0025</td><td class="num">12.2%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 1000</th><td class="num">0.0020</td><td class="num">0.0022</td><td class="num">0.0019&ndash;0.0020</td><td class="num">6.4%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 10000</th><td class="num">0.0023</td><td class="num">0.0031</td><td class="num">0.0022&ndash;0.0025</td><td class="num">15.7%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 100</th><td class="num">0.0490</td><td class="num">0.0767</td><td class="num">0.0464&ndash;0.0571</td><td class="num">21.6%</td><td><span class="conf conf-low">low</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 1000</th><td class="num">0.5475</td><td class="num">0.7016</td><td class="num">0.4319&ndash;0.6636</td><td class="num">23.6%</td><td><span class="conf conf-low">low</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 10000</th><td class="num">4.268</td><td class="num">4.419</td><td class="num">4.134&ndash;4.330</td><td class="num">4.3%</td><td><span class="conf conf-high">high</span></td><td class="num">10000</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 100</th><td class="num">0.0051</td><td class="num">0.0095</td><td class="num">0.0049&ndash;0.0055</td><td class="num">33.0%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 1000</th><td class="num">0.0057</td><td class="num">0.0069</td><td class="num">0.0055&ndash;0.0061</td><td class="num">9.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 10000</th><td class="num">0.0130</td><td class="num">0.0152</td><td class="num">0.0128&ndash;0.0140</td><td class="num">8.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 100</th><td class="num">0.0280</td><td class="num">0.0326</td><td class="num">0.0258&ndash;0.0294</td><td class="num">10.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 1000</th><td class="num">0.0292</td><td class="num">0.0333</td><td class="num">0.0276&ndash;0.0303</td><td class="num">9.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 10000</th><td class="num">0.0267</td><td class="num">0.0310</td><td class="num">0.0250&ndash;0.0290</td><td class="num">9.1%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 100</th><td class="num">3.598</td><td class="num">3.757</td><td class="num">3.460&ndash;3.660</td><td class="num">3.9%</td><td><span class="conf conf-low">low</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 1000</th><td class="num">3.480</td><td class="num">3.591</td><td class="num">3.451&ndash;3.551</td><td class="num">3.1%</td><td><span class="conf conf-low">low</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 10000</th><td class="num">3.505</td><td class="num">3.710</td><td class="num">3.478&ndash;3.587</td><td class="num">3.3%</td><td><span class="conf conf-low">low</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>op-commit-noderived-1k</code> @ 1000</th><td class="num">0.2901</td><td class="num">0.3329</td><td class="num">0.2866&ndash;0.3236</td><td class="num">6.9%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-commit-rollback-1k</code> @ 1000</th><td class="num">8.495</td><td class="num">8.679</td><td class="num">8.402&ndash;8.578</td><td class="num">1.3%</td><td><span class="conf conf-high">high</span></td><td class="num">499</td></tr>
+        <tr><th scope="row"><code>op-derived-create-1k-fresh</code> @ 1000</th><td class="num">0.5172</td><td class="num">0.5357</td><td class="num">0.5010&ndash;0.5238</td><td class="num">6.0%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>op-derived-recompute-1k</code> @ 1000</th><td class="num">0.6170</td><td class="num">0.6790</td><td class="num">0.5159&ndash;0.6454</td><td class="num">19.1%</td><td><span class="conf conf-low">low</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>op-derived-rollback-1k</code> @ 1000</th><td class="num">0.7384</td><td class="num">0.7725</td><td class="num">0.7153&ndash;0.7495</td><td class="num">7.9%</td><td><span class="conf conf-low">low</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>op-input-create-1k</code> @ 1000</th><td class="num">0.1501</td><td class="num">0.1583</td><td class="num">0.1482&ndash;0.1523</td><td class="num">7.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-no-subscriber-firehose-1k</code> @ 1000</th><td class="num">0.3376</td><td class="num">0.3892</td><td class="num">0.3305&ndash;0.3620</td><td class="num">11.2%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-phase-d-bfs-1k</code> @ 1000</th><td class="num">1.371</td><td class="num">1.405</td><td class="num">1.356&ndash;1.384</td><td class="num">1.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1001</td></tr>
+        <tr><th scope="row"><code>op-read-cold-1k</code> @ 1000</th><td class="num">0.0185</td><td class="num">0.0209</td><td class="num">0.0163&ndash;0.0191</td><td class="num">12.8%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-rust-bridge-floor-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; no Rust bridge exists on the TypeScript engine</td></tr>
+        <tr><th scope="row"><code>op-subscribe-dispose-1k-pairs</code> @ 1000</th><td class="num">0.1982</td><td class="num">0.2079</td><td class="num">0.1895&ndash;0.2006</td><td class="num">12.0%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-set-equal-1k</code> @ 1000</th><td class="num">0.1660</td><td class="num">0.1781</td><td class="num">0.1644&ndash;0.1701</td><td class="num">6.5%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-set-isolated-1k</code> @ 1000</th><td class="num">0.3113</td><td class="num">0.3509</td><td class="num">0.3081&ndash;0.3421</td><td class="num">5.9%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-tx-shadow-read-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; the read-shadow path is not reachable from the public API: the transaction object handed to `commit` exposes only `set` (probed at runtime on 0.3.x — no `get`). The original cell reached an internal `tx.get`, so measuring it would require an engine change, not a runner change</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-wasm-boundary-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; this runner is the TypeScript engine — there is no JS/WASM boundary to cross. The original cell measured `wasmCommitStub`, a Phase-0 stub whose package is gitignored and absent, so it never measured a real bridge either</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 100</th><td class="num">0.0681</td><td class="num">0.0768</td><td class="num">0.0672&ndash;0.0729</td><td class="num">6.2%</td><td><span class="conf conf-low">low</span></td><td class="num">200</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 1000</th><td class="num">0.5055</td><td class="num">0.5399</td><td class="num">0.4823&ndash;0.5181</td><td class="num">5.1%</td><td><span class="conf conf-high">high</span></td><td class="num">2000</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 10000</th><td class="num">5.805</td><td class="num">5.889</td><td class="num">5.684&ndash;5.848</td><td class="num">2.0%</td><td><span class="conf conf-high">high</span></td><td class="num">20000</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 100</th><td class="num">0.0067</td><td class="num">0.0072</td><td class="num">0.0066&ndash;0.0069</td><td class="num">6.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 1000</th><td class="num">0.0134</td><td class="num">0.0164</td><td class="num">0.0126&ndash;0.0145</td><td class="num">10.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 10000</th><td class="num">0.0831</td><td class="num">0.0916</td><td class="num">0.0831&ndash;0.0834</td><td class="num">3.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 100</th><td class="num">0.0044</td><td class="num">0.0065</td><td class="num">0.0041&ndash;0.0047</td><td class="num">18.1%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 1000</th><td class="num">0.0034</td><td class="num">0.0045</td><td class="num">0.0032&ndash;0.0036</td><td class="num">16.1%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 10000</th><td class="num">0.0042</td><td class="num">0.0047</td><td class="num">0.0039&ndash;0.0043</td><td class="num">13.4%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 100</th><td class="num">0.0054</td><td class="num">0.0060</td><td class="num">0.0050&ndash;0.0056</td><td class="num">11.2%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 1000</th><td class="num">0.0046</td><td class="num">0.0054</td><td class="num">0.0045&ndash;0.0048</td><td class="num">7.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 10000</th><td class="num">0.0064</td><td class="num">0.0078</td><td class="num">0.0060&ndash;0.0068</td><td class="num">19.2%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 100</th><td class="num">0.0238</td><td class="num">0.0282</td><td class="num">0.0227&ndash;0.0248</td><td class="num">8.7%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 1000</th><td class="num">0.0239</td><td class="num">0.0273</td><td class="num">0.0229&ndash;0.0251</td><td class="num">8.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 10000</th><td class="num">0.0233</td><td class="num">0.0262</td><td class="num">0.0226&ndash;0.0247</td><td class="num">8.2%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 100</th><td class="num">0.0213</td><td class="num">0.0218</td><td class="num">0.0212&ndash;0.0216</td><td class="num">2.2%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 1000</th><td class="num">0.1741</td><td class="num">0.1800</td><td class="num">0.1712&ndash;0.1766</td><td class="num">3.1%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 10000</th><td class="num">0.1742</td><td class="num">0.1801</td><td class="num">0.1728&ndash;0.1773</td><td class="num">3.2%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 100</th><td class="num">0.0276</td><td class="num">0.0303</td><td class="num">0.0270&ndash;0.0281</td><td class="num">5.2%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 1000</th><td class="num">0.2020</td><td class="num">0.2070</td><td class="num">0.1997&ndash;0.2032</td><td class="num">2.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 10000</th><td class="num">0.1994</td><td class="num">0.2065</td><td class="num">0.1979&ndash;0.2040</td><td class="num">3.1%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 100</th><td class="num">0.0093</td><td class="num">0.0122</td><td class="num">0.0089&ndash;0.0099</td><td class="num">22.5%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 1000</th><td class="num">0.0260</td><td class="num">0.0333</td><td class="num">0.0227&ndash;0.0295</td><td class="num">21.5%</td><td><span class="conf conf-low">low</span></td><td class="num">21</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 10000</th><td class="num">0.2795</td><td class="num">0.2913</td><td class="num">0.2775&ndash;0.2837</td><td class="num">2.6%</td><td><span class="conf conf-high">high</span></td><td class="num">201</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+    <details class="status-callout">
+      <summary><strong><code>causl-wasm-ts</code></strong> &mdash; 71 measured, 10 not measured · <code>@causl/causl-wasm-ts@0.3.6</code> · <em>held out of ranking</em></summary>
+      <div style="overflow-x:auto">
+        <table class="results-table">
+          <thead>
+            <tr><th scope="col">Cell</th><th scope="col">median (ms)</th><th scope="col">p95 (ms)</th>
+                <th scope="col">95% interval</th><th scope="col">CoV</th><th scope="col">confidence</th>
+                <th scope="col">recomputes</th></tr>
+          </thead>
+          <tbody>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 100</th><td class="num">0.0744</td><td class="num">0.0835</td><td class="num">0.0708&ndash;0.0772</td><td class="num">8.6%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 1000</th><td class="num">0.0833</td><td class="num">0.1260</td><td class="num">0.0761&ndash;0.0880</td><td class="num">29.5%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 10000</th><td class="num">0.0735</td><td class="num">0.0878</td><td class="num">0.0698&ndash;0.0770</td><td class="num">12.1%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr class="row-absent"><th scope="row"><code>async-race</code> @ 100</th><td colspan="6"><strong>inapplicable</strong> &mdash; the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library</td></tr>
+        <tr class="row-absent"><th scope="row"><code>async-race</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library</td></tr>
+        <tr class="row-absent"><th scope="row"><code>async-race</code> @ 10000</th><td colspan="6"><strong>inapplicable</strong> &mdash; the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 100</th><td class="num">0.0484</td><td class="num">0.0684</td><td class="num">0.0447&ndash;0.0501</td><td class="num">53.3%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 1000</th><td class="num">0.1184</td><td class="num">0.1526</td><td class="num">0.1165&ndash;0.1258</td><td class="num">16.1%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 10000</th><td class="num">0.7121</td><td class="num">0.7736</td><td class="num">0.7023&ndash;0.7247</td><td class="num">14.1%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 100</th><td class="num">0.2253</td><td class="num">0.2431</td><td class="num">0.2198&ndash;0.2318</td><td class="num">5.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 1000</th><td class="num">1.593</td><td class="num">1.685</td><td class="num">1.582&ndash;1.621</td><td class="num">2.7%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 10000</th><td class="num">14.58</td><td class="num">14.81</td><td class="num">14.52&ndash;14.68</td><td class="num">1.2%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 100</th><td class="num">0.0490</td><td class="num">0.0567</td><td class="num">0.0477&ndash;0.0510</td><td class="num">8.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 1000</th><td class="num">0.0490</td><td class="num">0.0579</td><td class="num">0.0469&ndash;0.0517</td><td class="num">10.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 10000</th><td class="num">0.0470</td><td class="num">0.0575</td><td class="num">0.0447&ndash;0.0523</td><td class="num">12.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 100</th><td class="num">0.0504</td><td class="num">0.0616</td><td class="num">0.0486&ndash;0.0528</td><td class="num">12.9%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 1000</th><td class="num">0.0509</td><td class="num">0.0619</td><td class="num">0.0492&ndash;0.0525</td><td class="num">10.0%</td><td><span class="conf conf-high">high</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 10000</th><td class="num">0.0518</td><td class="num">0.0621</td><td class="num">0.0494&ndash;0.0551</td><td class="num">9.5%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 100</th><td class="num">0.0503</td><td class="num">0.0666</td><td class="num">0.0486&ndash;0.0538</td><td class="num">13.5%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 1000</th><td class="num">0.0843</td><td class="num">0.1012</td><td class="num">0.0788&ndash;0.0884</td><td class="num">14.2%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 10000</th><td class="num">0.2797</td><td class="num">0.2948</td><td class="num">0.2771&ndash;0.2850</td><td class="num">2.3%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 100</th><td class="num">0.0919</td><td class="num">0.1148</td><td class="num">0.0860&ndash;0.0938</td><td class="num">36.1%</td><td><span class="conf conf-low">low</span></td><td class="num">10</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 1000</th><td class="num">0.4892</td><td class="num">0.5272</td><td class="num">0.4790&ndash;0.4989</td><td class="num">4.0%</td><td><span class="conf conf-low">low</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 10000</th><td class="num">19.70</td><td class="num">19.98</td><td class="num">19.66&ndash;19.73</td><td class="num">0.8%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 100</th><td class="num">0.2887</td><td class="num">0.3025</td><td class="num">0.2781&ndash;0.2932</td><td class="num">4.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 1000</th><td class="num">2.230</td><td class="num">2.305</td><td class="num">2.202&ndash;2.265</td><td class="num">2.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 10000</th><td class="num">2.200</td><td class="num">2.224</td><td class="num">2.193&ndash;2.216</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 100</th><td class="num">0.0270</td><td class="num">0.0456</td><td class="num">0.0249&ndash;0.0285</td><td class="num">30.5%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 1000</th><td class="num">0.0320</td><td class="num">0.0346</td><td class="num">0.0298&ndash;0.0327</td><td class="num">8.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 10000</th><td class="num">0.0719</td><td class="num">0.0885</td><td class="num">0.0700&ndash;0.0801</td><td class="num">25.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 100</th><td class="num">0.5063</td><td class="num">0.5664</td><td class="num">0.4911&ndash;0.5193</td><td class="num">5.8%</td><td><span class="conf conf-low">low</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 1000</th><td class="num">19.95</td><td class="num">21.47</td><td class="num">19.86&ndash;20.13</td><td class="num">4.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 10000</th><td class="num">1700</td><td class="num">1820</td><td class="num">1684&ndash;1742</td><td class="num">2.9%</td><td><span class="conf conf-low">low</span></td><td class="num">10000</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 100</th><td class="num">0.0605</td><td class="num">0.0808</td><td class="num">0.0550&ndash;0.0635</td><td class="num">32.2%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 1000</th><td class="num">0.1308</td><td class="num">0.1475</td><td class="num">0.1280&ndash;0.1353</td><td class="num">6.3%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 10000</th><td class="num">0.6818</td><td class="num">0.7283</td><td class="num">0.6594&ndash;0.7064</td><td class="num">5.9%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr class="row-absent"><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 100</th><td colspan="6"><strong>skipped</strong> &mdash; measuring this cell to the declared protocol projects to 2907s, above the 240s cell budget: one fresh-world cycle costs 96907.0 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.</td></tr>
+        <tr class="row-absent"><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 1000</th><td colspan="6"><strong>skipped</strong> &mdash; measuring this cell to the declared protocol projects to 2921s, above the 240s cell budget: one fresh-world cycle costs 97358.7 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.</td></tr>
+        <tr class="row-absent"><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 10000</th><td colspan="6"><strong>skipped</strong> &mdash; measuring this cell to the declared protocol projects to 2913s, above the 240s cell budget: one fresh-world cycle costs 97093.9 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 100</th><td class="num">68.76</td><td class="num">69.30</td><td class="num">68.68&ndash;69.04</td><td class="num">0.8%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 1000</th><td class="num">69.47</td><td class="num">70.31</td><td class="num">69.37&ndash;69.54</td><td class="num">0.7%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 10000</th><td class="num">69.74</td><td class="num">70.80</td><td class="num">69.61&ndash;69.96</td><td class="num">0.7%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>op-commit-noderived-1k</code> @ 1000</th><td class="num">4.416</td><td class="num">5.009</td><td class="num">4.211&ndash;4.718</td><td class="num">7.3%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-commit-rollback-1k</code> @ 1000</th><td class="num">5.053</td><td class="num">5.355</td><td class="num">4.904&ndash;5.278</td><td class="num">4.9%</td><td><span class="conf conf-low">low</span></td><td class="num">499</td></tr>
+        <tr><th scope="row"><code>op-derived-create-1k-fresh</code> @ 1000</th><td class="num">11.81</td><td class="num">12.22</td><td class="num">11.70&ndash;11.86</td><td class="num">2.1%</td><td><span class="conf conf-high">high</span></td><td class="num">2000</td></tr>
+        <tr><th scope="row"><code>op-derived-recompute-1k</code> @ 1000</th><td class="num">19.77</td><td class="num">20.17</td><td class="num">19.70&ndash;19.83</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>op-derived-rollback-1k</code> @ 1000</th><td class="num">16.51</td><td class="num">16.74</td><td class="num">16.36&ndash;16.68</td><td class="num">1.7%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>op-input-create-1k</code> @ 1000</th><td class="num">1.079</td><td class="num">1.182</td><td class="num">1.066&ndash;1.112</td><td class="num">4.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-no-subscriber-firehose-1k</code> @ 1000</th><td class="num">4.404</td><td class="num">5.035</td><td class="num">4.257&ndash;4.498</td><td class="num">7.4%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-phase-d-bfs-1k</code> @ 1000</th><td class="num">20.74</td><td class="num">21.10</td><td class="num">20.70&ndash;20.76</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1001</td></tr>
+        <tr><th scope="row"><code>op-read-cold-1k</code> @ 1000</th><td class="num">0.0638</td><td class="num">0.0919</td><td class="num">0.0539&ndash;0.0701</td><td class="num">22.3%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-rust-bridge-floor-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; same Phase-0 stub seam as op-wasm-boundary-1k. The bridge floor is a TIME and the attestation reports a COUNT, so the attestation cannot cover it: this cell is an outstanding gap, not a satisfied one. Measuring it needs a real round-trip against the shipped bridge</td></tr>
+        <tr><th scope="row"><code>op-subscribe-dispose-1k-pairs</code> @ 1000</th><td class="num">0.9521</td><td class="num">1.075</td><td class="num">0.9327&ndash;1.037</td><td class="num">6.6%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-set-equal-1k</code> @ 1000</th><td class="num">3.004</td><td class="num">3.568</td><td class="num">2.985&ndash;3.050</td><td class="num">7.4%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-set-isolated-1k</code> @ 1000</th><td class="num">4.248</td><td class="num">4.868</td><td class="num">4.145&ndash;4.480</td><td class="num">7.1%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-tx-shadow-read-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; the read-shadow path is not reachable from the public API: the transaction object handed to `commit` exposes only `set` (probed at runtime on 0.3.x — no `get`). The original cell reached an internal `tx.get`, so measuring it would require an engine change, not a runner change</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-wasm-boundary-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; this measured `wasmCommitStub`, a Phase-0 stub seam whose package (wasm-stub-pkg/) is gitignored and absent. It never measured the real bridge, and resurrecting it would measure a stub rather than the engine. NOTE: the attestation does NOT substitute for this — it counts crossings and never times them, so the boundary COST is currently unmeasured, not covered</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 100</th><td class="num">1.229</td><td class="num">1.277</td><td class="num">1.219&ndash;1.247</td><td class="num">2.0%</td><td><span class="conf conf-high">high</span></td><td class="num">200</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 1000</th><td class="num">71.30</td><td class="num">72.40</td><td class="num">71.20&ndash;71.42</td><td class="num">0.6%</td><td><span class="conf conf-high">high</span></td><td class="num">2000</td></tr>
+        <tr class="row-absent"><th scope="row"><code>readFraction</code> @ 10000</th><td colspan="6"><strong>skipped</strong> &mdash; measuring this cell to the declared protocol projects to 726s, above the 240s cell budget: one fresh-world cycle costs 24207.9 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 100</th><td class="num">0.0356</td><td class="num">0.0421</td><td class="num">0.0339&ndash;0.0367</td><td class="num">8.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 1000</th><td class="num">0.0632</td><td class="num">0.0695</td><td class="num">0.0622&ndash;0.0671</td><td class="num">8.0%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 10000</th><td class="num">0.3312</td><td class="num">0.3431</td><td class="num">0.3237&ndash;0.3354</td><td class="num">2.5%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 100</th><td class="num">0.0327</td><td class="num">0.0404</td><td class="num">0.0304&ndash;0.0356</td><td class="num">49.7%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 1000</th><td class="num">0.0414</td><td class="num">0.0460</td><td class="num">0.0403&ndash;0.0431</td><td class="num">6.4%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 10000</th><td class="num">0.0692</td><td class="num">0.0797</td><td class="num">0.0653&ndash;0.0719</td><td class="num">8.0%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 100</th><td class="num">0.0517</td><td class="num">0.0601</td><td class="num">0.0495&ndash;0.0556</td><td class="num">10.1%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 1000</th><td class="num">0.0737</td><td class="num">0.0868</td><td class="num">0.0676&ndash;0.0768</td><td class="num">9.6%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 10000</th><td class="num">0.2228</td><td class="num">0.2746</td><td class="num">0.2151&ndash;0.2335</td><td class="num">8.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 100</th><td class="num">0.3221</td><td class="num">0.3570</td><td class="num">0.3153&ndash;0.3280</td><td class="num">6.2%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 1000</th><td class="num">0.3312</td><td class="num">0.3972</td><td class="num">0.3210&ndash;0.3368</td><td class="num">19.8%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 10000</th><td class="num">0.3211</td><td class="num">0.3594</td><td class="num">0.3135&ndash;0.3300</td><td class="num">5.0%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 100</th><td class="num">0.1254</td><td class="num">0.1381</td><td class="num">0.1230&ndash;0.1261</td><td class="num">5.5%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 1000</th><td class="num">0.9206</td><td class="num">1.028</td><td class="num">0.8857&ndash;0.9736</td><td class="num">6.4%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 10000</th><td class="num">0.9268</td><td class="num">1.121</td><td class="num">0.9129&ndash;1.089</td><td class="num">9.7%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 100</th><td class="num">0.2001</td><td class="num">0.2135</td><td class="num">0.1990&ndash;0.2044</td><td class="num">5.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 1000</th><td class="num">1.312</td><td class="num">1.587</td><td class="num">1.284&ndash;1.411</td><td class="num">10.6%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 10000</th><td class="num">1.273</td><td class="num">1.416</td><td class="num">1.257&ndash;1.306</td><td class="num">5.1%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 100</th><td class="num">0.0552</td><td class="num">0.0679</td><td class="num">0.0519&ndash;0.0569</td><td class="num">14.9%</td><td><span class="conf conf-high">high</span></td><td class="num">4</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 1000</th><td class="num">0.1704</td><td class="num">0.2223</td><td class="num">0.1619&ndash;0.1734</td><td class="num">13.0%</td><td><span class="conf conf-high">high</span></td><td class="num">22</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 10000</th><td class="num">1.619</td><td class="num">1.655</td><td class="num">1.605&ndash;1.636</td><td class="num">1.6%</td><td><span class="conf conf-high">high</span></td><td class="num">202</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+    <details class="status-callout">
+      <summary><strong><code>jotai</code></strong> &mdash; 70 measured, 11 not measured · <code>jotai@2.20.2</code></summary>
+      <div style="overflow-x:auto">
+        <table class="results-table">
+          <thead>
+            <tr><th scope="col">Cell</th><th scope="col">median (ms)</th><th scope="col">p95 (ms)</th>
+                <th scope="col">95% interval</th><th scope="col">CoV</th><th scope="col">confidence</th>
+                <th scope="col">recomputes</th></tr>
+          </thead>
+          <tbody>
+        <tr class="row-absent"><th scope="row"><code>adversarial-fanin-100</code> @ 100</th><td colspan="6"><strong>skipped</strong> &mdash; measuring this cell to the declared protocol projects to 574s, above the 240s cell budget: one fresh-world cycle costs 19135.3 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.</td></tr>
+        <tr class="row-absent"><th scope="row"><code>adversarial-fanin-100</code> @ 1000</th><td colspan="6"><strong>skipped</strong> &mdash; measuring this cell to the declared protocol projects to 586s, above the 240s cell budget: one fresh-world cycle costs 19534.6 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.</td></tr>
+        <tr class="row-absent"><th scope="row"><code>adversarial-fanin-100</code> @ 10000</th><td colspan="6"><strong>skipped</strong> &mdash; measuring this cell to the declared protocol projects to 573s, above the 240s cell budget: one fresh-world cycle costs 19089.0 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.</td></tr>
+        <tr><th scope="row"><code>async-race</code> @ 100</th><td class="num">0.0048</td><td class="num">0.0055</td><td class="num">0.0047&ndash;0.0051</td><td class="num">9.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>async-race</code> @ 1000</th><td class="num">0.0050</td><td class="num">0.0060</td><td class="num">0.0047&ndash;0.0054</td><td class="num">15.2%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>async-race</code> @ 10000</th><td class="num">0.0050</td><td class="num">0.0072</td><td class="num">0.0047&ndash;0.0053</td><td class="num">21.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 100</th><td class="num">0.0108</td><td class="num">0.0162</td><td class="num">0.0099&ndash;0.0126</td><td class="num">20.3%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 1000</th><td class="num">0.0393</td><td class="num">0.0418</td><td class="num">0.0371&ndash;0.0402</td><td class="num">9.6%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 10000</th><td class="num">0.2903</td><td class="num">0.3047</td><td class="num">0.2860&ndash;0.2938</td><td class="num">3.3%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 100</th><td class="num">0.0446</td><td class="num">0.0476</td><td class="num">0.0438&ndash;0.0455</td><td class="num">3.5%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 1000</th><td class="num">0.3766</td><td class="num">0.4517</td><td class="num">0.3577&ndash;0.4286</td><td class="num">10.9%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 10000</th><td class="num">4.373</td><td class="num">5.321</td><td class="num">4.235&ndash;4.623</td><td class="num">12.7%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>commit-firehose-1000-subs</code> @ 100</th><td colspan="6"><strong>inapplicable</strong> &mdash; jotai has exactly one subscription primitive, `store.sub(atom, cb)`, which fires when that atom's value changes. The scenario needs two kinds the library does not have: a read-projection registrant over a cold node that must never fire, and a commit-level registrant that fires on every commit regardless of which node changed. jotai has no commit boundary to subscribe to, so the property being measured — per-projection dispatch being O(1) rather than O(registrations) — has no expressible analogue. Simulating it with a hand-rolled &quot;commit counter&quot; atom would measure the simulation, not jotai.</td></tr>
+        <tr class="row-absent"><th scope="row"><code>commit-firehose-1000-subs</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; jotai has exactly one subscription primitive, `store.sub(atom, cb)`, which fires when that atom's value changes. The scenario needs two kinds the library does not have: a read-projection registrant over a cold node that must never fire, and a commit-level registrant that fires on every commit regardless of which node changed. jotai has no commit boundary to subscribe to, so the property being measured — per-projection dispatch being O(1) rather than O(registrations) — has no expressible analogue. Simulating it with a hand-rolled &quot;commit counter&quot; atom would measure the simulation, not jotai.</td></tr>
+        <tr class="row-absent"><th scope="row"><code>commit-firehose-1000-subs</code> @ 10000</th><td colspan="6"><strong>inapplicable</strong> &mdash; jotai has exactly one subscription primitive, `store.sub(atom, cb)`, which fires when that atom's value changes. The scenario needs two kinds the library does not have: a read-projection registrant over a cold node that must never fire, and a commit-level registrant that fires on every commit regardless of which node changed. jotai has no commit boundary to subscribe to, so the property being measured — per-projection dispatch being O(1) rather than O(registrations) — has no expressible analogue. Simulating it with a hand-rolled &quot;commit counter&quot; atom would measure the simulation, not jotai.</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 100</th><td class="num">0.0119</td><td class="num">0.0140</td><td class="num">0.0114&ndash;0.0121</td><td class="num">7.2%</td><td><span class="conf conf-high">high</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 1000</th><td class="num">0.0114</td><td class="num">0.0126</td><td class="num">0.0110&ndash;0.0116</td><td class="num">6.6%</td><td><span class="conf conf-high">high</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 10000</th><td class="num">0.0125</td><td class="num">0.0181</td><td class="num">0.0115&ndash;0.0135</td><td class="num">18.3%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 100</th><td class="num">0.0115</td><td class="num">0.0126</td><td class="num">0.0111&ndash;0.0117</td><td class="num">7.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 1000</th><td class="num">0.0108</td><td class="num">0.0133</td><td class="num">0.0105&ndash;0.0111</td><td class="num">10.6%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 10000</th><td class="num">0.0106</td><td class="num">0.0116</td><td class="num">0.0105&ndash;0.0109</td><td class="num">9.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 100</th><td class="num">0.0525</td><td class="num">0.0571</td><td class="num">0.0515&ndash;0.0531</td><td class="num">4.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 1000</th><td class="num">0.3899</td><td class="num">0.4725</td><td class="num">0.3789&ndash;0.4518</td><td class="num">11.5%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 10000</th><td class="num">3.492</td><td class="num">3.629</td><td class="num">3.450&ndash;3.512</td><td class="num">2.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 100</th><td class="num">0.0873</td><td class="num">0.0945</td><td class="num">0.0861&ndash;0.0885</td><td class="num">4.5%</td><td><span class="conf conf-high">high</span></td><td class="num">10</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 1000</th><td class="num">0.6546</td><td class="num">0.7645</td><td class="num">0.6331&ndash;0.7479</td><td class="num">9.5%</td><td><span class="conf conf-low">low</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 10000</th><td class="num">7.674</td><td class="num">8.148</td><td class="num">7.603&ndash;7.837</td><td class="num">3.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 100</th><td class="num">0.0524</td><td class="num">0.0586</td><td class="num">0.0516&ndash;0.0539</td><td class="num">4.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 1000</th><td class="num">0.4320</td><td class="num">0.4904</td><td class="num">0.3838&ndash;0.4613</td><td class="num">11.6%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 10000</th><td class="num">3.536</td><td class="num">3.583</td><td class="num">3.510&ndash;3.564</td><td class="num">1.7%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 100</th><td class="num">0.1116</td><td class="num">0.1172</td><td class="num">0.1089&ndash;0.1137</td><td class="num">3.8%</td><td><span class="conf conf-high">high</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 1000</th><td class="num">0.8796</td><td class="num">0.9557</td><td class="num">0.8713&ndash;0.8975</td><td class="num">4.5%</td><td><span class="conf conf-low">low</span></td><td class="num">1000</td></tr>
+        <tr class="row-absent"><th scope="row"><code>linear-chain</code> @ 10000</th><td colspan="6"><strong>inapplicable</strong> &mdash; jotai evaluates a derived chain by mutual recursion through readAtomState, with no iterative fallback. At a chain depth of 10000 the first mounted read exhausts V8's call stack (RangeError: Maximum call stack size exceeded) on the default 984 KiB main stack, so the graph cannot be constructed at all -- there is nothing to measure, at any number of repetitions. Shallower scales of the same scenario are measured normally.</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 100</th><td class="num">4247</td><td class="num">4294</td><td class="num">4230&ndash;4261</td><td class="num">0.8%</td><td><span class="conf conf-low">low</span></td><td class="num">1924529</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 1000</th><td class="num">4219</td><td class="num">4278</td><td class="num">4183&ndash;4226</td><td class="num">1.1%</td><td><span class="conf conf-low">low</span></td><td class="num">1924529</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 10000</th><td class="num">4257</td><td class="num">4353</td><td class="num">4239&ndash;4276</td><td class="num">1.3%</td><td><span class="conf conf-low">low</span></td><td class="num">1924529</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 100</th><td class="num">991.07</td><td class="num">1001</td><td class="num">989.67&ndash;993.22</td><td class="num">1.1%</td><td><span class="conf conf-low">low</span></td><td class="num">237404</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 1000</th><td class="num">939.25</td><td class="num">948.91</td><td class="num">937.73&ndash;940.75</td><td class="num">0.5%</td><td><span class="conf conf-high">high</span></td><td class="num">237404</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 10000</th><td class="num">991.39</td><td class="num">1000</td><td class="num">988.71&ndash;994.26</td><td class="num">0.6%</td><td><span class="conf conf-low">low</span></td><td class="num">237404</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 100</th><td class="num">10.24</td><td class="num">10.37</td><td class="num">10.15&ndash;10.30</td><td class="num">1.1%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 1000</th><td class="num">10.15</td><td class="num">10.39</td><td class="num">10.13&ndash;10.29</td><td class="num">1.3%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 10000</th><td class="num">10.43</td><td class="num">10.59</td><td class="num">10.31&ndash;10.49</td><td class="num">1.6%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>op-commit-noderived-1k</code> @ 1000</th><td class="num">0.3787</td><td class="num">0.4912</td><td class="num">0.3244&ndash;0.4271</td><td class="num">18.5%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-commit-rollback-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; jotai has no transaction and no atomic rollback. `store.set` commits per call, and a throw out of a write function or a derived getter leaves the already-written atoms written. The cell can only be imitated by catching the throw and re-issuing the prior value by hand, which measures a user-space workaround rather than an engine primitive, so it is reported as absent rather than as a comparable number.</td></tr>
+        <tr><th scope="row"><code>op-derived-create-1k-fresh</code> @ 1000</th><td class="num">0.0268</td><td class="num">0.0500</td><td class="num">0.0263&ndash;0.0409</td><td class="num">30.2%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-derived-recompute-1k</code> @ 1000</th><td class="num">864.83</td><td class="num">878.46</td><td class="num">860.76&ndash;871.21</td><td class="num">1.0%</td><td><span class="conf conf-high">high</span></td><td class="num">1000000</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-derived-rollback-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; jotai has no transaction and no atomic rollback. `store.set` commits per call, and a throw out of a write function or a derived getter leaves the already-written atoms written. The cell can only be imitated by catching the throw and re-issuing the prior value by hand, which measures a user-space workaround rather than an engine primitive, so it is reported as absent rather than as a comparable number.</td></tr>
+        <tr><th scope="row"><code>op-input-create-1k</code> @ 1000</th><td class="num">0.0502</td><td class="num">0.0542</td><td class="num">0.0493&ndash;0.0512</td><td class="num">19.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-no-subscriber-firehose-1k</code> @ 1000</th><td class="num">0.5785</td><td class="num">0.7080</td><td class="num">0.4565&ndash;0.6861</td><td class="num">23.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-phase-d-bfs-1k</code> @ 1000</th><td class="num">869.91</td><td class="num">878.23</td><td class="num">866.45&ndash;873.55</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1000000</td></tr>
+        <tr><th scope="row"><code>op-read-cold-1k</code> @ 1000</th><td class="num">0.1060</td><td class="num">0.1165</td><td class="num">0.1039&ndash;0.1091</td><td class="num">6.2%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-rust-bridge-floor-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; measures a causl backend seam (the JS&lt;-&gt;Rust/WASM call boundary). jotai has no WASM backend and no operation to compare against; any number published here would be a different measurement wearing the same column header.</td></tr>
+        <tr><th scope="row"><code>op-subscribe-dispose-1k-pairs</code> @ 1000</th><td class="num">0.4500</td><td class="num">0.4768</td><td class="num">0.4399&ndash;0.4551</td><td class="num">9.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-set-equal-1k</code> @ 1000</th><td class="num">0.1330</td><td class="num">0.1719</td><td class="num">0.1309&ndash;0.1613</td><td class="num">12.7%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-set-isolated-1k</code> @ 1000</th><td class="num">0.5531</td><td class="num">0.6018</td><td class="num">0.5112&ndash;0.5850</td><td class="num">11.3%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-shadow-read-1k</code> @ 1000</th><td class="num">0.8036</td><td class="num">0.9145</td><td class="num">0.7765&ndash;0.8497</td><td class="num">12.2%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-wasm-boundary-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; measures a causl backend seam (the JS&lt;-&gt;Rust/WASM call boundary). jotai has no WASM backend and no operation to compare against; any number published here would be a different measurement wearing the same column header.</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 100</th><td class="num">0.0253</td><td class="num">0.0270</td><td class="num">0.0251&ndash;0.0257</td><td class="num">3.7%</td><td><span class="conf conf-high">high</span></td><td class="num">40</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 1000</th><td class="num">0.2095</td><td class="num">0.2264</td><td class="num">0.2034&ndash;0.2176</td><td class="num">6.9%</td><td><span class="conf conf-low">low</span></td><td class="num">400</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 10000</th><td class="num">1.592</td><td class="num">1.640</td><td class="num">1.584&ndash;1.603</td><td class="num">1.4%</td><td><span class="conf conf-high">high</span></td><td class="num">4000</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 100</th><td class="num">0.0180</td><td class="num">0.0200</td><td class="num">0.0176&ndash;0.0187</td><td class="num">6.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 1000</th><td class="num">0.0769</td><td class="num">0.0793</td><td class="num">0.0764&ndash;0.0772</td><td class="num">1.8%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 10000</th><td class="num">0.6863</td><td class="num">0.7198</td><td class="num">0.6821&ndash;0.7038</td><td class="num">2.4%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 100</th><td class="num">0.0447</td><td class="num">0.0483</td><td class="num">0.0441&ndash;0.0469</td><td class="num">3.9%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 1000</th><td class="num">0.0549</td><td class="num">0.0597</td><td class="num">0.0533&ndash;0.0567</td><td class="num">7.5%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 10000</th><td class="num">0.1075</td><td class="num">0.1157</td><td class="num">0.1057&ndash;0.1141</td><td class="num">4.6%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 100</th><td class="num">0.0834</td><td class="num">0.0948</td><td class="num">0.0829&ndash;0.0855</td><td class="num">4.8%</td><td><span class="conf conf-low">low</span></td><td class="num">10</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 1000</th><td class="num">0.3233</td><td class="num">0.3905</td><td class="num">0.3187&ndash;0.3385</td><td class="num">8.7%</td><td><span class="conf conf-low">low</span></td><td class="num">99</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 10000</th><td class="num">0.4531</td><td class="num">0.4893</td><td class="num">0.4412&ndash;0.4644</td><td class="num">4.3%</td><td><span class="conf conf-high">high</span></td><td class="num">99</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 100</th><td class="num">728.17</td><td class="num">732.87</td><td class="num">724.06&ndash;729.50</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">110481</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 1000</th><td class="num">721.17</td><td class="num">727.36</td><td class="num">719.30&ndash;722.52</td><td class="num">0.5%</td><td><span class="conf conf-high">high</span></td><td class="num">110481</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 10000</th><td class="num">730.93</td><td class="num">740.20</td><td class="num">728.78&ndash;734.80</td><td class="num">0.7%</td><td><span class="conf conf-high">high</span></td><td class="num">110481</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 100</th><td class="num">6.651</td><td class="num">7.637</td><td class="num">6.481&ndash;6.730</td><td class="num">8.5%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 1000</th><td class="num">6.628</td><td class="num">7.647</td><td class="num">6.225&ndash;7.078</td><td class="num">9.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 10000</th><td class="num">6.389</td><td class="num">7.422</td><td class="num">6.061&ndash;6.894</td><td class="num">10.3%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 100</th><td class="num">6.710</td><td class="num">6.867</td><td class="num">6.693&ndash;6.749</td><td class="num">1.3%</td><td><span class="conf conf-high">high</span></td><td class="num">220</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 1000</th><td class="num">6.647</td><td class="num">6.778</td><td class="num">6.601&ndash;6.726</td><td class="num">1.4%</td><td><span class="conf conf-high">high</span></td><td class="num">220</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 10000</th><td class="num">6.769</td><td class="num">7.190</td><td class="num">6.664&ndash;6.894</td><td class="num">3.5%</td><td><span class="conf conf-high">high</span></td><td class="num">220</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 100</th><td class="num">0.0182</td><td class="num">0.0218</td><td class="num">0.0161&ndash;0.0195</td><td class="num">14.6%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 1000</th><td class="num">0.0614</td><td class="num">0.0724</td><td class="num">0.0596&ndash;0.0644</td><td class="num">7.7%</td><td><span class="conf conf-high">high</span></td><td class="num">21</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 10000</th><td class="num">0.4032</td><td class="num">0.4214</td><td class="num">0.3974&ndash;0.4083</td><td class="num">3.1%</td><td><span class="conf conf-high">high</span></td><td class="num">201</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+    <details class="status-callout">
+      <summary><strong><code>mobx</code></strong> &mdash; 75 measured, 6 not measured · <code>mobx@6.16.1</code></summary>
+      <div style="overflow-x:auto">
+        <table class="results-table">
+          <thead>
+            <tr><th scope="col">Cell</th><th scope="col">median (ms)</th><th scope="col">p95 (ms)</th>
+                <th scope="col">95% interval</th><th scope="col">CoV</th><th scope="col">confidence</th>
+                <th scope="col">recomputes</th></tr>
+          </thead>
+          <tbody>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 100</th><td class="num">12.11</td><td class="num">12.27</td><td class="num">12.05&ndash;12.17</td><td class="num">0.8%</td><td><span class="conf conf-high">high</span></td><td class="num">10000</td></tr>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 1000</th><td class="num">120.59</td><td class="num">122.61</td><td class="num">119.94&ndash;120.94</td><td class="num">0.8%</td><td><span class="conf conf-high">high</span></td><td class="num">100000</td></tr>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 10000</th><td class="num">1184</td><td class="num">1231</td><td class="num">1173&ndash;1204</td><td class="num">1.9%</td><td><span class="conf conf-low">low</span></td><td class="num">1000000</td></tr>
+        <tr><th scope="row"><code>async-race</code> @ 100</th><td class="num">0.0028</td><td class="num">0.0032</td><td class="num">0.0026&ndash;0.0030</td><td class="num">8.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>async-race</code> @ 1000</th><td class="num">0.0026</td><td class="num">0.0043</td><td class="num">0.0024&ndash;0.0029</td><td class="num">51.6%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>async-race</code> @ 10000</th><td class="num">0.0029</td><td class="num">0.0047</td><td class="num">0.0028&ndash;0.0031</td><td class="num">32.9%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 100</th><td class="num">0.0060</td><td class="num">0.0086</td><td class="num">0.0057&ndash;0.0064</td><td class="num">17.1%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 1000</th><td class="num">0.0149</td><td class="num">0.0185</td><td class="num">0.0145&ndash;0.0155</td><td class="num">10.9%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 10000</th><td class="num">0.0757</td><td class="num">0.0842</td><td class="num">0.0742&ndash;0.0770</td><td class="num">5.0%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 100</th><td class="num">0.0065</td><td class="num">0.0072</td><td class="num">0.0064&ndash;0.0067</td><td class="num">7.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 1000</th><td class="num">0.0318</td><td class="num">0.0346</td><td class="num">0.0313&ndash;0.0331</td><td class="num">7.0%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 10000</th><td class="num">0.2758</td><td class="num">0.2810</td><td class="num">0.2712&ndash;0.2775</td><td class="num">1.8%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 100</th><td class="num">0.0021</td><td class="num">0.0024</td><td class="num">0.0020&ndash;0.0022</td><td class="num">10.8%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 1000</th><td class="num">0.0023</td><td class="num">0.0029</td><td class="num">0.0021&ndash;0.0027</td><td class="num">15.5%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 10000</th><td class="num">0.0050</td><td class="num">0.0055</td><td class="num">0.0049&ndash;0.0051</td><td class="num">6.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 100</th><td class="num">0.0087</td><td class="num">0.0101</td><td class="num">0.0086&ndash;0.0090</td><td class="num">12.9%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 1000</th><td class="num">0.0087</td><td class="num">0.0104</td><td class="num">0.0080&ndash;0.0088</td><td class="num">11.5%</td><td><span class="conf conf-high">high</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 10000</th><td class="num">0.0084</td><td class="num">0.0122</td><td class="num">0.0081&ndash;0.0088</td><td class="num">16.3%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 100</th><td class="num">0.0084</td><td class="num">0.0113</td><td class="num">0.0079&ndash;0.0092</td><td class="num">15.4%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 1000</th><td class="num">0.0083</td><td class="num">0.0118</td><td class="num">0.0079&ndash;0.0090</td><td class="num">19.0%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 10000</th><td class="num">0.0090</td><td class="num">0.0114</td><td class="num">0.0084&ndash;0.0097</td><td class="num">13.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 100</th><td class="num">0.0044</td><td class="num">0.0045</td><td class="num">0.0043&ndash;0.0045</td><td class="num">3.2%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 1000</th><td class="num">0.0244</td><td class="num">0.0337</td><td class="num">0.0218&ndash;0.0268</td><td class="num">19.4%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 10000</th><td class="num">0.1887</td><td class="num">0.1983</td><td class="num">0.1884&ndash;0.1904</td><td class="num">2.0%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 100</th><td class="num">0.0188</td><td class="num">0.0231</td><td class="num">0.0176&ndash;0.0192</td><td class="num">14.1%</td><td><span class="conf conf-high">high</span></td><td class="num">10</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 1000</th><td class="num">0.1079</td><td class="num">0.1173</td><td class="num">0.1070&ndash;0.1095</td><td class="num">3.6%</td><td><span class="conf conf-high">high</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 10000</th><td class="num">0.5037</td><td class="num">0.5265</td><td class="num">0.4980&ndash;0.5086</td><td class="num">2.2%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 100</th><td class="num">0.0031</td><td class="num">0.0034</td><td class="num">0.0030&ndash;0.0032</td><td class="num">5.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 1000</th><td class="num">0.0142</td><td class="num">0.0149</td><td class="num">0.0140&ndash;0.0145</td><td class="num">4.9%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 10000</th><td class="num">0.1323</td><td class="num">0.1439</td><td class="num">0.1313&ndash;0.1364</td><td class="num">4.4%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 100</th><td class="num">0.0337</td><td class="num">0.0435</td><td class="num">0.0331&ndash;0.0357</td><td class="num">11.7%</td><td><span class="conf conf-high">high</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 1000</th><td class="num">0.1711</td><td class="num">0.1770</td><td class="num">0.1693&ndash;0.1731</td><td class="num">2.2%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr class="row-absent"><th scope="row"><code>linear-chain</code> @ 10000</th><td colspan="6"><strong>inapplicable</strong> &mdash; mobx evaluates a computed chain by mutual recursion through its derivation graph, with no iterative fallback. At a chain depth of 10000 reading the tail exceeds the V8 call stack (RangeError: Maximum call stack size exceeded) on the default 984 KiB main stack, so the graph cannot be read at all -- there is nothing to measure, at any number of repetitions. Shallower scales of the same scenario are measured normally.</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 100</th><td class="num">1.121</td><td class="num">1.655</td><td class="num">0.9852&ndash;1.305</td><td class="num">24.1%</td><td><span class="conf conf-low">low</span></td><td class="num">639</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 1000</th><td class="num">23.33</td><td class="num">25.80</td><td class="num">16.58&ndash;24.09</td><td class="num">18.7%</td><td><span class="conf conf-low">low</span></td><td class="num">23724</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 10000</th><td class="num">1556</td><td class="num">1576</td><td class="num">1543&ndash;1565</td><td class="num">1.0%</td><td><span class="conf conf-low">low</span></td><td class="num">1934077</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 100</th><td class="num">1.642</td><td class="num">1.772</td><td class="num">1.440&ndash;1.695</td><td class="num">12.4%</td><td><span class="conf conf-high">high</span></td><td class="num">484</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 1000</th><td class="num">13.48</td><td class="num">14.41</td><td class="num">13.01&ndash;13.90</td><td class="num">8.2%</td><td><span class="conf conf-high">high</span></td><td class="num">6861</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 10000</th><td class="num">319.73</td><td class="num">326.75</td><td class="num">318.04&ndash;321.72</td><td class="num">1.2%</td><td><span class="conf conf-high">high</span></td><td class="num">239050</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 100</th><td class="num">2.244</td><td class="num">2.291</td><td class="num">2.204&ndash;2.261</td><td class="num">2.0%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 1000</th><td class="num">2.230</td><td class="num">2.257</td><td class="num">2.205&ndash;2.242</td><td class="num">1.5%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 10000</th><td class="num">2.089</td><td class="num">2.113</td><td class="num">2.066&ndash;2.099</td><td class="num">1.6%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>op-commit-noderived-1k</code> @ 1000</th><td class="num">0.0336</td><td class="num">0.0741</td><td class="num">0.0329&ndash;0.0361</td><td class="num">37.5%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-commit-rollback-1k</code> @ 1000</th><td class="num">0.9936</td><td class="num">1.016</td><td class="num">0.9667&ndash;1.001</td><td class="num">18.9%</td><td><span class="conf conf-low">low</span></td><td class="num">999</td></tr>
+        <tr><th scope="row"><code>op-derived-create-1k-fresh</code> @ 1000</th><td class="num">0.3456</td><td class="num">0.3653</td><td class="num">0.3167&ndash;0.3566</td><td class="num">15.9%</td><td><span class="conf conf-low">low</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>op-derived-recompute-1k</code> @ 1000</th><td class="num">0.1676</td><td class="num">0.1735</td><td class="num">0.1661&ndash;0.1695</td><td class="num">2.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-derived-rollback-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; mobx has no transactional rollback. A throw from inside a computed propagates to the reader and is cached, but no prior writes are unwound, so there is no rollback envelope to measure</td></tr>
+        <tr><th scope="row"><code>op-input-create-1k</code> @ 1000</th><td class="num">0.0981</td><td class="num">0.1215</td><td class="num">0.0305&ndash;0.1155</td><td class="num">43.8%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-no-subscriber-firehose-1k</code> @ 1000</th><td class="num">0.0463</td><td class="num">0.0487</td><td class="num">0.0458&ndash;0.0469</td><td class="num">9.3%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-phase-d-bfs-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; this isolates the BFS/Kahn propagation walk in the causl engine. mobx propagates by invalidating dependents through reaction links, with no separable topological pass to time</td></tr>
+        <tr><th scope="row"><code>op-read-cold-1k</code> @ 1000</th><td class="num">0.0368</td><td class="num">0.0645</td><td class="num">0.0358&ndash;0.0438</td><td class="num">29.9%</td><td><span class="conf conf-low">low</span></td><td class="num">1000</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-rust-bridge-floor-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; mobx has no Rust bridge</td></tr>
+        <tr><th scope="row"><code>op-subscribe-dispose-1k-pairs</code> @ 1000</th><td class="num">0.0395</td><td class="num">0.0433</td><td class="num">0.0391&ndash;0.0397</td><td class="num">12.5%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-set-equal-1k</code> @ 1000</th><td class="num">0.0296</td><td class="num">0.0554</td><td class="num">0.0290&ndash;0.0405</td><td class="num">37.3%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-set-isolated-1k</code> @ 1000</th><td class="num">0.0359</td><td class="num">0.0447</td><td class="num">0.0349&ndash;0.0391</td><td class="num">13.4%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-tx-shadow-read-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; there is no transaction object in mobx, so there is no staged read-shadow to measure. Reads inside an action see values already applied</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-wasm-boundary-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; mobx is pure JavaScript with no WebAssembly boundary to cross</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 100</th><td class="num">0.0106</td><td class="num">0.0135</td><td class="num">0.0103&ndash;0.0110</td><td class="num">12.0%</td><td><span class="conf conf-low">low</span></td><td class="num">40</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 1000</th><td class="num">0.0600</td><td class="num">0.0787</td><td class="num">0.0567&ndash;0.0678</td><td class="num">17.3%</td><td><span class="conf conf-low">low</span></td><td class="num">400</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 10000</th><td class="num">0.4084</td><td class="num">0.4349</td><td class="num">0.4022&ndash;0.4143</td><td class="num">2.7%</td><td><span class="conf conf-high">high</span></td><td class="num">4000</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 100</th><td class="num">0.0062</td><td class="num">0.0069</td><td class="num">0.0060&ndash;0.0065</td><td class="num">7.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 1000</th><td class="num">0.0082</td><td class="num">0.0103</td><td class="num">0.0078&ndash;0.0093</td><td class="num">11.6%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 10000</th><td class="num">0.0238</td><td class="num">0.0455</td><td class="num">0.0234&ndash;0.0244</td><td class="num">50.4%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 100</th><td class="num">0.0078</td><td class="num">0.0082</td><td class="num">0.0076&ndash;0.0079</td><td class="num">4.4%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 1000</th><td class="num">0.0082</td><td class="num">0.0098</td><td class="num">0.0071&ndash;0.0089</td><td class="num">14.4%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 10000</th><td class="num">0.0099</td><td class="num">0.0107</td><td class="num">0.0091&ndash;0.0104</td><td class="num">8.5%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 100</th><td class="num">0.1150</td><td class="num">0.1270</td><td class="num">0.1132&ndash;0.1170</td><td class="num">5.1%</td><td><span class="conf conf-low">low</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 1000</th><td class="num">0.1189</td><td class="num">0.1377</td><td class="num">0.1157&ndash;0.1232</td><td class="num">7.5%</td><td><span class="conf conf-high">high</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 10000</th><td class="num">0.0585</td><td class="num">0.0634</td><td class="num">0.0580&ndash;0.0596</td><td class="num">4.7%</td><td><span class="conf conf-high">high</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 100</th><td class="num">0.7254</td><td class="num">0.7594</td><td class="num">0.7199&ndash;0.7365</td><td class="num">2.4%</td><td><span class="conf conf-high">high</span></td><td class="num">1119</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 1000</th><td class="num">7.188</td><td class="num">7.341</td><td class="num">7.096&ndash;7.247</td><td class="num">1.7%</td><td><span class="conf conf-high">high</span></td><td class="num">11125</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 10000</th><td class="num">64.96</td><td class="num">66.38</td><td class="num">64.73&ndash;65.42</td><td class="num">1.1%</td><td><span class="conf conf-high">high</span></td><td class="num">110551</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 100</th><td class="num">0.1886</td><td class="num">0.1958</td><td class="num">0.1839&ndash;0.1903</td><td class="num">3.7%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 1000</th><td class="num">1.238</td><td class="num">1.419</td><td class="num">1.228&ndash;1.276</td><td class="num">9.3%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 10000</th><td class="num">14.72</td><td class="num">14.94</td><td class="num">14.69&ndash;14.78</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 100</th><td class="num">2.639</td><td class="num">4.733</td><td class="num">2.191&ndash;3.461</td><td class="num">42.5%</td><td><span class="conf conf-low">low</span></td><td class="num">1303</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 1000</th><td class="num">18.95</td><td class="num">23.07</td><td class="num">15.28&ndash;22.53</td><td class="num">20.2%</td><td><span class="conf conf-low">low</span></td><td class="num">1500</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 10000</th><td class="num">155.87</td><td class="num">159.17</td><td class="num">155.12&ndash;156.53</td><td class="num">1.6%</td><td><span class="conf conf-high">high</span></td><td class="num">1500</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 100</th><td class="num">0.0081</td><td class="num">0.0101</td><td class="num">0.0077&ndash;0.0089</td><td class="num">11.8%</td><td><span class="conf conf-high">high</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 1000</th><td class="num">0.0209</td><td class="num">0.0253</td><td class="num">0.0200&ndash;0.0216</td><td class="num">9.2%</td><td><span class="conf conf-high">high</span></td><td class="num">21</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 10000</th><td class="num">0.0990</td><td class="num">0.1405</td><td class="num">0.0947&ndash;0.1274</td><td class="num">19.9%</td><td><span class="conf conf-low">low</span></td><td class="num">201</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+    <details class="status-callout">
+      <summary><strong><code>redux-rtk</code></strong> &mdash; 73 measured, 8 not measured · <code>@reduxjs/toolkit@2.9.0</code></summary>
+      <div style="overflow-x:auto">
+        <table class="results-table">
+          <thead>
+            <tr><th scope="col">Cell</th><th scope="col">median (ms)</th><th scope="col">p95 (ms)</th>
+                <th scope="col">95% interval</th><th scope="col">CoV</th><th scope="col">confidence</th>
+                <th scope="col">recomputes</th></tr>
+          </thead>
+          <tbody>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 100</th><td class="num">16.73</td><td class="num">17.08</td><td class="num">16.68&ndash;16.75</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">10000</td></tr>
+        <tr><th scope="row"><code>adversarial-fanin-100</code> @ 1000</th><td class="num">2049</td><td class="num">2124</td><td class="num">2041&ndash;2056</td><td class="num">1.4%</td><td><span class="conf conf-low">low</span></td><td class="num">100000</td></tr>
+        <tr class="row-absent"><th scope="row"><code>adversarial-fanin-100</code> @ 10000</th><td colspan="6"><strong>skipped</strong> &mdash; projected ~1.0e+10 input-selector evaluations per repetition (10000 commits × 10000 derivations × fan-in 100). Redux has no per-node invalidation: every dispatch re-runs every mounted selector's input functions, so this is quadratic in scale by construction. Exceeds this runner's 5.0e+8-operation per-repetition budget.</td></tr>
+        <tr><th scope="row"><code>async-race</code> @ 100</th><td class="num">0.0084</td><td class="num">0.0093</td><td class="num">0.0081&ndash;0.0090</td><td class="num">15.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>async-race</code> @ 1000</th><td class="num">0.0085</td><td class="num">0.0101</td><td class="num">0.0081&ndash;0.0087</td><td class="num">21.6%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>async-race</code> @ 10000</th><td class="num">0.0087</td><td class="num">0.0118</td><td class="num">0.0085&ndash;0.0091</td><td class="num">28.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 100</th><td class="num">0.0093</td><td class="num">0.0140</td><td class="num">0.0088&ndash;0.0109</td><td class="num">21.6%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 1000</th><td class="num">0.0284</td><td class="num">0.0310</td><td class="num">0.0280&ndash;0.0293</td><td class="num">4.2%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>avoidablePropagation</code> @ 10000</th><td class="num">0.2597</td><td class="num">0.2800</td><td class="num">0.2584&ndash;0.2615</td><td class="num">3.1%</td><td><span class="conf conf-high">high</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 100</th><td class="num">0.0372</td><td class="num">0.0411</td><td class="num">0.0362&ndash;0.0388</td><td class="num">5.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 1000</th><td class="num">0.3364</td><td class="num">0.3728</td><td class="num">0.3208&ndash;0.3441</td><td class="num">6.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>batch-commit</code> @ 10000</th><td class="num">3.195</td><td class="num">3.258</td><td class="num">3.145&ndash;3.225</td><td class="num">1.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 100</th><td class="num">0.0205</td><td class="num">0.0215</td><td class="num">0.0197&ndash;0.0211</td><td class="num">6.3%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 1000</th><td class="num">0.1661</td><td class="num">0.1777</td><td class="num">0.1595&ndash;0.1687</td><td class="num">6.7%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>commit-firehose-1000-subs</code> @ 10000</th><td class="num">1.221</td><td class="num">1.249</td><td class="num">1.211&ndash;1.229</td><td class="num">1.5%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 100</th><td class="num">0.0080</td><td class="num">0.0103</td><td class="num">0.0078&ndash;0.0089</td><td class="num">19.3%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 1000</th><td class="num">0.0087</td><td class="num">0.0097</td><td class="num">0.0083&ndash;0.0091</td><td class="num">19.6%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>diamond</code> @ 10000</th><td class="num">0.0305</td><td class="num">0.0331</td><td class="num">0.0302&ndash;0.0315</td><td class="num">6.0%</td><td><span class="conf conf-high">high</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 100</th><td class="num">0.0090</td><td class="num">0.0122</td><td class="num">0.0088&ndash;0.0096</td><td class="num">17.3%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 1000</th><td class="num">0.0331</td><td class="num">0.0359</td><td class="num">0.0091&ndash;0.0337</td><td class="num">39.4%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>dynamic-dep-flip</code> @ 10000</th><td class="num">0.0102</td><td class="num">0.0150</td><td class="num">0.0096&ndash;0.0111</td><td class="num">22.4%</td><td><span class="conf conf-low">low</span></td><td class="num">2</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 100</th><td class="num">0.0374</td><td class="num">0.0415</td><td class="num">0.0363&ndash;0.0390</td><td class="num">5.7%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 1000</th><td class="num">0.3094</td><td class="num">0.3440</td><td class="num">0.3015&ndash;0.3296</td><td class="num">5.7%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff</code> @ 10000</th><td class="num">2.746</td><td class="num">2.768</td><td class="num">2.735&ndash;2.758</td><td class="num">0.7%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 100</th><td class="num">0.0423</td><td class="num">0.0466</td><td class="num">0.0413&ndash;0.0454</td><td class="num">6.6%</td><td><span class="conf conf-low">low</span></td><td class="num">10</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 1000</th><td class="num">0.3375</td><td class="num">0.3606</td><td class="num">0.3306&ndash;0.3436</td><td class="num">3.8%</td><td><span class="conf conf-low">low</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-fanout-10k</code> @ 10000</th><td class="num">3.083</td><td class="num">3.129</td><td class="num">3.053&ndash;3.106</td><td class="num">2.1%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 100</th><td class="num">0.0293</td><td class="num">0.0341</td><td class="num">0.0285&ndash;0.0304</td><td class="num">8.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 1000</th><td class="num">0.2837</td><td class="num">0.2985</td><td class="num">0.2800&ndash;0.2909</td><td class="num">4.5%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>equality-cutoff-noop</code> @ 10000</th><td class="num">2.432</td><td class="num">2.482</td><td class="num">2.423&ndash;2.446</td><td class="num">1.9%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 100</th><td class="num">0.0346</td><td class="num">0.0419</td><td class="num">0.0334&ndash;0.0352</td><td class="num">9.0%</td><td><span class="conf conf-high">high</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>linear-chain</code> @ 1000</th><td class="num">0.2838</td><td class="num">0.3392</td><td class="num">0.2677&ndash;0.2951</td><td class="num">14.3%</td><td><span class="conf conf-high">high</span></td><td class="num">1000</td></tr>
+        <tr class="row-absent"><th scope="row"><code>linear-chain</code> @ 10000</th><td colspan="6"><strong>inapplicable</strong> &mdash; reselect evaluates a chained selector by recursive invocation, so reading the tail of a 10000-link chain recurses 10000 deep and exhausts the V8 call stack (RangeError: Maximum call stack size exceeded) on the default 984 KiB main stack -- during construction, before any timed region, so there is nothing to measure at any number of repetitions. Expressing this depth in redux would mean replacing reselect with a hand-rolled iterative evaluator, which would no longer be a reselect measurement. Shallower scales of the same scenario are measured normally.</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 100</th><td class="num">2.216</td><td class="num">2.449</td><td class="num">2.120&ndash;2.272</td><td class="num">7.5%</td><td><span class="conf conf-high">high</span></td><td class="num">112</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42</code> @ 1000</th><td class="num">174.61</td><td class="num">177.96</td><td class="num">173.91&ndash;175.07</td><td class="num">1.0%</td><td><span class="conf conf-high">high</span></td><td class="num">1035</td></tr>
+        <tr class="row-absent"><th scope="row"><code>mixed-editor-60s-seed42</code> @ 10000</th><td colspan="6"><strong>skipped</strong> &mdash; projected ~6.0e+8 operations per repetition (30000 write dispatches × 10000 record keys copied by Immer, plus 30000 × ~10000 graph-global store listeners). Redux has neither a partial-state write nor a per-key subscription, so both terms are architectural; the cell exceeds this runner's 5.0e+8-operation per-repetition budget.</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 100</th><td class="num">12.51</td><td class="num">12.90</td><td class="num">12.30&ndash;12.67</td><td class="num">2.2%</td><td><span class="conf conf-high">high</span></td><td class="num">112</td></tr>
+        <tr><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 1000</th><td class="num">5254</td><td class="num">5317</td><td class="num">5238&ndash;5286</td><td class="num">0.7%</td><td><span class="conf conf-low">low</span></td><td class="num">1035</td></tr>
+        <tr class="row-absent"><th scope="row"><code>mixed-editor-60s-seed42-50k</code> @ 10000</th><td colspan="6"><strong>skipped</strong> &mdash; projected ~3.3e+9 operations per repetition (30000 write dispatches × 100000 record keys copied by Immer, plus 30000 × ~10000 graph-global store listeners). Redux has neither a partial-state write nor a per-key subscription, so both terms are architectural; the cell exceeds this runner's 5.0e+8-operation per-repetition budget.</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 100</th><td class="num">4.111</td><td class="num">4.199</td><td class="num">4.082&ndash;4.129</td><td class="num">2.1%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 1000</th><td class="num">4.096</td><td class="num">4.214</td><td class="num">4.071&ndash;4.117</td><td class="num">2.3%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>mux</code> @ 10000</th><td class="num">3.983</td><td class="num">4.166</td><td class="num">3.904&ndash;4.033</td><td class="num">4.5%</td><td><span class="conf conf-high">high</span></td><td class="num">10200</td></tr>
+        <tr><th scope="row"><code>op-commit-noderived-1k</code> @ 1000</th><td class="num">0.5100</td><td class="num">0.5455</td><td class="num">0.4972&ndash;0.5286</td><td class="num">7.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-commit-rollback-1k</code> @ 1000</th><td class="num">0.7947</td><td class="num">0.8444</td><td class="num">0.7667&ndash;0.8149</td><td class="num">4.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-derived-create-1k-fresh</code> @ 1000</th><td class="num">0.3423</td><td class="num">0.3833</td><td class="num">0.3357&ndash;0.3680</td><td class="num">8.0%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-derived-recompute-1k</code> @ 1000</th><td class="num">213.26</td><td class="num">216.48</td><td class="num">212.35&ndash;214.17</td><td class="num">0.9%</td><td><span class="conf conf-high">high</span></td><td class="num">1000000</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-derived-rollback-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; redux derivations are pull-based and evaluate after `dispatch` has already published the new state, so a throwing selector has no in-flight commit to unwind. The only redux-side number available would be a user-space compensating re-dispatch, which measures rollback *simulation* rather than the primitive this cell names. (The sibling cell `op-commit-rollback-1k` IS measured: a throw inside the reducer body aborts the Immer draft and leaves the store state untouched.)</td></tr>
+        <tr><th scope="row"><code>op-input-create-1k</code> @ 1000</th><td class="num">84.80</td><td class="num">85.54</td><td class="num">84.60&ndash;85.20</td><td class="num">0.5%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-no-subscriber-firehose-1k</code> @ 1000</th><td class="num">37.72</td><td class="num">38.58</td><td class="num">37.46&ndash;38.02</td><td class="num">1.1%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-phase-d-bfs-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; isolates the BFS + Kahn topological walk inside causl's `recomputeAffected`. Redux has no propagation walk to isolate: dispatch runs one reducer and notifies every listener, and derivation order is whatever order readers happen to pull in. There is no corresponding data structure to probe.</td></tr>
+        <tr><th scope="row"><code>op-read-cold-1k</code> @ 1000</th><td class="num">0.0024</td><td class="num">0.0034</td><td class="num">0.0023&ndash;0.0027</td><td class="num">50.2%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-rust-bridge-floor-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; measures the bare wasm-bindgen scalar-call floor (`read_input(slot, gen) -&gt; u64`) of the causl Rust bridge. Redux Toolkit is pure JavaScript; there is no bridge and no floor to measure.</td></tr>
+        <tr><th scope="row"><code>op-subscribe-dispose-1k-pairs</code> @ 1000</th><td class="num">0.0819</td><td class="num">0.0915</td><td class="num">0.0798&ndash;0.0824</td><td class="num">9.5%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-set-equal-1k</code> @ 1000</th><td class="num">0.2612</td><td class="num">0.2763</td><td class="num">0.2515&ndash;0.2650</td><td class="num">3.7%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-set-isolated-1k</code> @ 1000</th><td class="num">0.5405</td><td class="num">0.5607</td><td class="num">0.5321&ndash;0.5454</td><td class="num">2.8%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>op-tx-shadow-read-1k</code> @ 1000</th><td class="num">0.5560</td><td class="num">0.5727</td><td class="num">0.4561&ndash;0.5649</td><td class="num">13.7%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr class="row-absent"><th scope="row"><code>op-wasm-boundary-1k</code> @ 1000</th><td colspan="6"><strong>inapplicable</strong> &mdash; measures the JS↔WASM `commit(state, action)` boundary of the causl backend. Redux Toolkit has no WebAssembly backend and no boundary to cross — there is no operation to compare against.</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 100</th><td class="num">0.0173</td><td class="num">0.0188</td><td class="num">0.0166&ndash;0.0178</td><td class="num">7.2%</td><td><span class="conf conf-high">high</span></td><td class="num">40</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 1000</th><td class="num">0.1110</td><td class="num">0.1185</td><td class="num">0.1101&ndash;0.1134</td><td class="num">4.4%</td><td><span class="conf conf-high">high</span></td><td class="num">400</td></tr>
+        <tr><th scope="row"><code>readFraction</code> @ 10000</th><td class="num">0.8612</td><td class="num">0.8794</td><td class="num">0.8463&ndash;0.8720</td><td class="num">3.7%</td><td><span class="conf conf-high">high</span></td><td class="num">4000</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 100</th><td class="num">0.0080</td><td class="num">0.0093</td><td class="num">0.0077&ndash;0.0084</td><td class="num">11.6%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 1000</th><td class="num">0.0186</td><td class="num">0.0253</td><td class="num">0.0179&ndash;0.0204</td><td class="num">20.9%</td><td><span class="conf conf-low">low</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>repeatedObservers</code> @ 10000</th><td class="num">0.1253</td><td class="num">0.1290</td><td class="num">0.1244&ndash;0.1258</td><td class="num">4.5%</td><td><span class="conf conf-high">high</span></td><td class="num">1</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 100</th><td class="num">0.4616</td><td class="num">0.4871</td><td class="num">0.4577&ndash;0.4681</td><td class="num">3.0%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 1000</th><td class="num">3.392</td><td class="num">3.575</td><td class="num">3.361&ndash;3.523</td><td class="num">2.8%</td><td><span class="conf conf-low">low</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport</code> @ 10000</th><td class="num">30.94</td><td class="num">31.44</td><td class="num">30.85&ndash;31.00</td><td class="num">0.8%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 100</th><td class="num">0.6109</td><td class="num">0.6874</td><td class="num">0.6001&ndash;0.6215</td><td class="num">5.2%</td><td><span class="conf conf-high">high</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 1000</th><td class="num">5.056</td><td class="num">5.402</td><td class="num">5.034&ndash;5.082</td><td class="num">6.4%</td><td><span class="conf conf-high">high</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>scrolling-viewport-derived</code> @ 10000</th><td class="num">51.23</td><td class="num">51.63</td><td class="num">50.92&ndash;51.36</td><td class="num">0.7%</td><td><span class="conf conf-high">high</span></td><td class="num">100</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 100</th><td class="num">64.09</td><td class="num">64.86</td><td class="num">63.81&ndash;64.51</td><td class="num">1.1%</td><td><span class="conf conf-high">high</span></td><td class="num">11085</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 1000</th><td class="num">573.61</td><td class="num">612.25</td><td class="num">567.45&ndash;577.01</td><td class="num">3.2%</td><td><span class="conf conf-high">high</span></td><td class="num">110481</td></tr>
+        <tr><th scope="row"><code>spreadsheet-100x100</code> @ 10000</th><td class="num">5630</td><td class="num">5658</td><td class="num">5605&ndash;5646</td><td class="num">0.5%</td><td><span class="conf conf-low">low</span></td><td class="num">1107212</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 100</th><td class="num">0.8738</td><td class="num">1.059</td><td class="num">0.8688&ndash;0.8868</td><td class="num">7.0%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 1000</th><td class="num">3.815</td><td class="num">3.862</td><td class="num">3.794&ndash;3.823</td><td class="num">0.8%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-1k</code> @ 10000</th><td class="num">61.55</td><td class="num">62.58</td><td class="num">61.37&ndash;61.86</td><td class="num">1.2%</td><td><span class="conf conf-high">high</span></td><td class="num">0</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 100</th><td class="num">1.179</td><td class="num">1.323</td><td class="num">1.166&ndash;1.199</td><td class="num">4.3%</td><td><span class="conf conf-high">high</span></td><td class="num">204</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 1000</th><td class="num">4.332</td><td class="num">4.444</td><td class="num">4.320&ndash;4.354</td><td class="num">7.5%</td><td><span class="conf conf-high">high</span></td><td class="num">220</td></tr>
+        <tr><th scope="row"><code>subscriber-churn-derived</code> @ 10000</th><td class="num">58.87</td><td class="num">59.65</td><td class="num">58.69&ndash;59.31</td><td class="num">1.0%</td><td><span class="conf conf-high">high</span></td><td class="num">211</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 100</th><td class="num">0.0074</td><td class="num">0.0141</td><td class="num">0.0066&ndash;0.0084</td><td class="num">35.6%</td><td><span class="conf conf-low">low</span></td><td class="num">3</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 1000</th><td class="num">0.0135</td><td class="num">0.0157</td><td class="num">0.0126&ndash;0.0145</td><td class="num">10.8%</td><td><span class="conf conf-high">high</span></td><td class="num">21</td></tr>
+        <tr><th scope="row"><code>unstable</code> @ 10000</th><td class="num">0.0682</td><td class="num">0.0718</td><td class="num">0.0674&ndash;0.0690</td><td class="num">4.0%</td><td><span class="conf conf-high">high</span></td><td class="num">201</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+  <!-- GENERATED:attested-engines:END -->
 
   <!-- ============================================================
        Library limitations — adopter-facing legend for the
@@ -829,10 +1056,11 @@
         Each comparator's read path evaluates the chain via mutual
         recursion through its track/get entry point, so the V8 call
         stack overflows at depth 10&thinsp;000. The harnesses throw
-        a typed <code>RecursiveEvalStackOverflowError</code>
-        up-front (see <a href="https://github.com/causljs/causl-bench/blob/main/packages/bench/src/libraries/_expansion-stub.ts" rel="noopener"><code>packages/bench/src/libraries/_expansion-stub.ts</code></a>)
-        so the doomed setup never runs and the tolerant runner
-        records a clean skip with the per-cell reason string.
+        a typed error up-front, so the doomed setup never runs and the
+        runner records the cell <code>inapplicable</code> &mdash; a fact about
+        what the library can express, distinct from <code>skipped</code> (the
+        clock ran out) and <code>failed</code> (it tried and broke). Each cell
+        carries its own reason string, and every one of them is on this page.
       </p>
       <p>
         Causl's Phase-D driver is iterative end-to-end after
@@ -905,10 +1133,16 @@
     </div>
 
     <p class="skip-class-footer">
-      The raw per-cell skip records live in
-      <a href="https://github.com/causljs/causl-bench/blob/main/packages/bench/report/fair-fight-results.json" rel="noopener"><code>packages/bench/report/fair-fight-results.json</code></a>;
-      the rendered table with inline skip rows is at
-      <a href="https://github.com/causljs/causl-bench/blob/main/packages/bench/report/comparison_table.md" rel="noopener"><code>packages/bench/report/comparison_table.md</code></a>.
+      Every non-measuring cell of the latest sweep, with its outcome and its reason, is listed
+      per runner in <a href="#attested-engines">the full results below</a> and in
+      <a href="./history.json"><code>history.json</code></a>. The rule that decides whether two
+      runners are even doing the same work under one scenario id is the work-equivalence
+      contract, enforced before anything is ranked. It held <strong>40 of 79 groups</strong> out of the
+      latest comparison &mdash; not because the numbers were bad, but because the runners were
+      not doing the same work under those scenario ids. One verbatim example:
+      <em>&ldquo;causl's builder is a plain fan-in that writes ONE input per step (1 recompute)&rdquo;</em>
+      while the comparators replay a generated commit stream. Ranking those against each other
+      is how a 773&thinsp;000&times; result gets published.
       Adopters who want the methodology depth behind these classifications should read the
       <a href="https://github.com/causljs/causl-ts/blob/main/docs/bench/2026-05-12-fairness-audit.md" rel="noopener">fairness-audit discipline doc</a>.
     </p>
