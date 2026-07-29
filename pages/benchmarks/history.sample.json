@@ -19754,7 +19754,7 @@
         "outcome": "inapplicable",
         "reason": "the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-ts",
@@ -19764,7 +19764,7 @@
         "outcome": "inapplicable",
         "reason": "the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-ts",
@@ -19774,7 +19774,7 @@
         "outcome": "inapplicable",
         "reason": "the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-ts",
@@ -19784,7 +19784,7 @@
         "outcome": "inapplicable",
         "reason": "the read-shadow path is not reachable from the public API: the transaction object handed to `commit` exposes only `set` (probed at runtime on 0.3.x — no `get`). The original cell reached an internal `tx.get`, so measuring it would require an engine change, not a runner change",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-ts",
@@ -19794,7 +19794,7 @@
         "outcome": "inapplicable",
         "reason": "this runner is the TypeScript engine — there is no JS/WASM boundary to cross. The original cell measured `wasmCommitStub`, a Phase-0 stub whose package is gitignored and absent, so it never measured a real bridge either",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-ts",
@@ -19804,7 +19804,7 @@
         "outcome": "inapplicable",
         "reason": "no Rust bridge exists on the TypeScript engine",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-wasm-ts",
@@ -19814,7 +19814,7 @@
         "outcome": "inapplicable",
         "reason": "the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-wasm-ts",
@@ -19824,7 +19824,7 @@
         "outcome": "inapplicable",
         "reason": "the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-wasm-ts",
@@ -19834,7 +19834,7 @@
         "outcome": "inapplicable",
         "reason": "the engine commits synchronously; an async race has no analogue without inventing a scheduler that is not part of the library",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-wasm-ts",
@@ -19844,7 +19844,7 @@
         "outcome": "skipped",
         "reason": "measuring this cell to the declared protocol projects to 2907s, above the 240s cell budget: one fresh-world cycle costs 96907.0 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-wasm-ts",
@@ -19854,7 +19854,7 @@
         "outcome": "skipped",
         "reason": "measuring this cell to the declared protocol projects to 2921s, above the 240s cell budget: one fresh-world cycle costs 97358.7 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-wasm-ts",
@@ -19864,7 +19864,7 @@
         "outcome": "skipped",
         "reason": "measuring this cell to the declared protocol projects to 2913s, above the 240s cell budget: one fresh-world cycle costs 97093.9 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-wasm-ts",
@@ -19874,7 +19874,7 @@
         "outcome": "skipped",
         "reason": "measuring this cell to the declared protocol projects to 726s, above the 240s cell budget: one fresh-world cycle costs 24207.9 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-wasm-ts",
@@ -19884,7 +19884,7 @@
         "outcome": "inapplicable",
         "reason": "the read-shadow path is not reachable from the public API: the transaction object handed to `commit` exposes only `set` (probed at runtime on 0.3.x — no `get`). The original cell reached an internal `tx.get`, so measuring it would require an engine change, not a runner change",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-wasm-ts",
@@ -19894,7 +19894,7 @@
         "outcome": "inapplicable",
         "reason": "this measured `wasmCommitStub`, a Phase-0 stub seam whose package (wasm-stub-pkg/) is gitignored and absent. It never measured the real bridge, and resurrecting it would measure a stub rather than the engine. NOTE: the attestation does NOT substitute for this — it counts crossings and never times them, so the boundary COST is currently unmeasured, not covered",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "causl-wasm-ts",
@@ -19904,7 +19904,7 @@
         "outcome": "inapplicable",
         "reason": "same Phase-0 stub seam as op-wasm-boundary-1k. The bridge floor is a TIME and the attestation reports a COUNT, so the attestation cannot cover it: this cell is an outstanding gap, not a satisfied one. Measuring it needs a real round-trip against the shipped bridge",
         "engine": null,
-        "attested": false
+        "engineAttested": false
       },
       {
         "library": "jotai",
@@ -19914,7 +19914,7 @@
         "outcome": "inapplicable",
         "reason": "jotai evaluates a derived chain by mutual recursion through readAtomState, with no iterative fallback. At a chain depth of 10000 the first mounted read exhausts V8's call stack (RangeError: Maximum call stack size exceeded) on the default 984 KiB main stack, so the graph cannot be constructed at all -- there is nothing to measure, at any number of repetitions. Shallower scales of the same scenario are measured normally.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "jotai",
@@ -19924,7 +19924,7 @@
         "outcome": "skipped",
         "reason": "measuring this cell to the declared protocol projects to 574s, above the 240s cell budget: one fresh-world cycle costs 19135.3 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "jotai",
@@ -19934,7 +19934,7 @@
         "outcome": "skipped",
         "reason": "measuring this cell to the declared protocol projects to 586s, above the 240s cell budget: one fresh-world cycle costs 19534.6 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "jotai",
@@ -19944,7 +19944,7 @@
         "outcome": "skipped",
         "reason": "measuring this cell to the declared protocol projects to 573s, above the 240s cell budget: one fresh-world cycle costs 19089.0 ms and the protocol needs at least 30 of them. This scenario's setup dominates its measured step, so the honest options are to raise --cell-budget-ms or to split setup from step in the scenario -- not to measure fewer than 20 repetitions.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "jotai",
@@ -19954,7 +19954,7 @@
         "outcome": "inapplicable",
         "reason": "jotai has exactly one subscription primitive, `store.sub(atom, cb)`, which fires when that atom's value changes. The scenario needs two kinds the library does not have: a read-projection registrant over a cold node that must never fire, and a commit-level registrant that fires on every commit regardless of which node changed. jotai has no commit boundary to subscribe to, so the property being measured — per-projection dispatch being O(1) rather than O(registrations) — has no expressible analogue. Simulating it with a hand-rolled \"commit counter\" atom would measure the simulation, not jotai.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "jotai",
@@ -19964,7 +19964,7 @@
         "outcome": "inapplicable",
         "reason": "jotai has exactly one subscription primitive, `store.sub(atom, cb)`, which fires when that atom's value changes. The scenario needs two kinds the library does not have: a read-projection registrant over a cold node that must never fire, and a commit-level registrant that fires on every commit regardless of which node changed. jotai has no commit boundary to subscribe to, so the property being measured — per-projection dispatch being O(1) rather than O(registrations) — has no expressible analogue. Simulating it with a hand-rolled \"commit counter\" atom would measure the simulation, not jotai.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "jotai",
@@ -19974,7 +19974,7 @@
         "outcome": "inapplicable",
         "reason": "jotai has exactly one subscription primitive, `store.sub(atom, cb)`, which fires when that atom's value changes. The scenario needs two kinds the library does not have: a read-projection registrant over a cold node that must never fire, and a commit-level registrant that fires on every commit regardless of which node changed. jotai has no commit boundary to subscribe to, so the property being measured — per-projection dispatch being O(1) rather than O(registrations) — has no expressible analogue. Simulating it with a hand-rolled \"commit counter\" atom would measure the simulation, not jotai.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "jotai",
@@ -19984,7 +19984,7 @@
         "outcome": "inapplicable",
         "reason": "jotai has no transaction and no atomic rollback. `store.set` commits per call, and a throw out of a write function or a derived getter leaves the already-written atoms written. The cell can only be imitated by catching the throw and re-issuing the prior value by hand, which measures a user-space workaround rather than an engine primitive, so it is reported as absent rather than as a comparable number.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "jotai",
@@ -19994,7 +19994,7 @@
         "outcome": "inapplicable",
         "reason": "jotai has no transaction and no atomic rollback. `store.set` commits per call, and a throw out of a write function or a derived getter leaves the already-written atoms written. The cell can only be imitated by catching the throw and re-issuing the prior value by hand, which measures a user-space workaround rather than an engine primitive, so it is reported as absent rather than as a comparable number.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "jotai",
@@ -20004,7 +20004,7 @@
         "outcome": "inapplicable",
         "reason": "measures a causl backend seam (the JS<->Rust/WASM call boundary). jotai has no WASM backend and no operation to compare against; any number published here would be a different measurement wearing the same column header.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "jotai",
@@ -20014,7 +20014,7 @@
         "outcome": "inapplicable",
         "reason": "measures a causl backend seam (the JS<->Rust/WASM call boundary). jotai has no WASM backend and no operation to compare against; any number published here would be a different measurement wearing the same column header.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "mobx",
@@ -20024,7 +20024,7 @@
         "outcome": "inapplicable",
         "reason": "mobx evaluates a computed chain by mutual recursion through its derivation graph, with no iterative fallback. At a chain depth of 10000 reading the tail exceeds the V8 call stack (RangeError: Maximum call stack size exceeded) on the default 984 KiB main stack, so the graph cannot be read at all -- there is nothing to measure, at any number of repetitions. Shallower scales of the same scenario are measured normally.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "mobx",
@@ -20034,7 +20034,7 @@
         "outcome": "inapplicable",
         "reason": "mobx has no transactional rollback. A throw from inside a computed propagates to the reader and is cached, but no prior writes are unwound, so there is no rollback envelope to measure",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "mobx",
@@ -20044,7 +20044,7 @@
         "outcome": "inapplicable",
         "reason": "there is no transaction object in mobx, so there is no staged read-shadow to measure. Reads inside an action see values already applied",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "mobx",
@@ -20054,7 +20054,7 @@
         "outcome": "inapplicable",
         "reason": "mobx is pure JavaScript with no WebAssembly boundary to cross",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "mobx",
@@ -20064,7 +20064,7 @@
         "outcome": "inapplicable",
         "reason": "mobx has no Rust bridge",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "mobx",
@@ -20074,7 +20074,7 @@
         "outcome": "inapplicable",
         "reason": "this isolates the BFS/Kahn propagation walk in the causl engine. mobx propagates by invalidating dependents through reaction links, with no separable topological pass to time",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "redux-rtk",
@@ -20084,7 +20084,7 @@
         "outcome": "inapplicable",
         "reason": "reselect evaluates a chained selector by recursive invocation, so reading the tail of a 10000-link chain recurses 10000 deep and exhausts the V8 call stack (RangeError: Maximum call stack size exceeded) on the default 984 KiB main stack -- during construction, before any timed region, so there is nothing to measure at any number of repetitions. Expressing this depth in redux would mean replacing reselect with a hand-rolled iterative evaluator, which would no longer be a reselect measurement. Shallower scales of the same scenario are measured normally.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "redux-rtk",
@@ -20094,7 +20094,7 @@
         "outcome": "skipped",
         "reason": "projected ~6.0e+8 operations per repetition (30000 write dispatches × 10000 record keys copied by Immer, plus 30000 × ~10000 graph-global store listeners). Redux has neither a partial-state write nor a per-key subscription, so both terms are architectural; the cell exceeds this runner's 5.0e+8-operation per-repetition budget.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "redux-rtk",
@@ -20104,7 +20104,7 @@
         "outcome": "skipped",
         "reason": "projected ~3.3e+9 operations per repetition (30000 write dispatches × 100000 record keys copied by Immer, plus 30000 × ~10000 graph-global store listeners). Redux has neither a partial-state write nor a per-key subscription, so both terms are architectural; the cell exceeds this runner's 5.0e+8-operation per-repetition budget.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "redux-rtk",
@@ -20114,7 +20114,7 @@
         "outcome": "skipped",
         "reason": "projected ~1.0e+10 input-selector evaluations per repetition (10000 commits × 10000 derivations × fan-in 100). Redux has no per-node invalidation: every dispatch re-runs every mounted selector's input functions, so this is quadratic in scale by construction. Exceeds this runner's 5.0e+8-operation per-repetition budget.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "redux-rtk",
@@ -20124,7 +20124,7 @@
         "outcome": "inapplicable",
         "reason": "redux derivations are pull-based and evaluate after `dispatch` has already published the new state, so a throwing selector has no in-flight commit to unwind. The only redux-side number available would be a user-space compensating re-dispatch, which measures rollback *simulation* rather than the primitive this cell names. (The sibling cell `op-commit-rollback-1k` IS measured: a throw inside the reducer body aborts the Immer draft and leaves the store state untouched.)",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "redux-rtk",
@@ -20134,7 +20134,7 @@
         "outcome": "inapplicable",
         "reason": "measures the JS↔WASM `commit(state, action)` boundary of the causl backend. Redux Toolkit has no WebAssembly backend and no boundary to cross — there is no operation to compare against.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "redux-rtk",
@@ -20144,7 +20144,7 @@
         "outcome": "inapplicable",
         "reason": "measures the bare wasm-bindgen scalar-call floor (`read_input(slot, gen) -> u64`) of the causl Rust bridge. Redux Toolkit is pure JavaScript; there is no bridge and no floor to measure.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       },
       {
         "library": "redux-rtk",
@@ -20154,7 +20154,7 @@
         "outcome": "inapplicable",
         "reason": "isolates the BFS + Kahn topological walk inside causl's `recomputeAffected`. Redux has no propagation walk to isolate: dispatch runs one reducer and notifies every listener, and derivation order is whatever order readers happen to pull in. There is no corresponding data structure to probe.",
         "engine": null,
-        "attested": null
+        "engineAttested": null
       }
     ]
   }

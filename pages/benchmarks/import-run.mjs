@@ -290,7 +290,13 @@ for (const c of cells) {
       outcome: c.outcome,
       reason: c.reason ?? null,
       engine: c.engine ?? null,
-      attested: c.engineAttested ?? null,
+      // NOT `attested`. In this dataset `attested: false` is the withdrawal
+      // marker on the retracted causl-wasm series — it means "this number was
+      // produced by an engine other than the one it was labelled with". A cell
+      // that produced no number has no timed work to attest, which is a
+      // different fact, and giving the two the same field value would let a
+      // reader (or a future filter) count skipped cells as withdrawn ones.
+      engineAttested: c.engineAttested ?? null,
     });
   }
 }
