@@ -12,7 +12,7 @@
 // reason fails here rather than going quiet.
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -230,6 +230,47 @@ test('p95 comes off the recorded samples rather than being modelled', () => {
     // The legacy heap field is carried as null rather than filled with RSS.
     assert.equal(written[0].samples[0].peakHeapMb, null);
     assert.equal(written[0].samples[0].peakRssMb, 100);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a not-ok cell never carries `attested`, because that field is the withdrawal marker', () => {
+  // In this dataset `attested: false` marks the 304 retracted causl-wasm
+  // records — numbers produced by an engine other than the one they were
+  // labelled with. A cell that produced no number has nothing to attest, and
+  // reusing the same field value would let a filter count skipped cells as
+  // withdrawn ones.
+  const a = aggregate();
+  a.cells.push({
+    runner: 'causl-wasm-ts',
+    scenario: 'mixed-editor-60s-seed42-50k',
+    scale: 10000,
+    outcome: 'skipped',
+    reason: 'projected cost exceeds the cell budget',
+    engine: 'rust-ssot',
+    engineAttested: false,
+  });
+  const dir = mkdtempSync(join(tmpdir(), 'import-run-'));
+  try {
+    writeFileSync(join(dir, 'combined.json'), JSON.stringify(a));
+    writeFileSync(
+      join(dir, 'index.json'),
+      JSON.stringify({ schemaVersion: 2, runs: [{ runId: RUN_ID, integrity: INTEGRITY, commit: 'deadbeef' }] }),
+    );
+    const history = join(dir, 'history.json');
+    writeFileSync(history, JSON.stringify([]));
+    const r = spawnSync(
+      process.execPath,
+      [SCRIPT, '--combined', join(dir, 'combined.json'), '--archive', dir, '--history', history],
+      { encoding: 'utf8' },
+    );
+    assert.equal(r.status, 0, r.stderr);
+    const written = JSON.parse(readFileSync(history, 'utf8'));
+    const row = written[0].skipped[0];
+    assert.equal(Object.hasOwn(row, 'attested'), false, 'a not-ok row must not carry `attested`');
+    assert.equal(row.engineAttested, false);
+    assert.equal(row.outcome, 'skipped');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
