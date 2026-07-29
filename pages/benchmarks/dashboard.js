@@ -147,12 +147,32 @@
    *  pair "routine selective measurement / full exhaustive cross-cell
    *  measurement" together. See the profile docblock in
    *  packages/bench/scripts/cross-library-all-scenarios.ts. */
+  /** `causl-wasm-ts` and `redux-rtk` are the runner ids the current
+   *  `causl-bench` harness publishes, and they are deliberately NOT
+   *  folded into the `causl-wasm` / `redux-toolkit` series above.
+   *
+   *  For `causl-wasm` the separation is load-bearing. Every point on
+   *  that series was produced by the TypeScript engine plus marshalling
+   *  overhead — the bench adapter called `loadWasmBackend()`, a path the
+   *  client's own docstring calls "NOT the authoritative Rust engine".
+   *  Those points are retained and stamped `attested: false` (see the
+   *  withdrawal notice on the page). `causl-wasm-ts` is the real Rust
+   *  engine, and each of its cells carries a runtime attestation that
+   *  Rust executed the graph that was timed. Drawing one line through
+   *  both would splice a withdrawn measurement onto a sound one.
+   *
+   *  `redux-rtk` is the same library under a new runner id; it gets its
+   *  own series for the narrower reason that the two harnesses measure a
+   *  different unit (fresh-world-per-step, subprocess-isolated), so the
+   *  series are not continuous either. */
   const LIBRARY_ORDER = [
     'causl-ts',
     'causl-wasm',
     'causl-wasm-all',
+    'causl-wasm-ts',
     'jotai',
     'redux-toolkit',
+    'redux-rtk',
     'mobx',
   ]
 
@@ -163,6 +183,8 @@
    *  `causl-wasm` rather than a standalone library. */
   const LIBRARY_LABEL = {
     'causl-wasm-all': 'causl-wasm (all)',
+    'causl-wasm-ts': 'causl-wasm-ts (attested)',
+    'redux-rtk': 'redux-toolkit (rtk runner)',
   }
   function getLibraryLabel(lib) {
     return LIBRARY_LABEL[lib] ?? lib
@@ -175,9 +197,16 @@
    *  wall-clock-kill DNF gate. Only annotated series get the
    *  tooltip note; everything else uses the plain library name. */
   const LIBRARY_ANNOTATION = {
+    'causl-wasm': 'WITHDRAWN — these points were the TypeScript engine, not Rust',
     'causl-wasm-all':
-      'exhaustive profile — includes slow scenarios that the ' +
-      'selective causl-wasm series DNFs',
+      'WITHDRAWN — these points were the TypeScript engine, not Rust. ' +
+      'Exhaustive profile: includes slow scenarios that the selective ' +
+      'causl-wasm series DNFs',
+    'causl-wasm-ts':
+      'the real Rust engine, attested per cell. Held out of ranking: the ' +
+      'published build predates causl-core-rs#331 and measures a quadratic ' +
+      'drain clone, so its wall clocks are honest measurements of a known ' +
+      'defect rather than a comparison',
   }
 
   /** Library colours — competitor identity colours, NOT state
@@ -213,10 +242,21 @@
                                //   redundant axis of distinction in
                                //   case the contrast washes out under
                                //   a particular theme.
+    'causl-wasm-ts': '#5EE6A8', // Commit-mint — the attested Rust engine. It
+                               //   takes the colour the withdrawn `causl-wasm`
+                               //   series used to own, because it is the axis
+                               //   that series was always claiming to be; the
+                               //   withdrawn points are re-tinted below.
     jotai: '#C8743D',          // Copper Wire — neutral identity.
     'redux-toolkit': '#7C4DFF', // Mutation Violet — neutral identity.
+    'redux-rtk': '#7C4DFF',    // Same library, same colour; the dashed stroke
+                               //   below is what distinguishes the runner.
     mobx: '#8FA2AA',           // Trace Ash — neutral identity.
   }
+  // The withdrawn series are re-tinted to Trace-Ash-muted so a reader scanning
+  // the chart sees "retired data" before reading any label.
+  LIBRARY_COLOR['causl-wasm'] = '#6E7A82'
+  LIBRARY_COLOR['causl-wasm-all'] = '#59636A'
 
   /** Per-library SVG `stroke-dasharray` — empty string = solid line.
    *  Only `causl-wasm-all` uses a dashed stroke today; the dash
@@ -224,19 +264,32 @@
    *  read without consuming a fresh palette slot. */
   const LIBRARY_DASH = {
     'causl-wasm-all': '4 3',
+    // Withdrawn data is drawn dashed as well as muted, so the distinction
+    // survives a reader who cannot separate the two greys.
+    'causl-wasm': '2 4',
+    'redux-rtk': '6 3',
   }
 
-  /** Default-view filter: the two causl engine axes (`causl-ts` +
-   *  `causl-wasm`, #1536/#1538) plus the best competitor (`mobx`) at
-   *  the 10k scale per the issue spec, so `causl-wasm`/`causl-ts` are
-   *  visible on the median chart on load — the adjacent #1133/#1525
-   *  callout exists precisely because `causl-wasm`'s ~85–390× slower
-   *  bars would otherwise tell a misleading-by-omission story, so
-   *  the bars MUST be on screen for the callout to do its job.
-   *  Users can still toggle any library via the filter UI. */
+  /** Default-view filter: the two causl engine axes plus the best
+   *  competitor (`mobx`) at the 10k scale, so both causl engines are
+   *  visible on the median chart on load. The rule that put them there
+   *  has not changed — the adjacent callout exists precisely because
+   *  the wasm engine's much slower bars would otherwise tell a
+   *  misleading-by-omission story, so the bars MUST be on screen for
+   *  the callout to do its job.
+   *
+   *  What changed is WHICH wasm series carries it. `causl-wasm` is
+   *  withdrawn (it was the TypeScript engine), so defaulting it on
+   *  would put retired data in front of every reader. `causl-wasm-ts`
+   *  is the attested Rust engine and takes its place; it is held out
+   *  of ranking and its numbers are large, which is exactly the shape
+   *  the callout is there to explain.
+   *
+   *  Users can still toggle any series, withdrawn ones included, via
+   *  the filter UI — nothing is hidden, only un-defaulted. */
   const DEFAULT_LIBRARIES = new Set([
     'causl-ts',
-    'causl-wasm',
+    'causl-wasm-ts',
     'mobx',
   ])
   const DEFAULT_SCALES = new Set([10000])
