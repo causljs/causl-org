@@ -240,8 +240,10 @@
           boundary.</p>
         <p style="margin:0">Nothing here is deleted, so anyone who cited these figures can see exactly what changed and why.
           The repair is tracked as
-          <a href="https://git.opsite.ca/causl/causl-bench/issues/85">causl-bench#85</a>; no replacement numbers will be
-          published until the engine serving each cell is attested at runtime rather than asserted by configuration.</p>
+          <a href="https://git.opsite.ca/causl/causl-bench/issues/85">causl-bench#85</a>. The condition this notice
+          originally set — that no replacement numbers be published until the engine serving each cell is attested at
+          runtime rather than asserted by configuration — has since been met, and the replacement is reported
+          separately rather than in this panel: <a href="#attested-engines">Engine comparison, re-measured &rarr;</a></p>
       </aside>
       <aside class="callout-enterprise">
         <span class="badge-enterprise">Enterprise</span>
@@ -267,534 +269,91 @@
         engines is dominated by boundary cost per crossing × number of crossings.
       </p>
 
-      <table id="dual-engine-table" aria-busy="true">
-        <thead>
-          <tr>
-            <th scope="col">Scenario</th>
-            <th scope="col" data-series="causl-ts" data-engine="causl-ts">causl-ts</th>
-            <th scope="col" data-series="causl-wasm" data-engine="causl-ts-wasm-engine">causl-ts-wasm-engine <span class="badge-enterprise">Enterprise</span></th>
-            <th scope="col" data-perf-column="boundaryCrossings">JS↔WASM crossings<br><small class="dual-engine-th-sub">+ payload bytes min/median/max</small></th>
-            <th scope="col" data-perf-column="wallMs">wall&nbsp;(ms)</th>
-            <th scope="col" data-perf-column="cpuUserMs">CPU&nbsp;user&nbsp;(ms)</th>
-            <th scope="col" data-perf-column="cpuSystemMs">CPU&nbsp;sys&nbsp;(ms)</th>
-            <th scope="col" data-perf-column="heapPeakBytes">heap&nbsp;peak&nbsp;(B)</th>
-            <th scope="col" data-perf-column="hotPath">hot&nbsp;path</th>
-            <th scope="col" data-perf-column="coldPath">cold&nbsp;path</th>
-          </tr>
-        </thead>
-        <tbody id="dual-engine-tbody">
-          <tr class="dual-engine-loading"><td colspan="10">Loading <code>dual-engine.json</code> from <code>causljs/causl-bench</code>&hellip;</td></tr>
-        </tbody>
-      </table>
+      <!-- ============================================================
+           The table this panel used to render is gone, and so is the
+           file it rendered. Until now the panel fetched
 
-      <p class="dual-engine-meta" id="dual-engine-meta" data-engines="" data-generated-at=""></p>
-      <p class="dual-engine-coverage-note" id="dual-engine-coverage-note" hidden></p>
-      <div class="dual-engine-staleness-warn" id="dual-engine-staleness-warn" role="status" hidden></div>
+             raw.githubusercontent.com/causljs/causl-bench/main/
+               packages/bench/report/dual-engine.json
+
+           which returns 404, as does `github.com/causljs/causl-bench`
+           itself — the repository moved to `git.opsite.ca/causl`, and
+           `packages/bench/report/dual-engine.json` was deleted along
+           with the rest of that harness. The panel's `.catch` printed
+           `Failed to load dual-engine.json: HTTP 404` into the table on
+           every page load, directly beneath the withdrawal notice
+           above. A red error row under a red retraction told a reader
+           nothing except that the page was broken.
+
+           So the fetch and the table are removed and this static note
+           replaces them. The retraction above stays exactly as it was:
+           the claim was public and wrong, and it gets a visible
+           correction rather than a quiet deletion (causl-org#41).
+
+           Replacement numbers are NOT spliced in here. They are a
+           different experiment, from a different harness, measuring a
+           different unit, against a genuinely different engine — and
+           putting them where the withdrawn ones stood would invite the
+           reading that the old numbers were merely refreshed. They get
+           their own section further down the page.
+           ============================================================ -->
+      <div class="status-callout" role="note">
+        <p><strong>The table that stood here has been removed, and its data source no longer exists.</strong></p>
+        <p>
+          This panel fetched <code>dual-engine.json</code> from the <code>causl-bench</code> repository on
+          GitHub. That URL returns <code>404</code>, the GitHub repository returns <code>404</code> — the
+          project moved to <a href="https://git.opsite.ca/causl/causl-bench">git.opsite.ca/causl/causl-bench</a>
+          — and the file itself was deleted when the harness that produced it was retired. Every visitor
+          since then has been shown <code>Failed to load dual-engine.json: HTTP 404</code> in place of the
+          table, underneath the notice above.
+        </p>
+        <p>
+          Nothing has been deleted from the record. The heading, the retraction and its evidence stay where
+          they are, because a public performance claim that turns out to be wrong should be visibly
+          corrected rather than quietly removed.
+        </p>
+        <p>
+          A replacement measurement now exists and it is a <em>different experiment</em>, not a refresh of
+          this one — a different harness, a different measured unit, and for the first time an engine whose
+          identity is proven at runtime rather than asserted by configuration. It is reported separately:
+          <a href="#attested-engines">Engine comparison, re-measured &rarr;</a>
+        </p>
+      </div>
     </section>
 
-    <script>
-      // Dual-engine renderer (causl-bench#21). Fetches the report
-      // from the causl-bench repo's main branch on GitHub raw, then
-      // paints per-scenario rows into #dual-engine-tbody. Each row
-      // carries `data-engine` (per-engine value cell) and
-      // `data-perf-column` (per-metric value cell) so the Playwright
-      // contract pins the rendered shape, not the DOM ordering.
-      //
-      // Renders honestly when the inner-bench output capture is not
-      // yet wired (`scenarios` empty per causl-bench#24): one
-      // explicit "scaffold" row referencing the issue.
-      //
-      // -----------------------------------------------------------
-      // Series-id vocabulary (causl-org#13 / Audit K).
-      // -----------------------------------------------------------
-      // Every per-engine cell this IIFE emits is tagged with the
-      // engine it represents. Pre-#13 the tag was `data-engine`
-      // (here) vs `data-library` (in dashboard.js) — the same
-      // concept under two different attribute names with two
-      // different (undocumented) translation tables.
-      //
-      // After #13 every emission writes BOTH attributes for one
-      // release cycle: `data-series` (the new canonical, carrying
-      // the dashboard SeriesId defined by the 3-axis vocabulary in
-      // `causljs/causl-bench:packages/bench/src/series-id.ts`) and
-      // `data-engine` (the legacy attribute the Playwright contract
-      // in `causljs/causl-bench/e2e/playwright/dashboard.spec.ts`
-      // pins via `[data-engine="causl-ts"]` /
-      // `[data-engine="causl-ts-wasm-engine"]`). Both attributes
-      // carry IDENTICAL strings — for the dual-engine panel the
-      // tag IS the sibling-repo slug, which IS the SeriesId for
-      // the engine-source axis, so the two attributes are
-      // synonyms in this panel. A follow-up PR drops `data-engine`
-      // once the release cycle ships; consumers should migrate to
-      // `[data-series=...]` selectors in the interim.
-      //
-      // The three axes the SeriesId encodes (same vocabulary as
-      // dashboard.js's header comment): harness / profile /
-      // repoSlug. The dual-engine panel only ever spans the
-      // repoSlug axis (the harness is implied per-engine: causl-ts
-      // → causl-js harness, causl-ts-wasm-engine → causl-wasm
-      // harness), so the SeriesId here always parses to a
-      // (harness, undefined, repoSlug) triple per
-      // `parseSeriesId()`.
-      (function dualEnginePanel() {
-        const URL = 'https://raw.githubusercontent.com/causljs/causl-bench/main/packages/bench/report/dual-engine.json';
-        const tbody = document.getElementById('dual-engine-tbody');
-        const meta = document.getElementById('dual-engine-meta');
-        const coverageNote = document.getElementById('dual-engine-coverage-note');
-        const stalenessWarn = document.getElementById('dual-engine-staleness-warn');
-        const table = document.getElementById('dual-engine-table');
-        if (!tbody || !meta || !table) return;
-
-        // Engine ↔ library mapping for skipped-row lookup.
-        // dual-engine.json's `series` is keyed by ENGINE id
-        // (`causl-ts`, `causl-ts-wasm-engine`); the `skipped[]` rows
-        // (per Audit K + the cross-library report shape) are keyed by
-        // LIBRARY id (`causl-ts`, `causl-wasm`). Translate before we
-        // index so a (scenario, scale, secondEng) lookup hits the
-        // right row.
-        //
-        // Post-causl-org#13: the LIBRARY id IS the dashboard SeriesId
-        // — the centralised vocabulary in
-        // `causljs/causl-bench:packages/bench/src/series-id.ts`
-        // expresses the same rule via `seriesForRepoSlug()`. This
-        // table is the IIFE-layer expression of that rule; the
-        // helper below (`engineToSeries`) is the explicit alias
-        // every new emission goes through to produce a `data-series`
-        // attribute value. The legacy `data-library` / `data-engine`
-        // call-sites still carry the engine slug for the duration of
-        // the one-release-cycle compat shim — see the IIFE-header
-        // comment for the shim policy.
-        const ENGINE_TO_LIBRARY = {
-          'causl-ts': 'causl-ts',
-          'causl-ts-wasm-engine': 'causl-wasm',
-        };
-        function engineToLibrary(eng) {
-          return ENGINE_TO_LIBRARY[eng] || eng;
-        }
-        // Canonical SeriesId for a given engine slug. Same table as
-        // ENGINE_TO_LIBRARY above — kept separate so the call-sites
-        // that produce `data-series` are visually traceable to the
-        // 3-axis vocabulary rather than to the legacy skip-row index.
-        function engineToSeries(eng) {
-          return ENGINE_TO_LIBRARY[eng] || eng;
-        }
-
-        // causljs/causl-org#12 — freshness watermark for the
-        // dual-engine.json envelope. Surface a yellow banner once the
-        // file's `generatedAt` slips past the 7-day staleness budget;
-        // adopters land on the dashboard via a search-result link
-        // long after the data went stale, and the silent-stale-render
-        // failure mode (issue #15) was the wedge that made #12's
-        // "— ms" cells look broken rather than uncovered.
-        const STALE_BUDGET_HOURS = 168;
-        function renderStalenessBanner(generatedAt) {
-          if (!stalenessWarn) return;
-          if (!generatedAt) return;
-          const genMs = new Date(generatedAt).getTime();
-          if (!Number.isFinite(genMs)) return;
-          const ageHours = (Date.now() - genMs) / 3600000;
-          if (ageHours <= STALE_BUDGET_HOURS) return;
-          const days = Math.floor(ageHours / 24);
-          stalenessWarn.hidden = false;
-          stalenessWarn.setAttribute('data-age-hours', ageHours.toFixed(1));
-          stalenessWarn.innerHTML =
-            '<strong>Stale benchmark data:</strong> <code>dual-engine.json</code> is ' +
-            days + ' days old (generated ' + generatedAt + '). ' +
-            'Refresh via <code>pnpm bench</code> in ' +
-            '<a href="https://github.com/causljs/causl-bench"><code>causljs/causl-bench</code></a>.';
-        }
-
-        fetch(URL, { cache: 'no-store' }).then(function (r) {
-          if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.json();
-        }).then(function (doc) {
-          const engines = Array.isArray(doc.engines) ? doc.engines : [];
-          const series = (doc.series && typeof doc.series === 'object') ? doc.series : {};
-          const ts = doc.generatedAt || '';
-
-          meta.setAttribute('data-engines', engines.join(','));
-          meta.setAttribute('data-generated-at', ts);
-          meta.textContent = 'Generated at ' + ts + ' for engines: ' + engines.join(', ') +
-            (doc.meta && doc.meta.gitShas ? ' (' + Object.entries(doc.meta.gitShas).map(function (e) { return e[0] + '@' + e[1]; }).join(', ') + ')' : '');
-
-          renderStalenessBanner(ts);
-
-          // causljs/causl-org#12 — build a (library × scenario × scale)
-          // → skip-row index from `doc.skipped[]`. The dual-engine
-          // report MAY (per causl-bench#37 follow-up) carry skipped
-          // rows with `status: 'SKIP'` + a typed `reason` enum drawn
-          // from {artefact-missing, feature-not-wired,
-          // engine-incompatible, timeout, oom}, plus a free-form
-          // `detail`. Pre-#37 rows carry only `reason` as a free
-          // string. We honour both: typed → typed pill (colour from
-          // the brand palette); legacy → muted "skipped" pill with
-          // the reason on hover. Absent rows (no entry at all) render
-          // a plain em-dash with a "not in coverage today" tooltip.
-          const skipIndex = new Map();
-          const skippedArr = Array.isArray(doc.skipped) ? doc.skipped : [];
-          // Also fold any per-engine `series[eng].skipped` if a future
-          // schema rev puts them there — defensive, not load-bearing.
-          engines.forEach(function (eng) {
-            const perEng = series[eng] && Array.isArray(series[eng].skipped) ? series[eng].skipped : [];
-            perEng.forEach(function (row) { skippedArr.push(row); });
-          });
-          function skipKey(library, scenario, scale) {
-            return library + '|' + scenario + '|' + (scale == null ? '' : scale);
-          }
-          const TYPED_SKIP_REASONS = ['artefact-missing', 'feature-not-wired', 'engine-incompatible', 'timeout', 'oom'];
-          const TYPED_SKIP_LABEL = {
-            'artefact-missing': 'artefact missing',
-            'feature-not-wired': 'feature not wired',
-            'engine-incompatible': 'engine incompatible',
-            'timeout': 'timeout',
-            'oom': 'OOM',
-          };
-          skippedArr.forEach(function (row) {
-            if (!row || typeof row !== 'object') return;
-            const lib = row.library;
-            const scn = row.scenario;
-            const scale = row.scale;
-            if (!lib || !scn) return;
-            skipIndex.set(skipKey(lib, scn, scale), row);
-          });
-          function lookupSkip(secondEng, scn, scale) {
-            // Try (library, scenario, scale) first; fall back to a
-            // scale-agnostic match so a skipped row that didn't pin
-            // a scale still surfaces.
-            const lib = engineToLibrary(secondEng);
-            return (
-              skipIndex.get(skipKey(lib, scn, scale)) ||
-              skipIndex.get(skipKey(lib, scn, '')) ||
-              null
-            );
-          }
-          function escapeAttr(s) {
-            return String(s)
-              .replace(/&/g, '&amp;')
-              .replace(/"/g, '&quot;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;');
-          }
-          function renderSkipPill(skip) {
-            // Typed taxonomy → coloured pill; legacy free-form →
-            // muted "skipped" pill. Both carry the reason/detail
-            // string on the title attribute so the operator can
-            // hover and read the long-form prose.
-            const reason = skip && skip.reason;
-            const detail = (skip && skip.detail) || (typeof reason === 'string' ? reason : '');
-            if (typeof reason === 'string' && TYPED_SKIP_REASONS.indexOf(reason) !== -1) {
-              return '<span class="dual-engine-skip-pill dual-engine-skip-pill--' + reason + '" ' +
-                'title="' + escapeAttr(detail) + '">' + TYPED_SKIP_LABEL[reason] + '</span>';
-            }
-            return '<span class="dual-engine-skip-pill dual-engine-skip-pill--legacy" ' +
-              'title="' + escapeAttr(detail) + '">skipped</span>';
-          }
-
-          // Union the scenario names across all engines so we never
-          // hide a row that only one engine emitted.
-          const scenarioNames = new Set();
-          engines.forEach(function (eng) {
-            const scns = (series[eng] && series[eng].scenarios) || {};
-            Object.keys(scns).forEach(function (n) { scenarioNames.add(n); });
-          });
-
-          if (scenarioNames.size === 0) {
-            // Scaffold state: schema-correct file but no per-cell
-            // data yet (inner-bench wiring tracked in #24).
-            tbody.innerHTML = '<tr class="dual-engine-scaffold"><td colspan="10">' +
-              'Scaffold state: <code>dual-engine.json</code> carries the schema (engines list, per-engine <code>scenarios</code> map) but no per-cell rows yet. ' +
-              'The inner bench skips causl-library cells until the wasm-engine fork\'s <code>apply_commands</code> extern is wired (see <a href="https://github.com/causljs/causl-bench/issues/24">causl-bench#24</a> for the runner ↔ inner-bench wiring gap and <a href="https://github.com/causljs/causl-wasm/issues/85">causl-wasm#85</a> for the wasm-side prerequisite).' +
-              '</td></tr>';
-            table.removeAttribute('aria-busy');
-            return;
-          }
-
-          // Real per-scenario rendering. The published schema nests
-          // metrics under `scenarios[name].result.runtime` (median /
-          // mean / cpuNs / gcPauses) and `scenarios[name].{heapDeltaBytes,
-          // peakRssBytes}`; project those into the flat columns the
-          // Playwright contract pins (`data-perf-column="<key>"`).
-          function fmt(v, digits) { return (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(typeof digits === 'number' ? digits : 2) : '—'; }
-          function fmtBytes(n) {
-            if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
-            if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MiB';
-            if (n >= 1024) return (n / 1024).toFixed(1) + ' KiB';
-            return n + ' B';
-          }
-          // Compact byte-formatter for the per-row distribution
-          // triple. `null`/non-finite → em-dash; small values stay as
-          // a thousands-separated integer; large values collapse to
-          // `1.2K` / `12M` so a long-tail max doesn't blow the cell
-          // width. Returned as a plain string (the caller wraps in
-          // markup). Mirrors the `<= 3 figures + suffix` rule the
-          // task spec laid out.
-          function fmtBytesCompact(n) {
-            if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
-            if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-            if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-            // <1000: emit as plain integer with thousands separators
-            // (1k cap means this branch never adds a separator, but the
-            // toLocaleString is cheap and keeps the formatter uniform).
-            return Math.round(n).toLocaleString('en-US');
-          }
-          function project(cell) {
-            // `cell` is `scenarios[name]` for one engine. Returns the
-            // flat view the renderer consumes; missing fields stay
-            // undefined so fmt() emits an em-dash.
-            const c = cell || {};
-            const rt = (c.result && c.result.runtime) || {};
-            const gc = Array.isArray(rt.gcPauses) ? rt.gcPauses.slice() : [];
-            gc.sort(function (a, b) { return (b.totalMs || 0) - (a.totalMs || 0); });
-            const hot = gc.length ? (gc[0].kind + ' ' + (gc[0].totalMs || 0).toFixed(1) + 'ms') : undefined;
-            const cold = gc.length > 1 ? (gc[1].kind + ' ' + (gc[1].totalMs || 0).toFixed(1) + 'ms') : undefined;
-            // causljs/causl-org#6 addition 2 — pull the per-row
-            // distribution triple. Each field carries its own null
-            // semantics: a wasm cell with crossings>0 has numbers; a
-            // non-wasm / zero-crossings cell carries explicit `null`;
-            // pre-#33-add-on cells have no field at all. The renderer
-            // treats both null and absent the same (em-dash).
-            const m = c?.meta || {};
-            return {
-              wallMs: rt.median,
-              cpuUserMs: typeof rt.cpuNs === 'number' ? rt.cpuNs / 1e6 : undefined,
-              cpuSystemMs: undefined, // not collected by the current inner bench
-              heapPeakBytes: c.peakRssBytes,
-              hotPath: hot,
-              coldPath: cold,
-              boundaryCrossings: m.boundaryCrossings,
-              boundaryBytes: m.boundaryBytes,
-              boundaryBytesMin: m.boundaryBytesMin,
-              boundaryBytesMedian: m.boundaryBytesMedian,
-              boundaryBytesMax: m.boundaryBytesMax,
-            };
-          }
-          // Render a single metric cell's value with both causl
-          // engines stacked vertically. `topVal` / `bottomVal` are
-          // the formatted strings (caller picks the digits + unit);
-          // `topEngine` / `bottomEngine` carry the engine ids for
-          // the hover tag + data attribute. If one side's value is
-          // null/undefined, render ONLY the other side at its color
-          // (don't show "—" stacked above a number — the task spec
-          // calls this out explicitly).
-          //
-          // The two engines correspond to `engines[0]` and
-          // `engines[1]` in the dual-engine.json envelope — typically
-          // `causl-ts` + `causl-ts-wasm-engine` today; the prior PR
-          // also landed the `causl-wasm` / `causl-wasm-all` legend
-          // entries so the dashboard's color palette and tags are
-          // consistent across the two pair conventions. Color is the
-          // primary signal (top = solid causl-ts cyan, bottom = paler
-          // mint with a dashed-underline cue); the engine id surfaces
-          // on hover via the `title` attribute as the secondary
-          // signal.
-          function dualStack(topVal, topEngine, bottomVal, bottomEngine) {
-            const topHas = topVal !== '—' && topVal !== '' && topVal != null;
-            const botHas = bottomVal !== '—' && bottomVal !== '' && bottomVal != null;
-            if (topHas && botHas) {
-              return (
-                '<span class="dual-engine-stack">' +
-                  '<span class="dual-engine-stack-top" data-series="' + engineToSeries(topEngine) + '" data-engine="' + topEngine + '" title="' + topEngine + ' (selective)">' + topVal + '</span>' +
-                  '<span class="dual-engine-stack-bot" data-series="' + engineToSeries(bottomEngine) + '" data-engine="' + bottomEngine + '" title="' + bottomEngine + ' (all)">' + bottomVal + '</span>' +
-                '</span>'
-              );
-            }
-            if (topHas) {
-              return '<span class="dual-engine-stack dual-engine-stack--solo-top" data-series="' + engineToSeries(topEngine) + '" data-engine="' + topEngine + '" title="' + topEngine + '">' + topVal + '</span>';
-            }
-            if (botHas) {
-              return '<span class="dual-engine-stack dual-engine-stack--solo-bot" data-series="' + engineToSeries(bottomEngine) + '" data-engine="' + bottomEngine + '" title="' + bottomEngine + '">' + bottomVal + '</span>';
-            }
-            return '—';
-          }
-          // Tally coverage so the meta strip can surface "N of M
-          // scenarios covered by the wasm-engine fork today" — the
-          // explanatory note the absent cells now point readers
-          // toward (causl-bench#24).
-          const totalScenarios = scenarioNames.size;
-          let secondEngCoveredCount = 0;
-          const rows = Array.from(scenarioNames).sort().map(function (scn) {
-            const firstEng = engines[0];
-            const secondEng = engines[1] || engines[0];
-            const firstCell = (series[firstEng] && series[firstEng].scenarios && series[firstEng].scenarios[scn]) || null;
-            const secondCell = (series[secondEng] && series[secondEng].scenarios && series[secondEng].scenarios[scn]) || null;
-            const firstMetrics = project(firstCell);
-            const secondMetrics = project(secondCell);
-            // The second-engine row's scale lives at
-            // `cell.result.scale` per the schema; fall back to the
-            // first-engine cell's scale when the second engine is
-            // entirely absent, so the skip-row lookup still has a
-            // scale axis to match against.
-            const secondScale = (secondCell && secondCell.result && secondCell.result.scale)
-              || (firstCell && firstCell.result && firstCell.result.scale)
-              || null;
-            const secondAbsent = typeof secondMetrics.wallMs !== 'number';
-            if (!secondAbsent) secondEngCoveredCount++;
-            const secondSkip = secondAbsent ? lookupSkip(secondEng, scn, secondScale) : null;
-            let deltaCls = '';
-            let deltaTxt = '';
-            if (typeof firstMetrics.wallMs === 'number' && typeof secondMetrics.wallMs === 'number' && firstMetrics.wallMs > 0) {
-              const pct = ((secondMetrics.wallMs - firstMetrics.wallMs) / firstMetrics.wallMs) * 100;
-              deltaTxt = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
-              if (pct <= -5) deltaCls = ' class="dual-engine-faster"';
-              else if (pct >= 5) deltaCls = ' class="dual-engine-slower"';
-              else deltaCls = ' class="dual-engine-same"';
-            }
-            // Boundary-crossings (star metric): pick the wasm-engine row's
-            // count when present; fall back to firstMetrics. 0 renders as
-            // an em-dash (no boundary). Class scales: none / low / high.
-            const bcRaw = (typeof secondMetrics.boundaryCrossings === 'number' ? secondMetrics.boundaryCrossings : firstMetrics.boundaryCrossings);
-            const bc = (typeof bcRaw === 'number' && Number.isFinite(bcRaw)) ? bcRaw : 0;
-            const bcCls = bc === 0 ? 'dual-engine-boundary-none' : (bc < 1000 ? 'dual-engine-boundary-low' : 'dual-engine-boundary-high');
-            const bcTxt = bc === 0 ? '<small>—</small>' : bc.toLocaleString();
-
-            // causljs/causl-org#6 addition 2 — render the bytes
-            // distribution as a `min / median / max` triple under the
-            // crossings count, subdued so it doesn't crowd the row.
-            // Pull from the wasm-engine row first (it carries the
-            // accumulator); fall back to firstMetrics. Each field is
-            // independently nullable — render `—` per null. Compact
-            // 3-figure format (`1.2K` / `12M`) keeps the triple
-            // single-line even on a long-tail max.
-            function pickDist(key) {
-              const v = (secondMetrics[key] !== undefined && secondMetrics[key] !== null)
-                ? secondMetrics[key]
-                : firstMetrics[key];
-              return (typeof v === 'number' && Number.isFinite(v)) ? v : null;
-            }
-            const bbMin = pickDist('boundaryBytesMin');
-            const bbMed = pickDist('boundaryBytesMedian');
-            const bbMax = pickDist('boundaryBytesMax');
-            const allBytesAbsent = bbMin === null && bbMed === null && bbMax === null;
-            const bytesTripleHtml = allBytesAbsent
-              ? ''
-              : (
-                '<div class="dual-engine-bytes-triple" data-perf-column="boundaryBytesDistribution" ' +
-                'data-min="' + (bbMin === null ? '' : bbMin) + '" ' +
-                'data-median="' + (bbMed === null ? '' : bbMed) + '" ' +
-                'data-max="' + (bbMax === null ? '' : bbMax) + '" ' +
-                'title="payload bytes per crossing — min / median / max">' +
-                '<small>' +
-                  '<span class="dual-engine-bytes-min">' + fmtBytesCompact(bbMin) + '</span>' +
-                  ' / ' +
-                  '<span class="dual-engine-bytes-median">' + fmtBytesCompact(bbMed) + '</span>' +
-                  ' / ' +
-                  '<span class="dual-engine-bytes-max">' + fmtBytesCompact(bbMax) + '</span>' +
-                '</small>' +
-                '</div>'
-              );
-
-            // causljs/causl-org#6 addition 3 — every metric column
-            // starting at wall-ms renders BOTH causl engines stacked.
-            // The first column (causl-ts engine col) keeps the single-
-            // engine view (it IS the engine-only readout); the metric
-            // columns from wallMs onward stack `firstEng` (causl-ts)
-            // on top and `secondEng` (causl-ts-wasm-engine) on the
-            // bottom. Where only one is present (the prior PR's
-            // engines[1] === engines[0] degenerate case, or one
-            // engine's scenarios map missing a key), `dualStack`
-            // renders solo — no em-dash above a real value.
-            const wallStack = dualStack(
-              fmt(firstMetrics.wallMs, 3),
-              firstEng,
-              fmt(secondMetrics.wallMs, 3),
-              secondEng,
-            );
-            const cpuUserStack = dualStack(
-              fmt(firstMetrics.cpuUserMs, 3),
-              firstEng,
-              fmt(secondMetrics.cpuUserMs, 3),
-              secondEng,
-            );
-            const cpuSysStack = dualStack(
-              fmt(firstMetrics.cpuSystemMs),
-              firstEng,
-              fmt(secondMetrics.cpuSystemMs),
-              secondEng,
-            );
-            const heapStack = dualStack(
-              fmtBytes(firstMetrics.heapPeakBytes),
-              firstEng,
-              fmtBytes(secondMetrics.heapPeakBytes),
-              secondEng,
-            );
-            const hotStack = dualStack(
-              firstMetrics.hotPath || '',
-              firstEng,
-              secondMetrics.hotPath || '',
-              secondEng,
-            );
-            const coldStack = dualStack(
-              firstMetrics.coldPath || '',
-              firstEng,
-              secondMetrics.coldPath || '',
-              secondEng,
-            );
-            // causljs/causl-org#12 — conditional render for the
-            // second-engine cell. When the engine has no sample for
-            // this scenario, emit either a typed-skip pill (if a
-            // matching `skipped[]` row exists) or a muted em-dash
-            // with a "not in coverage today" tooltip. Either way
-            // we never concatenate ` ms` onto an em-dash again.
-            const firstWallTd = '<td data-series="' + engineToSeries(firstEng) + '" data-engine="' + firstEng + '">' +
-              (typeof firstMetrics.wallMs === 'number'
-                ? fmt(firstMetrics.wallMs, 3) + ' ms'
-                : '<span class="dual-engine-absent" title="no sample emitted on this run">—</span>') +
-              '</td>';
-            let secondWallTd;
-            if (typeof secondMetrics.wallMs === 'number') {
-              secondWallTd = '<td data-series="' + engineToSeries(secondEng) + '" data-engine="' + secondEng + '"' + deltaCls + '>' +
-                fmt(secondMetrics.wallMs, 3) + ' ms' +
-                (deltaTxt ? ' <small>(' + deltaTxt + ')</small>' : '') +
-                '</td>';
-            } else if (secondSkip) {
-              secondWallTd = '<td data-series="' + engineToSeries(secondEng) + '" data-engine="' + secondEng + '" class="dual-engine-absent dual-engine-absent--skipped">' +
-                renderSkipPill(secondSkip) +
-                '</td>';
-            } else {
-              secondWallTd = '<td data-series="' + engineToSeries(secondEng) + '" data-engine="' + secondEng + '" class="dual-engine-absent" ' +
-                'title="not in causl-ts-wasm-engine coverage today — see causljs/causl-bench#24">—</td>';
-            }
-            return '<tr data-scenario="' + scn + '">' +
-              '<th scope="row"><code>' + scn + '</code></th>' +
-              firstWallTd +
-              secondWallTd +
-              '<td data-perf-column="boundaryCrossings" class="' + bcCls + '">' +
-                '<div class="dual-engine-primary-metric">' + bcTxt + '</div>' +
-                bytesTripleHtml +
-              '</td>' +
-              '<td data-perf-column="wallMs">' + wallStack + '</td>' +
-              '<td data-perf-column="cpuUserMs">' + cpuUserStack + '</td>' +
-              '<td data-perf-column="cpuSystemMs">' + cpuSysStack + '</td>' +
-              '<td data-perf-column="heapPeakBytes">' + heapStack + '</td>' +
-              '<td data-perf-column="hotPath">' + hotStack + '</td>' +
-              '<td data-perf-column="coldPath">' + coldStack + '</td>' +
-              '</tr>';
-          });
-          tbody.innerHTML = rows.join('');
-
-          // causljs/causl-org#12 — surface the coverage gap as a
-          // factual one-liner. Only render when the second engine
-          // covers strictly fewer scenarios than the union (the
-          // common case today: causl-ts-wasm-engine fork ships 13 of
-          // 25 scenarios per causl-bench#24).
-          const secondEng = engines[1] || engines[0];
-          if (coverageNote && secondEng !== engines[0] && secondEngCoveredCount < totalScenarios) {
-            coverageNote.hidden = false;
-            coverageNote.innerHTML =
-              secondEngCoveredCount + ' of ' + totalScenarios +
-              ' scenarios covered by <code>' + secondEng + '</code> today — ' +
-              'see <a href="https://github.com/causljs/causl-bench/issues/24">causljs/causl-bench#24</a> ' +
-              'for the wiring gap that gates the remaining cells.';
-          }
-
-          table.removeAttribute('aria-busy');
-        }).catch(function (err) {
-          tbody.innerHTML = '<tr class="dual-engine-error"><td colspan="10">Failed to load <code>dual-engine.json</code>: ' + err.message + '</td></tr>';
-          table.removeAttribute('aria-busy');
-        });
-      })();
-    </script>
   </section>
+
+  <!-- ============================================================
+       Re-measured engine comparison + full sweep results.
+
+       Everything between the two GENERATED markers below is written
+       by `render-latest.mjs` from the last entry in `history.json`,
+       which `import-run.mjs` put there from an ARCHIVED causl-bench
+       run. Do not hand-edit inside the markers — the next import
+       overwrites it. Edit the generator instead.
+
+       It is generated rather than fetched on purpose. The panel this
+       replaces fetched its numbers from a URL in another repository
+       at page load, and when that repository moved the panel broke
+       silently for every visitor. A generated section is checked in,
+       diffable, reviewable, renders with JavaScript disabled, and
+       cannot 404.
+       ============================================================ -->
+  <!-- GENERATED:attested-engines:BEGIN -->
+  <section class="page section" id="attested-engines" aria-labelledby="attested-engines-title">
+    <div class="section-head">
+      <div>
+        <div class="section-kicker">Re-measured</div>
+        <h2 id="attested-engines-title">No run imported yet.</h2>
+      </div>
+      <p class="lead">
+        This section is written by <code>render-latest.mjs</code> from the most recent archived
+        <code>causl-bench</code> sweep. Nothing has been imported into <code>history.json</code> yet,
+        so there is nothing to report here.
+      </p>
+    </div>
+  </section>
+  <!-- GENERATED:attested-engines:END -->
 
   <!-- ============================================================
        Library limitations — adopter-facing legend for the
