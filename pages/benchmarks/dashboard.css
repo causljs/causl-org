@@ -1457,3 +1457,9 @@ details.status-callout > summary:focus-visible {
 :root[data-theme="light"] .results-table .row-absent td {
   color: var(--text-on-base);
 }
+
+/* Measured, but not ranked. Struck through rather than hidden: the cell has a
+   real number and the reader is entitled to it — what it does not have is the
+   aggregator's permission to be compared. */
+.results-table td.unranked { color: var(--text-on-base-subtle); }
+.results-table td.unranked s { text-decoration-thickness: 1px; opacity: 0.85; }

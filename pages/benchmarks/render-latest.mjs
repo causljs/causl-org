@@ -192,7 +192,10 @@ function head() {
 
 /** The comparison. Read off the aggregator's own `ranking`, never re-derived. */
 function comparison() {
-  const groups = (run.ranking ?? []).filter((g) => (g.entries ?? []).length > 0);
+  // >= 2, not > 0. A group with a single entry is not a comparison; counting
+  // it as "ranked" inflates the headline the same way the withdrawn panel's
+  // coverage claim did.
+  const groups = (run.ranking ?? []).filter((g) => (g.entries ?? []).length >= 2);
   if (groups.length === 0) {
     return `    <h3>Cross-library comparison</h3>
     <p>The aggregator published no ranked group for this run, so there is no comparison to show.
@@ -209,14 +212,26 @@ function comparison() {
       const tied = (g.entries ?? []).filter((e) => e.rank === 1).length > 1;
       const cells = cols
         .map((r) => {
+          const key = `${r}/${g.scenario}@${g.scale}`;
           const e = byRunner.get(r);
-          if (!e) {
-            const na = notOkBy.get(`${r}/${g.scenario}@${g.scale}`);
-            return `<td class="num absent" title="${esc(na?.reason ?? 'not ranked in this group')}">${esc(na?.outcome ?? '—')}</td>`;
+          const s = okBy.get(key);
+          if (e) {
+            const best = e.rank === 1 ? ' best' : '';
+            return `<td class="num${best}">${ms(e.medianMs ?? s?.medianMs)}${s ? ` ${confChip(s.confidence)}` : ''}</td>`;
           }
-          const s = okBy.get(`${r}/${g.scenario}@${g.scale}`);
-          const best = e.rank === 1 ? ' best' : '';
-          return `<td class="num${best}">${ms(e.medianMs ?? s?.medianMs)}${s ? ` ${confChip(s.confidence)}` : ''}</td>`;
+          // Absent from the ranking is NOT the same as absent from the run, and
+          // an em-dash in both places is a lie by omission: a cell suppressed
+          // for low confidence was measured, and hiding its number makes the
+          // runner look untested rather than untrusted. So the measurement is
+          // shown, struck through, with the reason it was not ranked — and the
+          // reader can tell it from a cell that produced no number at all.
+          if (s) {
+            const why = s.heldOutReason ?? 'not ranked';
+            return `<td class="num unranked" title="${esc(`measured, not ranked: ${why}`)}">` +
+              `<s>${ms(s.medianMs)}</s> ${confChip(s.confidence)}</td>`;
+          }
+          const na = notOkBy.get(key);
+          return `<td class="num absent" title="${esc(na?.reason ?? 'no cell')}">${esc(na?.outcome ?? 'no cell')}</td>`;
         })
         .join('');
       const verdict = tied
@@ -398,6 +413,6 @@ writeFileSync(pagePath, next);
 console.log(`run       ${run.runId}`);
 console.log(`runners   ${allRunners.join(', ')}`);
 console.log(`held out  ${heldOutRunners.size ? [...heldOutRunners].join(', ') : 'none'}`);
-console.log(`ranked    ${(run.ranking ?? []).filter((g) => (g.entries ?? []).length > 0).length} group(s)`);
+console.log(`ranked    ${(run.ranking ?? []).filter((g) => (g.entries ?? []).length >= 2).length} group(s) of ${(run.ranking ?? []).length}`);
 console.log(`cells     ${samples.length} measured · ${skipped.length} not measured`);
 console.log(`\nwrote ${pagePath}`);
