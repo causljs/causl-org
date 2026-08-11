@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Tests for import-run.mjs — one per refusal, because a publish gate nobody
+// Tests for import-run.mjs, one per refusal, because a publish gate nobody
 // has watched refuse something is not a gate.
 //
 // This repository has no test runner wired into CI (`.github/workflows/
@@ -142,7 +142,7 @@ test('a failed cell is refused and named', () => {
   assert.match(r.err, /causl-ts\/linear-chain@1000/);
 });
 
-test('a sweep with cells but no ok cell is refused — measuring nothing is not a run', () => {
+test('a sweep with cells but no ok cell is refused: measuring nothing is not a run', () => {
   const a = aggregate();
   a.cells[0].outcome = 'skipped';
   a.cells[0].reason = 'over budget';
@@ -153,7 +153,7 @@ test('a sweep with cells but no ok cell is refused — measuring nothing is not 
 
 test('a run measured on a busy machine is refused, and the refusal counts the cells', () => {
   const a = aggregate();
-  // Nine cells, five of them taken under contention — a simple majority.
+  // Nine cells, five of them taken under contention, a simple majority.
   a.cells = Array.from({ length: 9 }, (_, i) => ({
     ...aggregate().cells[0],
     scenario: `s${i}`,
@@ -236,11 +236,11 @@ test('p95 comes off the recorded samples rather than being modelled', () => {
 });
 
 test('a not-ok cell never carries `attested`, because that field is the withdrawal marker', () => {
-  // In this dataset `attested: false` marks the 304 retracted causl-wasm
-  // records — numbers produced by an engine other than the one they were
-  // labelled with. A cell that produced no number has nothing to attest, and
-  // reusing the same field value would let a filter count skipped cells as
-  // withdrawn ones.
+  // On a measured row `attested: false` means the number came from an engine
+  // other than the one it was labelled with, which is what got the withdrawn
+  // causl-wasm and causl-wasm-all series deleted from history.json. A cell that
+  // produced no number has nothing to attest, and reusing the same field value
+  // would let a filter count skipped cells as withdrawn ones.
   const a = aggregate();
   a.cells.push({
     runner: 'causl-wasm-ts',
@@ -274,6 +274,147 @@ test('a not-ok cell never carries `attested`, because that field is the withdraw
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+/** Runs the importer for real (no --dry-run) and hands back the written entry. */
+function importOnce(combined) {
+  const dir = mkdtempSync(join(tmpdir(), 'import-run-'));
+  try {
+    writeFileSync(join(dir, 'combined.json'), JSON.stringify(combined));
+    writeFileSync(
+      join(dir, 'index.json'),
+      JSON.stringify({ schemaVersion: 2, runs: [{ runId: RUN_ID, integrity: INTEGRITY, commit: 'deadbeef' }] }),
+    );
+    const history = join(dir, 'history.json');
+    writeFileSync(history, JSON.stringify([]));
+    const r = spawnSync(
+      process.execPath,
+      [SCRIPT, '--combined', join(dir, 'combined.json'), '--archive', dir, '--history', history],
+      { encoding: 'utf8' },
+    );
+    assert.equal(r.status, 0, r.stderr);
+    return JSON.parse(readFileSync(history, 'utf8'))[0];
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** A `combined.json` whose causl runner is the wasm one, in every block that
+ *  carries a runner id: the cells, the runners map, the ranking and the engine
+ *  floor. */
+function wasmAggregate() {
+  const a = aggregate();
+  a.runners['causl-wasm-ts'] = {
+    library: { name: '@causl/causl-wasm-ts', version: '0.3.7' },
+    engine: 'rust-ssot',
+    engineAttested: true,
+    os: 'darwin',
+    arch: 'arm64',
+    cpuModel: 'M5',
+    node: 'v26.5.0',
+  };
+  a.cells.push({
+    ...aggregate().cells[0],
+    runner: 'causl-wasm-ts',
+    medianMs: 3.5,
+    engine: 'rust-ssot',
+  });
+  a.cells.push({
+    runner: 'causl-wasm-ts',
+    scenario: 'async-race',
+    scale: 1000,
+    outcome: 'inapplicable',
+    reason: 'the engine commits synchronously',
+    engine: 'rust-ssot',
+    engineAttested: true,
+  });
+  a.ranking = [
+    {
+      scenario: 'linear-chain',
+      scale: 1000,
+      entries: [
+        { runner: 'causl-ts', medianMs: 0.5, rank: 1 },
+        { runner: 'causl-wasm-ts', medianMs: 3.5, rank: 2 },
+      ],
+      suppressed: [],
+      excluded: [],
+      absent: [],
+      withheld: null,
+    },
+    {
+      scenario: 'async-race',
+      scale: 1000,
+      entries: [
+        { runner: 'causl-ts', medianMs: 0.5, rank: 1 },
+        { runner: 'mobx', medianMs: 0.6, rank: 2 },
+      ],
+      suppressed: [{ runner: 'causl-wasm-ts', medianMs: 3.5 }],
+      excluded: [{ runner: 'causl-wasm-ts', status: 'non-comparable', reason: 'different shapes' }],
+      absent: [{ runner: 'causl-wasm-ts', excludedBy: 'outcome' }],
+      withheld: {
+        reason: 'a suppressed cell beat the leader',
+        leader: { runner: 'causl-wasm-ts', medianMs: 3.5 },
+        beatenBy: [{ runner: 'causl-wasm-ts', medianMs: 3.5, factor: 1 }],
+      },
+    },
+  ];
+  a.engineFloor = {
+    floors: [{ runner: 'causl-wasm-ts', package: '@causl/causl-wasm-ts', minVersion: '0.3.7' }],
+    checked: ['@causl/causl-wasm-ts'],
+    held: [],
+  };
+  return a;
+}
+
+test('the causl-wasm-ts RUNNER lands as the causl-wasm SERIES on every row', () => {
+  // The runner directory is named after the client package; the chart series is
+  // named `causl-wasm`. Passing the runner id straight through is how a future
+  // sweep would reintroduce a second causl-wasm line under the old name, so the
+  // rename happens at the import boundary and this test is what holds it there.
+  const entry = importOnce(wasmAggregate());
+
+  const libs = [...new Set(entry.samples.map((s) => s.library))].sort();
+  assert.deepEqual(libs, ['causl-ts', 'causl-wasm']);
+  assert.deepEqual([...new Set(entry.skipped.map((s) => s.library))], ['causl-wasm']);
+
+  // The package name is NOT renamed: it is what npm installs.
+  assert.ok(Object.hasOwn(entry.libraries, 'causl-wasm'), 'libraries is keyed by series id');
+  assert.equal(Object.hasOwn(entry.libraries, 'causl-wasm-ts'), false);
+  assert.equal(entry.libraries['causl-wasm'].package, '@causl/causl-wasm-ts');
+  assert.equal(entry.libraries['causl-wasm'].engine, 'rust-ssot');
+});
+
+test('the rename reaches every runner field in ranking and engineFloor, not just the samples', () => {
+  // A ranking that still said `causl-wasm-ts` while the samples said
+  // `causl-wasm` would join against nothing, and render-latest.mjs would print
+  // "no cell" for every causl-wasm row in the comparison table.
+  const entry = importOnce(wasmAggregate());
+
+  const runners = [];
+  (function walk(node) {
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (node === null || typeof node !== 'object') return;
+    for (const [k, v] of Object.entries(node)) {
+      if (k === 'runner' && typeof v === 'string') runners.push(v);
+      else walk(v);
+    }
+  })([entry.ranking, entry.engineFloor]);
+
+  assert.ok(runners.length >= 8, `expected the fixture's runner fields to be walked, saw ${runners.length}`);
+  assert.equal(
+    runners.filter((r) => r === 'causl-wasm-ts').length,
+    0,
+    'no runner field may still carry the runner-directory id',
+  );
+  assert.ok(runners.includes('causl-wasm'), 'the renamed series id is present');
+});
+
+test('an unmapped runner id passes through unchanged', () => {
+  // The map holds one entry on purpose. Every comparator's runner id and series
+  // id are the same string, and a map that guessed would be a second place for
+  // series names to drift.
+  const entry = importOnce(aggregate());
+  assert.deepEqual([...new Set(entry.samples.map((s) => s.library))], ['causl-ts']);
 });
 
 test('re-importing the same run replaces its entry instead of appending a duplicate', () => {

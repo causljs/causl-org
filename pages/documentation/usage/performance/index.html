@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Performance — Causl</title>
-  <meta name="description" content="How causl measures performance with the default pure-TypeScript engine, what the SPEC §17.5 capability-cost residual band promises, and how to run the bench harness. The opt-in wasm engine is an Enterprise feature." />
+  <title>Performance · Causl</title>
+  <meta name="description" content="How causl measures performance, what the SPEC §17.5 capability-cost residual band still requires, and how to run the bench harness. The Rust engine is unconditional in @causl/causl-wasm-ts; the measured comparison against it is an Enterprise topic." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../../css/site.css" />
@@ -24,7 +24,7 @@
   </style>
 </head>
 <body>
-    <!-- Topbar host — js/topbar.js replaces this with the canonical
+    <!-- Topbar host: js/topbar.js replaces this with the canonical
        <header id="topbar"> element. The fallback links inside the
        <noscript> block keep nav usable for crawlers and no-JS users. -->
   <div id="topbar-host" data-current="usage">
@@ -49,13 +49,13 @@
   <main class="docs-content">
     <h1>Performance</h1>
 
-    <p>This page covers what causl promises about wall-clock speed, how to measure that promise against your own workload, the optimisations the engine already ships, and when to opt in to the WebAssembly backend. The short version is that causl pays a structural premium over mobx to ship replay-determinism, and that premium is bounded — not asymptotic — by a contract in <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §17.5</a>.</p>
+    <p>This page covers what causl promises about wall-clock speed, how to measure that promise against your own workload, and the optimisations the engine already ships. The short version is that causl pays a structural premium over mobx to ship replay-determinism, and that premium is bounded rather than asymptotic, by a contract in <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §17.5</a>.</p>
 
-    <p>If you are deciding whether causl is fast enough for your application, the honest answer is: read this page, run the bench harness against a workload that looks like yours, and consult the <a href="../../../benchmarks/">benchmarks page</a> for the canonical seven-cell sweep. Synthetic microbenchmarks rarely predict app-level behaviour; the harness exists so you do not have to guess.</p>
+    <p>If you are deciding whether causl is fast enough for your application, the honest answer is: read this page, run the bench harness against a workload that looks like yours, and consult the <a href="../../../benchmarks/">benchmarks page</a> for the live cross-library sweep. Synthetic microbenchmarks rarely predict app-level behaviour; the harness exists so you do not have to guess.</p>
 
     <h2>1. The capability-cost residual band</h2>
 
-    <p>Causl is a transactional dependency-graph engine. mobx is a reactive observable engine. They look interchangeable from the outside — both track derivations, both fire subscribers when inputs change — but they ship different capabilities, and those capabilities cost cycles.</p>
+    <p>Causl is a transactional dependency-graph engine. mobx is a reactive observable engine. They look interchangeable from the outside, because both track derivations and both fire subscribers when inputs change, but they ship different capabilities, and those capabilities cost cycles.</p>
 
     <p>Specifically, causl ships four contract surfaces that mobx does not:</p>
 
@@ -66,64 +66,78 @@
       <li><code>readAt</code> / <code>snapshotAt</code> retention bookkeeping (historical reads against past commits).</li>
     </ul>
 
-    <p>SPEC §17.5 commits to a measurable, bounded cost for those surfaces. On three contract-bearing benchmark cells — <code>equality-cutoff &times; 10000</code>, <code>equality-cutoff-fanout-10k &times; 10000</code>, and <code>spreadsheet-100x100 &times; 10000</code> — the engine guarantees:</p>
+    <p>SPEC §17.5 commits to a measurable, bounded cost for those surfaces. On three contract-bearing benchmark cells (<code>equality-cutoff &times; 10000</code>, <code>equality-cutoff-fanout-10k &times; 10000</code>, and <code>spreadsheet-100x100 &times; 10000</code>) the requirement is:</p>
 
     <code class="codeblock-source" data-lang="typescript">mobx_median &times; 3.0  &le;  causl_median  &le;  mobx_median &times; 8.0</code>
+
+    <blockquote>
+      <p><strong>Read §17.5 as a dated, pre-deprecation record.</strong> The
+      3.0&times; to 8.0&times; band above is still the live requirement, and the gate still enforces
+      it. What has been <strong>retired</strong> is the separate post-Rust forecast band of
+      1.0&times; to 4.0&times;: it was a projection, it never became a requirement, and the measured
+      data does not support it. If you are wiring your own CI against §17.5, anchor on the
+      <strong>8.0&times; upper bound</strong>. That is the boundary that means something.</p>
+    </blockquote>
 
     <p>The band has two boundaries that mean different things:</p>
 
     <ul>
-      <li><strong>Upper bound (8.0&times;) is the regression gate.</strong> Earlier in the project the <code>equality-cutoff &times; 10000</code> cell ran at 1.94 ms vs mobx's 0.215 ms — about 9&times;, breaching the ceiling. A focused perf wave delivered a 24% drop (1.94 ms &rarr; 1.47 ms), pulling the residual to ~6.4&times; and giving the 8&times; ceiling about 25% headroom over the post-wave anchor. A future change that drives the cell back past 8&times; either reintroduces a per-write per-derived allocation seam or invents a new one; either way, the gate forces the conversation in review.</li>
-      <li><strong>Lower bound (3.0&times;) is the capability-erosion gate.</strong> The ~0.9–1.1 ms causl pays beyond mobx on <code>equality-cutoff</code> is, from JavaScript, non-addressable: string-keyed Map probes, full-call <code>Object.is</code>, frozen <code>Commit</code> allocation, and the GC pressure those produce together set a structural floor. A future PR that delivers a sub-3&times; ratio on a contract-bearing cell has either shipped a real architectural breakthrough (the leading example — promotion of the native wasm engine <span class="badge-enterprise">Enterprise</span> to the default backend, per SPEC §17.6 — has already <strong>shipped</strong> in the Enterprise <code>causl-client</code> path, where rust-ssot is the unconditional default; see the <a href="../../enterprise/wasm-performance/">Enterprise wasm-performance guide</a>) or it has silently retired one of the four contract surfaces. The 3&times; floor flips that trade-off into a visible CI failure rather than a silent ship.</li>
+      <li><strong>Upper bound (8.0&times;) is the regression gate, and the one to hold.</strong> Earlier in the project the <code>equality-cutoff &times; 10000</code> cell ran at 1.94 ms against mobx's 0.215 ms, about 9&times;, breaching the ceiling. A focused perf wave delivered a 24% drop (1.94 ms to 1.47 ms), pulling the residual to roughly 6.4&times; and giving the 8&times; ceiling about 25% headroom over the post-wave anchor. A future change that drives the cell back past 8&times; either reintroduces a per-write per-derived allocation seam or invents a new one; either way, the gate forces the conversation in review.</li>
+      <li><strong>Lower bound (3.0&times;) is the capability-erosion gate.</strong> The roughly 0.9 ms to 1.1 ms causl pays beyond mobx on <code>equality-cutoff</code> is, from JavaScript, non-addressable: string-keyed Map probes, full-call <code>Object.is</code>, frozen <code>Commit</code> allocation, and the GC pressure those produce together set a structural floor. A PR that delivers a sub-3&times; ratio on a contract-bearing cell has most likely retired one of the four contract surfaces, and the floor flips that into a visible CI failure rather than a silent ship. Do not read the floor as a target: no shipped change has crossed it, and the Rust engine did not.</li>
     </ul>
 
-    <p>The residual decomposes as <strong>1.84&times; engine baseline &times; 3.5&times; contract premium</strong>. The 1.84&times; factor is the only honest engine-on-engine microbench (<code>op-tx-set-isolated-1k</code>, with the <code>hasDependents</code> fast path that skips the staging/rollback round-trip on isolated inputs). The 3.5&times; factor is what the four contract surfaces above actually cost.</p>
+    <p>The residual decomposes as <strong>1.84&times; engine baseline &times; 3.5&times; contract premium</strong>. The 1.84&times; factor is the only honest engine-on-engine microbench (<code>op-tx-set-isolated-1k</code>, with the <code>hasDependents</code> fast path that skips the staging and rollback round-trip on isolated inputs). The 3.5&times; factor is what the four contract surfaces above actually cost.</p>
 
     <blockquote>
-      <strong>Methodology callout.</strong> Two cells in the wider engine-on-engine harness are <em>excluded</em> from the residual: <code>op-tx-shadow-read-1k</code> reads ~11&times; because mobx returns the new value directly inside <code>runInAction</code> without a shadow-Map probe, and <code>op-commit-rollback-1k</code> reads ~2.8&times; because mobx is not transactional — <code>runInAction</code> does not roll back on throw, so the comparator simulates a failed transaction with a second <code>runInAction</code>. Both are methodology asymmetries rooted in shipped capability, not inner-loop cost, and folding them into the residual would produce a number neither side could defend.
+      <strong>Methodology callout.</strong> Two cells in the wider engine-on-engine harness are <em>excluded</em> from the residual: <code>op-tx-shadow-read-1k</code> reads about 11&times; because mobx returns the new value directly inside <code>runInAction</code> without a shadow-Map probe, and <code>op-commit-rollback-1k</code> reads about 2.8&times; because mobx is not transactional (<code>runInAction</code> does not roll back on throw, so the comparator simulates a failed transaction with a second <code>runInAction</code>). Both are methodology asymmetries rooted in shipped capability rather than in inner-loop cost, and folding them into the residual would produce a number neither side could defend.
     </blockquote>
-
-    <h3>The TS engine residual is the contract you measure against <span class="badge-enterprise">Enterprise</span></h3>
-
-    <p>The numbers above describe the current TS engine — the default, and the band the §17.5 gate enforces. There is also a projected residual band for the wasm engine, where crossing the native boundary is allowed to bypass the JS structural floor (Map allocation, <code>Object.is</code> dispatch, GC pressure on frozen <code>Commit</code> objects) that the TS engine cannot. Those projections, the backend-selection semantics, and the GO/NO-GO criteria are Enterprise material; the TS-engine band on this page stands on its own.</p>
 
     <h2>2. Running the bench harness</h2>
 
-    <p>The <code>@causl/bench</code> workspace ships every measurement that backs SPEC §17.5. You can run the same harness against your local checkout in two flavours: a quick run and a reportable run.</p>
+    <p>The bench workspace ships every measurement that backs SPEC §17.5. You can run the same harness against your local checkout in two flavours: a quick run and a reportable run.</p>
 
     <h3>Quick run</h3>
 
     <code class="codeblock-source" data-lang="bash">pnpm bench</code>
 
-    <p>This drives <code>packages/bench/src/run.ts</code> with the default profile, sweeping the seven canonical cells (<code>diamond</code>, <code>scrolling-viewport</code>, <code>dynamic-deps</code>, <code>async-race</code>, <code>batch-commit</code>, <code>equality-cutoff</code>, <code>large-fanout</code>) at the production scales and printing wall-clock medians per library per cell. Use it in development to spot order-of-magnitude regressions in the inner loop you are working on.</p>
+    <p>This drives the default profile, sweeping the canonical cells (<code>diamond</code>, <code>scrolling-viewport</code>, <code>dynamic-deps</code>, <code>async-race</code>, <code>batch-commit</code>, <code>equality-cutoff</code>, <code>large-fanout</code>) at the production scales and printing wall-clock medians per library per cell. Use it in development to spot order-of-magnitude regressions in the inner loop you are working on.</p>
 
     <h3>Full report</h3>
 
     <code class="codeblock-source" data-lang="bash">pnpm bench:report</code>
 
-    <p>This drives <code>src/report.ts</code>, writes <code>report/benchmark_results.json</code> and <code>report/benchmark_history.json</code>, and emits a Markdown table with median &Delta;%, p95 &Delta;%, CoV, and per-cell win/loss attribution. The same JSON shape feeds the regression-gate (<code>pnpm bench:gate</code>) and the hypothesis-catalogue check (<code>pnpm bench:check-hypotheses</code>). Run this when you want a number to put in a PR body.</p>
+    <p>This writes the results and history JSON and emits a Markdown table with median &Delta;%, p95 &Delta;%, CoV, and per-cell win/loss attribution. The same JSON shape feeds the regression gate (<code>pnpm bench:gate</code>) and the hypothesis-catalogue check (<code>pnpm bench:check-hypotheses</code>). Run this when you want a number to put in a PR body.</p>
 
-    <p>Each run aggregates a per-cell measurement across multiple trials of <code>n=50</code> samples. Aggregate median / p95 / stddev are taken as the trial-medians, and <strong>CoV = stddev / median</strong>. A single n=50 stripe on the contract cells reads CoV in the 0.10–0.25 range, which is too wide to detect a 10% effect; aggregating five trials drops the trial-median's standard error far below the gate threshold. The published per-cell CoV envelopes — visible in every report and committed alongside <code>regression-baseline.json</code> — are the input you need to decide whether a delta you observe is signal or noise.</p>
+    <p>Each run aggregates a per-cell measurement across multiple trials of <code>n=50</code> samples. Aggregate median, p95 and stddev are taken as the trial-medians, and <strong>CoV = stddev / median</strong>. A single n=50 stripe on the contract cells reads CoV in the 0.10 to 0.25 range, which is too wide to detect a 10% effect; aggregating five trials drops the trial-median's standard error far below the gate threshold. The published per-cell CoV envelopes, visible in every report and committed alongside the regression baseline, are the input you need to decide whether a delta you observe is signal or noise.</p>
 
     <blockquote>
-      <strong>Detailed explanation.</strong> The harness honestly reports both wall-clock and stddev/CoV because the contract is about <em>median</em>, not best-case. If you find yourself wanting to quote a "fast run" number, that is the cue that your environment is noisier than CI's and you should run more trials, not pick the lowest sample. The CI gate intentionally fires on the median.
+      <strong>Detailed explanation.</strong> The harness reports both wall-clock and stddev/CoV because the contract is about the <em>median</em>, not the best case. If you find yourself wanting to quote a "fast run" number, that is the cue that your environment is noisier than CI's and you should run more trials rather than pick the lowest sample. The CI gate intentionally fires on the median.
+    </blockquote>
+
+    <blockquote>
+      <p><strong>Confidence is not uniform, and I am not going to bury that.</strong> On the
+      most recent full sweep, 45% of the ok cells (171 of 380) carry a <em>low</em> confidence
+      grade, driven by dispersion, drift, truncated warm-up, and machine load. Low-confidence
+      cells are excluded from the ranking, which is the right call, but it means a single cell
+      you pick out of the table may not be a number you can lean on. Check the confidence grade
+      before you quote a cell.</p>
     </blockquote>
 
     <h3>Targeted cells</h3>
 
     <p>For PR-sized investigations the focused driver runs only the three SPEC §17.5 cells in seconds rather than the 30+ minutes a full sweep takes:</p>
 
-    <code class="codeblock-source" data-lang="bash">pnpm --filter @causl/bench bench --scenarios equality-cutoff,equality-cutoff-fanout-10k,spreadsheet-100x100 --scale 10000</code>
+    <code class="codeblock-source" data-lang="bash">pnpm bench --scenarios equality-cutoff,equality-cutoff-fanout-10k,spreadsheet-100x100 --scale 10000</code>
 
-    <p>The full audit driver is <code>packages/bench/src/freeze-impact-cli.ts</code>; the smaller-cell entry points share the same harness so the numbers compose with the full report.</p>
+    <p>The smaller-cell entry points share the same harness, so the numbers compose with the full report.</p>
 
-    <h3>2.5 Measurement target for the default engine</h3>
+    <h3>2.5 What the §17.5 band measures</h3>
 
-    <p>The TypeScript floor engine in <code>@causl/core</code> is measured against the §17.5 capability-cost residual band: <strong>3.0&times;&ndash;8.0&times; mobx_median</strong> on the three contract cells. This is the unconditional floor — the numbers in §1 above describe it, and it is the target the bench harness gates against on every run.</p>
+    <p>The §17.5 band is a <strong>TypeScript-engine</strong> contract: it measures the TypeScript engine (the one that lives in <code>causl-core-ts</code> and still defaults to <code>js-ssot</code>) against mobx on the three contract cells, at <strong>3.0&times; to 8.0&times; mobx_median</strong>. That engine is the differential oracle and the benchmark host. It is not what an adopter installs: <code>@causl/causl-wasm-ts</code> runs the Rust engine unconditionally.</p>
 
     <aside class="callout-enterprise">
       <span class="badge-enterprise">Enterprise</span>
-      <p><strong>The wasm engine is an Enterprise feature.</strong> The wasm backend is measured against a different target — the §18A.7 marshaling-tax ceiling rather than the §17.5 band — because it pays an FFI wire tax per commit before the native engine does any work; the cross-backend sweep and the standing marshal cost are covered in the Enterprise guide.</p>
+      <p><strong>The wasm engine is an Enterprise feature.</strong> The Rust engine is not measured against the §17.5 band, and it does not currently beat the TypeScript engine on the sweep. The measured standing, the three bottlenecks behind it, and the open work are in the Enterprise guide.</p>
       <p><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling &rarr;</a></p>
     </aside>
 
@@ -133,11 +147,11 @@
 
     <p>This sounds obvious; the consequence is not. In a derived graph where a single input writes its dependent column on every commit, the equality cutoff turns a topological-recompute-of-everything into a topological-recompute-of-nothing. The <code>equality-cutoff &times; 10000</code> cell is named after exactly this scenario: 10,000 derived nodes fanning out from one input that is written to with a value that compares equal to its current value.</p>
 
-    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
+    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/causl-wasm-ts';
 
 const graph = createCausl();
 const source = graph.input('source', { count: 0 });
-const doubled = graph.derived('doubled', g =&gt; g(source).count * 2);
+const doubled = graph.derived('doubled', get =&gt; get(source).count * 2);
 
 graph.commit('rewrite-source', tx =&gt; {
   // Same value: equality cutoff drops the write, doubled is NOT recomputed.
@@ -151,51 +165,55 @@ graph.commit('rewrite-source', tx =&gt; {
       <li><strong>The cutoff runs in Phase C (input-layer fast path), before Phase D (Kahn topo recompute).</strong> That is why <code>equality-cutoff &times; 10000</code> is so much cheaper than a write that <em>does</em> propagate: when the cutoff fires, the engine never enters the topological walker. See <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §5.1</a> for the phase diagram.</li>
     </ol>
 
-    <p>If your application looks like the <code>equality-cutoff</code> cell — many writes that are no-ops at the value level — causl's wall-clock will track mobx's almost exactly modulo the 3.5&times; contract premium. If your application looks like <code>scrolling-viewport</code> — every commit mutates real data — the equality cutoff does not help, and you should profile.</p>
+    <p>If your application looks like the <code>equality-cutoff</code> cell, with many writes that are no-ops at the value level, causl's wall-clock will track mobx's almost exactly, modulo the 3.5&times; contract premium. If your application looks like <code>scrolling-viewport</code>, where every commit mutates real data, the equality cutoff does not help and you should profile.</p>
 
     <h2>4. Scrolling-viewport: a worked perf recovery</h2>
 
-    <p>The <code>scrolling-viewport &times; 10000</code> cell is a 1,000-cell virtualised grid scrolled at 60 Hz: every frame mounts roughly twenty new rows, unmounts twenty old rows, and writes per-row inputs. It is the cell most representative of "real DX" — mount/unmount churn under user input.</p>
+    <p>The <code>scrolling-viewport &times; 10000</code> cell is a 1,000-cell virtualised grid scrolled at 60 Hz: every frame mounts roughly twenty new rows, unmounts twenty old rows, and writes per-row inputs. It is the cell most representative of real DX, that is, mount and unmount churn under user input.</p>
 
-    <p>At an early-2026 snapshot, this cell was running at a catastrophic <strong>654&times; mobx</strong> on the engine-on-engine harness. The root cause turned out to be a single hot helper, <code>anyInputSubscriberIn</code>, doing an O(n) walk over the subscriber list on every Phase G dispatch — and Phase G fires once per row mount. At a 1,000-row viewport, the walk cost was multiplied by the row count.</p>
+    <p>At an early-2026 snapshot, this cell was running at a catastrophic <strong>654&times; mobx</strong> on the engine-on-engine harness. The root cause turned out to be a single hot helper, <code>anyInputSubscriberIn</code>, doing an O(n) walk over the subscriber list on every Phase G dispatch, and Phase G fires once per row mount. At a 1,000-row viewport, the walk cost was multiplied by the row count.</p>
 
-    <p>The recovery collapsed <code>anyInputSubscriberIn</code> to O(1) via the <code>subscriptionsByNode</code> index that was already maintained for the dispatch fast path. The hypothesis-catalogue row went from <code>INVALIDATED — anyInputSubscriberIn at 26.92% (&ge;5%)</code> to <code>PASS — no match exceeds 5% threshold for "anyInputSubscriberIn"</code>; the cell's median dropped by 97%, and the 654&times; reading collapsed into single-digit territory consistent with the §17.5 band. There is no longer a residual on this cell that the wave program needs to defend.</p>
+    <p>The recovery collapsed <code>anyInputSubscriberIn</code> to O(1) via the <code>subscriptionsByNode</code> index that was already maintained for the dispatch fast path. The hypothesis-catalogue row went from <code>INVALIDATED: anyInputSubscriberIn at 26.92% (&ge;5%)</code> to <code>PASS: no match exceeds 5% threshold for "anyInputSubscriberIn"</code>; the cell's median dropped by 97%, and the 654&times; reading collapsed into single-digit territory consistent with the §17.5 band. There is no longer a residual on this cell that the wave program needs to defend.</p>
 
     <blockquote>
-      <strong>Why this is worth remembering.</strong> The 654&times; figure was not a competitor cherry-pick; it was the engine's own reported wall-clock against its own canonical workload. The recovery happened because the hypothesis catalogue named the suspect symbol, the bench harness measured the suspect symbol's contribution, and the fix was small enough to ship in one PR. If you observe a regression of similar shape in your own profile, the same loop applies: <code>pnpm bench:check-hypotheses</code> names the candidate symbols, <code>pnpm bench:profile:cpu</code> attributes the wall-clock, and the fix should land in one PR with a Perf delta in the body.
+      <strong>Why this is worth remembering.</strong> The 654&times; figure was not a competitor cherry-pick; it was the engine's own reported wall-clock against its own canonical workload. The recovery happened because the hypothesis catalogue named the suspect symbol, the bench harness measured the suspect symbol's contribution, and the fix was small enough to ship in one PR. If you observe a regression of similar shape in your own profile, the same loop applies: <code>pnpm bench:check-hypotheses</code> names the candidate symbols, <code>pnpm bench:profile:cpu</code> attributes the wall-clock, and the fix should land in one PR with a perf delta in the body.
     </blockquote>
 
-    <h2>5. The TS engine is the default — and the focus of this page</h2>
+    <h2>5. Which engine these numbers describe</h2>
 
-    <p>Everything above describes the pure-TypeScript engine that ships in <code>@causl/core</code> by default. It is the unconditional floor: it honours every contract surface, meets the §17.5 residual band, and needs no opt-in, no loader, and no host-capability probe. For the overwhelming majority of application workloads — interactive UIs, forms, moderate spreadsheets — it is the right and only engine you need to reason about.</p>
+    <p>Everything above describes the <strong>TypeScript</strong> engine, which is the engine the §17.5 band contracts and the engine the bench harness hosts. It honours every contract surface and meets the residual band, and it is the reference the differential oracle runs 5,000 trials per PR against.</p>
 
-    <p>There is also an opt-in WebAssembly engine for adopters who profile their workload onto the engine inner loop at scale. Because it carries a per-commit marshaling tax across the FFI boundary, it only pays off above a measurable crossover — and that depth (when wasm wins, the marshal tax, the read()-identity hazard, the crossover sweep) is covered in the Enterprise documentation.</p>
+    <p>It is <em>not</em> what an adopter runs. In <code>@causl/causl-wasm-ts</code> the Rust engine is unconditional: there is no opt-in, no fallback, no capability probe deciding between two engines, and <code>createCauslTs</code> is deleted from source. If you install the client, you get Rust.</p>
+
+    <p><strong>There is no crossover.</strong> Earlier revisions of this page said the wasm engine overtakes the TypeScript engine above some measurable graph size. The sweep does not show that. Across 75 comparable cells the Rust engine wins <strong>3</strong> against the TypeScript engine, and all three are cells where the TypeScript engine goes quadratic rather than cells where wasm is fast. Against the best of the other four libraries it wins <strong>0 of 75</strong>. The median ratio against the TypeScript engine is <strong>6.90&times;</strong>. Do not plan a migration on the expectation that a large enough graph flips the result.</p>
 
     <aside class="callout-enterprise">
       <span class="badge-enterprise">Enterprise</span>
-      <p><strong>The wasm engine is an Enterprise feature.</strong> The marshaling tax across the FFI boundary means wasm only overtakes the default TS engine above a measurable crossover — the Enterprise guide covers when wasm pays off, the per-commit wire cost, and the <code>read()</code>-identity hazard in full.</p>
+      <p><strong>The wasm engine is an Enterprise feature.</strong> Where the engine actually stands on the sweep, the three bottlenecks that explain it, which of the older performance claims the data refutes, and the open work are all covered in the Enterprise guide, with the cell-level numbers.</p>
       <p><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling &rarr;</a></p>
     </aside>
 
     <h2>6. Where the residual cannot be addressed</h2>
 
-    <p>It is worth restating the §17.5 lower-bound argument in adopter terms. If your profile of a contract-bearing cell shows the bulk of the wall-clock in <code>Map.prototype.get</code>, <code>Object.is</code>, structured-clone of <code>Commit</code> deltas, or major-GC pauses, those are the floor: no JavaScript-level optimisation crosses below them while preserving the contract surfaces. At that point the lever is the wasm engine <span class="badge-enterprise">Enterprise</span> rather than a micro-optimisation in <code>commit()</code> — see the Enterprise wasm-performance guide for the crossover analysis.</p>
+    <p>It is worth restating the §17.5 lower-bound argument in adopter terms. If your profile of a contract-bearing cell shows the bulk of the wall-clock in <code>Map.prototype.get</code>, <code>Object.is</code>, structured-clone of <code>Commit</code> deltas, or major-GC pauses, those are the floor: no JavaScript-level optimisation crosses below them while preserving the contract surfaces.</p>
 
-    <p>Conversely, if your profile shows the bulk of the wall-clock in user-provided <code>derived</code> bodies, the engine is already as fast as the contract allows; the answer is to look at the derive function itself. <code>pnpm bench:profile:cpu causl &lt;scenario&gt; &lt;scale&gt;</code> attributes user code separately from engine code in the flame graph, so the question of "is this me or is this causl?" is mechanically answerable.</p>
+    <p>What that argument does <em>not</em> license is the conclusion that a substrate swap is the lever. On the current sweep the Rust engine is slower on the great majority of cells, and its peak RSS exceeds the TypeScript engine's in every comparable cell measured. Read the <a href="../../enterprise/wasm-performance/">Enterprise wasm-performance guide</a> before you treat the engine as a performance answer.</p>
+
+    <p>Conversely, if your profile shows the bulk of the wall-clock in user-provided <code>derived</code> bodies, the engine is already as fast as the contract allows and the answer is to look at the derive function itself. <code>pnpm bench:profile:cpu causl &lt;scenario&gt; &lt;scale&gt;</code> attributes user code separately from engine code in the flame graph, so the question "is this me or is this causl?" is mechanically answerable.</p>
 
     <h2>Related reading</h2>
 
     <ul>
-      <li><a href="../../../benchmarks/">Benchmarks landing page</a> — the canonical seven-cell sweep with live numbers.</li>
-      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §17.5</a> — the capability-cost residual amendment.</li>
-      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §17.6</a> — the host-tier substrate-compatibility commitment.</li>
-      <li><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling</a> <span class="badge-enterprise">Enterprise</span> — when wasm pays off, the marshal tax, the <code>read()</code>-identity hazard, the crossover sweep.</li>
-      <li><a href="https://github.com/causljs/causl-ts/blob/main/docs/profiling.md">Profiling guide</a> — flame graphs, deopt traces, GC pause distributions.</li>
-      <li><a href="https://github.com/causljs/causl-ts/blob/main/docs/contributing-perf.md">Perf-delta template</a> — what to put in a PR body when you touch hot code.</li>
+      <li><a href="../../../benchmarks/">Benchmarks landing page</a>: the live cross-library sweep.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §17.5</a>: the capability-cost residual amendment.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md">SPEC §17.6</a>: the host-tier substrate-compatibility commitment.</li>
+      <li><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling</a> <span class="badge-enterprise">Enterprise</span>: where the Rust engine stands, the bottlenecks behind it, and the <code>read()</code>-identity hazard.</li>
+      <li><a href="../../getting-started/installation/">Installation</a>: the registry configuration, and the <code>@causl/core</code> hazard.</li>
+      <li><a href="https://github.com/causljs/causl-ts/blob/main/docs/profiling.md">Profiling guide</a>: flame graphs, deopt traces, GC pause distributions.</li>
     </ul>
   </main>
 
-    <!-- Footer host — js/footer.js replaces this with the canonical
+    <!-- Footer host: js/footer.js replaces this with the canonical
        <footer class="site-footer"> element. -->
   <div id="footer-host">
     <noscript>

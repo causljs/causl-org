@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Performance Best Practices — Causl</title>
-  <meta name="description" content="Practical guidance for getting the most out of the default pure-TypeScript causl engine: equality-cutoff exploitation, commit batching, fan-out avoidance, and local benchmarking. The opt-in wasm engine is an Enterprise feature." />
+  <title>Performance Best Practices · Causl</title>
+  <meta name="description" content="Practical guidance for getting the most out of causl: equality-cutoff exploitation, commit batching, fan-out avoidance, and local benchmarking. The wasm engine is unconditional in @causl/causl-wasm-ts and the measured comparison is an Enterprise topic." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../../css/site.css" />
@@ -24,7 +24,7 @@
   </style>
 </head>
 <body>
-    <!-- Topbar host — js/topbar.js replaces this with the canonical
+    <!-- Topbar host: js/topbar.js replaces this with the canonical
        <header id="topbar"> element. The fallback links inside the
        <noscript> block keep nav usable for crawlers and no-JS users. -->
   <div id="topbar-host" data-current="best-practices">
@@ -49,21 +49,22 @@
   <main class="docs-content">
     <h1>Performance Best Practices</h1>
     <p>
-      Causl is fast enough for most application workloads out of the box: the
-      benchmark suite anchors the engine at a <strong>6.4× residual</strong>
-      against MobX on the contract-bearing cells, decomposed as
-      <strong>1.84× engine baseline × 3.5× replay-determinism contract
-      premium</strong> (see SPEC §17.5). The 3.5× premium is the price you pay
-      for the four contract surfaces causl ships that MobX does not:
-      <code>commitLog</code> rebuild, <code>changedNodes</code> set
-      construction, <code>GraphTime</code> monotonicity, and
-      <code>readAt</code>/<code>snapshotAt</code> retention. The 1.84× is the
-      structural floor a JS engine that honours those contracts cannot cross.
+      Causl is fast enough for most application workloads out of the box. The
+      benchmark suite anchors the <strong>TypeScript</strong> engine at a
+      <strong>6.4× residual</strong> against MobX on the contract-bearing
+      cells, decomposed as <strong>1.84× engine baseline × 3.5×
+      replay-determinism contract premium</strong> (see SPEC §17.5). The 3.5×
+      premium is the price you pay for the four contract surfaces causl ships
+      that MobX does not: <code>commitLog</code> rebuild,
+      <code>changedNodes</code> set construction, <code>GraphTime</code>
+      monotonicity, and <code>readAt</code>/<code>snapshotAt</code> retention.
+      The 1.84× is the structural floor a JS engine that honours those
+      contracts cannot cross.
     </p>
     <p>
       This page covers the practical levers that move you toward that floor
-      rather than away from it. None of them are exotic — they are habits.
-      Pick them up early; they compound.
+      rather than away from it. None of them are exotic; they are habits.
+      Pick them up early, because they compound.
     </p>
 
     <h2>1. Exploit the equality-cutoff (Phase B / Phase C.5)</h2>
@@ -85,22 +86,16 @@
       it. You do not need a hand-rolled "did this change?" guard at the call
       site.
     </p>
-    <!-- API-EPOCH-AUDIT (2026-06): the code below uses the retired v0.1 function-style
-         API — input(graph, value) / derived(graph, compute) / g.read(node). The current
-         v1 surface is graph.input(id, value) / graph.derived(id, compute) with a callable
-         getter g(node) inside derivation bodies (SPEC §10.1, §12). FLAGGED FOR CODEMOD /
-         manual replacement. API evolution is recorded in the SPEC §19 amendment trail and
-         §5.1 Amendment 3: https://github.com/causljs/causl-ts/blob/main/SPEC.md -->
-<code class="codeblock-source" data-lang="typescript">import { createCausl, input, derived } from '@causl/core';
+<code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/causl-wasm-ts';
 
 const graph = createCausl();
-const scrollY = input(graph, 0);
-const visibleSection = derived(graph, g =&gt; sectionAt(g.read(scrollY)));
+const scrollY = graph.input('scrollY', 0);
+const visibleSection = graph.derived('visibleSection', get =&gt; sectionAt(get(scrollY)));
 
 // Fired on every scroll event; identical Y values short-circuit at Phase B.
 window.addEventListener('scroll', () =&gt; {
-  graph.commit(() =&gt; {
-    graph.set(scrollY, window.scrollY);
+  graph.commit('scroll', tx =&gt; {
+    tx.set(scrollY, window.scrollY);
   });
 });
 </code>
@@ -137,7 +132,7 @@ window.addEventListener('scroll', () =&gt; {
       Phase C.5 for the full mechanism.
     </blockquote>
 
-    <h2>2. Batch your writes — one commit, many sets</h2>
+    <h2>2. Batch your writes: one commit, many sets</h2>
     <p>
       Every <code>graph.commit()</code> call runs phases A through H end to
       end: it builds a frozen <code>Commit</code> envelope, stamps a fresh
@@ -148,26 +143,26 @@ window.addEventListener('scroll', () =&gt; {
       <em>per-commit</em>, not per-write. Ten writes inside one commit run
       one envelope; ten commits with one write each run ten.
     </p>
-<code class="codeblock-source" data-lang="typescript">// Slow — ten envelopes.
+<code class="codeblock-source" data-lang="typescript">// Slow: ten envelopes.
 for (const cell of cells) {
-  graph.commit(() =&gt; { graph.set(cell.input, cell.value); });
+  graph.commit('write-cell', tx =&gt; { tx.set(cell.input, cell.value); });
 }
 
-// Fast — one envelope.
-graph.commit(() =&gt; {
+// Fast: one envelope.
+graph.commit('write-cells', tx =&gt; {
   for (const cell of cells) {
-    graph.set(cell.input, cell.value);
+    tx.set(cell.input, cell.value);
   }
 });
 </code>
     <p>
       The rule of thumb: <strong>commit at the boundary of a user-intent
-      unit</strong>. One keystroke, one tick, one frame, one network reply
-      — those are commit boundaries. Looping over fields inside a single
+      unit</strong>. One keystroke, one tick, one frame, one network reply:
+      those are commit boundaries. Looping over fields inside a single
       form submission is not; flush the whole form in one commit.
     </p>
     <p>
-      The React adapter does this for you on event handlers — anything you
+      The React adapter does this for you on event handlers, so anything you
       do inside an <code>onClick</code> or <code>onChange</code> handler is
       already wrapped in a single auto-batched commit. Where this falls
       down is async boundaries: a <code>setTimeout</code> callback or a
@@ -187,8 +182,8 @@ graph.commit(() =&gt; {
     <p>
       The fan-out the benchmark suite stresses is
       <code>equality-cutoff-fanout-10k</code>: one input feeding 10,000
-      derived nodes. Causl handles it — that is what the residual band
-      contracts — but the cell sits at the high end of the residual
+      derived nodes. Causl handles it, which is what the residual band
+      contracts, but the cell sits at the high end of the residual
       because every one of those 10,000 derivations has to be visited at
       least to ask "did your dep-set change?".
     </p>
@@ -199,112 +194,123 @@ graph.commit(() =&gt; {
       exposes a structurally smaller value downstream:
     </p>
 <code class="codeblock-source" data-lang="typescript">// Anti-pattern: 10k cells each reading the same big input.
-const sheet = input(graph, bigGrid);
-const cells = grid.cells.map((c) =&gt;
-  derived(graph, g =&gt; evaluate(c, g.read(sheet)))
+const sheet = graph.input('sheet', bigGrid);
+const cells = grid.cells.map(c =&gt;
+  graph.derived(`cell:${c.id}`, get =&gt; evaluate(c, get(sheet)))
 );
 
 // Better: one summarising derived, downstream cells project from it.
-const sheet = input(graph, bigGrid);
-const evaluated = derived(graph, g =&gt; evaluateAll(g.read(sheet)));
-const cells = grid.cells.map((c) =&gt;
-  derived(graph, g =&gt; g.read(evaluated)[c.id])
+const sheet = graph.input('sheet', bigGrid);
+const evaluated = graph.derived('evaluated', get =&gt; evaluateAll(get(sheet)));
+const cells = grid.cells.map(c =&gt;
+  graph.derived(`cell:${c.id}`, get =&gt; get(evaluated)[c.id])
 );
 </code>
     <p>
       The pipeline form pays the evaluation cost once per commit and lets
       each leaf derived short-circuit on <code>Object.is</code> against the
       sub-projection. Where the anti-pattern visits 10,000 derived bodies
-      per commit, the pipeline visits one + the leaves whose projected
+      per commit, the pipeline visits one plus the leaves whose projected
       value actually changed.
     </p>
 
     <blockquote>
       <strong>Honest caveat.</strong> The pipeline form trades dep-graph
       depth for dep-graph breadth, and very deep linear chains have a
-      separate cost (see SPEC §5.1 Amendment 3 — the iterative Phase D
+      separate cost (see SPEC §5.1 Amendment 3: the iterative Phase D
       walker raised the depth ceiling past 12k on Node 22+, but registration
-      is still O(depth)). The break-even is around fan-out of ~100 in our
-      microbenches; below that the direct form wins on simplicity.
+      is still O(depth)). The break-even is around fan-out of roughly 100 in
+      our microbenches; below that the direct form wins on simplicity.
     </blockquote>
 
-    <h2>4. The default TS engine covers almost every workload</h2>
+    <h2>4. These levers apply whichever engine you are on</h2>
     <p>
-      The four levers above — equality-cutoff exploitation, write
-      batching, fan-out collapsing, and aiming at the §17.5 band — are all
-      properties of the pure-TypeScript engine that ships in
-      <code>@causl/core</code> by default. That engine needs no opt-in and
-      no host probe, and for the overwhelming majority of application
-      workloads it is the only engine you should reason about. Reach for
-      the levers on this page before reaching for a different backend; a
+      The four levers above (equality-cutoff exploitation, write
+      batching, fan-out collapsing, and aiming at the §17.5 band) are
+      properties of the commit pipeline, not of a substrate. They hold on
+      the TypeScript engine that the §17.5 band contracts, and they hold on
+      the Rust engine that <code>@causl/causl-wasm-ts</code> runs. Reach for
+      the levers on this page before reaching for a different backend: a
       collapsed fan-out or a merged commit almost always beats a substrate
       swap.
     </p>
     <p>
-      There is also an opt-in WebAssembly engine for adopters whose
-      profile lands on the engine inner loop at large graph sizes. It pays
-      an FFI marshaling tax per commit, so it only overtakes the default
-      engine above a measurable crossover in graph size and commit latency.
-      The adoption thresholds, the <code>read()</code>-identity hazard, and
-      the telemetry-driven measurement pattern are covered in the
-      Enterprise documentation.
+      That last sentence is not a figure of speech. In
+      <code>@causl/causl-wasm-ts</code> the Rust engine is
+      <strong>unconditional</strong>: there is no opt-in, no loader flag, no
+      capability probe choosing between two engines, and no TypeScript
+      fallback. So "switch to wasm" is not a lever available to you, and on
+      the current sweep it would not be the lever you want anyway. The Rust
+      engine wins 3 of 75 comparable cells against the TypeScript engine,
+      and all three are cells where the TypeScript engine goes quadratic
+      rather than cells where wasm is fast; against the best of the other
+      four libraries it wins 0 of 75. There is no crossover in graph size
+      above which that flips.
     </p>
 
     <aside class="callout-enterprise">
       <span class="badge-enterprise">Enterprise</span>
-      <p><strong>The wasm engine is an Enterprise feature.</strong> Wasm only pays off above a crossover in graph size and median commit latency, because the per-commit marshaling tax dominates below it — the Enterprise guide gives the adoption thresholds, the FFI wire cost, and the <code>read()</code>-identity hazard that bites adopters keying <code>React.memo</code> or <code>useMemo</code> off the read return.</p>
+      <p><strong>The wasm engine is an Enterprise feature.</strong> Where the Rust engine actually stands on the sweep, the bottlenecks that explain it, and the <code>read()</code>-identity hazard that bites adopters keying <code>React.memo</code> or <code>useMemo</code> off the read return are all covered in the Enterprise guide, with the cell-level numbers.</p>
       <p><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling &rarr;</a></p>
     </aside>
 
-    <h2>5. The bench harness — validate locally</h2>
+    <h2>5. The bench harness: validate locally</h2>
     <p>
       Performance changes you make should be measured, not assumed. The
-      bench harness lives in <code>packages/bench/</code> and the canonical
-      local-validation flow is three commands:
+      canonical local-validation flow is three commands:
     </p>
-<code class="codeblock-source" data-lang="bash"># Run the full canonical scale set, write packages/bench/report/.
-pnpm --filter @causl/bench bench:report
+<code class="codeblock-source" data-lang="bash"># Run the full canonical scale set and write the report.
+pnpm bench:report
 
 # Diff this run against the locked baseline.
-pnpm --filter @causl/bench bench:diff
+pnpm bench:diff
 
 # Gate: fail if any contract-bearing cell falls outside the §17.5 band.
-pnpm --filter @causl/bench bench:gate
+pnpm bench:gate
 </code>
     <p>
       For day-to-day sub-second iteration, use <code>pnpm bench</code> with
-      a profile flag — the tolerant-mode harness (<code>run-tolerant.ts</code>)
-      aborts any cell that exceeds 2× its baseline so you get fast
-      feedback on the change you just made without sitting through the
-      full sweep.
+      a profile flag: the tolerant-mode harness aborts any cell that exceeds
+      2× its baseline, so you get fast feedback on the change you just made
+      without sitting through the full sweep.
     </p>
     <p>
-      The <code>bench:check-hypotheses</code> step consumes
-      <code>report/fair-fight-results.json</code> and checks the
-      median-band invariants declared in
-      <code>packages/bench/src/hypotheses/causl-hypotheses.ts</code>.
-      Those invariants are the SPEC §17.5 band, expressed as a property:
+      The <code>bench:check-hypotheses</code> step checks the median-band
+      invariants declared in the hypothesis catalogue. Those invariants are
+      the SPEC §17.5 band, expressed as a property:
       <code>mobx_median × 3.0 ≤ causl_median ≤ mobx_median × 8.0</code> on
       the three contract-bearing cells. A change that erodes the wave
       gains and pushes a cell past 8× fails the gate; a change that
-      <em>improves</em> a cell past 3× also fails, because it has either
-      shipped an architectural breakthrough (SPEC §17 amendment owed) or
-      silently retired one of the four contract surfaces. Both directions
-      force the conversation.
+      <em>improves</em> a cell past 3× also fails, because it has most
+      likely silently retired one of the four contract surfaces. Both
+      directions force the conversation.
     </p>
+    <blockquote>
+      <p><strong>The band is a dated, pre-deprecation record, and only half
+      of it is a live target.</strong> The 3.0× to 8.0× band above is still
+      the requirement the gate enforces, and it describes the
+      <strong>TypeScript</strong> engine against MobX. The separate post-Rust
+      forecast band of 1.0× to 4.0× is <strong>retired</strong>: it was a
+      projection, it never became a requirement, and the measured data does
+      not support it. If you are wiring your own CI against §17.5, anchor on
+      the <strong>8.0× upper bound</strong> and do not treat the 3.0× floor
+      as something to beat.</p>
+    </blockquote>
 
     <h2>6. SPEC §17.5 as a target</h2>
     <p>
       The residual band is not a thing to be defeated; it is a structural
       property of the language plus the contract. Aim for it; do not aim
-      past it. The four contracts MobX skips — <code>commitLog</code>,
-      <code>changedNodes</code>, GraphTime monotonicity,
-      <code>readAt</code>/<code>snapshotAt</code> retention — are exactly
+      past it. The four contracts MobX skips (<code>commitLog</code>,
+      <code>changedNodes</code>, GraphTime monotonicity, and
+      <code>readAt</code>/<code>snapshotAt</code> retention) are exactly
       the features that make causl worth choosing for the workloads it
       targets. A change that pushes a contract-bearing cell sub-3×
-      against MobX means one of those features has been silently retired.
-      A change that pushes it past 8× means a perf seam the May-2026
-      wave closed has re-opened.
+      against MobX means one of those features has most likely been
+      silently retired. A change that pushes it past 8× means a perf seam
+      the May-2026 wave closed has re-opened. As in §5, the band is the
+      TypeScript-engine contract read as a dated record, the post-Rust
+      forecast band is retired, and 8× is the bound your CI should hold.
     </p>
     <p>
       In day-to-day work, the band gives you a target you can
@@ -326,7 +332,7 @@ pnpm --filter @causl/bench bench:gate
       <li>
         <strong>Your batching target</strong> is one commit per
         user-intent unit. If you find yourself with a hot path that runs
-        more than one commit per visible state transition, the next-
+        more than one commit per visible state transition, the next
         cheapest perf win is almost always to merge them.
       </li>
     </ul>
@@ -338,7 +344,7 @@ pnpm --filter @causl/bench bench:gate
       handful of commits per second, and a commit-budget measured in
       milliseconds of which causl spends tens of microseconds. The advice
       on this page exists for the workloads that <em>do</em> hit the
-      boundary — large spreadsheets, dependency-graph editors, formula
+      boundary: large spreadsheets, dependency-graph editors, formula
       engines, anything where a single user gesture publishes thousands
       of writes. If you are not in that regime, optimise for readability
       and correctness first; the engine will keep up.
@@ -347,11 +353,13 @@ pnpm --filter @causl/bench bench:gate
       For benchmark methodology and the full list of cells the
       <code>bench:report</code> harness exercises, see
       <a href="../../../benchmarks/">Benchmarks</a>. For the contract
-      surfaces that anchor the §17.5 residual band, see the SPEC.
+      surfaces that anchor the §17.5 residual band, see the SPEC. For where
+      the Rust engine stands against them, see the
+      <a href="../../enterprise/wasm-performance/">Enterprise wasm-performance guide</a>.
     </p>
   </main>
 
-    <!-- Footer host — js/footer.js replaces this with the canonical
+    <!-- Footer host: js/footer.js replaces this with the canonical
        <footer class="site-footer"> element. -->
   <div id="footer-host">
     <noscript>

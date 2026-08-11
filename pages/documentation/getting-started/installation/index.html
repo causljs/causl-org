@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Installation — Causl</title>
-  <meta name="description" content="Install the @causl/* packages with npm, pnpm, or yarn. Covers the default pure-TS @causl/core engine plus @causl/react, @causl/sync, @causl/persistence, @causl/checker, @causl/formula, and @causl/devtools. The wasm engine and causl-client are an Enterprise feature." />
+  <title>Installation · Causl</title>
+  <meta name="description" content="Install Causl from the private Gitea npm registry. The client package is @causl/causl-wasm-ts and its engine is Rust compiled to WebAssembly, unconditionally. @causl/core is a different package on public npmjs, so installing it succeeds silently and gives you the wrong code." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../../css/site.css" />
@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-    <!-- Topbar host — js/topbar.js replaces this with the canonical
+    <!-- Topbar host: js/topbar.js replaces this with the canonical
        <header id="topbar"> element. The fallback links inside the
        <noscript> block keep nav usable for crawlers and no-JS users. -->
   <div id="topbar-host" data-current="getting-started">
@@ -55,22 +55,32 @@
   <main class="docs-content">
     <h1>Installation</h1>
     <p>
-      Causl is published as a family of small packages under the <code>@causl/*</code> scope.
-      You install only the pieces your application uses: the core engine alone is enough for
-      a Node script or a non-React UI, and every other package — React bindings, async resource
-      lifecycles, persistence, static checking, statecharts — is additive. This page covers
-      install commands for all three major package managers, peer dependency requirements,
-      TypeScript setup, and the per-package bundle budget. The default engine everywhere here is
-      the pure-TypeScript <code>@causl/core</code>; the wasm engine and
-      <code>causl-client</code> are an <a href="../../enterprise/">Enterprise</a> feature.
+      Causl ships as private packages under the <code>@causl</code> scope, served by the Gitea
+      npm registry at <code>https://git.opsite.ca/api/packages/causl/npm/</code>. The client
+      package is <code>@causl/causl-wasm-ts</code>, and its engine is the Rust core compiled to
+      WebAssembly. I put the registry configuration first because it is the step that fails
+      quietly: without the scoped registry line, <code>npm install @causl/core</code> still
+      succeeds, against a different package on public npmjs.
     </p>
+
+    <blockquote>
+      <p><strong>Read this before you copy any install command.</strong>
+      <code>@causl/core</code> has <strong>zero versions</strong> on the Gitea registry, and it
+      <strong>does</strong> resolve on public npmjs at 0.3.0 through 0.3.3 as a different package:
+      the retired TypeScript engine. An install of it returns exit code 0 and prints no warning,
+      then every <code>import</code> in your application resolves against the wrong code. The
+      package you want is <code>@causl/causl-wasm-ts</code>. See
+      <a href="#core-hazard">the <code>@causl/core</code> hazard</a>.</p>
+    </blockquote>
 
     <nav class="page-nav" aria-label="On this page">
       <h4>On this page</h4>
       <ul>
+        <li><a href="#registry">Registry configuration</a></li>
+        <li><a href="#core-hazard">The @causl/core hazard</a></li>
         <li><a href="#supported-environments">Supported environments</a></li>
         <li><a href="#engine">Engine <span class="badge-enterprise">Enterprise</span></a></li>
-        <li><a href="#core">@causl/core</a></li>
+        <li><a href="#client">@causl/causl-wasm-ts</a></li>
         <li><a href="#react">@causl/react</a></li>
         <li><a href="#sync">@causl/sync</a></li>
         <li><a href="#persistence">@causl/persistence</a></li>
@@ -83,67 +93,174 @@
       </ul>
     </nav>
 
-    <h2 id="supported-environments">Supported environments</h2>
+    <h2 id="registry">Registry configuration</h2>
     <p>
-      Causl ships ESM-only modules targeting modern runtimes. The minimum supported versions are:
+      The <code>@causl</code> scope is private and is not served by npmjs. Point the scope at the
+      Gitea registry and supply a token before you install anything:
+    </p>
+    <code class="codeblock-source" data-lang="text"># ~/.npmrc, or an .npmrc at your repo root
+@causl:registry=https://git.opsite.ca/api/packages/causl/npm/
+//git.opsite.ca/api/packages/causl/npm/:_authToken=${GITEA_PACKAGES_TOKEN}
+always-auth=true</code>
+    <p>
+      <code>GITEA_PACKAGES_TOKEN</code> is a Gitea personal access token carrying the
+      <code>read:package</code> scope, issued from
+      <strong>git.opsite.ca &rarr; Settings &rarr; Applications &rarr; Generate New Token</strong>.
+      Anonymous requests to the registry return <code>401</code>, so a missing token is a loud
+      failure. A missing <em>registry</em> line is the quiet one.
+    </p>
+    <p>
+      The old Verdaccio host <code>iasbuilt-npm.opsite.ca</code> is gone. Any
+      <code>.npmrc</code> snippet that names it, in your repo or in an older copy of these docs,
+      is stale and should be replaced with the block above.
+    </p>
+
+    <h2 id="core-hazard">The <code>@causl/core</code> hazard</h2>
+    <p>
+      This is the single most expensive mistake available on this page, because nothing about it
+      looks like a mistake at the time:
     </p>
     <ul>
-      <li><strong>Node.js 22.0+</strong> for server-side, SSR, and tooling use.</li>
-      <li><strong>Any browser with ES2022 support</strong> — Chromium 102+, Firefox 102+, Safari 16+.</li>
-      <li><strong>TypeScript 5.4+</strong>. The packages ship hand-written <code>.d.ts</code> declarations alongside the JavaScript.</li>
-      <li><strong>React 18.3+ or React 19</strong> for <code>@causl/react</code> (peer dependency).</li>
+      <li><code>@causl/core</code> has zero versions published to the Gitea registry. There is no
+        such package in the private scope.</li>
+      <li><code>@causl/core</code> <em>is</em> live on public npmjs at 0.3.0 through 0.3.3, as a
+        different package: the retired TypeScript engine.</li>
+      <li>So without the <code>@causl:registry=</code> line, npm reaches npmjs, resolves that
+        package, installs it, and reports success. There is no error to notice, and no version
+        pin that makes the difference visible.</li>
     </ul>
     <p>
-      Older Node and browser versions are not tested. There is no CommonJS build; if you need
-      to require <code>@causl/core</code> from a CJS module, use the dynamic <code>import()</code>
-      form or a small wrapper.
+      The correct client package is <code>@causl/causl-wasm-ts</code>. If an older document, a
+      lockfile, or a stale pin in your <code>package.json</code> still names
+      <code>@causl/core</code>, that is the thing to fix, and a successful install is not evidence
+      that it is fine.
+    </p>
+    <p>
+      One thing that is <em>not</em> the same mistake: the open-source TypeScript engine on public
+      npmjs is <code>@causlts/core</code>, from
+      <a href="https://github.com/causljs/causl-ts" rel="noopener">causljs/causl-ts</a>. That is a
+      genuinely different product with its own release line, not a mirror of the private client.
+      Do not treat the two as interchangeable, and do not substitute one for the other to work
+      around a registry problem.
+    </p>
+    <p>
+      <code>@causl/wasm</code> and <code>@causl/checker</code> are not published anywhere. If you
+      find an install command for either, it is out of date.
+    </p>
+
+    <h2 id="supported-environments">Supported environments</h2>
+    <p>
+      Causl ships ESM-only modules. Because the engine is WebAssembly, the host floor is set by
+      what the shipped artefact needs rather than by the JavaScript language level:
+    </p>
+    <ul>
+      <li><strong>Node 22+</strong> (<code>engines.node: "&gt;=22"</code>) for server-side, SSR,
+        and tooling use.</li>
+      <li><strong>Safari 18.2+, Chromium 119+, Firefox 120+</strong> in the browser.</li>
+      <li><strong>TypeScript</strong> with <code>moduleResolution</code> set to
+        <code>"Bundler"</code> or <code>"NodeNext"</code>. The repo itself builds on TypeScript
+        5.9 and ships hand-written <code>.d.ts</code> declarations alongside the JavaScript.</li>
+      <li><strong>React 18.3+ or React 19</strong> for <code>@causl/react</code> (peer
+        dependency).</li>
+    </ul>
+    <p>
+      The governing browser requirement is <strong>typed function references</strong>, established
+      by feature-bisecting the shipped artefact. The artefact declares zero WasmGC struct, array,
+      or rec-group types, so "WasmGC heap types" is not the requirement and an older floor quoting
+      it was wrong.
+    </p>
+    <blockquote>
+      <p><strong>Treat the floor as a release-note claim, not as our measurement.</strong> Nobody
+      has run the shipped artefact on a real boundary host at Safari 18.2, Chromium 119, or
+      Firefox 120. If your deployment targets sit on that edge, measure before you commit.</p>
+    </blockquote>
+    <p>
+      There is no CommonJS build. If you need to require the client from a CJS module, use the
+      dynamic <code>import()</code> form or a small wrapper.
     </p>
 
     <h2 id="engine">Engine</h2>
     <p>
-      Everything on this page installs and runs on the default pure-TypeScript engine in
-      <code>@causl/core</code> — it is the unconditional floor, optimized for development,
-      debugging, and bundle size, and it is all most applications ever need. No wasm toolchain,
-      no extra artefacts.
+      There is one engine. <code>@causl/causl-wasm-ts</code> runs the Rust core compiled to
+      WebAssembly (<code>rust-ssot</code>) unconditionally, and there is no TypeScript fallback in
+      the package: <code>createCauslTs</code> is deleted from source, and
+      <code>createCausl()</code> is construct-or-throw. The implicit capability fallback that
+      earlier revisions of these docs described was withdrawn at 0.5.0, both because the fallback
+      engine and the primary disagreed on a surface the SPEC requires to be identical, and because
+      the implicit path was the accident path.
+    </p>
+    <p>
+      Booting it is one <code>await</code> at application init, and nothing after that:
+    </p>
+    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/causl-wasm-ts';
+import { preloadCauslWasm } from '@causl/causl-wasm-ts/wasm';
+
+await preloadCauslWasm();       // once, at app init
+
+const graph = createCausl();    // synchronous from here on
+const a = graph.input('a', 1);
+const b = graph.input('b', 2);
+const sum = graph.derived('sum', get =&gt; get(a) + get(b));
+
+graph.commit('bump-a', tx =&gt; {
+  tx.set(a, 10);
+});
+
+console.log(graph.read(sum));   // 12</code>
+    <p>
+      The wasm artefact sits behind the explicit <code>@causl/causl-wasm-ts/wasm</code> subpath,
+      and since 0.5.0 importing it is required rather than optional. Importing the package root
+      pulls in the public API plus a small loader stub and no engine; the engine bytes are paid for
+      by the caller that imports the subpath and calls <code>preloadCauslWasm()</code>, which every
+      application now does. <code>createCauslWasmSync()</code> is available for synchronous
+      construction sites, and <code>createCauslWasm()</code> is retained as preload composed with
+      the sync factory.
+    </p>
+    <p>
+      Two failure codes matter, and you should branch on <code>error.code</code> rather than
+      <code>instanceof</code>:
+    </p>
+    <ul>
+      <li><code>CAUSL_WASM_ENGINE_UNAVAILABLE</code>: the subpath was never imported, or WasmGC
+        cannot instantiate on this host.</li>
+      <li><code>CAUSL_WASM_NOT_PRELOADED</code>: the subpath was imported, but
+        <code>preloadCauslWasm()</code> never resolved.</li>
+    </ul>
+    <p>
+      One bridge ships, <code>gc-classic</code>. The <code>gc-builtins</code> bridge was deleted.
+      Bridge ids are <code>gc-classic</code> and <code>gc-builtins</code>, never
+      <code>wasmgc-classic</code> or <code>wasmgc-builtins</code>.
     </p>
 
     <aside class="callout-enterprise">
       <span class="badge-enterprise">Enterprise</span>
-      <p><strong>The wasm engine &amp; causl-client are an Enterprise feature.</strong> The Rust&rarr;WASM core, the second conformant engine it provides, and the rationale for running two byte-identical engines side by side are documented in the Enterprise section.</p>
-      <p><a href="../../enterprise/two-engine-architecture/">Two-engine architecture &rarr;</a> &nbsp;&middot;&nbsp; <a href="../../enterprise/integrating-causl-client/">Integrating causl-client &rarr;</a></p>
+      <p><strong>The wasm engine is an Enterprise feature.</strong> The Rust core, the FFI seam, the host-tier matrix, and the standing cross-backend determinism gate are documented in the Enterprise section.</p>
+      <p><a href="../../enterprise/two-engine-architecture/">Two-engine architecture &rarr;</a> &nbsp;&middot;&nbsp; <a href="../../enterprise/integrating-causl-client/">Integrating the client &rarr;</a></p>
     </aside>
 
-    <h2 id="core">@causl/core</h2>
+    <h2 id="client">@causl/causl-wasm-ts</h2>
     <p>
-      <code>@causl/core</code> is the semantic kernel — the dependency graph, the
-      transactional commit, the deterministic recompute pipeline. Every other package depends
-      on it. Start here; install nothing else until you need it.
+      <code>@causl/causl-wasm-ts</code> is the client: the dependency graph, the transactional
+      commit, the deterministic recompute pipeline, and the loader that installs the Rust engine
+      behind them. Every other package peers on it. Start here; install nothing else until you
+      need it.
     </p>
     <code class="codeblock-source" data-lang="bash"># npm
-npm install @causl/core
+npm install @causl/causl-wasm-ts
 
 # pnpm
-pnpm add @causl/core
+pnpm add @causl/causl-wasm-ts
 
 # yarn
-yarn add @causl/core</code>
-    <p>That gives you the canonical primitives:</p>
-    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
-
-const graph = createCausl();
-const count = graph.input('count', 0);
-const doubled = graph.derived('doubled', g =&gt; g(count) * 2);
-
-graph.commit('set-count', tx =&gt; {
-  tx.set(count, 5);
-});
-
-console.log(graph.read(doubled));  // 10</code>
+yarn add @causl/causl-wasm-ts</code>
     <p>
-      <code>@causl/core</code> has zero runtime dependencies. The only declared peer dependency
-      is <code>fast-check</code>, and it is marked optional — it is pulled in only by the
-      <code>@causl/core/testing</code> subpath that exposes property-test helpers. You will
-      never need to install it for production use.
+      The only declared peer dependency is <code>fast-check</code>, and it is marked optional: it
+      is pulled in only by the <code>@causl/causl-wasm-ts/testing</code> subpath that exposes
+      property-test helpers. You will never need to install it for production use.
+    </p>
+    <p>
+      The package exposes four entry points: the root, <code>/wasm</code> (the loader and
+      <code>preloadCauslWasm</code>), <code>/testing</code>, and <code>/internal</code>.
     </p>
 
     <h2 id="react">@causl/react</h2>
@@ -154,110 +271,88 @@ console.log(graph.read(doubled));  // 10</code>
       and a <code>&lt;Hydrate&gt;</code> SSR boundary alongside it.
     </p>
     <code class="codeblock-source" data-lang="bash"># npm
-npm install @causl/core @causl/react react
+npm install @causl/causl-wasm-ts @causl/react react
 
 # pnpm
-pnpm add @causl/core @causl/react react
+pnpm add @causl/causl-wasm-ts @causl/react react
 
 # yarn
-yarn add @causl/core @causl/react react</code>
+yarn add @causl/causl-wasm-ts @causl/react react</code>
     <p>
-      React is a peer dependency at <code>^18.3.0 || ^19.0.0</code>; install it alongside if it
-      is not already in your dependency graph. <code>@causl/react</code> also pulls
-      <code>@causl/sync</code> transitively so you can use <code>useCauslSuspense</code> against
-      async resources without installing the sync package by hand.
+      <code>@causl/react</code> declares both <code>react</code> (at
+      <code>^18.3.0 || ^19.0.0</code>) and <code>@causl/causl-wasm-ts</code> as
+      <strong>peer</strong> dependencies. Nothing is resolved for you transitively, so install the
+      client explicitly alongside every companion package, exactly as the commands above do. The
+      same holds for <code>@causl/sync</code>: if you want
+      <code>useCauslSuspense</code> against async resources, install the sync package by hand.
     </p>
-    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core';
-import { useCauslNode } from '@causl/react';
-
-const graph = createCausl();
-const count = graph.input('count', 0);
-const doubled = graph.derived('doubled', g =&gt; g(count) * 2);
-
-export function Counter() {
-  const value = useCauslNode(graph, doubled);
-  return &lt;output&gt;{value}&lt;/output&gt;;
-}</code>
 
     <h2 id="sync">@causl/sync</h2>
     <p>
       <code>@causl/sync</code> is the async resource lifecycle: fetchers, mutations,
       suspendable reads, and the race-row guarantees (S-1 stale-write, S-2 stale-read) that
       keep concurrent network calls from corrupting derived state. Install it when you have
-      data that lives outside the graph — HTTP, IndexedDB, WebSocket, etc.
+      data that lives outside the graph, over HTTP, IndexedDB, WebSocket, or anything similar.
     </p>
     <code class="codeblock-source" data-lang="bash"># npm
-npm install @causl/core @causl/sync
+npm install @causl/causl-wasm-ts @causl/sync
 
 # pnpm
-pnpm add @causl/core @causl/sync
+pnpm add @causl/causl-wasm-ts @causl/sync
 
 # yarn
-yarn add @causl/core @causl/sync</code>
-    <p>
-      <code>@causl/sync</code> declares <code>@causl/core</code> as a runtime dependency, so
-      package managers will resolve a matching version automatically. If you also use
-      <code>@causl/react</code>, it already brings <code>@causl/sync</code> in transitively.
-    </p>
+yarn add @causl/causl-wasm-ts @causl/sync</code>
 
     <h2 id="persistence">@causl/persistence</h2>
     <p>
       <code>@causl/persistence</code> ships the storage adapters (<code>localStorage</code>,
       <code>sessionStorage</code>, IndexedDB, custom <code>StorageAdapter</code>) that pair
-      with <code>graph.dehydrate()</code> / <code>graph.hydrate()</code> in core. The
-      <em>protocol</em> ships in core; the <em>concrete adapters</em> live here so
-      cores stays small.
+      with <code>graph.dehydrate()</code> and <code>graph.hydrate()</code> in the client. The
+      <em>protocol</em> ships in the client; the <em>concrete adapters</em> live here so the
+      client stays small.
     </p>
     <code class="codeblock-source" data-lang="bash"># npm
-npm install @causl/core @causl/persistence
+npm install @causl/causl-wasm-ts @causl/persistence
 
 # pnpm
-pnpm add @causl/core @causl/persistence
+pnpm add @causl/causl-wasm-ts @causl/persistence
 
 # yarn
-yarn add @causl/core @causl/persistence</code>
+yarn add @causl/causl-wasm-ts @causl/persistence</code>
 
     <h2 id="checker">@causl/checker</h2>
     <p>
       <code>@causl/checker</code> is the static analyser: a CLI plus library entry point that
       walks your causl graph definitions and surfaces race rows (R-1 through R-8), cycle
-      hazards, missing capability scopes, and unreachable derivations. It is a build-time
-      tool — install it as a dev dependency.
+      hazards, missing capability scopes, and unreachable derivations.
     </p>
-    <code class="codeblock-source" data-lang="bash"># npm
-npm install --save-dev @causl/checker
-
-# pnpm
-pnpm add -D @causl/checker
-
-# yarn
-yarn add --dev @causl/checker</code>
-    <p>
-      The checker ships precompiled native binaries (<code>@causl/checker-darwin-arm64</code>,
-      <code>-linux-x64</code>, <code>-win32-x64</code>, etc.) selected by the optional-deps
-      mechanism — you do not install platform binaries directly. Run it with
-      <code>npx causl-check</code> or wire it into a <code>lint:graph</code> npm script.
-    </p>
+    <blockquote>
+      <p><strong>There is nothing to install today.</strong> <code>@causl/checker</code> is not
+      published, to the Gitea registry or anywhere else, so any
+      <code>npm install @causl/checker</code> line you find is wrong. Consume the checker from its
+      source repository until a published artefact exists, and do not add it to a
+      <code>package.json</code> expecting it to resolve.</p>
+    </blockquote>
 
     <h2 id="formula">@causl/formula</h2>
     <p>
-      <code>@causl/formula</code> brings spreadsheet formula patterns on top of the core —
+      <code>@causl/formula</code> brings spreadsheet formula patterns on top of the client:
       formulas, ranges, and cycles expressed as causl derivations. Install it when your
       application has spreadsheet-like cells with formula references or range dependencies
       that you want expressed declaratively rather than re-encoded as ad-hoc derivations.
     </p>
     <code class="codeblock-source" data-lang="bash"># npm
-npm install @causl/core @causl/formula
+npm install @causl/causl-wasm-ts @causl/formula
 
 # pnpm
-pnpm add @causl/core @causl/formula
+pnpm add @causl/causl-wasm-ts @causl/formula
 
 # yarn
-yarn add @causl/core @causl/formula</code>
+yarn add @causl/causl-wasm-ts @causl/formula</code>
 
     <h2 id="devtools">@causl/devtools</h2>
     <p>
-      <code>@causl/devtools</code> is the optional Historian and Editor surface — time-travel,
+      <code>@causl/devtools</code> is the optional Historian and Editor surface: time-travel,
       live derived inspection, batched <code>replaceMany</code> edits during development.
       It pairs with the browser extension and is a dev-only dependency.
     </p>
@@ -270,21 +365,15 @@ pnpm add -D @causl/devtools
 # yarn
 yarn add --dev @causl/devtools</code>
     <p>
-      The wiring itself is in <code>@causl/core</code> behind a one-line opt-in:
+      The wiring itself is in the client behind a one-line opt-in:
       <code>createCausl({ devtools: true })</code> dead-code-eliminates in production builds.
       You only install <code>@causl/devtools</code> if you want the standalone REPL utilities
       outside the browser extension.
     </p>
 
-    <aside class="callout-enterprise">
-      <span class="badge-enterprise">Enterprise</span>
-      <p><strong>The wasm engine &amp; causl-client are an Enterprise feature.</strong> Wiring the WebAssembly backend, building and vendoring the wasm artefact through <code>causl-client</code>, the host-tier matrix, and the fallback chain are all covered in the Enterprise section.</p>
-      <p><a href="../../enterprise/integrating-causl-client/">Integrating causl-client &rarr;</a> &nbsp;&middot;&nbsp; <a href="../../enterprise/wasm-performance/">wasm performance &amp; ceiling &rarr;</a></p>
-    </aside>
-
     <h2 id="typescript">TypeScript setup</h2>
     <p>
-      All <code>@causl/*</code> packages ship <code>.d.ts</code> files. The minimum
+      All <code>@causl</code> packages ship <code>.d.ts</code> files. The minimum
       <code>tsconfig.json</code> for an application consuming causl looks like this:
     </p>
     <code class="codeblock-source" data-lang="json">{
@@ -301,20 +390,20 @@ yarn add --dev @causl/devtools</code>
 }</code>
     <p>
       <strong>Module resolution.</strong> Causl is ESM-only and uses package <code>exports</code>
-      subpaths (<code>@causl/core/testing</code>, and the
-      <a href="../../enterprise/integrating-causl-client/"><code>@causl/core/wasm</code></a>
-      <span class="badge-enterprise">Enterprise</span> entry, etc.). You need
-      <code>"moduleResolution": "Bundler"</code> (or <code>"NodeNext"</code>) so TypeScript
+      subpaths (<code>@causl/causl-wasm-ts/wasm</code>,
+      <code>@causl/causl-wasm-ts/testing</code>, <code>@causl/causl-wasm-ts/internal</code>). You
+      need <code>"moduleResolution": "Bundler"</code> (or <code>"NodeNext"</code>) so TypeScript
       reads the <code>exports</code> map. Older <code>"moduleResolution": "Node"</code> will
-      silently miss the subpath types.
+      silently miss the subpath types, which matters most for <code>/wasm</code>, the subpath every
+      application has to import.
     </p>
     <p>
       <strong>Strict mode.</strong> Causl's branded types (<code>NodeId&lt;T&gt;</code>,
       <code>GraphTime</code>) only catch the errors they are designed to catch under
       <code>strict: true</code>. A non-strict <code>tsconfig</code> erases the brand and a
       node from graph A passed to graph B will fail at runtime instead of at
-      <code>tsc</code>. The team treats <code>strict: true</code> as a precondition; do not
-      try to use causl without it.
+      <code>tsc</code>. I treat <code>strict: true</code> as a precondition; do not try to use
+      causl without it.
     </p>
     <p>
       <strong>JSX.</strong> If you use <code>@causl/react</code>, set
@@ -330,67 +419,88 @@ yarn add --dev @causl/devtools</code>
     </p>
     <table>
       <thead>
-        <tr><th>Bundle</th><th>Ceiling (Brotli)</th><th>Notes</th></tr>
+        <tr><th>Bundle</th><th>Ceiling</th><th>Notes</th></tr>
       </thead>
       <tbody>
         <tr>
-          <td><code>@causl/core</code> (full import)</td>
-          <td>20 KB</td>
-          <td>Working target ~18 KB. Includes source-mapped error chains, devtools opt-in
-            wiring (DCE'd in production), runtime IR validation in <code>hydrate()</code>,
-            branded <code>NodeId&lt;T&gt;</code> / <code>GraphTime</code>, and the
-            <code>dehydrate()</code> / <code>hydrate()</code> SSR pair.</td>
+          <td><code>@causl/causl-wasm-ts</code> (full import)</td>
+          <td>30 KB Brotli</td>
+          <td>Includes source-mapped error chains, devtools opt-in wiring (eliminated in
+            production), runtime IR validation in <code>hydrate()</code>, branded
+            <code>NodeId&lt;T&gt;</code> and <code>GraphTime</code>, and the
+            <code>dehydrate()</code> / <code>hydrate()</code> SSR pair. The
+            <code>/wasm</code> subpath is externalised from this cell.</td>
         </tr>
         <tr>
-          <td><code>@causl/core</code> (<code>createCausl</code>-only)</td>
-          <td>15 KB</td>
+          <td><code>@causl/causl-wasm-ts</code> (<code>createCausl</code>-only)</td>
+          <td>26 KB Brotli</td>
           <td>The minimum import surface. Adopters who only register inputs and read
             derivations sit near this floor.</td>
         </tr>
         <tr>
+          <td><code>@causl/causl-wasm-ts/wasm</code></td>
+          <td>32 KB Brotli</td>
+          <td>The loader plus the backend wrapper. This is JavaScript only; the engine bytes are
+            the row below.</td>
+        </tr>
+        <tr>
+          <td>wasm bridge <code>gc-classic</code> (raw) <span class="badge-enterprise">Enterprise</span></td>
+          <td>756 KiB raw</td>
+          <td>The shipped <code>causl_engine_bridge_bg.wasm</code> measured
+            <strong>714,194 bytes</strong> on 2026-08-11 (sha256 <code>ab4b62c1…</code>), inside
+            the 774,144-byte cap. Only this one bridge ships. See the
+            <a href="../../enterprise/wasm-performance/">Enterprise wasm-performance guide</a> for what
+            those bytes buy.</td>
+        </tr>
+        <tr>
           <td><code>@causl/react</code></td>
-          <td>8 KB</td>
+          <td>8 KB Brotli</td>
           <td>Absorbs the four §8.2 extension hooks plus the dev-mode "Update did not commit"
-            warnings (DCE'd in production).</td>
+            warnings (eliminated in production).</td>
+        </tr>
+        <tr>
+          <td><code>@causl/sync</code> (full import)</td>
+          <td>12 KB Brotli</td>
+          <td>The resource-only entry point is gated separately and is smaller.</td>
         </tr>
         <tr>
           <td><code>@causl/devtools-bridge</code> (absent-extension path)</td>
-          <td>5 KB</td>
-          <td>The bridge logic that the <code>devtools: true</code> opt-in in core now imports.
+          <td>5 KB Brotli</td>
+          <td>The bridge logic that the <code>devtools: true</code> opt-in imports.
             The present-extension path is larger.</td>
-        </tr>
-        <tr>
-          <td>wasm engine artefacts <span class="badge-enterprise">Enterprise</span></td>
-          <td>see Enterprise docs</td>
-          <td>The <code>@causl/core/wasm</code> entry stub, the lazily-fetched per-host wasm
-            tiers, and their Brotli ceilings are an
-            <a href="../../enterprise/wasm-performance/">Enterprise</a> concern. Adopters on the
-            default pure-TS engine pay zero bytes for any of it.</td>
         </tr>
       </tbody>
     </table>
     <p>
-      The CI gate <code>size — bundle-size gate</code> fails any PR that crosses these
-      ceilings. The team holds the line on the budget: every kilobyte over 4.5 KB shipped to
-      <code>@causl/core</code> required written team consensus per SPEC §14.2.
+      The CI gate <code>size</code> fails any PR that crosses these ceilings, and a bump needs the
+      §14.2.1 written team consensus in the PR body or it is rejected. The earlier 4.5 KB, 6 KB and
+      3 KB ceilings were retired once the team accepted that the small-bundle promise was costing
+      more in adopter glue than it was earning.
     </p>
+
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>Where the engine actually stands.</strong> The measured cost of the Rust engine against the TypeScript reference and against mobx, jotai and redux-rtk, the three real bottlenecks behind it, and the claims that the benchmark data refutes are all covered in the Enterprise performance guide. Read it before you budget a migration on a performance argument.</p>
+      <p><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling &rarr;</a> &nbsp;&middot;&nbsp; <a href="../../enterprise/integrating-causl-client/">Integrating the client &rarr;</a></p>
+    </aside>
 
     <h2 id="next-steps">Next steps</h2>
     <p>
       With the packages installed, the natural next step is the
-      <a href="../../tutorial/">Tutorial</a> — a walkthrough that builds a small graph, wires it
+      <a href="../../tutorial/">Tutorial</a>, a walkthrough that builds a small graph, wires it
       into a React component, and adds an async fetch with <code>@causl/sync</code>. From
       there:
     </p>
     <ul>
-      <li><a href="../../usage/">Usage Guide</a> — task-oriented recipes for commits, subscriptions, persistence, SSR, and time travel.</li>
-      <li><a href="../../api/">API Reference</a> — the typedoc-generated reference for every <code>@causl/*</code> package.</li>
-      <li><a href="../../best-practices/">Best Practices</a> — race rows, capability scoping, and the H1 reference-identity hazard adopters trip on first.</li>
-      <li><a href="../../faq/">FAQ</a> — when causl is the right tool, and where it is not.</li>
+      <li><a href="../../usage/">Usage Guide</a>: task-oriented recipes for commits, subscriptions, persistence, SSR, and time travel.</li>
+      <li><a href="../../api/">API Reference</a>: the generated reference for every published package.</li>
+      <li><a href="../../best-practices/">Best Practices</a>: race rows, capability scoping, and the H1 reference-identity hazard adopters trip on first.</li>
+      <li><a href="../../faq/">FAQ</a>: when causl is the right tool, and where it is not.</li>
+      <li><a href="../../../benchmarks/">Benchmarks</a>: the live cross-library sweep.</li>
     </ul>
   </main>
 
-    <!-- Footer host — js/footer.js replaces this with the canonical
+    <!-- Footer host: js/footer.js replaces this with the canonical
        <footer class="site-footer"> element. -->
   <div id="footer-host">
     <noscript>
