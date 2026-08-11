@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Tests for import-run.mjs — one per refusal, because a publish gate nobody
+// Tests for import-run.mjs, one per refusal, because a publish gate nobody
 // has watched refuse something is not a gate.
 //
 // This repository has no test runner wired into CI (`.github/workflows/
@@ -142,7 +142,7 @@ test('a failed cell is refused and named', () => {
   assert.match(r.err, /causl-ts\/linear-chain@1000/);
 });
 
-test('a sweep with cells but no ok cell is refused — measuring nothing is not a run', () => {
+test('a sweep with cells but no ok cell is refused: measuring nothing is not a run', () => {
   const a = aggregate();
   a.cells[0].outcome = 'skipped';
   a.cells[0].reason = 'over budget';
@@ -153,7 +153,7 @@ test('a sweep with cells but no ok cell is refused — measuring nothing is not 
 
 test('a run measured on a busy machine is refused, and the refusal counts the cells', () => {
   const a = aggregate();
-  // Nine cells, five of them taken under contention — a simple majority.
+  // Nine cells, five of them taken under contention, a simple majority.
   a.cells = Array.from({ length: 9 }, (_, i) => ({
     ...aggregate().cells[0],
     scenario: `s${i}`,
