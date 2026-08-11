@@ -822,8 +822,13 @@ subprocess.run(
         <a href="../wasm-performance/">wasm performance</a>.
       </li>
       <li>
-        <strong>The bridge probe is real.</strong> <code>detectBridge()</code> is
-        no longer a placeholder. Only <code>gc-classic</code> ships;
+        <strong>Two functions share the name <code>detectBridge()</code>, and only one of
+        them probes anything.</strong> The <code>/wasm</code> subpath version is real
+        (<code>#426</code> wired it to a floor module, and it throws on a failing host).
+        The version re-exported from the main barrel is still a placeholder whose
+        primitives throw "pending&nbsp;#692" and which reports <code>gc: false</code>
+        even where the engine runs, so the default import is the stub.
+        Only <code>gc-classic</code> ships;
         <code>gc-builtins</code> was deleted (causl-core-rs#355). The host floor
         is Safari&nbsp;18.2, Chromium&nbsp;119, Firefox&nbsp;120 and
         Node&nbsp;22, governed by typed function references rather than by

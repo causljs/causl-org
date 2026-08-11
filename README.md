@@ -216,9 +216,15 @@ ceiling of 20) was wrong on three counts. Nobody has run the artefact
 on a real boundary host, so treat these as engine release-note claims
 rather than as our own measurement.
 
-`detectBridge()` is **no longer a placeholder**: `#426` wired it to a
-real probe, and `#691` is closed as a live concern. Exactly one bridge
-ships, **`gc-classic`**; `gc-builtins` was deleted in
+**Two exported functions are named `detectBridge()` and they behave
+oppositely.** The one on the `/wasm` subpath is a real probe: `#426`
+wired it to a floor module and it throws `WasmEngineUnavailableError`
+on a host that fails. The one re-exported from the **main barrel**
+(`packages/core/src/bridge.ts`) is still a placeholder whose
+marshalling primitives all throw "pending `#692`", and it reports
+`gc: false` on hosts where the engine runs fine. The default import is
+therefore the stub, and `#692` is not tracked in any causl repository.
+Exactly one bridge ships, **`gc-classic`**; `gc-builtins` was deleted in
 `causl-core-rs#355`. Bridge ids are `gc-classic` and `gc-builtins`,
 never `wasmgc-classic` or `wasmgc-builtins`.
 
@@ -317,10 +323,11 @@ Work that has landed across the org, in reverse-chronological order:
   implicit `createCausl()` path no longer degrades to a TypeScript
   engine on a WasmGC-unavailable host; it throws. The dropped host
   tier is accepted in writing.
-- **causl-wasm-ts: `detectBridge()` became a real probe, and the host
-  floor got established by bisect (`#426`).** The floor is Safari
-  18.2 / Chromium 119 / Firefox 120 / Node 22, on typed function
-  references. `#691` (the placeholder probe) is closed.
+- **causl-wasm-ts: the `/wasm` subpath `detectBridge()` became a real
+  probe, and the host floor got established by bisect (`#426`).** The
+  floor is Safari 18.2 / Chromium 119 / Firefox 120 / Node 22, on typed
+  function references. The same-named export on the main barrel is
+  still a throwing placeholder, so the two must not be conflated.
 - **causl-core-rs: the `gc-builtins` bridge was deleted (`#355`), and
   the serde bridge was retired.** One bridge ships, `gc-classic`. Only
   a dead `legacy_commit.rs` surface still calls `serde_wasm_bindgen`,
