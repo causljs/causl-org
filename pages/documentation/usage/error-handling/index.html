@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Error Handling — Causl</title>
+  <title>Error Handling &middot; Causl</title>
   <meta name="description" content="How causl surfaces failures: compute failures during derive, transactional rollback across Phases B through F.4, NodeDisposedError, the PersistenceError discriminated union, the onObserverError contract, and capability errors from narrowCapability." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
@@ -180,7 +180,7 @@ try {
   if (err instanceof NodeDisposedError) {
     // err.kind === 'NodeDisposed'
     // err.id === row.id
-    // err.disposedAt === <GraphTime at which dispose was recorded>
+    // err.disposedAt === &lt;GraphTime at which dispose was recorded&gt;
     console.warn(`Node ${err.id} was disposed at t=${err.disposedAt}`)
   }
 }

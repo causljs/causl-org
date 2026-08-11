@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FAQ — Troubleshooting — Causl</title>
-  <meta name="description" content="Common errors, surprising behaviours, and CI failures when working with causl — with the underlying cause, the contract, and the fix for each." />
+  <title>FAQ · Troubleshooting · Causl</title>
+  <meta name="description" content="Common errors, surprising behaviours, and CI failures when working with causl, each with the underlying cause, the contract, and the fix." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../../css/site.css" />
@@ -29,7 +29,7 @@
   </style>
 </head>
 <body>
-    <!-- Topbar host — js/topbar.js replaces this with the canonical
+    <!-- Topbar host: js/topbar.js replaces this with the canonical
        <header id="topbar"> element. The fallback links inside the
        <noscript> block keep nav usable for crawlers and no-JS users. -->
   <div id="topbar-host" data-current="faq">
@@ -52,35 +52,44 @@
   </div>
 
   <main class="docs-content">
-    <h1>FAQ — Troubleshooting</h1>
+    <h1>FAQ: Troubleshooting</h1>
     <p>
       The errors and surprises in this page come from real bug reports, audit
       findings, and CI failures. Each entry names the symptom you see, the
-      contract that explains it, and the fix — with citations into
+      contract that explains it, and the fix, with citations into
       <code>SPEC.md</code> and the relevant PRs so you can verify the answer
       against the canonical source.
     </p>
     <p>
-      If your problem is not listed here, open an issue against
-      <a href="https://github.com/causljs/causl-ts" rel="noopener">causljs/causl-ts</a>
-      with the error class, the minimal reproduction, and your
-      <code>@causl/core</code> version. Engine-level errors carry
-      <code>Error.cause</code> with <code>{ commit, site, dependents }</code> —
-      include that payload verbatim.
+      If your problem is not listed here, open an issue against the client repo,
+      <code>causl/causl-wasm-ts</code> on the Gitea host, with the error class, the
+      minimal reproduction, and your <code>@causl/causl-wasm-ts</code> version. Do not
+      file client issues against <code>causljs/causl-ts</code>: that repository is the
+      separate open-source TypeScript engine (published as <code>@causlts/core</code>),
+      not the client. Engine-level errors carry <code>Error.cause</code> with
+      <code>{ commit, site, dependents }</code>, so include that payload verbatim.
     </p>
+    <blockquote>
+      <p><strong>If you are debugging an install rather than a runtime error, start
+      with the package name.</strong> <code>@causl/core</code> is not the client. It has
+      zero versions on the private registry and resolves on public npmjs to a different,
+      retired package, so installing it succeeds and then fails silently at every import.
+      See <a href="../../getting-started/installation/#core-hazard">the installation
+      page</a>.</p>
+    </blockquote>
 
     <nav class="toc" aria-label="On this page">
       <strong>On this page</strong>
       <ol>
         <li><a href="#read-identity">Why does <code>graph.read(node)</code> return a different reference every commit?</a></li>
         <li><a href="#react-rerender">Why is my React component re-rendering every commit?</a></li>
-        <li><a href="#compute-failure"><code>ComputeFailure</code> during derive — what does it mean?</a></li>
+        <li><a href="#compute-failure"><code>ComputeFailure</code> during derive: what does it mean?</a></li>
         <li><a href="#node-disposed"><code>NodeDisposedError</code> on a node I'm sure exists</a></li>
         <li><a href="#commit-in-progress"><code>CommitInProgressError</code> in a subscriber</a></li>
         <li><a href="#stale-tx"><code>StaleTxError</code> on <code>tx.set</code></a></li>
         <li><a href="#cycle-error"><code>CycleError</code> thrown at first commit, not at registration</a></li>
         <li><a href="#evicted-read"><code>readAt</code> returns the <code>evicted</code> arm</a></li>
-        <li><a href="#wasm-bundle">WASM backend bundle-size warning in CI</a></li>
+        <li><a href="#wasm-bundle">WASM bridge bundle-size warning in CI</a></li>
         <li><a href="#bench-gate">Bench-gate is failing on a change that "shouldn't be slower"</a></li>
         <li><a href="#race-false-positive">The race-class checker is flagging code I know is safe</a></li>
         <li><a href="#hydration-schema"><code>HydrationSchemaError</code> on snapshot restore</a></li>
@@ -91,10 +100,9 @@
     <h2 id="read-identity"><a class="qa-anchor" href="#read-identity">Why does <code>graph.read(node)</code> return a different reference every commit?</a> <span class="badge-enterprise">Enterprise</span></h2>
     <p>
       <strong>Short answer:</strong> because reference identity across commits is
-      not part of the contract. The TS engine happens to return the same
-      reference today; the WASM backend will not. Memoise on
-      <code>commit.time</code> or on the per-node version counter from
-      <code>EngineTelemetry</code> — never on the return value of <code>read()</code>.
+      not part of the contract. Memoise on <code>commit.time</code> or on the
+      per-node version counter from <code>EngineTelemetry</code>, never on the
+      return value of <code>read()</code>.
     </p>
     <p>
       Per <strong>SPEC §15.1</strong>, the contractual identity surface
@@ -102,21 +110,32 @@
     </p>
     <ul>
       <li><code>Object.is(graph.read(node)@t, graph.read(node)@t)</code> holds for any two synchronous reads at the same <code>GraphTime</code>.</li>
-      <li><code>Object.is(graph.read(node)@t, graph.read(node)@t')</code> may or may not hold across commits, and the answer depends on the backend.</li>
+      <li><code>Object.is(graph.read(node)@t, graph.read(node)@t')</code> may or may not hold across commits.</li>
     </ul>
-    <aside class="callout-enterprise">
-      <span class="badge-enterprise">Enterprise</span>
-      <p><strong>This is an Enterprise feature.</strong> The reference-churn behaviour is specific to the WASM backend, where every <code>read()</code> deserialises across the FFI boundary and returns a fresh object per call &mdash; the two-engine design and its identity contract are documented in the Enterprise section.</p>
-      <p><a href="../../enterprise/two-engine-architecture/">Two-engine architecture &rarr;</a></p>
-    </aside>
-    <p>This is the H1 hazard from the WASM adopter audit. The fix is mechanical:</p>
-    <code class="codeblock-source" data-lang="lang-ts">// WRONG — memoises on a reference the contract does not preserve.
+    <blockquote>
+      <p><strong>The break is intermittent, which is what makes it dangerous.</strong>
+      It would be easier to catch if every <code>read()</code> returned a fresh object,
+      because the first render would fail loudly and you would fix it that day. It does
+      not. The engine keeps a <code>ValueHandleCache</code> that retains the original
+      adopter reference, so identity is <em>stable on a cache hit</em> and fresh only on
+      the decode paths. Code that memoises on the read return therefore works in
+      development, works in most tests, and then misses on whichever commit happens to
+      take a decode path in production. Treat identity as unavailable rather than as
+      usually-available.</p>
+    </blockquote>
+    <p>This is the H1 hazard from the WASM adopter audit, and because the Rust engine is unconditional in <code>@causl/causl-wasm-ts</code>, every adopter of the client is exposed to it. The fix is mechanical:</p>
+    <code class="codeblock-source" data-lang="lang-ts">// WRONG: memoises on a reference the contract does not preserve.
 const view = useMemo(() =&gt; transform(graph.read(profile)), [graph.read(profile)]);
 
-// RIGHT — memoise on commit.time (the GraphTime the value belongs to).
+// RIGHT: memoise on commit.time (the GraphTime the value belongs to).
 const value = graph.read(profile);
 const time  = graph.now();
 const view  = useMemo(() =&gt; transform(value), [time]);</code>
+    <aside class="callout-enterprise">
+      <span class="badge-enterprise">Enterprise</span>
+      <p><strong>This is an Enterprise feature.</strong> The identity contract, the retained-handle cache that makes the break intermittent, and the rest of the engine design are documented in the Enterprise section.</p>
+      <p><a href="../../enterprise/two-engine-architecture/">Two-engine architecture &rarr;</a></p>
+    </aside>
     <blockquote>
       Detailed explanation. <code>EngineTelemetry</code> also exposes a per-node
       version counter that increments each commit a node changed. Use it when
@@ -130,13 +149,12 @@ const view  = useMemo(() =&gt; transform(value), [time]);</code>
       <code>useCauslNode</code> or a <code>useSyncExternalStore</code> wrapper.
       A child component wraps itself in <code>React.memo</code> with the read
       value as the comparison key, expecting equal references to cut the
-      render. Once you wire that against any backend that does not preserve
-      identity across commits, the memo always misses.
+      render. Once identity is not preserved across commits, the memo misses.
     </p>
     <code class="codeblock-source" data-lang="lang-tsx">import { useCauslNode } from '@causl/react';
 
-// WRONG — Card re-renders every commit on the WASM backend because the
-// `profile` prop is a fresh reference each time even when its value is equal.
+// WRONG: Card re-renders whenever the `profile` prop comes back as a fresh
+// reference, even when its value is equal.
 const Card = React.memo(function Card({ profile }: { profile: Profile }) {
   return &lt;div&gt;{profile.name}&lt;/div&gt;;
 });
@@ -160,18 +178,18 @@ function ProfileView() {
   return &lt;Card profile={profile} key={version} /&gt;;
 }</code>
     <p>
-      <code>useCauslNode</code> itself is fine — it subscribes via
+      <code>useCauslNode</code> itself is fine: it subscribes via
       <code>subscribeReads</code> (SPEC §11.1) and only fires when the
       tracked read-set intersects the commit's changed set. The over-render is
       always downstream of the hook, at a memo boundary that keyed on a
       reference instead of on a value.
     </p>
 
-    <h2 id="compute-failure"><a class="qa-anchor" href="#compute-failure"><code>ComputeFailure</code> during derive — what does it mean?</a></h2>
+    <h2 id="compute-failure"><a class="qa-anchor" href="#compute-failure"><code>ComputeFailure</code> during derive: what does it mean?</a></h2>
     <p>
       A <code>ComputeFailure</code> means a derivation's <code>compute</code>
       callback threw during Phase D (recompute fixpoint) of the commit pipeline.
-      The error is wrapped — the original throw lives at <code>error.cause</code>
+      The error is wrapped: the original throw lives at <code>error.cause</code>
       along with the structured payload <code>{ commit, site, dependents }</code>
       that names the in-flight commit, the derivation site, and the downstream
       derived nodes that depended on the failed one.
@@ -182,24 +200,28 @@ function ProfileView() {
       (Atomicity). No partial commit reaches Phase E. The whole transaction is
       reported as failed.
     </p>
-    <!-- API-EPOCH-AUDIT (2026-06): the code below uses the retired v0.1 function-style
-         API — input(graph, value) / derived(graph, compute) / g.read(node). The current
-         v1 surface is graph.input(id, value) / graph.derived(id, compute) with a callable
-         getter g(node) inside derivation bodies (SPEC §10.1, §12). FLAGGED FOR CODEMOD /
-         manual replacement. API evolution is recorded in the SPEC §19 amendment trail and
-         §5.1 Amendment 3: https://github.com/causljs/causl-ts/blob/main/SPEC.md -->
-    <code class="codeblock-source" data-lang="lang-ts">import { createCausl, input, derived, ComputeFailure } from '@causl/core';
+    <!-- ERROR-NAME-AUDIT (2026-08): the v0.1 function-style API in the sample below
+         (input(graph, value) / derived(graph, compute) / g.read(node)) has been
+         migrated to the shipping surface: graph.input(id, value) /
+         graph.derived(id, compute) with a callable getter get(node), and
+         graph.commit(intent, run) with tx.set. Verified against
+         packages/core/src/types.ts in causl/causl-wasm-ts.
+         STILL OPEN: `ComputeFailure` is NOT an export of @causl/causl-wasm-ts. The
+         shipping class is `DerivedComputeError` (packages/core/src/errors.ts). The
+         rename spans this heading, the TOC entry, and the surrounding prose, so it is
+         deliberately left for a follow-up rather than half-applied here. -->
+    <code class="codeblock-source" data-lang="lang-ts">import { createCausl, ComputeFailure } from '@causl/causl-wasm-ts';
 
 const graph    = createCausl();
-const items    = input(graph, [] as readonly Item[]);
-const totalUSD = derived(graph, g =&gt; {
-  const list = g.read(items);
+const items    = graph.input('items', [] as readonly Item[]);
+const totalUSD = graph.derived('totalUSD', get =&gt; {
+  const list = get(items);
   // Bug: list[0] is undefined when items is empty.
   return list[0].price * list.length;
 });
 
 try {
-  graph.commit(() =&gt; { /* nothing — first read of totalUSD also commits clean */ });
+  graph.commit('settle', () =&gt; { /* nothing: the first read of totalUSD also commits clean */ });
 } catch (err) {
   if (err instanceof ComputeFailure) {
     console.error('site:', err.cause?.site);
@@ -212,9 +234,9 @@ try {
       <strong>Fixes, in order of preference:</strong>
     </p>
     <ol>
-      <li>Make the compute total — handle the empty/undefined case explicitly. Derivations are pure functions of their inputs; if some input value is "no value yet," that should be encoded in the type, not in a throw.</li>
+      <li>Make the compute total: handle the empty or undefined case explicitly. Derivations are pure functions of their inputs; if some input value is "no value yet," that should be encoded in the type, not in a throw.</li>
       <li>If the error is genuinely exceptional, let it propagate. The commit fails atomically and the caller gets the audit trail. This is the design.</li>
-      <li>If you need to <em>preview</em> whether a commit would throw without paying the publish cost, use <code>graph.simulate(run)</code> — it returns <code>{ status: 'failed', error }</code> rather than throwing (SPEC §9).</li>
+      <li>If you need to <em>preview</em> whether a commit would throw without paying the publish cost, use <code>graph.simulate(intent, run)</code>: it returns <code>{ status: 'failed', error }</code> rather than throwing (SPEC §9).</li>
     </ol>
 
     <h2 id="node-disposed"><a class="qa-anchor" href="#node-disposed"><code>NodeDisposedError</code> on a node I'm sure exists</a></h2>
@@ -227,27 +249,31 @@ try {
       <li><strong>Use-after-dispose on a family-keyed node.</strong> Family-keyed nodes (statechart regions, per-row cells in a spreadsheet) tombstone when their parent scope disposes. Holding a stale <code>NodeId</code> from before the dispose and reading it after surfaces this error. Per SPEC §9.1 row 11, the tombstone lookup is exhaustive.</li>
       <li><strong>Generational <code>NodeId</code> mismatch.</strong> Each <code>NodeId</code> now carries a generation tag. A node registered, disposed, and re-registered at the same index has a different generation; any stale handle from the first lifetime throws <code>NodeDisposedError</code> rather than silently aliasing the new node. This is the v1.x replacement for the ABA hazard the earlier non-generational design carried.</li>
     </ol>
-    <code class="codeblock-source" data-lang="lang-ts">// Wrong — holds the id across a family dispose.
+    <!-- API-EPOCH-AUDIT (2026-06, still open): the family helpers below
+         (familyRegister / familyDispose) do not exist in packages/*/src of
+         causl/causl-wasm-ts. I could not verify the shipping family API, so the
+         sample is left as-is rather than guessed at. FLAGGED FOR CODEMOD. -->
+    <code class="codeblock-source" data-lang="lang-ts">// Wrong: holds the id across a family dispose.
 let row = familyRegister(graph, rows, 'r-42');
 familyDispose(graph, rows, 'r-42');
 graph.read(row);              // throws NodeDisposedError
 familyRegister(graph, rows, 'r-42');
-graph.read(row);              // still throws — generation has bumped
+graph.read(row);              // still throws: generation has bumped
 
-// Right — re-derive the id after re-registration, or guard on isDisposed.
+// Right: re-derive the id after re-registration, or guard on isDisposed.
 let row2 = familyRegister(graph, rows, 'r-42');
 graph.read(row2);             // ok</code>
     <p>
       The runtime guard is intentional. SPEC §13.4 considered promoting
       disposal to a compile-time discriminator (<code>Node&lt;T&gt; = Live&lt;T&gt; | Disposed</code>)
-      and rejected it — it would have forced every consumer to handle the
+      and rejected it: it would have forced every consumer to handle the
       <code>Disposed</code> arm everywhere, a major API break for a hazard that
       a tombstone catches exhaustively at the call sites that matter.
     </p>
 
     <h2 id="commit-in-progress"><a class="qa-anchor" href="#commit-in-progress"><code>CommitInProgressError</code> in a subscriber</a></h2>
     <p>
-      Subscribers fire in Phase G — after the frozen <code>Commit</code> has
+      Subscribers fire in Phase G, after the frozen <code>Commit</code> has
       been published but before <code>graph.commit()</code> returns to the
       caller. Calling <code>graph.commit()</code> from inside a subscriber
       throws <code>CommitInProgressError</code>; the pipeline is single-writer
@@ -257,13 +283,13 @@ graph.read(row2);             // ok</code>
     <code class="codeblock-source" data-lang="lang-ts">// (a) Defer to a microtask if you genuinely need to chain a commit.
 graph.subscribe(orders, () =&gt; {
   queueMicrotask(() =&gt; {
-    graph.commit(() =&gt; graph.set(notified, true));
+    graph.commit('notify', tx =&gt; { tx.set(notified, true); });
   });
 });
 
 // (b) Better: encode the dependency as a derived node so the engine
 // handles it inside the same commit.
-const notified = derived(graph, g =&gt; g.read(orders).length &gt; 0);</code>
+const notified = graph.derived('notified', get =&gt; get(orders).length &gt; 0);</code>
     <p>
       Shape (b) is almost always the right answer. A subscriber-driven commit
       means the second commit's <code>changedNodes</code> is morally part of
@@ -273,22 +299,22 @@ const notified = derived(graph, g =&gt; g.read(orders).length &gt; 0);</code>
 
     <h2 id="stale-tx"><a class="qa-anchor" href="#stale-tx"><code>StaleTxError</code> on <code>tx.set</code></a></h2>
     <p>
-      The <code>tx</code> object passed into <code>commit(run)</code> is only
+      The <code>tx</code> object passed into <code>commit(intent, run)</code> is only
       valid for the synchronous duration of <code>run</code>. Capturing it and
-      using it later — typically by passing it into a promise <code>then</code>
-      handler — throws <code>StaleTxError</code> on the deferred
+      using it later, typically by passing it into a promise <code>then</code>
+      handler, throws <code>StaleTxError</code> on the deferred
       <code>tx.set</code>.
     </p>
-    <code class="codeblock-source" data-lang="lang-ts">// WRONG — tx is captured and used after run returned.
-graph.commit(tx =&gt; {
+    <code class="codeblock-source" data-lang="lang-ts">// WRONG: tx is captured and used after run returned.
+graph.commit('load-profile', tx =&gt; {
   fetch('/api/profile').then(res =&gt; {
     tx.set(name, res.name); // throws StaleTxError
   });
 });
 
-// RIGHT — fetch first, then commit.
+// RIGHT: fetch first, then commit.
 const res = await fetch('/api/profile').then(r =&gt; r.json());
-graph.commit(tx =&gt; { tx.set(name, res.name); });</code>
+graph.commit('load-profile', tx =&gt; { tx.set(name, res.name); });</code>
     <p>
       If you have async resource state to manage, register it as a Resource
       via <code>@causl/sync</code> rather than reaching back into a stale
@@ -307,7 +333,7 @@ graph.commit(tx =&gt; { tx.set(name, res.name); });</code>
     <p>
       If your error trace looks like the cycle was introduced by a derivation
       closing over an outside-scope holder that mutated after registration,
-      this is the row 8 race class. The probe will still catch it — but at
+      this is the row 8 race class. The probe will still catch it, but at
       the first commit that walks the SCC, not at the closing
       <code>derived()</code> call.
     </p>
@@ -321,7 +347,7 @@ graph.commit(tx =&gt; { tx.set(name, res.name); });</code>
       Every Behavior is undefined for <code>t &lt; registrationTime</code>. A
       <code>readAt(node, t)</code> with <code>t</code> before the node existed
       surfaces the discriminated <code>evicted</code> arm with
-      <code>oldestRetainedTime: t_r</code> — the earliest <code>GraphTime</code>
+      <code>oldestRetainedTime: t_r</code>, the earliest <code>GraphTime</code>
       where the read would succeed.
     </p>
     <p>
@@ -336,20 +362,35 @@ if (result.status === 'evicted') {
 }
 return result.value;</code>
 
-    <h2 id="wasm-bundle"><a class="qa-anchor" href="#wasm-bundle">WASM backend bundle-size warning in CI</a> <span class="badge-enterprise">Enterprise</span></h2>
+    <h2 id="wasm-bundle"><a class="qa-anchor" href="#wasm-bundle">WASM bridge bundle-size warning in CI</a> <span class="badge-enterprise">Enterprise</span></h2>
     <p>
-      The consolidated <code>@causljs/causl-wasm</code> bridge currently
-      ships its serde-host artefact slightly over the SPEC §17.6 raw-size
-      ceiling (Brotli is comfortably under). The size-limit gate is
-      ratcheted to absorb the current measurement; if you've written
-      your own gate directly against the §17.6 row you may need to relax
-      it until the documented gap closes.
+      The engine bridge is built from <code>causl-core-rs</code> and published as
+      <code>@causl/core-rs</code>. Earlier revisions of this page called it
+      <code>@causljs/causl-wasm</code>, which is wrong twice over: that npm scope
+      never existed, and the repository was renamed. If a CI job, a lockfile, or a
+      vendoring script still names it, that is the thing to fix.
     </p>
+    <p>
+      Exactly one bridge ships, <code>gc-classic</code>. As of <strong>2026-08-11</strong>
+      the shipped <code>causl_engine_bridge_bg.wasm</code> measures
+      <strong>714,194 bytes</strong> raw (sha256 <code>ab4b62c1…</code>), against a raw
+      cap of 756 KiB (774,144 bytes) enforced both by the build driver and by a
+      redundant <code>size-limit</code> cell. So the artefact is <em>inside</em> the
+      gate, not over it.
+    </p>
+    <blockquote>
+      <p><strong>Two claims that used to live here are withdrawn.</strong> There is no
+      "serde-host artefact": the serde bridge is retired, and only a dead legacy
+      surface still references <code>serde_wasm_bindgen</code>. And the artefact is not
+      "slightly over the ceiling"; that line carried no number and no date, and it
+      described a build that no longer ships. If you relaxed your own gate on the
+      strength of it, put it back.</p>
+    </blockquote>
 
     <aside class="callout-enterprise">
       <span class="badge-enterprise">Enterprise</span>
-      <p><strong>This is an Enterprise feature.</strong> The WASM bridge artefact sizes, host-tier feature flags, and the bundle-budget gate are part of the Enterprise WASM tier; the full size breakdown and budget guidance live in the Enterprise performance docs.</p>
-      <p><a href="../../enterprise/wasm-performance/">WASM performance &rarr;</a></p>
+      <p><strong>This is an Enterprise feature.</strong> The bridge artefact sizes, the host floor, and the bundle-budget gate are part of the Enterprise WASM tier; the full breakdown and budget guidance live in the Enterprise performance docs.</p>
+      <p><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling &rarr;</a></p>
     </aside>
 
     <h2 id="bench-gate"><a class="qa-anchor" href="#bench-gate">Bench-gate is failing on a change that "shouldn't be slower"</a></h2>
@@ -359,11 +400,11 @@ return result.value;</code>
       gates on two thresholds:
     </p>
     <ul>
-      <li><strong><code>COV_REGRESSION_DELTA = 0.08</code></strong> — the
+      <li><strong><code>COV_REGRESSION_DELTA = 0.08</code></strong>: the
         coefficient-of-variation envelope. A 1.08× regression within the
         noise floor is treated as no regression. Anything outside the
         envelope is reported.</li>
-      <li><strong>Per-suite absolute floor</strong> — sub-millisecond
+      <li><strong>Per-suite absolute floor</strong>: sub-millisecond
         microbenchmarks (single-cell commits, equality cutoffs) have a
         per-benchmark absolute floor below which the percentage delta is
         suppressed entirely.</li>
@@ -377,7 +418,7 @@ return result.value;</code>
     </p>
     <p><strong>Triage in order:</strong></p>
     <ol>
-      <li>Run the same suite locally with <code>pnpm bench:gate -- --suite=&lt;suite&gt;</code> against the baseline SHA. If the regression doesn't reproduce, it's noise — re-run the CI job.</li>
+      <li>Run the same suite locally with <code>pnpm bench:gate -- --suite=&lt;suite&gt;</code> against the baseline SHA. If the regression doesn't reproduce, it's noise; re-run the CI job.</li>
       <li>Check the CoV column in the report. A CoV &gt; 0.05 on the failing benchmark means the noise floor is high for that suite on the runner; the 0.08 envelope may not be wide enough that day.</li>
       <li>If the regression reproduces locally and the CoV is tight (≤ 0.03), the regression is real. Find the change that caused it; do not raise the envelope.</li>
     </ol>
@@ -390,27 +431,33 @@ return result.value;</code>
 
     <h2 id="race-false-positive"><a class="qa-anchor" href="#race-false-positive">The race-class checker is flagging code I know is safe</a></h2>
     <p>
-      <code>@causl/checker</code> runs the static linter against the
+      The causl static checker runs the linter against the
       <strong>seventeen-row race-class catalogue</strong> from SPEC §9.1.
       The catalogue is reproduced and audited in
       <code>docs/race-class-audit.md</code>; the coverage table that maps each
       row to its detection layer (STATIC, PROPERTY, MODEL, RUNTIME-ONLY) is in
       <code>docs/checker-coverage.md</code>.
     </p>
+    <blockquote>
+      <p><strong>There is no published package for it today.</strong>
+      <code>@causl/checker</code> is not on the private registry or on npmjs, so run
+      the checker from its source repository and do not add it to a
+      <code>package.json</code> expecting it to resolve.</p>
+    </blockquote>
     <p>
       If the checker is flagging a pattern you believe is safe, walk this
       decision tree:
     </p>
     <ol>
-      <li><strong>Find the row.</strong> The diagnostic message names the row by number (e.g. "row 7 commit-inside-subscribe reentry"). Open <code>docs/race-class-audit.md</code> and read the row's intent.</li>
-      <li><strong>Check the layer.</strong> If the row is RUNTIME-ONLY, the linter should not be the one firing — file a bug. If it's STATIC, the linter is the contract surface, and "I know it's safe" usually means the analysis is conservative on a pattern that the runtime would still catch.</li>
+      <li><strong>Find the row.</strong> The diagnostic message names the row by number (for example, "row 7 commit-inside-subscribe reentry"). Open <code>docs/race-class-audit.md</code> and read the row's intent.</li>
+      <li><strong>Check the layer.</strong> If the row is RUNTIME-ONLY, the linter should not be the one firing, so file a bug. If it's STATIC, the linter is the contract surface, and "I know it's safe" usually means the analysis is conservative on a pattern that the runtime would still catch.</li>
       <li><strong>Suppress narrowly.</strong> If the diagnostic is a documented conservative false positive, suppress with <code>// causl-check-disable-next-line race-row-N</code> and leave a one-line comment with the audit reasoning. Suppressing without naming the row defeats the auditability the catalogue is designed for.</li>
       <li><strong>File a row.</strong> If the diagnostic represents a genuinely new pattern not covered by the seventeen rows, open a PR against the <code>.github/PULL_REQUEST_TEMPLATE.md</code> race-class anchor with the new row and its detection-layer assignment. Per SPEC commitment 12, every new §9.1 row ships with a layer assignment in the same PR.</li>
     </ol>
     <blockquote>
       Detailed explanation. The catalogue is intentionally over-eager on
-      STATIC rows because the alternative — pushing detection to a property
-      run that may not enumerate the offending interleaving — is strictly
+      STATIC rows because the alternative, pushing detection to a property
+      run that may not enumerate the offending interleaving, is strictly
       worse for adopter safety. The audit doc spells out which patterns are
       known-conservative; consult it before raising the priority of a
       suppression PR.
@@ -422,7 +469,7 @@ return result.value;</code>
       restored snapshot against the engine's <code>CauslModel</code> schema
       (today <code>schema: 3</code>, see SPEC §4). A schema mismatch surfaces
       as <code>HydrationSchemaError</code> with the offending field and the
-      schema version the engine expected vs. the version the snapshot carried.
+      schema version the engine expected against the version the snapshot carried.
     </p>
     <p>
       Snapshot v1 (schema 1) and v2 (schema 2) have both been retired.
@@ -456,24 +503,25 @@ try {
       inside the source scope that the destination scope can subscribe to
       (the design intent of the bridge registry). Casting your way around the
       check by reading through a captured graph reference works, but defeats
-      the whole point of scoping — and the property suite will catch it
+      the whole point of scoping, and the property suite will catch it
       under <code>capability-leak.property.test.ts</code>.
     </p>
 
     <h2>See also</h2>
     <ul>
-      <li><a href="../../">Documentation home</a> — section index and SPEC.</li>
-      <li><a href="../../api/">API reference</a> — generated TypeDoc for every <code>@causl/*</code> package.</li>
-      <li>SPEC §9.1 — the race-class catalogue (seventeen rows).</li>
-      <li>SPEC §15.1 — properties as the §3 theorems made executable, plus the read-identity amendment.</li>
-      <li>SPEC §17.6 — the WASM substrate host-tier contract and the documented bundle-size divergence.</li>
-      <li><code>docs/race-class-audit.md</code> — adopter-facing audit of the seventeen rows.</li>
-      <li><code>docs/wasm-adoption-guide.md</code> — H1 hazard memoisation guidance.</li>
-      <li><code>docs/benchmark.md</code> — bench harness, noise floor, and gate semantics.</li>
+      <li><a href="../../">Documentation home</a>: section index and SPEC.</li>
+      <li><a href="../../getting-started/installation/">Installation</a>: the registry configuration, and the <code>@causl/core</code> hazard.</li>
+      <li><a href="../../api/">API reference</a>: generated TypeDoc for every published <code>@causl</code> package.</li>
+      <li><a href="../../enterprise/wasm-performance/">Wasm performance &amp; the perf ceiling</a> <span class="badge-enterprise">Enterprise</span>: where the engine stands, and the artefact budget.</li>
+      <li>SPEC §9.1: the race-class catalogue (seventeen rows).</li>
+      <li>SPEC §15.1: properties as the §3 theorems made executable, plus the read-identity amendment.</li>
+      <li>SPEC §17.6: the WASM substrate host-tier contract.</li>
+      <li><code>docs/race-class-audit.md</code>: adopter-facing audit of the seventeen rows.</li>
+      <li><code>docs/benchmark.md</code>: bench harness, noise floor, and gate semantics.</li>
     </ul>
   </main>
 
-    <!-- Footer host — js/footer.js replaces this with the canonical
+    <!-- Footer host: js/footer.js replaces this with the canonical
        <footer class="site-footer"> element. -->
   <div id="footer-host">
     <noscript>

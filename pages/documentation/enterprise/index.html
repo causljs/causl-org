@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Enterprise — Causl</title>
-  <meta name="description" content="The Causl Enterprise tier — the Rust→WebAssembly engine (causl-wasm) consumed through the thin causl-client TypeScript API. A committed conformant alternative to the pure-TypeScript floor, promotion-gated by the SPEC §18A.7 GO/NO-GO criteria." />
+  <title>Enterprise · Causl</title>
+  <meta name="description" content="The Causl Enterprise tier: the Rust to WebAssembly engine (causl-core-rs) consumed through the thin causl-wasm-ts TypeScript client. Rust is the whole engine there; the TypeScript capability fallback was withdrawn at 0.5.0, and createCausl() is construct-or-throw." />
   <link rel="icon" href="../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../css/site.css" />
   <link rel="stylesheet" href="../../../css/syntax.css" /><link rel="stylesheet" href="../../../css/playground.css" />
   <style>
-    /* Docs container — matches the shell used across the doc pages. */
+    /* Docs container, matching the shell used across the doc pages. */
     .docs-content { max-width: 760px; margin: 0 auto; padding: 0 1.4rem 4rem; }
     .docs-content h1 { margin-top: 2.5rem; }
     .docs-content h2 { margin-top: 2.2rem; font-size: 1.5rem; }
@@ -23,8 +23,12 @@
     }
     :root[data-theme="light"] .docs-content p.lede { color: var(--text-on-base-muted); }
     .docs-content code { font-family: var(--mono); font-size: 0.92em; }
+    .docs-content table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.92rem; }
+    .docs-content th, .docs-content td { border: 1px solid rgba(169, 181, 201, 0.2); padding: 0.6rem 0.9rem; text-align: left; vertical-align: top; }
+    .docs-content blockquote { border-left: 3px solid var(--causal-cyan); padding: 0.5rem 1rem; margin: 1rem 0; color: var(--text-on-base-muted); background: rgba(39, 211, 195, 0.06); }
+    :root[data-theme="light"] .docs-content blockquote { color: var(--text-on-base-muted); }
 
-    /* Doc cards — link the whole card, show a chevron on hover.
+    /* Doc cards: link the whole card, show a chevron on hover.
        Same markup/classes as the documentation index. */
     .doc-card {
       display: flex;
@@ -76,7 +80,7 @@
   </style>
 </head>
 <body>
-    <!-- Topbar host — js/topbar.js replaces this with the canonical
+    <!-- Topbar host. js/topbar.js replaces this with the canonical
        <header id="topbar"> element. The fallback links inside the
        <noscript> block keep nav usable for crawlers and no-JS users. -->
   <div id="topbar-host" data-current="docs">
@@ -99,67 +103,77 @@
   </div>
 
   <main class="docs-content">
-    <h1>Enterprise <span class="badge-enterprise">Enterprise</span> — the wasm engine &amp; causl-client</h1>
+    <h1>Enterprise <span class="badge-enterprise">Enterprise</span>: the wasm engine and causl-wasm-ts</h1>
     <p class="lede">
       Causl ships a pure-TypeScript engine (<code>causl-ts</code>) as the
-      open-source floor and reference implementation. As an Enterprise
-      feature it also ships a Rust→WebAssembly engine,
-      <code>causl-wasm</code>, consumed through a thin TypeScript API,
-      <code>causl-client</code>. Both engines expose the same public
-      <code>Graph</code> surface — the seven canonical primitives plus the
-      thirteen second-tier extensions (SPEC §12.1 + §12.2), the full
-      contract the wasm core satisfies over FFI (SPEC §18A.4). In
-      <code>causl-client</code> the wasm path is the
-      <em>unconditional production engine</em> (rust-ssot default); the
-      pure-TypeScript engine is retained as the §12 conformance
-      reference. The promotion gate documented in
+      open-source floor and reference implementation. As an Enterprise feature
+      I also ship a Rust&rarr;WebAssembly engine, <code>causl-core-rs</code>,
+      consumed through a thin TypeScript client, <code>causl-wasm-ts</code>.
+      Both engines expose the same public <code>Graph</code> surface: the
+      canonical primitives of SPEC §12.1 plus the §12.2 second-tier structural
+      surface, the full contract the Rust core satisfies over FFI (§18A.4).
+      Inside <code>causl-wasm-ts</code> the Rust engine is the
+      <em>whole</em> engine. There is no TypeScript fallback in that package,
+      and <code>createCausl()</code> either constructs the wasm graph or throws.
+      The promotion gate documented in
       <a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.7</a>
-      has been met.
+      has been met. The engine and client repositories are private, so I cite
+      them here by name and issue number without linking; reaching the source
+      needs a Gitea account on <code>git.opsite.ca</code>.
     </p>
 
     <aside class="callout-enterprise">
       <span class="badge-enterprise">Enterprise</span>
       <p>
-        <strong>The wasm engine is now sync-from-consumer.</strong> The one
-        unavoidable async — the WebAssembly compile — is split from
-        synchronous construction (SPEC §18A.12, shipped):
-        <code>await preloadCauslWasm()</code> compiles and caches the module
-        once at app init, then <code>createCauslWasmSync()</code> builds a
-        wasm <code>Graph</code> with zero <code>await</code> at the call site,
-        so sync consumers (React render, xldatagrid) can use it directly.
+        <strong>Construction is synchronous behind one preload.</strong> The
+        one unavoidable async is the WebAssembly compile, and §18A.12 splits it
+        away from construction: <code>await preloadCauslWasm()</code> compiles
+        and caches the module once at app init, then
+        <code>createCausl()</code> and <code>createCauslWasmSync()</code> build
+        a wasm <code>Graph</code> with zero <code>await</code> at the call site,
+        so synchronous consumers (a React render body, an
+        <code>xldatagrid</code> cell) can use them directly.
         <code>createCauslWasm()</code> is retained as
-        <code>preload ∘ createCauslWasmSync</code>. The
-        <code>--target nodejs</code> server glue is already synchronous
-        end-to-end and needs no preload; only the browser bundler target does.
+        <code>preload &#8728; createCauslWasmSync</code>. The
+        <code>--target nodejs</code> server glue is already synchronous end to
+        end and needs no preload; only the browser bundler target does.
       </p>
       <p>
-        Explicit engine choice stays available:
-        <code>createCauslWasm()</code> / <code>createCauslWasmSync()</code>
-        (the wasm engine) and the internal <code>engine: 'js-ssot'</code> opt.
-        In <code>causl-client</code> (SPEC §18A.13) the default public engine is
-        wasm — <code>createCausl()</code> routes to the wasm engine
-        (rust-ssot default) — driven by complexity elimination, with perf
-        accepted as immaterial. Per <strong>§18A.13.1 (2026-06-23)</strong> it is
-        <strong>wasm-default with a TS capability-fallback</strong>, not strictly
-        "wasm-only": the implicit <code>createCausl()</code> degrades
-        <strong>loudly</strong> to the retained internal
-        <code>createCauslTs</code> on a WasmGC-unavailable host, while explicit
-        wasm still fails loud. Deleting <code>createCauslTs</code> outright is
-        dropped from near-term scope.
+        <strong>The TypeScript capability fallback is withdrawn.</strong>
+        §18A.13.1 once described an implicit <code>createCausl()</code> that
+        degraded to a retained internal TypeScript engine on a host that could
+        not instantiate the wasm engine. That section was <strong>withdrawn at
+        0.5.0</strong> and now reads, in its own words, as a dated record
+        rather than a live obligation. <code>createCauslTs</code> is deleted
+        from source, so nothing on this site should be read as promising a
+        runtime degrade. Branch on <code>error.code</code>, never on
+        <code>instanceof</code>: <code>CAUSL_WASM_ENGINE_UNAVAILABLE</code>
+        (the wasm subpath was never imported, or the host cannot instantiate
+        the engine) and <code>CAUSL_WASM_NOT_PRELOADED</code> (imported, but
+        <code>preloadCauslWasm()</code> never resolved).
+      </p>
+      <p>
+        Two things killed the fallback, and both are worth stating. First, the
+        fallback engine and the primary <em>disagreed</em> on a surface
+        §18A.1.1 requires to be identical: in-place mutation of a committed
+        value
+        (<code>causl-wasm-ts#272</code>).
+        A fallback that is not byte-identical is not a fallback, it is a second
+        set of semantics reached by accident. Second, the implicit path
+        <em>was</em> the accident path: 0.4.0 warned on it, 0.5.0 throws.
       </p>
     </aside>
 
     <div class="grid-2 enterprise-grid">
       <a class="card doc-card"
          href="./integrating-causl-client/">
-        <div class="mono-label">causl-client</div>
-        <h3>Integrating causl-client</h3>
+        <div class="mono-label">causl-wasm-ts</div>
+        <h3>Integrating causl-wasm-ts</h3>
         <p>
-          Consume the wasm artefact through <code>@causl/core/wasm</code>
-          in a TS/Node application — <code>loadWasmBackend()</code>, the
-          construction seam, and the structured
-          <code>WasmBackendUnavailableError</code> fallback chain back to
-          the TS floor.
+          Adopt the Rust engine from a TypeScript or Node application: the
+          Gitea-registry install, <code>await preloadCauslWasm()</code> once at
+          boot, synchronous <code>createCausl()</code> afterwards, the placed
+          artefact and its loader, and the two structured failure codes.
         </p>
         <span class="doc-card-link">Read the guide</span>
       </a>
@@ -169,37 +183,37 @@
         <div class="mono-label">SPEC §18A</div>
         <h3>Two-engine architecture</h3>
         <p>
-          The <code>causl-ts</code> floor versus the
-          <code>causl-wasm</code> production engine: the §18A contract,
-          the shared public <code>Graph</code> surface (the §12.1 canonical
-          seven plus the §12.2 second tier), and why both implementations
-          are byte-identical and conformant for all adopter code.
+          Two conformant engines, now in two different repositories:
+          <code>causl-core-rs</code> ships the Rust engine that
+          <code>causl-wasm-ts</code> binds, and <code>causl-core-ts</code>
+          stays dual-engine as the differential oracle. The §18A contract and
+          the shared public <code>Graph</code> surface.
         </p>
         <span class="doc-card-link">Read the contract</span>
       </a>
 
       <a class="card doc-card"
          href="./wasm-performance/">
-        <div class="mono-label">SPEC §18A.7</div>
-        <h3>Wasm performance &amp; the perf ceiling</h3>
+        <div class="mono-label">causl-bench</div>
+        <h3>Wasm performance, measured</h3>
         <p>
-          What the wasm path costs — FFI marshalling overhead, the
-          atomicity contract at the bridge boundary, and the §18A.7
-          performance ceiling against which promotion is measured
-          (GO/RESOLVED).
+          What the wasm path actually costs. The marshal tax is <em>not</em>
+          the ceiling: a raw boundary crossing is 1.6&nbsp;ns. The real costs
+          are a per-commit clone that scales with graph size, a per-recompute
+          constant, and a per-commit constant.
         </p>
         <span class="doc-card-link">Read the numbers</span>
       </a>
 
       <a class="card doc-card"
-         href="../api/modules/_causl_core.wasm.html">
-        <div class="mono-label">@causl/core/wasm</div>
-        <h3>Wasm API reference</h3>
+         href="../api/">
+        <div class="mono-label">TypeDoc</div>
+        <h3>Generated API reference</h3>
         <p>
-          The TypeDoc-generated reference for the
-          <code>@causl/core/wasm</code> exports — <code>loadWasmBackend</code>,
-          <code>detectBridge</code>, <code>WasmBackendUnavailableError</code>,
-          and the <code>BridgeFeatures</code> surface.
+          The TypeDoc-generated reference for the package surface. It is built
+          from an older package layout and still names <code>@causl/core</code>,
+          so it lags the 2026-07-27 rename. Where it disagrees with these prose
+          pages, the prose pages are current.
         </p>
         <span class="doc-card-link">View API</span>
       </a>
@@ -208,57 +222,113 @@
     <h2 id="distribution">Distribution</h2>
     <p>
       The Enterprise <code>@causl/*</code> packages are distributed through a
-      <strong>self-hosted, private npm registry</strong> at
-      <code>iasbuilt-npm.opsite.ca</code> — not the public npm registry. The
-      registry is <strong>fully private</strong>: every package requires
-      authentication to read, and nothing is listed publicly. Anonymous
-      requests are rejected; you authenticate to browse and to install.
+      <strong>self-hosted, private npm registry</strong>: the Gitea package
+      registry at <code>https://git.opsite.ca/api/packages/causl/npm/</code>.
+      It is <strong>fully private</strong>. Every package requires
+      authentication to read, nothing is listed publicly, and anonymous
+      requests are rejected. The old Verdaccio host
+      <code>iasbuilt-npm.opsite.ca</code> is gone; any <code>.npmrc</code> or
+      lockfile still naming it is stale.
+    </p>
+
+    <blockquote>
+      <p>
+        <strong>Read this before you edit an <code>.npmrc</code>.</strong>
+        <code>@causl/core</code> is not the client, and it has zero versions on
+        this registry. It <em>does</em> resolve on the public npm registry, at
+        0.3.0 through 0.3.3, to a <em>different</em> package (the retired
+        TypeScript engine). So an <code>.npmrc</code> missing the
+        <code>@causl:registry=</code> line, or a lockfile still pinning
+        <code>@causl/core</code>, installs <em>successfully</em> and gets the
+        wrong package rather than failing. The failure mode is a silent wrong
+        install, not an error. Install
+        <code>@causl/causl-wasm-ts</code>, and check the scope line is present
+        before you do.
+      </p>
+    </blockquote>
+
+    <p>
+      The packages, the repositories that publish them, and where each one
+      lives:
+    </p>
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>Repository</th><th>Package</th><th>Registry</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Rust engine</td>
+          <td><code>causl-core-rs</code></td>
+          <td><code>@causl/core-rs</code></td>
+          <td>Gitea (private)</td>
+        </tr>
+        <tr>
+          <td>TypeScript engine</td>
+          <td><code>causl-core-ts</code></td>
+          <td><code>@causl/core-ts</code> (never published)</td>
+          <td>Gitea (private)</td>
+        </tr>
+        <tr>
+          <td>TypeScript client</td>
+          <td><code>causl-wasm-ts</code></td>
+          <td><code>@causl/causl-wasm-ts</code></td>
+          <td>Gitea (private)</td>
+        </tr>
+        <tr>
+          <td>OSS TypeScript engine</td>
+          <td><code>causl-ts</code></td>
+          <td><code>@causlts/core</code></td>
+          <td>public npmjs</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <code>@causl/causl-wasm-ts</code> is the package you install. Its
+      satellite packages (<code>@causl/persistence</code>,
+      <code>@causl/devtools</code>, <code>@causl/devtools-bridge</code>,
+      <code>@causl/migration-check</code>, <code>@causl/formula</code>,
+      <code>@causl/hypothesis</code>, <code>@causl/sync</code>,
+      <code>@causl/react</code>) publish from the same repository to the same
+      registry. Two names that used to appear here do not exist on it:
+      <code>@causl/wasm</code> was never published, and <code>@causl/core</code>
+      is the hazard above. The naming scheme is deliberate, engines by
+      substrate and clients by consumer language, and it is recorded in
+      <code>causl-wasm-ts</code>&nbsp;<code>docs/repo-naming-decision.md</code>.
     </p>
     <p>
-      The full engine is published there — the <code>causl-client</code>
-      surface plus the packaged Rust→WebAssembly core. The current line is
-      <code>@causl/core@0.3.3</code>, which ships the wasm engine in-tarball and
-      is <strong>wasm-default (rust-ssot)</strong> with the retained
-      <code>createCauslTs</code> capability-fallback
-      (<a href="https://github.com/causljs/causl-client/blob/main/SPEC.md" rel="noopener">SPEC §18A.13 / §18A.13.1</a>).
-      Published packages:
+      Point the <code>@causl</code> scope at the registry and attach the token
+      issued during Enterprise onboarding. Both lines go in
+      <code>.npmrc</code> <em>before</em> the first install:
     </p>
-    <ul>
-      <li><code>@causl/core</code></li>
-      <li><code>@causl/persistence</code></li>
-      <li><code>@causl/devtools</code></li>
-      <li><code>@causl/devtools-bridge</code></li>
-      <li><code>@causl/migration-check</code></li>
-      <li><code>@causl/formula</code></li>
-      <li><code>@causl/hypothesis</code></li>
-      <li><code>@causl/sync</code></li>
-      <li><code>@causl/react</code></li>
-      <li><code>@causl/wasm</code> — the packaged Rust&rarr;WebAssembly engine artefact</li>
-    </ul>
+
+    <code class="codeblock-source" data-lang="text">@causl:registry=https://git.opsite.ca/api/packages/causl/npm/
+//git.opsite.ca/api/packages/causl/npm/:_authToken=${CAUSL_NPM_TOKEN}</code>
+
     <p>
-      To consume them, point the <code>@causl</code> scope at the registry in
-      your <code>.npmrc</code>
-      (<code>@causl:registry=https://iasbuilt-npm.opsite.ca/</code>), add the
-      auth token issued during Enterprise onboarding, then install with your
-      usual package manager (<code>pnpm add @causl/core</code>). Authentication
-      is required for every read; the public npm registry does not carry these
-      packages.
+      Then install with your usual package manager:
     </p>
+
+    <code class="codeblock-source" data-lang="bash">pnpm add @causl/causl-wasm-ts
+# npm install @causl/causl-wasm-ts
+# yarn add @causl/causl-wasm-ts</code>
 
     <p style="margin-top: 2.4rem;">
       These Enterprise features require a production Rust build and a Node
       target (<a href="https://github.com/causljs/causl-ts/blob/main/SPEC.md" rel="noopener">SPEC §18A.2</a>).
-      The §18A.7 GO/NO-GO gate has been met (all five criteria GO, 2026-06-21),
-      so in <code>causl-client</code> the wasm path is the unconditional
-      production default (rust-ssot). The TypeScript engine is the retained
-      <strong>unconditional floor</strong> — byte-identical to the wasm engine
-      for all adopter code — kept as the §12 conformance reference and the
-      implicit-path capability fallback (§18A.13.1), and the value-of-record in
-      the fork, not the default.
+      The §18A.7 GO/NO-GO gate was met on 2026-06-21, all five criteria GO, so
+      in <code>causl-wasm-ts</code> the Rust engine is the unconditional
+      production engine. The host floor is Safari&nbsp;18.2, Chromium&nbsp;119,
+      Firefox&nbsp;120 and Node&nbsp;22, governed by typed function references
+      rather than by WasmGC heap types; the
+      <a href="./integrating-causl-client/#4-the-loader-and-the-host-tier-matrix">host-tier matrix</a>
+      has the detail. The pure-TypeScript engine is still the §12 conformance
+      reference and the §18A.7 Criterion-5 floor, but it lives in
+      <code>causl-core-ts</code>, not in <code>causl-wasm-ts</code>. That is
+      the repository that stays dual-engine and runs the differential oracle.
     </p>
   </main>
 
-    <!-- Footer host — js/footer.js replaces this with the canonical
+    <!-- Footer host. js/footer.js replaces this with the canonical
        <footer class="site-footer"> element. -->
   <div id="footer-host">
     <noscript>
@@ -275,5 +345,6 @@
   </div>
   <script src="../../../js/footer.js" defer></script>
   <script src="../../../js/topbar.js" defer></script>
+  <script src="../../../js/codeblock.js" defer></script>
 </body>
 </html>

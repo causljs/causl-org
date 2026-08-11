@@ -23,7 +23,7 @@
 // ~130 samples of five fields each. The causl-bench sweeps now carry
 // ~360 samples with intervals, dispersion, confidence reasons,
 // attestation and hold-out reasons attached, and a verbatim slice of
-// three of those came to 754 KB — pretty-printed, and named in a
+// three of those came to 754 KB, pretty-printed, and named in a
 // `<link rel="preload">` in index.html, so every visitor downloaded it
 // on the critical path whether or not the fallback was ever needed. A
 // fallback that costs more than the file it stands in for is not a
@@ -36,8 +36,8 @@
 //            boundaryCrossings, boundaryBytes*  (when present)
 //   skipped  library, scenario, scale, status, reason, detail
 //
-// What the stub drops — intervals, CoV, confidence, recomputes, engine
-// attestation, rankability — is all in history.json, which the
+// What the stub drops (intervals, CoV, confidence, recomputes, engine
+// attestation, rankability) is all in history.json, which the
 // dashboard promotes to as soon as it resolves and which the page links
 // directly. Nothing is lost; it is only off the preload path.
 //
@@ -114,7 +114,7 @@ console.log(
 const BUDGET_KB = 256;
 if (kb > BUDGET_KB) {
   console.error(
-    `\nREFUSED — the stub is ${kb.toFixed(1)} KB, over the ${BUDGET_KB} KB preload budget.\n` +
+    `\nREFUSED: the stub is ${kb.toFixed(1)} KB, over the ${BUDGET_KB} KB preload budget.\n` +
       '  index.html names it in <link rel="preload">, so this is paid on every page load.\n' +
       '  Narrow SAMPLE_FIELDS, or lower SAMPLE_SIZE.\n',
   );
