@@ -345,6 +345,52 @@ try {
 
     <p>An earlier harness published a <code>causl-wasm</code> series whose engine label was <em>asserted rather than observed</em>: the column labelled "wasm" was in fact the TypeScript engine. Those samples are being deleted from the public feed rather than relabelled, because relabelling them would attach a Rust-engine claim to TypeScript-engine measurements. The attested <code>causl-wasm-ts</code> series takes over the <code>causl-wasm</code> name, so from now on one series carries that label and it is backed only by <code>rust-ssot</code> measurements. Losing the historical records is accepted and intended.</p>
 
+    <h2 id="next">7. What I would fix next, and what is tracking it</h2>
+
+    <p>Everything above diagnoses. This section says what follows from it, so a reader can tell which findings are being worked and which are only recorded. Each row names an issue in a private repository, so I give the identifier as text rather than a link.</p>
+
+    <table>
+      <thead>
+        <tr><th>Order</th><th>Work</th><th>Tracked as</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>0</strong></td>
+          <td><strong>Capture a profile of the shipping binary.</strong> This comes first because it is not itself an optimisation, it is what tells the next two apart. Every capture in <code>causl-bench/profiles/</code> is of the quarantined 0.3.6 build, so nothing yet splits the per-recompute cost between the JS <code>#onCompute</code> path and Rust-side work. That split decides which repository the fix belongs in.</td>
+          <td><code>causl-bench#178</code></td>
+        </tr>
+        <tr>
+          <td><strong>1</strong></td>
+          <td><strong>Stop cloning both cell tables on every derived-carrying commit.</strong> The largest single win available, and the only one already scoped to a located line of source. A commit currently costs <code>O(graph)</code> where the contract says <code>O(dirty set)</code>. A client-side draft PR carrying the probe and a pinned regression is blocked on the engine half.</td>
+          <td><code>causl-core-rs#392</code>, with <code>causl-wasm-ts#500</code> measuring it and <code>#504</code> pinning it</td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td><strong>Cut the per-recompute constant.</strong> At 91.7% of the <code>mux@1000</code> cell this is the biggest number on the page, but it is second in order because it cannot be routed without step 0. The candidates are the per-call <code>Map</code>, <code>Array</code>, <code>Set</code> and closure allocations, and the four Map operations per <code>ValueHandleCache</code> touch.</td>
+          <td><code>causl-wasm-ts#533</code></td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td><strong>Cut the per-commit constant.</strong> The floor underneath the other two, and the cost that batching cannot amortise because it is per-commit by construction. It matters most for workloads that commit often and derive little.</td>
+          <td><code>causl-wasm-ts#534</code></td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td><strong>Re-measure against 0.5.0.</strong> The figures on this page describe 0.3.7. Closing this is a re-run, not an optimisation, but until it happens the site cannot claim its numbers describe the shipped client.</td>
+          <td>rides with <code>causl-bench#178</code>; the recurring condition is recorded on <code>causl-wasm-ts#432</code></td>
+        </tr>
+        <tr>
+          <td><strong>5</strong></td>
+          <td><strong>Swap <code>JsonValue</code>'s <code>BTreeMap</code> for an <code>IndexMap</code>.</strong> Benchmarked at 22% to 58% faster keyed reads at object sizes 20 to 100. I rank it last deliberately: value marshalling is third-order at 77&nbsp;ns per read, which is about 3% of a recompute. It is here because it is measured, self-contained, and was sitting in a document with nothing tracking it.</td>
+          <td><code>causl-core-rs#393</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <blockquote>
+      <p><strong>On the ordering.</strong> Steps 2 and 3 are both larger than step 1 in raw microseconds, and I still put step 1 first. Step 1 is the only one where I can point at the code that causes it, so it is the only one I can promise a fix for. Steps 2 and 3 are constants I can describe but not yet attribute, and shipping a patch against a cost I have not located is how an optimisation turns into a rewrite.</p>
+    </blockquote>
+
     <h2>Related reading</h2>
 
     <ul>
