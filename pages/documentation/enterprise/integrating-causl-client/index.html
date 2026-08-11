@@ -596,11 +596,24 @@ print(f"wasm artefact verified: {manifest['engineVersion']} ({manifest['bridge']
     <h3 id="41-the-host-floor-and-the-bridge">4.1 The host floor and the one bridge that ships</h3>
 
     <p>
-      The bridge picker (<code>detectBridge()</code>) probes the host at module
-      load and selects the artefact it actually supports. It is a
-      <strong>real probe</strong>, not a placeholder: it was wired to one in
-      <code>causl-wasm-ts#426</code>, and the older caveat about
-      <code>#691</code> being an open placeholder no longer applies.
+      <strong>Two exported functions are called <code>detectBridge()</code> and they do
+      opposite things, so check which one you imported.</strong> The version on the
+      <code>@causl/causl-wasm-ts/wasm</code> subpath is a real probe: <code>#426</code>
+      wired it to a 56-byte module built from the artefact's measured minimum, and it
+      throws <code>WasmEngineUnavailableError</code> naming the failing feature. The
+      version re-exported from the <strong>main barrel</strong> is still the placeholder
+      the older caveat described: every marshalling primitive on it throws "pending
+      <code>#692</code>", and it reports <code>{ gc: false, jsStringBuiltins: false }</code>
+      with <code>abiVersion: 0</code> even on hosts where the engine instantiates without
+      complaint.
+    </p>
+
+    <p>
+      So do not call <code>detectBridge()</code> from the default import to ask whether
+      this host supports the engine. It will tell you no on a host that works. Either
+      import it from the <code>/wasm</code> subpath, or do the thing you actually want,
+      which is to call <code>preloadCauslWasm()</code> and branch on
+      <code>error.code</code> if it throws.
     </p>
 
     <p>
