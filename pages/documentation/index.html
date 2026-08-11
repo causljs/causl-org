@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Documentation — Causl</title>
-  <meta name="description" content="Causl documentation — the canonical specification, generated API references for every @causl/* package, repository docs, and topic guides." />
+  <title>Documentation · Causl</title>
+  <meta name="description" content="Causl documentation: the canonical specification, generated API references for the packages in the client repo, repository docs, and topic guides." />
   <link rel="icon" href="../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../css/topbar.css" />
   <link rel="stylesheet" href="../../css/site.css" />
@@ -29,7 +29,7 @@
 
     :root[data-theme="light"] .doc-intro p.lede { color: var(--text-on-base-muted); }
 
-    /* Doc cards — link the whole card, show a chevron on hover. */
+    /* Doc cards: link the whole card, show a chevron on hover. */
     .doc-card {
       display: flex;
       flex-direction: column;
@@ -39,12 +39,17 @@
       transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
     }
 
-    .doc-card:hover {
+    .doc-card:not(.doc-card-static):hover {
       transform: translateY(-2px);
       border-color: rgba(39, 211, 195, 0.4);
       box-shadow: 0 12px 28px rgba(39, 211, 195, 0.12);
       text-decoration: none;
     }
+
+    /* Cards for repositories that are not publicly hosted. Same shape as a
+       doc card, minus the hover lift and the chevron, because there is
+       nothing to click. */
+    .doc-card-static { cursor: default; }
 
     .doc-card h3 {
       margin: 0;
@@ -76,7 +81,7 @@
       transform: translateX(3px);
     }
 
-    /* API package cards — mono package name as the heading. */
+    /* API package cards: mono package name as the heading. */
     .api-card .pkg-name {
       font-family: var(--mono);
       font-size: 0.95rem;
@@ -145,9 +150,9 @@
 </head>
 <body>
   <!-- ============================================================
-       Topbar — inner page, starts collapsed (no .is-hero).
+       Topbar: inner page, starts collapsed (no .is-hero).
        ============================================================ -->
-    <!-- Topbar host — js/topbar.js replaces this with the canonical
+    <!-- Topbar host: js/topbar.js replaces this with the canonical
        <header id="topbar"> element. The fallback links inside the
        <noscript> block keep nav usable for crawlers and no-JS users. -->
   <div id="topbar-host" data-current="documentation">
@@ -175,7 +180,7 @@
   <section class="page section doc-intro">
     <h1>Documentation.</h1>
     <p class="lede">
-      Everything that ships with the engine — the canonical
+      Everything that ships with the engine: the canonical
       specification, per-package API references generated from the
       source on every build, the repository's audit trail, and a
       growing set of topic guides that explain the moving parts in
@@ -196,6 +201,10 @@
         SPEC.md is the document the engine, the static checker, and the
         bounded model checker all answer to. SPEC.async.md adds the
         composite statechart for fetched resources and conflicts.
+        The per-repo copies have <strong>diverged</strong>: measured on
+        2026-08-02 they run 3333 lines against 3280, with the
+        <code>causl-core-ts</code> copy missing §5.1 Amendments 5 to 7
+        and §5.7. Do not treat any copy as byte-identical to another.
       </p>
     </div>
 
@@ -206,7 +215,7 @@
         <div class="mono-label">SPEC.md</div>
         <h3>Core specification</h3>
         <p>
-          The canonical engine spec — denotational semantics
+          The canonical engine spec: denotational semantics
           (<code>Behavior a = GraphTime → a</code>), the commit pipeline
           in §5, the worked end-to-end example in §10, and the
           race-class catalogue with the full enumerator/checker rules
@@ -221,8 +230,8 @@
         <div class="mono-label">SPEC.async.md</div>
         <h3>Async resources & conflicts</h3>
         <p>
-          The composite statechart that governs every async fetch —
-          launch, version-stamp, abort, settle — together with the
+          The composite statechart that governs every async fetch
+          (launch, version-stamp, abort, settle), together with the
           conflict-record registry, transaction-phase contract, and
           the rules that tie outcomes back to the graph.
         </p>
@@ -238,7 +247,7 @@
     <div class="section-head">
       <div>
         <div class="section-kicker">API reference</div>
-        <h2>One page per published <code>@causl/*</code> package.</h2>
+        <h2>One page per package in the client repo.</h2>
       </div>
       <p class="lead">
         Generated from the source on every build via TypeDoc. The
@@ -248,16 +257,30 @@
     </div>
 
     <p class="api-preamble">
-      Generated from the source on every build via TypeDoc.
+      Generated from the source on every build via TypeDoc. The client
+      package was renamed to <code>@causl/causl-wasm-ts</code> on
+      2026-07-27; the generated URLs below still carry the pre-rename
+      <code>_causl_core</code> module id.
     </p>
 
     <div class="api-grid">
       <a class="card doc-card api-card"
          href="./api/modules/_causl_core.html">
-        <div class="pkg-name">@causl/core</div>
+        <div class="pkg-name">@causl/causl-wasm-ts</div>
         <p class="pkg-role">
-          Engine — Behaviors, derivations, transactions,
+          The client: Behaviors, derivations, transactions,
           snapshot/hydrate, retention, explain.
+        </p>
+        <span class="doc-card-link">View API</span>
+      </a>
+
+      <a class="card doc-card api-card"
+         href="./api/modules/_causl_core.wasm.html">
+        <div class="pkg-name">@causl/causl-wasm-ts/wasm</div>
+        <p class="pkg-role">
+          The engine subpath: <code>preloadCauslWasm</code>,
+          <code>createCauslWasmSync</code>, and the bridge loader.
+          Required since 0.5.0.
         </p>
         <span class="doc-card-link">View API</span>
       </a>
@@ -266,7 +289,7 @@
          href="./api/modules/_causl_react.html">
         <div class="pkg-name">@causl/react</div>
         <p class="pkg-role">
-          React bindings — <code>useCausl</code>,
+          React bindings: <code>useCausl</code>,
           <code>useDispatch</code>, <code>useCauslFamily</code>,
           MVU runner, SSR.
         </p>
@@ -277,7 +300,7 @@
          href="./api/modules/_causl_formula.html">
         <div class="pkg-name">@causl/formula</div>
         <p class="pkg-role">
-          Spreadsheet patterns on top of the core — formulas, ranges,
+          Spreadsheet patterns on top of the client: formulas, ranges,
           cycles.
         </p>
         <span class="doc-card-link">View API</span>
@@ -297,7 +320,7 @@
          href="./api/modules/_causl_devtools.html">
         <div class="pkg-name">@causl/devtools</div>
         <p class="pkg-role">
-          Inspection primitives — explain materialisation,
+          Inspection primitives: explain materialisation,
           liveDerivation, snapshot, statechart.
         </p>
         <span class="doc-card-link">View API</span>
@@ -324,21 +347,11 @@
       </a>
 
       <a class="card doc-card api-card"
-         href="./api/modules/_causl_checker.html">
-        <div class="pkg-name">@causl/checker</div>
+         href="./api/modules/_causl_hypothesis.html">
+        <div class="pkg-name">@causl/hypothesis</div>
         <p class="pkg-role">
-          npm wrapper for <code>causl-check</code> — the Rust-backed
-          static IR linter (twelve passes).
-        </p>
-        <span class="doc-card-link">View API</span>
-      </a>
-
-      <a class="card doc-card api-card"
-         href="./api/modules/_causl_bench.html">
-        <div class="pkg-name">@causl/bench</div>
-        <p class="pkg-role">
-          Benchmarks — Jotai / RTK / MobX comparisons across the
-          canonical scenario taxonomy.
+          The hypothesis catalogue the bench harness checks its
+          median-band invariants against.
         </p>
         <span class="doc-card-link">View API</span>
       </a>
@@ -347,7 +360,7 @@
          href="./api/modules/_causl_migration-check.html">
         <div class="pkg-name">@causl/migration-check</div>
         <p class="pkg-role">
-          Migration drift detector — flags unmigrated Jotai/MobX/Redux
+          Migration drift detector: flags unmigrated Jotai/MobX/Redux
           patterns in adopters.
         </p>
         <span class="doc-card-link">View API</span>
@@ -362,17 +375,19 @@
     <div class="section-head">
       <div>
         <div class="section-kicker">Enterprise</div>
-        <h2>The <code>causl-wasm</code> engine and the <code>causl-client</code> API.</h2>
+        <h2>The <code>causl-core-rs</code> engine and the <code>causl-wasm-ts</code> client.</h2>
       </div>
       <p class="lead">
-        Causl ships a second, Enterprise-tier engine: the
-        <code>causl-wasm</code> core, written in Rust and compiled to
-        WebAssembly, reached through <code>causl-client</code> — a thin
-        TypeScript API over the same public surface as
-        <code>@causl/core</code>. In <code>causl-client</code> it is the
-        unconditional production engine (rust-ssot default); the
-        TypeScript floor is retained as the §12 conformance reference
-        (SPEC&nbsp;§18A).
+        Causl ships an Enterprise-tier engine: the
+        <code>causl-core-rs</code> core, written in Rust and compiled to
+        WebAssembly, reached through <code>causl-wasm-ts</code>, a thin
+        TypeScript client published as
+        <code>@causl/causl-wasm-ts</code>. In that client the Rust engine
+        is the <strong>unconditional</strong> engine (rust-ssot): there is
+        no opt-in, no capability probe choosing between two engines, and
+        no TypeScript fallback. The TypeScript engine lives separately in
+        <code>causl-core-ts</code>, where it serves as the §12 conformance
+        reference and the differential oracle (SPEC&nbsp;§18A).
       </p>
     </div>
 
@@ -382,11 +397,11 @@
         <div class="mono-label">enterprise</div>
         <h3>Enterprise overview <span class="badge-enterprise">Enterprise</span></h3>
         <p>
-          The landing page for the Enterprise tier — the Rust→WASM
-          engine (<code>causl-wasm</code>) behind a thin TypeScript API
-          (<code>causl-client</code>), exposing the same public surface
-          as <code>@causl/core</code>. The production engine of
-          <code>causl-client</code>; the TypeScript floor is retained as
+          The landing page for the Enterprise tier: the Rust→WASM
+          engine (<code>causl-core-rs</code>, published as
+          <code>@causl/core-rs</code>) behind the thin TypeScript client
+          <code>causl-wasm-ts</code>. It is the only engine that client
+          runs; the TypeScript engine in <code>causl-core-ts</code> is
           the §12 conformance reference (SPEC&nbsp;§18A).
         </p>
         <span class="doc-card-link">Read the overview</span>
@@ -395,12 +410,12 @@
       <a class="card doc-card"
          href="./enterprise/integrating-causl-client/">
         <div class="mono-label">integrating-causl-client</div>
-        <h3>Integrating <code>causl-client</code> <span class="badge-enterprise">Enterprise</span></h3>
+        <h3>Integrating <code>causl-wasm-ts</code> <span class="badge-enterprise">Enterprise</span></h3>
         <p>
-          How to adopt the thin <code>causl-client</code> TypeScript API
-          in place of <code>@causl/core</code>. Because both expose the
-          same public surface, the swap is gated and drop-in — your
-          input / derived / commit / read / subscribe code is unchanged.
+          How to adopt <code>@causl/causl-wasm-ts</code>: the private
+          registry, the token, the one <code>await preloadCauslWasm()</code>
+          at app init, and the §12 spine (input, derived, commit, read,
+          subscribe) that the boot change leaves untouched.
         </p>
         <span class="doc-card-link">Read the guide</span>
       </a>
@@ -410,11 +425,13 @@
         <div class="mono-label">two-engine-architecture</div>
         <h3>Two-engine architecture <span class="badge-enterprise">Enterprise</span></h3>
         <p>
-          Why Causl runs two conformant engines — the TypeScript floor
-          and the Rust→WASM <code>causl-wasm</code> core — and how the
-          shared public surface lets the WASM engine serve as the
-          production engine in <code>causl-client</code> while the floor
-          stays the §12 conformance reference (SPEC&nbsp;§18A).
+          Why Causl keeps two conformant engines, the TypeScript one in
+          <code>causl-core-ts</code> and the Rust→WASM
+          <code>causl-core-rs</code> core, and how the shared public
+          surface lets the Rust engine be the only engine in
+          <code>causl-wasm-ts</code> while the TypeScript one stays the
+          §12 conformance reference and the differential oracle
+          (SPEC&nbsp;§18A).
         </p>
         <span class="doc-card-link">Read the architecture</span>
       </a>
@@ -424,10 +441,11 @@
         <div class="mono-label">wasm-performance</div>
         <h3>WASM performance <span class="badge-enterprise">Enterprise</span></h3>
         <p>
-          Where the Rust→WASM <code>causl-wasm</code> engine pays off
-          against the TypeScript floor across the canonical scenario
-          taxonomy — the FFI / marshal costs to weigh, and the workloads
-          that justify the Enterprise engine.
+          Where the Rust→WASM <code>causl-core-rs</code> engine actually
+          stands against the TypeScript engine and against mobx, jotai
+          and redux-rtk across the canonical scenario taxonomy: the
+          measured cell-level result, the bottlenecks behind it, and the
+          older claims the data refutes.
         </p>
         <span class="doc-card-link">Read the numbers</span>
       </a>
@@ -448,7 +466,7 @@
         starting points for anyone evaluating, upgrading, or
         contributing to causl. Each <code>causljs/*</code> repo ships
         its own analogous trio (README, CHANGELOG, CONTRIBUTING) and
-        the same pre-commit hook contract — see the
+        the same pre-commit hook contract. See the
         <a href="#cross-org">cross-org topology</a> section.
       </p>
     </div>
@@ -486,7 +504,7 @@
         <div class="mono-label">CONTRIBUTING.md</div>
         <h3>How the eight commitments are enforced</h3>
         <p>
-          The repo's contribution rules — branch model, PR template,
+          The repo's contribution rules: branch model, PR template,
           how each of the eight commitments is enforced at the package
           boundary, in CI, and in code review, and the
           <strong>pre-commit hook setup</strong> that mirrors the full
@@ -510,6 +528,11 @@
       <p class="lead">
         Where the SPEC is normative and exhaustive, these guides walk
         through one concept at a time with diagrams and worked examples.
+        Some cards below and further down this page name repositories that
+        are not publicly hosted (<code>causl-check</code>,
+        <code>causl-org-srv</code>, and the private Enterprise engine and
+        client on <code>git.opsite.ca</code>), so I give the repo and path in
+        the card label and leave those cards unlinked.
       </p>
     </div>
 
@@ -535,7 +558,7 @@
         <h3>Composite statechart with Mermaid diagrams</h3>
         <p>
           The single statechart that governs resource fetch, conflict
-          status, transaction phases, and interaction modes — rendered
+          status, transaction phases, and interaction modes, rendered
           inline so each transition has a name you can grep for.
         </p>
         <span class="doc-card-link">Read on GitHub</span>
@@ -548,7 +571,7 @@
         <h3>What <code>causl-check</code> catches</h3>
         <p>
           A rule-by-rule mapping from each twelve-pass lint to the
-          SPEC §16 race class it corresponds to — including which
+          SPEC §16 race class it corresponds to, including which
           shapes are caught statically and which still require the
           enumerator.
         </p>
@@ -569,47 +592,38 @@
         <span class="doc-card-link">Read on GitHub</span>
       </a>
 
-      <a class="card doc-card"
-         href="https://github.com/causljs/causl-check/blob/main/docs/apalache-diff-report.md"
-         rel="noopener">
-        <div class="mono-label">docs/apalache-diff-report.md</div>
+      <div class="card doc-card doc-card-static">
+        <div class="mono-label">causl-check &middot; docs/apalache-diff-report.md</div>
         <h3>Latest TLA+ differential run</h3>
         <p>
           The most recent CI output from the Apalache differential
-          runner against the EPIC-7 TLA+ corpus — regenerated on every
+          runner against the EPIC-7 TLA+ corpus, regenerated on every
           run of the bounded model checker. The Tier-3 S-row corpus
           (<code>spec_s1.tla</code> / <code>spec_s2.tla</code> /
           <code>spec_s3.tla</code>) covers the SPEC.async §9.1.1 rows.
         </p>
-        <span class="doc-card-link">Read on GitHub</span>
-      </a>
+      </div>
 
-      <a class="card doc-card"
-         href="https://github.com/causljs/causl-check/blob/main/docs/rfcs/0001-adopter-race-classes.md"
-         rel="noopener">
-        <div class="mono-label">docs/rfcs/0001-adopter-race-classes.md</div>
-        <h3>RFC 0001 — adopter-defined race classes</h3>
+      <div class="card doc-card doc-card-static">
+        <div class="mono-label">causl-check &middot; docs/rfcs/0001-adopter-race-classes.md</div>
+        <h3>RFC 0001: adopter-defined race classes</h3>
         <p>
           The extension surface by which an adopter declares a custom
           race class without violating the closed §9.1 catalogue. Phase 2
           shipped the loader + SARIF integration in
-          <code>causljs/causl-check</code>.
+          <code>causl-check</code>.
         </p>
-        <span class="doc-card-link">Read on GitHub</span>
-      </a>
+      </div>
 
-      <a class="card doc-card"
-         href="https://github.com/causljs/causl-check/blob/main/docs/rfcs/0002-federated-race-detection.md"
-         rel="noopener">
-        <div class="mono-label">docs/rfcs/0002-federated-race-detection.md</div>
-        <h3>RFC 0002 — federated race detection</h3>
+      <div class="card doc-card doc-card-static">
+        <div class="mono-label">causl-check &middot; docs/rfcs/0002-federated-race-detection.md</div>
+        <h3>RFC 0002: federated race detection</h3>
         <p>
           Race detection across multiple <code>causljs/*</code> repos in
-          a single SARIF stream — the per-push fast check, the nightly
+          a single SARIF stream: the per-push fast check, the nightly
           cross-repo sweep, and the federated finding wire format.
         </p>
-        <span class="doc-card-link">Read on GitHub</span>
-      </a>
+      </div>
     </div>
   </section>
 
@@ -620,18 +634,22 @@
     <div class="section-head">
       <div>
         <div class="section-kicker">Cross-org topology</div>
-        <h2>Seven repos, one engine.</h2>
+        <h2>One repo per concern.</h2>
       </div>
       <p class="lead">
-        Causl was split out of a single monorepo into seven repositories
-        under the <a href="https://github.com/causljs" rel="noopener"><code>causljs</code></a>
-        GitHub organisation. Each repo owns one concern; the
-        contribution flow, the CI gates, and the release cadences are
-        independent. The Rust→WASM <code>causl-wasm</code> engine and the
-        <code>causl-ts-wasm-engine</code> fork are
-        <a href="./enterprise/"><span class="badge-enterprise">Enterprise</span></a>
-        — see the <a href="./enterprise/">Enterprise docs</a> for the
-        two-engine architecture and the <code>causl-client</code> API.
+        Causl was split out of a single monorepo. Each repo owns one
+        concern; the contribution flow, the CI gates, and the release
+        cadences are independent. Three repos were renamed on
+        2026-07-27, and the old names are now redirects:
+        <code>causl-client</code> became <code>causl-wasm-ts</code>,
+        <code>causl-wasm</code> became <code>causl-core-rs</code>, and
+        <code>causl-ts-wasm-engine</code> became
+        <code>causl-core-ts</code>. The scheme is engines by substrate
+        and clients by consumer language. The Rust engine and the
+        client are
+        <a href="./enterprise/"><span class="badge-enterprise">Enterprise</span></a>,
+        so see the <a href="./enterprise/">Enterprise docs</a> for the
+        two-engine architecture and the client API.
       </p>
     </div>
 
@@ -640,73 +658,67 @@
          href="https://github.com/causljs/causl-ts"
          rel="noopener">
         <div class="mono-label">causljs/causl-ts</div>
-        <h3>TypeScript engine + adapters</h3>
+        <h3>Open-source TypeScript engine + adapters</h3>
         <p>
-          <code>@causl/core</code>, <code>@causl/react</code>,
-          <code>@causl/formula</code>, <code>@causl/sync</code>,
-          <code>@causl/devtools</code>,
-          <code>@causl/devtools-bridge</code>,
-          <code>@causl/persistence</code>,
-          <code>@causl/checker</code>,
-          <code>@causl/bench</code>,
-          <code>@causl/migration-check</code>.
+          The public npmjs line, under the separate
+          <code>@causlts</code> scope: <code>@causlts/core</code>,
+          <code>@causlts/react</code>, <code>@causlts/formula</code>,
+          <code>@causlts/sync</code>, <code>@causlts/devtools</code>,
+          <code>@causlts/devtools-bridge</code>,
+          <code>@causlts/persistence</code>,
+          <code>@causlts/hypothesis</code>,
+          <code>@causlts/migration-check</code>. This is a different
+          product from the private client, not a mirror of it.
         </p>
         <span class="doc-card-link">View on GitHub</span>
       </a>
 
       <a class="card doc-card"
-         href="https://github.com/causljs/causl-wasm"
-         rel="noopener">
-        <div class="mono-label">causljs/causl-wasm</div>
+         href="./enterprise/two-engine-architecture/">
+        <div class="mono-label">causl-core-rs</div>
         <h3>Rust engine + consolidated bridge <span class="badge-enterprise">Enterprise</span></h3>
         <p>
+          Formerly <code>causl-wasm</code>. Publishes
+          <code>@causl/core-rs</code> to the private registry:
           <code>engine-rs-core</code> (pure-algorithm
           <code>no_std + alloc</code>) plus the single consolidated
-          bridge cdylib that replaced the legacy
-          <code>engine-rs-bridge-serde</code> +
-          <code>engine-rs-bridge-gc</code> pair in
-          <a href="https://github.com/causljs/causl-wasm/pull/74" rel="noopener">PR&nbsp;#74</a>.
-          <code>epic/1</code> migrated the hot path to
-          <code>&amp;mut dyn CellAccess</code>.
+          bridge cdylib that replaced the legacy serde and GC bridge
+          pair. Exactly one bridge ships, <code>gc-classic</code>;
+          <code>gc-builtins</code> was deleted because its imports could
+          not bind on any host.
         </p>
-        <span class="doc-card-link">View on GitHub</span>
+        <span class="doc-card-link">Read the architecture</span>
       </a>
 
       <a class="card doc-card"
-         href="https://github.com/causljs/causl-ts-wasm-engine"
-         rel="noopener">
-        <div class="mono-label">causljs/causl-ts-wasm-engine</div>
-        <h3>TS fork — WASM by default <span class="badge-enterprise">Enterprise</span></h3>
+         href="./enterprise/two-engine-architecture/">
+        <div class="mono-label">causl-core-ts</div>
+        <h3>TypeScript engine + differential oracle <span class="badge-enterprise">Enterprise</span></h3>
         <p>
-          Defaults <code>loadWasmBackend()</code> to the consolidated
-          <code>@causljs/causl-wasm</code> bridge
-          (<code>DEFAULT_WASM_ENGINE_MODE=rust-ssot</code>). Where
-          <code>causl-ts</code> keeps the JS engine as the SSOT, this
-          fork inverts the default.
+          Formerly <code>causl-ts-wasm-engine</code>. It stays
+          dual-engine and still defaults to <code>js-ssot</code>, and it
+          is the differential oracle plus the benchmark host:
+          <code>causl-wasm-ts</code> pins it by commit SHA and runs
+          5,000 differential trials per PR against it.
         </p>
-        <span class="doc-card-link">View on GitHub</span>
+        <span class="doc-card-link">Read the architecture</span>
       </a>
 
       <a class="card doc-card"
-         href="https://github.com/causljs/causl-bench"
-         rel="noopener">
-        <div class="mono-label">causljs/causl-bench</div>
+         href="/pages/benchmarks/">
+        <div class="mono-label">causl-bench</div>
         <h3>Cross-library bench suite</h3>
         <p>
-          Compares causl-ts / causl-ts-wasm-engine / Jotai / RTK / MobX
-          across the SPEC scenario taxonomy. The
-          <code>CAUSL_TS_SOURCE</code> env var (<code>upstream</code> vs
-          <code>wasm-engine</code>) lets a single run A/B the two
-          TypeScript-side engines. Output feeds the dashboard at
-          <a href="/benchmarks/">/benchmarks</a>.
+          Compares the client, the TypeScript engine, Jotai, RTK and
+          MobX across the SPEC scenario taxonomy, one subprocess per
+          cell with a fresh world per step. Output feeds the dashboard
+          at <code>/pages/benchmarks/</code>.
         </p>
-        <span class="doc-card-link">View on GitHub</span>
+        <span class="doc-card-link">View the dashboard</span>
       </a>
 
-      <a class="card doc-card"
-         href="https://github.com/causljs/causl-check"
-         rel="noopener">
-        <div class="mono-label">causljs/causl-check</div>
+      <div class="card doc-card doc-card-static">
+        <div class="mono-label">causl-check</div>
         <h3>Static analysis</h3>
         <p>
           <code>causl-check</code> (twelve-pass IR linter),
@@ -715,13 +727,10 @@
           corpus, RFC 0001 (adopter race classes), and RFC 0002
           (federated race detection).
         </p>
-        <span class="doc-card-link">View on GitHub</span>
-      </a>
+      </div>
 
-      <a class="card doc-card"
-         href="https://github.com/causljs/causl-org-srv"
-         rel="noopener">
-        <div class="mono-label">causljs/causl-org-srv</div>
+      <div class="card doc-card doc-card-static">
+        <div class="mono-label">causl-org-srv</div>
         <h3>Static dev server for this site</h3>
         <p>
           Small dev server used while iterating on the demos that ship
@@ -729,8 +738,7 @@
           into <code>causl-ts/tools/causl-org-srv/</code>; lives
           standalone now.
         </p>
-        <span class="doc-card-link">View on GitHub</span>
-      </a>
+      </div>
     </div>
   </section>
 
@@ -741,54 +749,45 @@
     <div class="section-head">
       <div>
         <div class="section-kicker">Tools</div>
-        <h2>The Rust crates in <code>causljs/causl-check</code>.</h2>
+        <h2>The Rust crates in <code>causl-check</code>.</h2>
       </div>
       <p class="lead">
-        All three crates are CI gates, not runtimes — they read the
+        All three crates are CI gates, not runtimes. They read the
         TypeScript source, lower it to the IR, and reject programs that
         violate SPEC §16 before they reach production.
       </p>
     </div>
 
     <div class="grid-3">
-      <a class="card doc-card"
-         href="https://github.com/causljs/causl-check/tree/main/tools/checker"
-         rel="noopener">
-        <div class="mono-label">tools/checker</div>
+      <div class="card doc-card doc-card-static">
+        <div class="mono-label">causl-check &middot; tools/checker</div>
         <h3><code>causl-check</code></h3>
         <p>
-          The static IR linter — twelve passes, one per race class,
-          shipped as a Rust binary and wrapped by
-          <code>@causl/checker</code> for npm consumers.
+          The static IR linter: twelve passes, one per race class,
+          shipped as a Rust binary. The <code>@causl/checker</code> npm
+          wrapper is not published, so run the binary from source.
         </p>
-        <span class="doc-card-link">View on GitHub</span>
-      </a>
+      </div>
 
-      <a class="card doc-card"
-         href="https://github.com/causljs/causl-check/tree/main/tools/enumerator"
-         rel="noopener">
-        <div class="mono-label">tools/enumerator</div>
+      <div class="card doc-card doc-card-static">
+        <div class="mono-label">causl-check &middot; tools/enumerator</div>
         <h3><code>causl-enumerate</code></h3>
         <p>
-          The SPEC §16.4 bounded model checker — full type surface,
+          The SPEC §16.4 bounded model checker: full type surface,
           phased transitions with per-step events, an oracle, and
           Tier-1/2/3 bound presets.
         </p>
-        <span class="doc-card-link">View on GitHub</span>
-      </a>
+      </div>
 
-      <a class="card doc-card"
-         href="https://github.com/causljs/causl-check/tree/main/tools/enumerator/diff"
-         rel="noopener">
-        <div class="mono-label">tools/enumerator/diff</div>
+      <div class="card doc-card doc-card-static">
+        <div class="mono-label">causl-check &middot; tools/enumerator/diff</div>
         <h3>Apalache differential runner</h3>
         <p>
           Re-runs the EPIC-7 TLA+ corpus through Apalache and diffs
-          its output against the bounded enumerator — the safety net
+          its output against the bounded enumerator: the safety net
           for the safety net.
         </p>
-        <span class="doc-card-link">View on GitHub</span>
-      </a>
+      </div>
     </div>
   </section>
 
@@ -800,10 +799,14 @@
       <div>
         <h2>The full source</h2>
         <p>
-          Everything linked above is generated from, or lives in, the
-          seven repos under the <code>causljs</code> organisation on
-          GitHub. Issues, PRs, and the complete eight-commitment audit
-          trail are there.
+          The open-source TypeScript engine and the static-analysis
+          tooling live under the <code>causljs</code> organisation on
+          GitHub. The Rust engine (<code>causl-core-rs</code>), the
+          client (<code>causl-wasm-ts</code>) and the conformance
+          engine (<code>causl-core-ts</code>) are private and are
+          hosted, with their package registry, on the Gitea host. Issues,
+          PRs, and the complete eight-commitment audit trail are in
+          whichever repo owns the concern.
         </p>
       </div>
       <div>
@@ -816,7 +819,7 @@
   <!-- ============================================================
        Footer
        ============================================================ -->
-    <!-- Footer host — js/footer.js replaces this with the canonical
+    <!-- Footer host: js/footer.js replaces this with the canonical
        <footer class="site-footer"> element. -->
   <div id="footer-host">
     <noscript>
