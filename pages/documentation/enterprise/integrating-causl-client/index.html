@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Integrating causl-client — Causl</title>
-  <meta name="description" content="Enterprise integration guide for the causl-client thin TS API over the causl-wasm Rust core: installation, the producer/consumer wasm-artefact split, the node:fs loader and host-tier matrix, the read()-identity migration, and the performance ceiling. Every claim cites a SPEC § anchor." />
+  <title>Integrating causl-wasm-ts · Causl</title>
+  <meta name="description" content="Enterprise integration guide for causl-wasm-ts, the thin TypeScript client over the causl-core-rs Rust engine: the private Gitea registry install and the @causl/core hazard, the preload plus synchronous construction boot, the producer/consumer wasm-artefact split, the node:fs loader and host floor, the read()-identity migration, and what the wasm path actually costs." />
   <link rel="icon" href="../../../../img/causl-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../../../css/topbar.css" />
   <link rel="stylesheet" href="../../../../css/site.css" />
@@ -31,7 +31,7 @@
   </style>
 </head>
 <body>
-    <!-- Topbar host — js/topbar.js replaces this with the canonical
+    <!-- Topbar host. js/topbar.js replaces this with the canonical
        <header id="topbar"> element. The fallback links inside the
        <noscript> block keep nav usable for crawlers and no-JS users. -->
   <div id="topbar-host" data-current="docs">
@@ -54,166 +54,208 @@
   </div>
 
   <main class="docs-content">
-    <h1>Integrating causl-client into a TypeScript / Node.js app <span class="badge-enterprise">Enterprise</span></h1>
+    <h1>Integrating causl-wasm-ts into a TypeScript / Node.js app <span class="badge-enterprise">Enterprise</span></h1>
 
     <blockquote>
-      The Node-integration counterpart to <code>causl-wasm</code>'s producer-side
-      <a href="https://github.com/causljs/causl-wasm" rel="noopener"><code>scripts/README.md</code></a>. That file
-      documents how a Python pipeline <strong>builds and places</strong> the wasm artefact;
-      this file documents how a TS/Node app <strong>consumes</strong> the placed artefact and
-      binds it through the <code>@causl/core/wasm</code> thin TS API.
+      <p>
+        <strong>This page kept its old URL on purpose.</strong> The package it
+        describes was renamed from <code>causl-client</code> to
+        <code>causl-wasm-ts</code> on 2026-07-27, but the directory stays
+        <code>integrating-causl-client/</code> so that existing links keep
+        resolving. The prose is current; the path is legacy.
+      </p>
+    </blockquote>
+
+    <blockquote>
+      <p>
+        The Node-integration counterpart to the engine repo's producer-side
+        <code>causl-core-rs</code>&nbsp;<code>scripts/README.md</code>.
+        That file documents how a Python pipeline <strong>builds and
+        places</strong> the wasm artefact; this file documents how a TS/Node app
+        <strong>consumes</strong> the placed artefact through the
+        <code>@causl/causl-wasm-ts</code> thin TypeScript client. The engine and
+        client repositories are private, so I cite repositories, files and issues
+        by name rather than by link; reaching them needs a Gitea account on
+        <code>git.opsite.ca</code>.
+      </p>
     </blockquote>
 
     <p>
-      This guide is the consumer-side concretion of <strong>SPEC §18A.4</strong> (the thin-TS-API
-      definition) and <strong>§18A.2</strong> (the Node-target requirement). It covers, in order:
+      This guide is the consumer-side concretion of <strong>SPEC §18A.4</strong>
+      (the thin-TS-client definition) and <strong>§18A.2</strong> (the
+      Node-target requirement). It covers, in order:
     </p>
 
     <ol>
-      <li><a href="#1-what-causl-client-is">What <code>causl-client</code> is</a> — the thin TS API over the
-        wasm core, and what it is <em>not</em>.</li>
-      <li><a href="#2-installing-and-using-it">Installing and using it in a TS/Node app</a>
-        — including the <a href="#25-synchronous-wasm-construction-preload-once-build-sync-18a12">preload + synchronous
-        construction</a> pattern (§18A.12).</li>
-      <li><a href="#3-the-wasm-artefact-placement-the-producerconsumer-split">Where the wasm artefact comes from</a>
-        — the producer/consumer split and the <code>causl-wasm</code> Python scripts.</li>
-      <li><a href="#4-the-loader-and-the-host-tier-matrix">The <code>node:fs</code> loader and host-tier matrix</a>.</li>
-      <li><a href="#5-the-read-identity-migration-18a5--151-1124">The <code>read()</code>-identity migration</a>
-        — the one breaking change you must audit for before a real-Rust build.</li>
-      <li><a href="#6-the-performance-ceiling-18a7">The performance ceiling</a> — what the wasm
-        path costs and what it does <em>not</em> buy you today.</li>
+      <li><a href="#1-what-causl-wasm-ts-is">What <code>causl-wasm-ts</code> is</a>: the thin TS client
+        over the Rust core, and what it is <em>not</em>.</li>
+      <li><a href="#2-installing-and-using-it">Installing and using it in a TS/Node app</a>,
+        including the <a href="#23-booting-the-engine">preload plus synchronous
+        construction</a> boot (§18A.12).</li>
+      <li><a href="#3-the-wasm-artefact-placement-the-producerconsumer-split">Where the wasm artefact comes from</a>:
+        the producer/consumer split and the <code>causl-core-rs</code> Python scripts.</li>
+      <li><a href="#4-the-loader-and-the-host-tier-matrix">The <code>node:fs</code> loader and the host floor</a>.</li>
+      <li><a href="#5-the-read-identity-migration">The <code>read()</code>-identity migration</a>:
+        the one breaking change you must audit for before a real-Rust build.</li>
+      <li><a href="#6-what-the-wasm-path-costs">What the wasm path costs</a>, and which of the
+        older cost claims the measurements refute.</li>
     </ol>
 
     <p>
-      Every load-bearing claim cites a SPEC § anchor. Where the shipped code and the
-      SPEC contract differ — they do, in two named places — the gap is called out as
-      <strong>Shipped today</strong> vs <strong>Planned (§…)</strong>, never blurred.
+      Every load-bearing claim cites a SPEC § anchor. Where the shipped code and
+      the SPEC contract differ, the gap is called out as <strong>Shipped
+      today</strong> versus <strong>Dated record</strong>, never blurred.
     </p>
 
     <hr />
 
-    <h2 id="1-what-causl-client-is">1. What causl-client is</h2>
+    <h2 id="1-what-causl-wasm-ts-is">1. What causl-wasm-ts is</h2>
 
     <p>
-      <code>causl</code> is a <strong>reactive dependency-graph engine</strong> with denotational,
-      glitch-free, transactional semantics. Its public contract is the <strong>§12
-      surface</strong>: the seven-method spine
+      <code>causl</code> is a <strong>reactive dependency-graph engine</strong>
+      with denotational, glitch-free, transactional semantics. Its public
+      contract is the <strong>§12 surface</strong>: the seven-method spine
     </p>
 
     <code class="codeblock-source" data-lang="text">input · derived · commit · read · subscribe · snapshot · explain</code>
 
     <p>
-      plus the structural queries <code>dependencies</code> / <code>dependents</code> (and their transitive
-      closures, the commit log, commit metadata, handle/disposal validation, stats —
-      the §12.2 second-tier surface).
+      plus the structural queries <code>dependencies</code> /
+      <code>dependents</code> (and their transitive closures, the commit log,
+      commit metadata, handle/disposal validation, stats: the §12.2 second-tier
+      surface).
     </p>
 
     <p>
-      Per <strong>SPEC §18A.1</strong>, that contract ships in <strong>two conformant engines</strong>, held
-      byte-identical at the §12 boundary by the cross-backend determinism gate
-      (§18A.1.1):
+      Per <strong>SPEC §18A.1</strong>, that contract ships in <strong>two
+      conformant engines</strong>, held byte-identical at the §12 boundary by
+      the cross-backend determinism gate (§18A.1.1). Since the 2026-07-27
+      rename the two engines live in two different repositories:
     </p>
 
     <table>
       <thead>
-        <tr><th>Engine</th><th>What it is</th><th>Status</th></tr>
+        <tr><th>Engine</th><th>What it is</th><th>Where it lives</th></tr>
       </thead>
       <tbody>
         <tr>
-          <td><strong><code>causl-ts</code></strong></td>
-          <td>The TypeScript reference engine — the value-of-record running natively on the JS event loop.</td>
-          <td>The <strong>unconditional floor</strong> (§13.8). Lives in <code>causljs/causl-ts-wasm-engine</code>.</td>
+          <td><strong>The TypeScript engine</strong></td>
+          <td>The reference engine, the value-of-record running natively on the JS event loop.</td>
+          <td>The <strong>unconditional floor</strong> (§13.8).
+            <code>causl-core-ts</code> keeps it as the dual-engine default
+            (<code>js-ssot</code>) and the differential oracle;
+            <code>causl-ts</code> is its open-source distribution.
+            <strong>It is not in this package at all.</strong></td>
         </tr>
         <tr>
-          <td><strong><code>causl-wasm</code></strong></td>
+          <td><strong>The Rust engine</strong></td>
           <td>The Rust core (<code>engine-rs-core</code> + <code>engine-rs-bridge</code>) compiled to WebAssembly, reached over FFI.</td>
-          <td>The <strong>unconditional production engine</strong> in <code>causl-client</code> (rust-ssot is the default); the §18A.3 FFI lift landed (<a href="https://github.com/causljs/causl-wasm/issues/170"><code>causl-wasm#170</code></a>) so every adopter op resolves from Rust. Lives in <code>causljs/causl-wasm</code>.</td>
+          <td>The <strong>unconditional production engine</strong> in
+            <code>causl-wasm-ts</code> (<code>rust-ssot</code> is the default);
+            the §18A.3 FFI lift landed
+            (<code>causl-core-rs#170</code>)
+            so every adopter operation resolves from Rust. Lives in
+            <code>causl-core-rs</code>.</td>
         </tr>
       </tbody>
     </table>
 
     <p>
-      <strong><code>causl-client</code> is the thin TypeScript API over the <code>causl-wasm</code> core</strong>
-      (§18A.4). Stated plainly so the boundary stays honest, it is <strong>not</strong>:
+      <strong><code>causl-wasm-ts</code> is the thin TypeScript client over the
+      <code>causl-core-rs</code> core</strong> (§18A.4). Stated plainly so the
+      boundary stays honest, it is <strong>not</strong>:
     </p>
 
     <ul>
-      <li>not a copy of the TS engine's <code>graph.ts</code>;</li>
+      <li>not a copy of the TypeScript engine's <code>graph.ts</code>;</li>
       <li>not the ~7.5k-LOC TS shell under a new name;</li>
       <li>not "the same TS engine, just calling into WASM."</li>
     </ul>
 
     <p>
-      It is a thin adapter that (1) implements the public <code>Graph</code> interface by
-      delegating each method to the wasm core over FFI; (2) marshals parameters across
-      the JS↔WASM boundary (the cost is measured, not hidden — §6 below); and (3)
-      binds to the placed <code>.wasm</code> artefact. It <strong>ships no Rust source and no build
-      tooling</strong> — the produce-and-place tooling is the engine repo's
-      (<code>causljs/causl-wasm</code>, §18A.11); the consume-and-bind surface is this repo's.
+      It is a thin adapter that (1) implements the public <code>Graph</code>
+      interface by delegating each method to the wasm core over FFI; (2)
+      marshals parameters across the JS&harr;WASM boundary (the cost is
+      measured, not hidden, §6 below); and (3) binds to the placed
+      <code>.wasm</code> artefact. It <strong>ships no Rust source, no build
+      tooling, and no TypeScript engine</strong>. The produce-and-place tooling
+      is the engine repo's (<code>causl-core-rs</code>, §18A.11); the
+      consume-and-bind surface is this package's.
     </p>
 
     <h3 id="repository-topology-18a10">Repository topology (§18A.10)</h3>
 
-    <code class="codeblock-source" data-lang="text">causljs/causl-wasm          Rust engine + FFI externs + Python build/package tooling
-                            (the source of truth for the causl-wasm engine)
-causljs/causl-client        THIS REPO — the thin TS API + Node loader + adoption docs
-                            (consumes the placed .wasm; ships no Rust)
-causljs/causl-ts-wasm-engine  causl-ts (the TS floor) + cross-backend bench/conformance harness</code>
+    <code class="codeblock-source" data-lang="text">causl-core-rs    Rust engine, FFI externs, Python build and package tooling.
+                 The source of truth for the Rust to WebAssembly engine.
+                 Formerly causljs/causl-wasm.
+
+causl-wasm-ts    THIS PACKAGE. The thin TS client, the Node loader, the
+                 adoption docs. Consumes the placed .wasm; ships no Rust
+                 and no TypeScript engine. Formerly causljs/causl-client.
+
+causl-core-ts    The TypeScript engine (the floor), the differential oracle,
+                 and the cross-backend bench and conformance harness. Stays
+                 dual-engine. Formerly causljs/causl-ts-wasm-engine.</code>
 
     <p>
-      Named first-party integration consumers: <code>iasbuilt/xldatagrid</code> and
+      All three now live under
+      <code>git.opsite.ca/causl</code>;
+      the old GitHub names are 301 redirects. Named first-party integration
+      consumers: <code>iasbuilt/xldatagrid</code> and
       <code>iasbuilt/webapp</code> (Node.js TS web apps).
     </p>
 
     <blockquote>
-      <strong>Current state of the wasm path (SPEC §18A.3 / §18A.5).</strong> The
-      <code>WasmBackend</code> returned by <code>loadWasmBackend()</code> is a <strong>real Rust engine</strong>
-      (<code>engine-rs-core</code>), not a TS wrapper: the §18A.3 FFI structural lift has
-      <strong>landed</strong> (<a href="https://github.com/causljs/causl-wasm/issues/170"><code>causl-wasm#170</code></a>), so every adopter operation resolves
-      from Rust — engine orchestration (commit pipeline, dependency tracking,
-      cutoff, history) runs in Rust, while the user's <code>derived()</code> compute
-      lambdas run in JS over the bridge callback by design. The FFI seam, the
-      bridge picker, and the cross-backend byte-identity gate are stable and
-      enforced. Importing the wasm entry point is the unconditional production
-      path; the standing JS↔WASM marshal cost is named honestly (§17.6 G.1), within
-      the §14 RAIL budget — not a "beats-TS" claim. This is repeated at the top of
-      <a href="https://github.com/causljs/causl-client/blob/main/packages/core/wasm/README.md"><code>packages/core/wasm/README.md</code></a>.
+      <p>
+        <strong>Current state of the wasm path (SPEC §18A.3 / §18A.5).</strong>
+        The engine this package loads is a <strong>real Rust engine</strong>
+        (<code>engine-rs-core</code>), not a TS wrapper: the §18A.3 FFI
+        structural lift has <strong>landed</strong>
+        (<code>causl-core-rs#170</code>),
+        so every adopter operation resolves from Rust. Engine orchestration
+        (commit pipeline, dependency tracking, cutoff, history) runs in Rust,
+        while the user's <code>derived()</code> compute lambdas run in JS over
+        the bridge callback by design. The FFI seam, the bridge picker and the
+        cross-backend byte-identity gate are stable and enforced.
+      </p>
     </blockquote>
 
     <blockquote>
-      <strong><code>causl-client</code> → wasm-default with a TS capability-fallback (<a href="https://github.com/causljs/causl-client/blob/main/SPEC.md" rel="noopener">SPEC §18A.13</a> +
-      §18A.13.1; <em>shipped</em>).</strong> By a recorded
-      governance decision, <code>causl-client</code> ships the <strong>wasm engine as its sole
-      default and public engine</strong> (rust-ssot is the default) and has
-      <strong>un-exported the pure-TypeScript factory (<code>createCauslTs</code>) from the public
-      <code>@causl/core</code> barrel</strong>. The driver is complexity-elimination — one
-      engine, one codepath — with perf explicitly accepted as immaterial here (it
-      deliberately bypasses the §18A.7 GO/NO-GO perf gate and says so plainly).
-      <strong>§18A.13.1 (2026-06-23)</strong> retains <code>createCauslTs</code> internally
-      and wires it as the implicit <code>createCausl()</code> path's WasmGC-unavailable
-      capability fallback: on a host where WasmGC cannot instantiate, the implicit
-      <code>createCausl()</code> degrades <strong>loudly</strong> (console.warn + telemetry,
-      never silent) to the TS floor, while <em>explicit</em> <code>createCauslWasm()</code> /
-      <code>engine: 'rust-ssot'</code> still fail loud (<code>CAUSL_WASM_ENGINE_UNAVAILABLE</code>).
-      So this is <strong>not</strong> strictly "wasm-only," and deleting <code>createCauslTs</code>
-      outright is dropped from near-term scope. (The WasmGC probe itself is still a
-      placeholder, #691.) The
-      cut was executed <strong>wire-before-cut</strong>: the §18A.12 sync seam (below)
-      landed first so <code>createCausl()</code> routes to the wasm engine
-      <em>synchronously</em> at every call site (post-preload), and the public TS
-      factory was then un-exported (epic
-      <a href="https://github.com/causljs/causl-client/issues/31"><code>causl-client#31</code></a>).
-      The §18A.3 FFI structural lift has since landed
-      (<a href="https://github.com/causljs/causl-wasm/issues/170"><code>causl-wasm#170</code></a>),
-      so every adopter operation resolves from Rust; the internal TS engine is
-      retained (not deleted) as the §12 reference and the §18A.13.1
-      capability fallback. <strong>Scope:</strong> the cut is
-      <code>causl-client</code> <em>only</em>. The fork that hosts the §18A.1.1 differential
-      oracle and the benchmark suite (<code>causljs/causl-ts-wasm-engine</code>)
-      deliberately <strong>keeps the dual-engine TS floor as its DEFAULT</strong>
-      (<code>DEFAULT_WASM_ENGINE_MODE = 'js-ssot'</code>) and <em>adds</em> a
-      real-Rust differential leg as the byte-identity oracle — it does not flip
-      to rust-ssot.
+      <p>
+        <strong>Single-engine, and the TypeScript fallback is withdrawn
+        (§18A.13; §18A.13.1 is now a dated record).</strong> By a recorded
+        governance decision, <code>causl-wasm-ts</code> ships the wasm engine as
+        its <strong>sole engine</strong>. The driver is complexity-elimination,
+        one engine and one codepath, with perf explicitly accepted as immaterial
+        here; it deliberately bypasses the §18A.7 GO/NO-GO perf gate and says so
+        plainly.
+      </p>
+      <p>
+        <strong>§18A.13.1 (2026-06-23)</strong> briefly reversed part of that: it
+        retained <code>createCauslTs</code> internally and wired it as the
+        implicit <code>createCausl()</code> path's capability fallback. That
+        section was <strong>withdrawn at 0.5.0</strong> and its own heading now
+        tells you to read it "as a dated record, not as a live obligation." Two
+        findings killed it. The fallback engine and the primary
+        <em>disagreed</em> on in-place mutation of a committed value
+        (<code>causl-wasm-ts#272</code>),
+        which §18A.1.1 requires to be identical; and the implicit path was the
+        <em>accident</em> path, the one you reached by calling the ordinary
+        factory. 0.4.0 warned on it and 0.5.0 throws.
+      </p>
+      <p>
+        So today <code>createCausl()</code> is
+        <strong>construct-or-throw</strong>, and <code>createCauslTs</code> is
+        <strong>deleted from source</strong>: a
+        <code>git grep createCauslTs</code> over <code>packages/*/src/**</code>
+        returns zero hits. Nothing in this package degrades to TypeScript at
+        runtime. <strong>Scope:</strong> this is
+        <code>causl-wasm-ts</code> only. <code>causl-core-ts</code> hosts the
+        §18A.1.1 differential oracle and the benchmark suite, deliberately keeps
+        the dual-engine TypeScript floor as its default
+        (<code>DEFAULT_WASM_ENGINE_MODE = 'js-ssot'</code>), and adds a
+        real-Rust differential leg as the byte-identity oracle.
+      </p>
     </blockquote>
 
     <hr />
@@ -222,33 +264,62 @@ causljs/causl-ts-wasm-engine  causl-ts (the TS floor) + cross-backend bench/conf
 
     <h3 id="21-install">2.1 Install</h3>
 
-    <code class="codeblock-source" data-lang="bash"># @causl/* ships from the private Enterprise registry (auth required) — see
-# Enterprise → Distribution. Point the @causl scope at it in .npmrc first:
-#   @causl:registry=https://iasbuilt-npm.opsite.ca/
-pnpm add @causl/core        # or: npm i @causl/core / yarn add @causl/core</code>
-
     <p>
-      These packages are distributed through the
-      <a href="../#distribution">private Enterprise registry</a>, which requires
-      authentication for every read; the public npm registry does not carry
-      them. <code>@causl/core@0.3.3</code> ships the wasm engine in-tarball and
-      is wasm-default (rust-ssot). The wasm entry is exposed as an
-      <strong>opt-in subpath</strong>: the extra wasm bundle cost at the browser
-      target is paid only by callers who explicitly
-      <code>import('@causl/core/wasm')</code>. Node 22+ is required
-      (<code>engines.node: "&gt;=22"</code>).
+      The <code>@causl</code> scope is served by the <strong>private Gitea
+      package registry</strong>, and every read needs the token issued during
+      Enterprise onboarding. Put <strong>both</strong> lines in
+      <code>.npmrc</code> before the first install:
     </p>
 
-    <h3 id="22-the-smallest-worked-example-ts-engine--the-floor">2.2 The smallest worked example</h3>
+    <code class="codeblock-source" data-lang="text">@causl:registry=https://git.opsite.ca/api/packages/causl/npm/
+//git.opsite.ca/api/packages/causl/npm/:_authToken=${CAUSL_NPM_TOKEN}</code>
+
+    <code class="codeblock-source" data-lang="bash">pnpm add @causl/causl-wasm-ts
+# npm install @causl/causl-wasm-ts
+# yarn add @causl/causl-wasm-ts</code>
+
+    <blockquote>
+      <p>
+        <strong>The <code>@causl/core</code> hazard: get this wrong and the
+        install still succeeds.</strong> <code>@causl/core</code> is not this
+        package and has <strong>zero versions</strong> on the Gitea registry.
+        It <em>does</em> resolve on the <strong>public</strong> npm registry, at
+        0.3.0 through 0.3.3, to a <em>different</em> package (the retired
+        TypeScript engine). So an <code>.npmrc</code> missing the
+        <code>@causl:registry=</code> line, or a lockfile still pinning
+        <code>@causl/core</code>, installs cleanly and gives you the wrong
+        engine instead of an error. If you are migrating from an older
+        integration, grep your lockfile for <code>@causl/core</code> and for the
+        dead Verdaccio host <code>iasbuilt-npm.opsite.ca</code>, and replace
+        both.
+      </p>
+    </blockquote>
 
     <p>
-      Identical to <a href="../../api/media/SPEC.md">SPEC §10</a>. Two inputs, one derived, one diamond, one
-      subscriber, two commits, three observed propagations:
+      Node&nbsp;22 or newer is required (<code>engines.node: "&gt;=22"</code>).
+      The wasm engine lives on the <code>/wasm</code> subpath of the package,
+      but do not read that as optional: the engine is
+      <strong>unconditional</strong> in this client, and a build that never
+      imports the subpath throws <code>CAUSL_WASM_ENGINE_UNAVAILABLE</code> at
+      construction. Import it from your boot module, as below.
     </p>
 
-    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core'
+    <h3 id="22-the-smallest-worked-example">2.2 The smallest worked example</h3>
 
-const graph = createCausl() // in causl-client, createCausl() defaults to the wasm engine (rust-ssot); see §2.3
+    <p>
+      Identical to <a href="../../api/media/SPEC.md">SPEC §10</a>. Two inputs,
+      one derived, one diamond, one subscriber, two commits, three observed
+      propagations:
+    </p>
+
+    <code class="codeblock-source" data-lang="typescript">import { preloadCauslWasm } from '@causl/causl-wasm-ts/wasm'
+import { createCausl } from '@causl/causl-wasm-ts'
+
+// Once, at app init. On the Node target the glue is already synchronous and
+// this is a no-op; on the browser bundler target it is required. See §2.3.
+await preloadCauslWasm()
+
+const graph = createCausl()   // the wasm engine, or a throw. No third outcome.
 const a = graph.input('a', 1)
 const b = graph.input('b', 2)
 const sum = graph.derived('sum', (get) =&gt; get(a) + get(b))
@@ -261,214 +332,159 @@ graph.commit('bump-a', (tx) =&gt; tx.set(a, 10)) // 13
 graph.commit('bump-both', (tx) =&gt; {
   tx.set(a, 100)
   tx.set(b, 200)
-}) // 301 — exactly one notification, not two (glitch-free)</code>
+}) // 301, exactly one notification rather than two (glitch-free)</code>
 
     <p>
-      All mutation happens <strong>inside <code>commit</code></strong>; outside, the graph is read-only
-      (§12, commitment 2). The single notification on the second commit is
-      glitch-freedom as a <em>theorem</em>, not a scheduler trick (§3 Theorem 2).
+      All mutation happens <strong>inside <code>commit</code></strong>; outside,
+      the graph is read-only (§12, commitment 2). The single notification on the
+      second commit is glitch-freedom as a <em>theorem</em>, not a scheduler
+      trick (§3 Theorem 2).
     </p>
 
-    <h3 id="23-opting-into-the-wasm-engine">2.3 Opting into the wasm engine</h3>
+    <h3 id="23-booting-the-engine">2.3 Booting the engine: preload once, construct synchronously (§18A.12)</h3>
 
     <p>
-      There are two adopter-facing paths. Pick based on whether you want WASM
-      unconditionally or only when a workload heuristic trips.
+      There is exactly one adopter-facing boot pattern, and it has one
+      <code>await</code> in it. Compiling the <code>WebAssembly.Module</code> is
+      unavoidably async, and the §12 <code>commit</code> / <code>read</code>
+      spine is and stays <strong>synchronous</strong> (§18A.6). A synchronous
+      consumer (a React hook or render body, an SSR pass,
+      <code>xldatagrid</code>'s imperative grid API) cannot put an
+      <code>await</code> at the construction site.
+      <strong>SPEC §18A.12 splits the compile out of construction</strong> so
+      the construction site stays synchronous. This is <strong>shipped</strong>.
     </p>
 
+    <code class="codeblock-source" data-lang="typescript">import { preloadCauslWasm } from '@causl/causl-wasm-ts/wasm'
+import { createCausl, createCauslWasmSync } from '@causl/causl-wasm-ts'
+
+// ONCE, at app init: the only async seam. Compiles and caches the
+// WebAssembly.Module (plus the _bg.js sidecar and the compute-imports
+// snippet), keyed by bridge. Idempotent: concurrent calls share one
+// compile; a transient failure drops the cache entry so a retry recompiles.
+await preloadCauslWasm()
+
+// Thereafter, at every render / hook / SSR site: FULLY synchronous.
+// `new WebAssembly.Instance` from the cached Module, zero await.
+const graph = createCausl()             // the default factory
+const another = createCauslWasmSync()   // the explicit one, same engine</code>
+
+    <ul>
+      <li><strong><code>await preloadCauslWasm(opts?)</code></strong>: the one
+        async seam, called once per process at app init. It pays
+        <code>WebAssembly.compile</code> and the sidecar and snippet imports up
+        front. The companions <code>isCauslWasmPreloaded(bridge?)</code> and
+        <code>getPreloadedCauslWasm(bridge?)</code> are <strong>synchronous
+        peeks</strong> at the <em>resolved</em> state (set on resolution, not
+        merely while the compile is in flight), which is what you want in a
+        render guard.</li>
+      <li><strong><code>createCausl(): Graph</code></strong>: the default public
+        factory, synchronous and <strong>construct-or-throw</strong>. Two
+        statements, no branch, no heuristic, no runtime engine choice.</li>
+      <li><strong><code>createCauslWasmSync(handle?, create?): Graph</code></strong>:
+        the explicit form of the same thing. Fully synchronous; mints a fresh
+        <code>WebAssembly.Instance</code> from the cached Module with zero
+        <code>await</code>.</li>
+      <li><strong><code>createCauslWasm(opts?): Promise&lt;Graph&gt;</code></strong>:
+        the async one-call factory is <strong>retained</strong>, re-expressed as
+        <code>preloadCauslWasm &#8728; createCauslWasmSync</code> (one
+        instantiate codepath, zero drift). Reach for it when an
+        <code>await</code> at the construction site is fine; reach for the
+        preload plus sync split when it is not.</li>
+    </ul>
+
     <p>
-      <strong>Path A — drive the wasm backend directly (<code>loadWasmBackend()</code>).</strong> This is the
-      canonical path for "I want the wasm engine on this graph." <code>loadWasmBackend()</code>
-      returns a <code>BackendEngine</code> — the third actor at the <code>BackendEngine</code> seam
-      (<code>packages/core/src/backend.ts</code>), alongside <code>JsBackend</code> (the TS engine) and
-      <code>WasmBackend</code> (the Rust core). Always wrap it in the documented fallback:
+      <strong>Node versus browser (cross-ref §18A.2).</strong> On Node and SSR
+      the <code>--target nodejs</code> glue is already synchronous end to end
+      (<code>readFileSync</code> + <code>new WebAssembly.Module</code> +
+      <code>new WebAssembly.Instance</code> at <code>require</code> or
+      <code>import</code> time), so construction works <strong>without</strong> a
+      prior preload and the server render stays synchronous on its own. It is
+      the <strong>browser bundler target that needs the one-time
+      <code>await preloadCauslWasm()</code></strong> to complete before the
+      first render that constructs a graph. That ordering is what keeps
+      SSR&harr;CSR hydration parity: no engine constructed mid-render in an
+      unresolved-promise state. An app that skips the preload does not silently
+      block. It throws.
     </p>
 
-    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core'
-import { loadWasmBackend, WasmBackendUnavailableError } from '@causl/core/wasm'
-import type { BackendEngine } from '@causl/core/wasm'
-
-async function makeEngine(): Promise&lt;{ kind: 'wasm' | 'js' }&gt; {
-  try {
-    const backend: BackendEngine = await loadWasmBackend()
-    // … wire `backend` as the graph's engine seam (see §2.4 note) …
-    return { kind: 'wasm' }
-  } catch (err) {
-    if (err instanceof WasmBackendUnavailableError) {
-      // Host can't run the chosen bridge (CSP block, missing WasmGC,
-      // pinned-but-unsupported bridge, fetch failure). Fall back to the
-      // TS floor — it runs on any host that runs JavaScript.
-      return { kind: 'js' }
-    }
-    throw err
-  }
-}</code>
+    <h3 id="24-when-construction-fails">2.4 When construction fails: two codes, and no fallback</h3>
 
     <p>
-      <code>WasmBackendUnavailableError</code> carries a structured <code>code</code> field so you can
-      dispatch per failure mode (<code>CAUSL_WASM_NOT_BUILT</code>, <code>CAUSL_WASM_CSP_BLOCKED</code>,
-      …); the five codes and the per-code dispatch are documented in
-      <a href="https://github.com/causljs/causl-client/blob/main/docs/wasm-adoption-guide.md"><code>docs/wasm-adoption-guide.md</code></a> §3. The loader does
-      <strong>not</strong> auto-fall-back — you decide.
-    </p>
-
-    <p>
-      <strong>Path B — let the engine choose (<code>backend: 'auto'</code>).</strong> Start on the TS engine
-      and migrate to the wasm backend at runtime when the auto-adapt heuristic trips
-      (graph size, derivation depth, subscriber count). The migration is one-way (a
-      transient spike cannot ping-pong the selection):
-    </p>
-
-    <code class="codeblock-source" data-lang="typescript">import { createCausl } from '@causl/core'
-
-const graph = createCausl({ backend: 'auto' })
-// runs on the TS engine until the heuristic trips, then transparently
-// migrates the same graph onto the wasm backend.</code>
-
-    <blockquote>
-      <strong>Accuracy note — the <code>createCausl</code> <code>backend</code> option.</strong> In
-      <code>causl-client</code> (wasm-default), the production path is the wasm engine reached
-      through <code>preloadCauslWasm()</code> + the sync <code>createCausl()</code> / <code>createCauslWasmSync()</code>
-      route (§18A.13) — <code>createCausl</code> resolves to the wasm engine post-preload, no
-      per-call <code>backend</code> string needed. The historical <code>backend: 'js' | 'auto'</code>
-      string option and the <code>'auto'</code> auto-adapt heuristic live on the fork's
-      dual-engine distribution; <code>'wasm'</code> was never a synchronous constructor string
-      because loading the artefact requires the <code>import('@causl/core/wasm')</code> +
-      <code>loadWasmBackend()</code>/preload seam. SPEC §18A.4/§18A.1 describe the seam as
-      "<code>backend: await loadWasmBackend()</code> passed to <code>createCausl</code>"; on the
-      wasm-default distribution that seam is now the default, reached via the preload +
-      sync split below.
-    </blockquote>
-
-    <h3 id="24-switch-engines-at-the-seam-never-in-user-code">2.4 Switch engines at the seam, never in user code</h3>
-
-    <p>
-      The whole point of the byte-identity gate is that the two engines are
-      <strong>interchangeable at the public-contract boundary</strong>. Your model code —
-      <code>input</code> / <code>derived</code> / <code>commit</code> / <code>read</code> / <code>subscribe</code> — is identical regardless
-      of which engine is behind it. The <code>'js'</code>↔<code>'wasm'</code> choice lives at the
-      <code>BackendEngine</code> seam (<code>packages/core/src/backend.ts</code>) and nowhere else. If a
-      piece of application logic has to know which engine it's running on, that is a
-      bug — the only legitimate exception is the <code>read()</code>-identity migration (§5),
-      which you fix <em>once</em>, defensively, so it is correct under both engines.
-    </p>
-
-    <h3 id="25-synchronous-wasm-construction-preload-once-build-sync-18a12">2.5 Synchronous wasm construction — preload once, build sync (§18A.12)</h3>
-
-    <p>
-      The two paths above reach the wasm engine through an <code>await</code> at the
-      <em>construction</em> site (<code>await loadWasmBackend()</code>, or the one-call
-      <code>await createCauslWasm()</code> convenience). For a synchronous consumer — a React
-      hook or render body, an SSR pass, <code>xldatagrid</code>'s imperative grid API — an
-      <code>await</code> at the build site is exactly where it hurts. <strong><a href="https://github.com/causljs/causl-client/blob/main/SPEC.md" rel="noopener">SPEC §18A.12</a>
-      splits the one unavoidable async (compiling the <code>WebAssembly.Module</code>) out of
-      construction</strong> so the construction site stays synchronous. This is
-      <strong>shipped</strong> — in the fork (<code>causljs/causl-ts-wasm-engine</code>, the authoritative
-      loader source) and in <code>causl-client</code>.
-    </p>
-
-    <p>
-      <strong>The factory trio.</strong> Engine choice is explicit at the call site when you
-      want it — there is no silent runtime flip:
+      Construction has two outcomes: a wasm <code>Graph</code>, or a throw.
+      There is no third outcome and no silent degrade, because the TypeScript
+      engine is not in this package to degrade to (§1 above). Branch on
+      <code>error.code</code> and <strong>never</strong> on
+      <code>instanceof</code>: the code is the contract, the class is not.
     </p>
 
     <table>
       <thead>
-        <tr><th>Factory</th><th>Engine</th><th>Sync?</th><th>Subpath</th></tr>
+        <tr><th>Code</th><th>Means</th><th>What to do</th></tr>
       </thead>
       <tbody>
         <tr>
-          <td><code>createCauslTs()</code></td>
-          <td>The pure-TypeScript reference engine — the floor that runs anywhere JS runs.</td>
-          <td>sync</td>
-          <td><code>@causl/core</code></td>
+          <td><code>CAUSL_WASM_ENGINE_UNAVAILABLE</code></td>
+          <td>The wasm subpath was never imported, or the host cannot
+            instantiate the engine.</td>
+          <td>Check that your boot module imports the <code>/wasm</code> subpath
+            and that the host clears the
+            <a href="#4-the-loader-and-the-host-tier-matrix">floor</a>. If the
+            host genuinely cannot run the engine, that host cannot run this
+            package; use the open-source TypeScript engine there instead.</td>
         </tr>
         <tr>
-          <td><code>createCauslWasm()</code> / <code>createCauslWasmSync()</code></td>
-          <td>The wasm engine (Rust→WebAssembly core, reached through the consolidated <code>causl-engine-bridge</code> loader).</td>
-          <td>async / <strong>sync</strong></td>
-          <td><code>@causl/core/wasm</code></td>
-        </tr>
-        <tr>
-          <td><code>createCausl()</code></td>
-          <td>In <code>causl-client</code> routes to the wasm engine post-preload (§18A.13), degrading loudly to the retained internal <code>createCauslTs()</code> on a WasmGC-unavailable host (§18A.13.1). On the fork's dual-engine distribution it routes to <code>createCauslTs()</code> by default (js-ssot).</td>
-          <td>sync</td>
-          <td><code>@causl/core</code></td>
+          <td><code>CAUSL_WASM_NOT_PRELOADED</code></td>
+          <td>The subpath was imported, but <code>preloadCauslWasm()</code> never
+            resolved before construction.</td>
+          <td>An ordering bug in your boot, not a capability problem.
+            <code>await</code> the preload before the first render that
+            constructs a graph.</td>
         </tr>
       </tbody>
     </table>
 
-    <p>
-      <strong>The pattern: preload once at init, then construct synchronously.</strong> The
-      single <code>await</code> lives at app/init; every render, hook, or SSR site thereafter
-      builds a wasm graph with no <code>await</code>:
-    </p>
-
-    <code class="codeblock-source" data-lang="typescript">import { preloadCauslWasm, createCauslWasmSync } from '@causl/core/wasm'
-
-// ONCE, at app/init — the only async seam. Compiles + caches the
-// WebAssembly.Module (plus the _bg.js sidecar and the compute-imports
-// snippet), keyed by bridge. Idempotent: concurrent calls share one
-// compile; a transient failure drops the cache entry for retry.
-await preloadCauslWasm()
-
-// Thereafter, at every render / hook / SSR site — FULLY synchronous.
-// `new WebAssembly.Instance` from the cached Module, zero await.
-const graph = createCauslWasmSync()</code>
-
-    <ul>
-      <li><strong><code>await preloadCauslWasm(opts?)</code></strong> — the one async seam, called
-        once per process + bridge at app init. Pays <code>WebAssembly.compile</code> and the
-        sidecar / snippet imports up front. Companions <code>isCauslWasmPreloaded(bridge?)</code>
-        and <code>getPreloadedCauslWasm(bridge?)</code> are <strong>synchronous peeks</strong> at the
-        <em>resolved</em> state (set on resolution, not merely while the compile is
-        in-flight) — useful for a render guard.</li>
-      <li><strong><code>createCauslWasmSync(handle?, create?): Graph</code></strong> — fully
-        synchronous; mints a fresh <code>WebAssembly.Instance</code> from the cached Module with
-        zero <code>await</code>. If nothing is preloaded for the bridge it <strong>throws
-        <code>CauslWasmNotPreloadedError</code></strong> (naming <code>preloadCauslWasm()</code> as the
-        remedy), preserving the §18A loud-fail discipline — a silent swap to the TS
-        floor would differ in <code>read()</code>-identity and commit-clock (§5), a
-        glitch-freedom hazard. Pass <code>{ fallbackToTs: true }</code> to synchronously degrade
-        to <code>createCauslTs()</code> instead of throwing (safe while both engines ship, because
-        the two are byte-identical at the §12 boundary per §18A.1.1).</li>
-      <li><strong><code>createCauslWasm(opts?): Promise&lt;Graph&gt;</code></strong> — the async
-        one-call factory is <strong>retained</strong>, now re-expressed as
-        <code>preloadCauslWasm ∘ createCauslWasmSync</code> (one instantiate codepath, zero
-        drift). Reach for it when an <code>await</code> at the construction site is fine; reach
-        for the preload + sync split when it is not.</li>
-    </ul>
-
-    <p>
-      <strong>Node vs browser (cross-ref §18A.2).</strong> On Node / SSR the <code>--target nodejs</code>
-      glue is already synchronous end-to-end (<code>readFileSync</code> +
-      <code>new WebAssembly.Module</code> + <code>new WebAssembly.Instance</code> at <code>require</code>/<code>import</code>
-      time), so <code>createCauslWasmSync()</code> works <strong>without</strong> a prior preload — the
-      server render stays synchronous on its own. It is the <strong>browser bundler target
-      that needs the one-time <code>await preloadCauslWasm()</code></strong> to complete before the
-      first render that constructs a wasm graph; this ordering is what keeps SSR↔CSR
-      hydration parity (no engine constructed mid-render in an unresolved-promise
-      state). An app that skips the preload does not silently block — it throws (or, with
-      <code>fallbackToTs</code>, degrades to the floor).
-    </p>
-
     <blockquote>
-      <strong>Atomicity is untouched (cross-ref §4.3 / §18A.6 / §3 Theorem 2).</strong> The
-      compile <code>await</code> is hoisted to bootstrap, <strong>outside any commit envelope</strong>;
-      <code>createCauslWasmSync</code> performs no <code>await</code> between the §5 Phase E and Phase G
-      boundaries. The single-tick invariant of §4.3 holds exactly as before — moving the
-      one async to app init does not put an <code>await</code> anywhere near a commit.
+      <p>
+        <strong>There is no <code>backend: 'auto'</code> here.</strong> Older
+        versions of this guide described a <code>createCausl({ backend: 'auto' })</code>
+        heuristic that started a graph on the TypeScript engine and migrated the
+        live graph onto the wasm backend once graph size, derivation depth or
+        subscriber count tripped a threshold. That heuristic, and the
+        <code>backend: 'js' | 'auto'</code> string option generally, exist only
+        on the dual-engine <code>causl-core-ts</code> distribution. In
+        <code>causl-wasm-ts</code> there is nothing to migrate from and nothing
+        to migrate to, so there is no heuristic, no live-graph migration, and no
+        per-call <code>backend</code> string.
+      </p>
     </blockquote>
+
+    <h3 id="25-switch-engines-at-the-seam-never-in-user-code">2.5 Engine choice lives at the seam, never in user code</h3>
+
+    <p>
+      The whole point of the byte-identity gate is that the two engines are
+      <strong>interchangeable at the public-contract boundary</strong>. Your
+      model code (<code>input</code> / <code>derived</code> / <code>commit</code>
+      / <code>read</code> / <code>subscribe</code>) is identical regardless of
+      which engine is behind it. Where a choice exists at all (that is, in
+      <code>causl-core-ts</code>) it lives at the <code>BackendEngine</code> seam
+      (<code>packages/core/src/backend.ts</code>) and nowhere else. If a piece of
+      application logic has to know which engine it is running on, that is a
+      bug. The only legitimate exception is the <code>read()</code>-identity
+      migration (§5), which you fix <em>once</em>, defensively, so it is correct
+      under both engines.
+    </p>
 
     <hr />
 
     <h2 id="3-the-wasm-artefact-placement-the-producerconsumer-split">3. The wasm artefact placement (the producer/consumer split)</h2>
 
     <p>
-      <code>causl-client</code> consumes a <strong>placed</strong> <code>.wasm</code> artefact. It does not build one. Per
-      <strong>§18A.11</strong>, the build-and-place tooling is two stdlib-only Python scripts in
-      <code>causljs/causl-wasm</code> — the producer side — and a webapp's CI/CD pipeline drives
-      them. The split:
+      <code>causl-wasm-ts</code> consumes a <strong>placed</strong>
+      <code>.wasm</code> artefact. It does not build one. Per
+      <strong>§18A.11</strong>, the build-and-place tooling is two stdlib-only
+      Python scripts in <code>causl-core-rs</code>, the producer side, and a
+      webapp's CI/CD pipeline drives them. The split:
     </p>
 
     <table>
@@ -478,72 +494,84 @@ const graph = createCauslWasmSync()</code>
       <tbody>
         <tr>
           <td><strong>Producer</strong></td>
-          <td><code>causljs/causl-wasm</code></td>
-          <td>builds + places the <code>.wasm</code></td>
+          <td><code>causl-core-rs</code></td>
+          <td>builds and places the <code>.wasm</code></td>
           <td><code>scripts/build_wasm.py</code>, <code>scripts/package_wasm.py</code></td>
         </tr>
         <tr>
           <td><strong>Consumer</strong></td>
-          <td><code>causljs/causl-client</code> (you)</td>
+          <td><code>causl-wasm-ts</code> (you)</td>
           <td>binds the placed <code>.wasm</code> over FFI</td>
-          <td>the <code>@causl/core/wasm</code> loader</td>
+          <td>the <code>@causl/causl-wasm-ts/wasm</code> loader</td>
         </tr>
       </tbody>
     </table>
 
-    <h3 id="31-producer-side--the-python-scripts-run-by-your-pipeline">3.1 Producer side — the Python scripts (run by your pipeline)</h3>
+    <h3 id="31-producer-side">3.1 Producer side: the Python scripts (run by your pipeline)</h3>
 
     <p>
-      These need a Rust toolchain (<code>cargo</code> + <code>wasm-pack</code> + <code>wasm-opt</code>); your <em>consuming</em>
-      pipeline does not — it only needs CPython stdlib to run <code>package_wasm.py</code>. The
-      full contract is in <code>causl-wasm</code>'s <a href="https://github.com/causljs/causl-wasm/blob/main/scripts/README.md" rel="noopener"><code>scripts/README.md</code></a>.
+      These need a Rust toolchain (<code>cargo</code> + <code>wasm-pack</code> +
+      <code>wasm-opt</code>); your <em>consuming</em> pipeline does not, it only
+      needs CPython stdlib to run <code>package_wasm.py</code>. The full contract
+      is in <code>causl-core-rs</code>'s
+      <code>scripts/README.md</code>.
     </p>
 
-    <code class="codeblock-source" data-lang="bash"># Build + place in one call — the common pipeline entry point.
+    <code class="codeblock-source" data-lang="bash"># Build and place in one call, the common pipeline entry point.
 # --dest states WHERE the artefact goes; the consumer picks the path.
-python3 scripts/build_wasm.py --bridge gc-classic        # → build/wasm-nodejs
+python3 scripts/build_wasm.py --bridge gc-classic        # to build/wasm-nodejs
 python3 scripts/package_wasm.py --build --dest /path/to/app/src/engine/wasm</code>
 
     <p>
-      <code>build_wasm.py</code> produces a size-optimised, <strong>node-target</strong> (<code>--target nodejs</code>)
-      <code>.wasm</code> plus the node glue (<code>causl_engine_bridge.js</code>) and <code>.d.ts</code> typings.
-      <code>package_wasm.py</code> copies that artefact set into <code>--dest</code> and writes a
-      deterministic manifest (<code>causl-wasm.manifest.json</code>, schema
-      <code>causl-wasm/manifest@1</code>) recording the engine version, bridge, target,
-      <code>wasm-opt</code> flags, and a <strong>per-file sha256</strong>. It is stdlib-only, makes no network
-      calls, and <strong>fails loud</strong> (non-zero exit, clear stderr) if <code>--src</code> is
-      incomplete, a file can't be hashed, or <code>--dest</code> is unwritable.
+      <code>build_wasm.py</code> produces a size-optimised,
+      <strong>node-target</strong> (<code>--target nodejs</code>)
+      <code>.wasm</code> plus the node glue
+      (<code>causl_engine_bridge.js</code>) and <code>.d.ts</code> typings.
+      <code>package_wasm.py</code> copies that artefact set into
+      <code>--dest</code> and writes a deterministic manifest recording the
+      engine version, bridge, target, <code>wasm-opt</code> flags, and a
+      <strong>per-file sha256</strong>. It is stdlib-only, makes no network
+      calls, and <strong>fails loud</strong> (non-zero exit, clear stderr) if
+      <code>--src</code> is incomplete, a file cannot be hashed, or
+      <code>--dest</code> is unwritable.
     </p>
 
     <p>
-      The same scripts also place the <strong>compute-imports snippet</strong> next to the
-      <code>.wasm</code> / <code>_bg.js</code> and <strong>assert fail-loud</strong> at packaging time on three
-      <a href="https://github.com/causljs/causl-client/blob/main/SPEC.md" rel="noopener">§18A.12</a> invariants, so a <code>wasm-pack</code> / <code>wasm-bindgen</code> upgrade
-      that breaks the synchronous-construction seam (§2.5) never ships silently:
+      The same scripts also place the <strong>compute-imports snippet</strong>
+      next to the <code>.wasm</code> / <code>_bg.js</code> and <strong>assert
+      fail-loud</strong> at packaging time on the §18A.12 invariants, so a
+      <code>wasm-pack</code> or <code>wasm-bindgen</code> upgrade that breaks the
+      synchronous-construction seam (§2.3) never ships silently:
     </p>
 
     <ul>
-      <li><strong>The sync seam</strong> — the glue must still instantiate synchronously
-        (<code>new WebAssembly.Instance</code> at module load, not a Promise), which is what lets
-        <code>createCauslWasmSync()</code> stay <code>await</code>-free.</li>
-      <li><strong>Snippet presence</strong> — every <code>./snippets/.../*.js</code> the glue references
-        is required; a missing compute-imports snippet would <code>MODULE_NOT_FOUND</code> the
+      <li><strong>The sync seam</strong>: the glue must still instantiate
+        synchronously (<code>new WebAssembly.Instance</code> at module load, not
+        a Promise), which is what lets <code>createCauslWasmSync()</code> stay
+        <code>await</code>-free.</li>
+      <li><strong>Snippet presence</strong>: every
+        <code>./snippets/.../*.js</code> the glue references is required; a
+        missing compute-imports snippet would <code>MODULE_NOT_FOUND</code> the
         sync factory's dynamic import.</li>
-      <li><strong>Node-loadability</strong> — <code>gc-classic</code> loads as a stock <code>--target nodejs</code>
-        artefact, while <code>gc-builtins</code> emits <code>require("wasm:js-string")</code>, which stock
-        Node cannot resolve, so it is flagged <strong>bundler-target only</strong> rather than
-        shipped as a broken node artefact.</li>
+      <li><strong>Node-loadability</strong>: <code>gc-classic</code> loads as a
+        stock <code>--target nodejs</code> artefact. This check used to also
+        flag <code>gc-builtins</code> as bundler-target only, because it emitted
+        <code>require("wasm:js-string")</code> which stock Node cannot resolve.
+        <code>gc-builtins</code> has since been deleted
+        (<code>causl-core-rs#355</code>),
+        so <code>gc-classic</code> is the only artefact the check has to
+        consider.</li>
     </ul>
 
-    <h3 id="32-consumer-side--vendor--verify-the-manifest">3.2 Consumer side — vendor + verify the manifest</h3>
+    <h3 id="32-consumer-side">3.2 Consumer side: vendor and verify the manifest</h3>
 
     <p>
-      In your app's CI/CD, after <code>package_wasm.py</code> has placed the artefact, verify it
-      against the manifest before the build proceeds. This closes the
-      "producer ships, consumer places" loop honestly:
+      In your app's CI/CD, after <code>package_wasm.py</code> has placed the
+      artefact, verify it against the manifest before the build proceeds. This
+      closes the "producer ships, consumer places" loop honestly:
     </p>
 
-    <code class="codeblock-source" data-lang="python"># verify-wasm-manifest.py — a loud post-place gate for your pipeline.
+    <code class="codeblock-source" data-lang="python"># verify-wasm-manifest.py: a loud post-place gate for your pipeline.
 import hashlib, json, pathlib, sys
 
 dest = pathlib.Path("src/engine/wasm")
@@ -555,137 +583,172 @@ for f in manifest["files"]:
 print(f"wasm artefact verified: {manifest['engineVersion']} ({manifest['bridge']})")</code>
 
     <p>
-      Git-track the manifest so rebuilds are deterministic and a drifted artefact
-      fails CI loudly rather than shipping silently.
+      Git-track the manifest so rebuilds are deterministic and a drifted
+      artefact fails CI loudly rather than shipping silently. Vendoring the
+      artefact this way is also the answer to a CDN or strict-CSP layout: the
+      engine resolves from your own deploy, offline, with no fetch at runtime.
     </p>
-
-    <blockquote>
-      <strong>Build targets.</strong> The <code>.wasm</code> artefacts vendored in this repo under
-      <code>packages/core/wasm-pkg/gc-classic-bundler/</code> and <code>gc-builtins-bundler/</code> are
-      <strong><code>--target bundler</code></strong> builds (webpack 5 / Vite 5 / esbuild via asset-pipeline
-      loaders) for the browser path. The <strong><code>--target nodejs</code></strong> artefact + the
-      <code>node:fs</code> loader hook is the <strong>§18A.2 requirement</strong> (Criterion 4) and is the
-      Node production shape this guide and the <code>causl-wasm</code> scripts target. On the Node
-      path the loader resolves the placed artefact via <code>node:fs</code> with no async load
-      shape; the browser path uses the bundler-resolved <code>new URL(..., import.meta.url)</code>
-      shape (§4.2). When you wire a pure-Node service with the <code>--target nodejs</code>
-      artefact, consume it as the <code>causl-wasm</code> <code>scripts/README.md</code> shows (synchronous
-      <code>require</code>/<code>import</code> of the node glue) and bind it through the <code>BackendEngine</code> seam.
-    </blockquote>
 
     <hr />
 
-    <h2 id="4-the-loader-and-the-host-tier-matrix">4. The loader and the host-tier matrix</h2>
+    <h2 id="4-the-loader-and-the-host-tier-matrix">4. The loader and the host floor</h2>
 
-    <h3 id="41-the-host-tier-bridges-176">4.1 The host-tier bridges (§17.6)</h3>
+    <h3 id="41-the-host-floor-and-the-bridge">4.1 The host floor and the one bridge that ships</h3>
 
     <p>
-      The bridge picker (<code>detectBridge()</code>) probes the host at module load and selects
-      the most-capable artefact it actually supports; a host that lacks the higher tier
-      falls back automatically, and the TS engine is the universal floor below all of
-      them. The two shipped bridge variants of the consolidated
-      <code>causl-engine-bridge</code> crate:
+      The bridge picker (<code>detectBridge()</code>) probes the host at module
+      load and selects the artefact it actually supports. It is a
+      <strong>real probe</strong>, not a placeholder: it was wired to one in
+      <code>causl-wasm-ts#426</code>, and the older caveat about
+      <code>#691</code> being an open placeholder no longer applies.
+    </p>
+
+    <p>
+      There is currently <strong>one bridge</strong>. <code>gc-classic</code> is
+      it. The second variant, <code>gc-builtins</code>, was
+      <strong>deleted</strong>
+      (<code>causl-core-rs#355</code>).
+      The ids are <code>gc-classic</code> and <code>gc-builtins</code>, never
+      <code>wasmgc-classic</code> or <code>wasmgc-builtins</code>; if you find
+      the <code>wasmgc-</code> spelling in a config, it is stale. With one
+      bridge shipping there is nothing to pin, so let
+      <code>detectBridge()</code> do its job.
+    </p>
+
+    <p>
+      <strong>The host floor</strong>
+      (<code>packages/core/src/wasm-registry.ts</code>):
     </p>
 
     <table>
       <thead>
-        <tr><th>Bridge id</th><th>String strategy</th><th>When picked</th></tr>
+        <tr><th>Host</th><th>Minimum</th></tr>
       </thead>
       <tbody>
-        <tr>
-          <td><code>wasmgc-builtins</code></td>
-          <td><code>js-string-builtins</code> — no-copy <code>wasm:js-string</code></td>
-          <td>Hosts with <code>wasm:js-string</code> host bindings (Node 22.6+, Chrome 131+, Firefox 130+). The fastest tier.</td>
-        </tr>
-        <tr>
-          <td><code>wasmgc-classic</code></td>
-          <td><code>classic-strings</code> — UTF-16 fallback</td>
-          <td>The universal WasmGC baseline; needs no <code>wasm:js-string</code> host support, so it instantiates on every WasmGC-capable host. The safe default <code>detectBridge()</code> returns.</td>
-        </tr>
+        <tr><td>Safari</td><td>18.2</td></tr>
+        <tr><td>Chromium</td><td>119</td></tr>
+        <tr><td>Firefox</td><td>120</td></tr>
+        <tr><td>Node</td><td>22</td></tr>
       </tbody>
     </table>
 
     <p>
-      Pin a bridge to skip detection cost when you know your target:
+      The governing requirement is <strong>typed function references</strong>,
+      established by feature-bisecting the shipped artefact in
+      <code>causl-wasm-ts#426</code>. It is <strong>not</strong> WasmGC heap
+      types: the artefact declares <em>zero</em> WasmGC struct, array or
+      rec-group types, so any prose that gates the floor on "WasmGC support" is
+      describing a requirement the artefact does not have. The floor this site
+      used to publish (Safari&nbsp;18, paired with macOS&nbsp;15, and a
+      Node&nbsp;<em>ceiling</em> of 20) was wrong on three separate counts.
     </p>
 
-    <code class="codeblock-source" data-lang="typescript">const backend = await loadWasmBackend({ bridge: 'wasmgc-classic' })</code>
+    <blockquote>
+      <p>
+        <strong>Treat these versions as engine release-note claims, not as our
+        measurement.</strong> Nobody has run the shipped artefact on a real
+        boundary host. If you deploy to a fleet sitting near the floor, test it
+        yourself before you commit to it.
+      </p>
+    </blockquote>
 
     <h3 id="42-the-loader-resolution-shape">4.2 The loader resolution shape</h3>
 
     <p>
-      <strong>Shipped today (bundler target).</strong> The loader resolves the artefact via
-      <code>new URL('./pkg/&lt;segment&gt;/causl_engine_bridge_bg.wasm', import.meta.url)</code> — the
-      lowest common denominator across webpack 5 (<code>experiments.asyncWebAssembly</code>),
-      Vite 5 (<code>vite-plugin-wasm</code>), esbuild 0.20+ (<code>--loader:.wasm=file</code>), and Node
-      22+ ESM. Override the base URL for a CSP <code>connect-src</code> / CDN scenario:
+      <strong>Bundler target.</strong> The loader resolves the artefact via
+      <code>new URL('./pkg/&lt;segment&gt;/causl_engine_bridge_bg.wasm', import.meta.url)</code>,
+      the lowest common denominator across webpack&nbsp;5
+      (<code>experiments.asyncWebAssembly</code>), Vite&nbsp;5
+      (<code>vite-plugin-wasm</code>), esbuild&nbsp;0.20+
+      (<code>--loader:.wasm=file</code>), and Node&nbsp;22+ ESM.
     </p>
 
-    <code class="codeblock-source" data-lang="typescript">const backend = await loadWasmBackend({
-  wasmBaseUrl: 'https://cdn.jsdelivr.net/npm/@causl/core@&lt;version&gt;/wasm/pkg/',
-})</code>
-
     <p>
-      <strong>Node target (§18A.2).</strong> The <code>--target nodejs</code> glue instantiates the
-      wasm synchronously at <code>require</code>/<code>import</code> time, so the Node loader hook resolves
-      the placed artefact via <strong><code>node:fs</code></strong> with no async load shape — it works
-      identically in CJS and ESM. This is the loader the <code>causl-wasm</code> <code>scripts/README.md</code>
-      "Consuming the packaged artefact in Node" section pairs with, and it satisfies the
-      §18A.2 requirement. The browser bundler path above is the parallel shape for the
-      Vite / webpack target.
+      <strong>Node target (§18A.2).</strong> The <code>--target nodejs</code>
+      glue instantiates the wasm synchronously at <code>require</code> or
+      <code>import</code> time, so the Node loader hook resolves the placed
+      artefact via <strong><code>node:fs</code></strong> with no async load
+      shape, and works identically in CJS and ESM. This is the loader that
+      <code>causl-core-rs</code>'s <code>scripts/README.md</code> "Consuming the
+      packaged artefact in Node" section pairs with, and it satisfies the §18A.2
+      requirement. For a CDN or strict-CSP layout, prefer vendoring the artefact
+      into your own deploy with <code>package_wasm.py</code> (§3.2) over
+      rewriting a base URL at runtime: the §18A.11 contract is explicitly
+      offline-resolvable.
     </p>
 
-    <h3 id="43-the-ffi-single-tick-invariant--never-await-the-commit-entry-18a6">4.3 The FFI single-tick invariant — never <code>await</code> the commit entry (§18A.6)</h3>
+    <h3 id="43-ffi-single-tick-invariant">4.3 The FFI single-tick invariant: never <code>await</code> the commit entry (§18A.6)</h3>
 
     <p>
-      The FFI commit entry point (<code>apply_commands</code> / the Rust <code>commit_batch</code> extern) is
-      a <strong>synchronous</strong> <code>#[wasm_bindgen]</code> call. The async surface you <code>await</code> is
-      <em>loading</em> the backend (<code>await loadWasmBackend()</code>), not <em>committing</em> through it.
-      A commit is one atomic tick (§3 Theorem 2 / §5 Phase A–H "no intermediate
-      time"). <strong>Do not <code>await</code> a commit</strong> — interleaving an <code>await</code> mid-commit would
-      break single-tick atomicity silently. <code>graph.commit(intent, tx =&gt; …)</code> is and
+      The FFI commit entry point (<code>apply_commands</code> / the Rust
+      <code>commit_batch</code> extern) is a <strong>synchronous</strong>
+      <code>#[wasm_bindgen]</code> call. The async surface you
+      <code>await</code> is <em>loading</em> the engine
+      (<code>await preloadCauslWasm()</code>), not <em>committing</em> through
+      it. A commit is one atomic tick (§3 Theorem 2 / §5 Phase A to H, "no
+      intermediate time"). <strong>Do not <code>await</code> a commit</strong>:
+      interleaving an <code>await</code> mid-commit would break single-tick
+      atomicity silently. <code>graph.commit(intent, tx =&gt; …)</code> is and
       stays synchronous on both engines.
     </p>
 
+    <blockquote>
+      <p>
+        <strong>Atomicity is untouched by the preload (cross-ref §4.3 / §18A.6 /
+        §3 Theorem 2).</strong> The compile <code>await</code> is hoisted to
+        bootstrap, <strong>outside any commit envelope</strong>, and
+        <code>createCauslWasmSync</code> performs no <code>await</code> between
+        the §5 Phase E and Phase G boundaries. Moving the one async to app init
+        does not put an <code>await</code> anywhere near a commit.
+      </p>
+    </blockquote>
+
     <hr />
 
-    <h2 id="5-the-read-identity-migration-18a5--151-1124">5. The <code>read()</code>-identity migration (§18A.5 / §15.1 #1124)</h2>
+    <h2 id="5-the-read-identity-migration">5. The <code>read()</code>-identity migration (§18A.5 / §15.1 #1124)</h2>
 
     <p>
-      This is the <strong>one breaking change</strong> the wasm path introduces, and the one thing
-      you must audit for when consuming the Rust engine.
+      This is the <strong>one breaking change</strong> the wasm path introduces,
+      and the one thing you must audit for when consuming the Rust engine.
     </p>
 
     <p>
-      <strong>The contract.</strong> <code>graph.read(node)</code> is <strong>not</strong> contractually required to return
-      the same JavaScript reference across calls. <em>Value</em> identity at a fixed
-      <code>GraphTime</code> is guaranteed; <em>reference</em> identity across commits is <strong>not</strong>
-      (§15.1, ratified by the #1124 amendment, shipped with 0.9.0).
+      <strong>The contract.</strong> <code>graph.read(node)</code> is
+      <strong>not</strong> contractually required to return the same JavaScript
+      reference across calls. <em>Value</em> identity at a fixed
+      <code>GraphTime</code> is guaranteed; <em>reference</em> identity across
+      commits is <strong>not</strong> (§15.1, ratified by the #1124 amendment).
     </p>
 
     <p>
-      <strong>Why it bites.</strong> With the §18A.3 FFI lift landed (<a href="https://github.com/causljs/causl-wasm/issues/170"><code>causl-wasm#170</code></a>), a
-      wasm-backed <code>read()</code> returns a <strong>fresh object per call</strong> — the value is
-      deserialised across the FFI boundary on each read. Any adopter who keys
-      memoisation on the <code>read()</code> return <strong>reference</strong> re-renders every commit,
-      silently. No error fires — memoise on <code>commit.time</code> / node-version instead (§5).
+      <strong>Why it bites, and why it is worse than it sounds.</strong> The
+      obvious mental model, "the wasm engine deserialises across the boundary so
+      every <code>read()</code> is a fresh object", is <em>wrong</em>, and the
+      truth is harder to test for. The engine is <strong>not uniformly
+      fresh</strong>: a <code>ValueHandleCache</code> retains the original
+      adopter reference, so identity is <strong>stable on a cache hit</strong>
+      and fresh only on the decode paths. The break is therefore
+      <strong>intermittent</strong>. A test that reads the same node twice in a
+      row will very likely pass. Any adopter who keys memoisation on the
+      <code>read()</code> return <strong>reference</strong> gets a bug that
+      fires on some commits and not others, with no error.
     </p>
 
     <p>
-      <strong>The fix — key on <code>commit.time</code> or a per-node version, not on <code>read()</code>
-      identity.</strong>
+      <strong>The fix: key on <code>commit.time</code> or a per-node version,
+      not on <code>read()</code> identity.</strong>
     </p>
 
-    <code class="codeblock-source" data-lang="typescript">// WRONG — breaks at the real-Rust swap. The `read()` reference changes
-// every commit, so this memo invalidates every commit (or, worse,
-// never updates if the reference is reused trivially today).
+    <code class="codeblock-source" data-lang="typescript">// WRONG: keys the memo on a reference the engine does not promise to keep.
+// It invalidates on some commits and not others, which is why it survives
+// a naive test.
 import { useMemo } from 'react'
 function UserCard({ user }: { user: User /* a read() return */ }) {
-  const transformed = useMemo(() =&gt; transform(user), [user]) // ← reference key
+  const transformed = useMemo(() =&gt; transform(user), [user]) // reference key
   // ...
 }</code>
 
-    <code class="codeblock-source" data-lang="typescript">// RIGHT — keys on commit.time (the GraphTime on the published Commit),
+    <code class="codeblock-source" data-lang="typescript">// RIGHT: keys on commit.time (the GraphTime on the published Commit),
 // which advances by exactly one per commit and is byte-identical under
 // both engines.
 import { useMemo } from 'react'
@@ -696,9 +759,11 @@ function UserCard({ user }: { user: User }) {
 }</code>
 
     <p>
-      For workloads where <code>commit.time</code> is too coarse (it advances on <em>every</em> commit,
-      even ones that don't touch your node), key on the <strong>per-node version counter</strong>
-      instead — the <code>read_derived_version</code> extern surfaced through <code>EngineTelemetry</code>:
+      For workloads where <code>commit.time</code> is too coarse (it advances on
+      <em>every</em> commit, even ones that do not touch your node), key on the
+      <strong>per-node version counter</strong> instead: the
+      <code>read_derived_version</code> extern surfaced through
+      <code>EngineTelemetry</code>:
     </p>
 
     <code class="codeblock-source" data-lang="typescript">const telemetry = useEngineTelemetry()
@@ -706,62 +771,62 @@ const version = telemetry.nodeVersion(node)   // bumps only when `node` changes
 const transformed = useMemo(() =&gt; expensiveTransform(value), [version])</code>
 
     <p>
-      <strong>Pre-migration checklist (required reading before a real-engine upgrade,
-      §18A.5).</strong> Audit, across your codebase:
+      <strong>Pre-migration checklist (required reading before a real-engine
+      upgrade, §18A.5).</strong> Audit, across your codebase:
     </p>
 
     <ul>
-      <li>every <code>React.memo(C, (prev, next) =&gt; prev.value === next.value)</code> whose equality
-        compares a <code>read()</code> return;</li>
-      <li>every <code>useMemo(() =&gt; transform(value), [value])</code> whose dependency array holds a
-        <code>read()</code> return;</li>
-      <li>any cache, <code>WeakMap</code>, or <code>===</code> check keyed on a <code>read()</code> reference held across a
-        commit boundary.</li>
+      <li>every <code>React.memo(C, (prev, next) =&gt; prev.value === next.value)</code>
+        whose equality compares a <code>read()</code> return;</li>
+      <li>every <code>useMemo(() =&gt; transform(value), [value])</code> whose
+        dependency array holds a <code>read()</code> return;</li>
+      <li>any cache, <code>WeakMap</code>, or <code>===</code> check keyed on a
+        <code>read()</code> reference held across a commit boundary.</li>
     </ul>
 
     <p>
-      Migrate each to <code>commit.time</code> (<code>GraphTime</code> on the <code>Commit</code>) or the per-node
-      version counter. A dev-only hazard warning is available behind
-      <code>createCausl({ enableH1HazardWarning: true })</code> — it records each long-held
-      <code>read()</code> return as a <code>WeakRef</code> and emits one <code>console.warn</code> per survivor whose
-      read-time <code>GraphTime</code> predates the post-commit clock (opt-in; off by default;
-      dead-code-eliminated in production builds). The right-vs-wrong example also
-      lives in <a href="https://github.com/causljs/causl-client/blob/main/docs/wasm-adoption-guide.md"><code>docs/wasm-adoption-guide.md</code></a> §H1.
+      Migrate each to <code>commit.time</code> (<code>GraphTime</code> on the
+      <code>Commit</code>) or the per-node version counter. A dev-only hazard
+      warning is available behind
+      <code>createCausl({ enableH1HazardWarning: true })</code>: it records each
+      long-held <code>read()</code> return as a <code>WeakRef</code> and emits
+      one <code>console.warn</code> per survivor whose read-time
+      <code>GraphTime</code> predates the post-commit clock (opt-in, off by
+      default, dead-code-eliminated in production builds).
     </p>
 
     <hr />
 
-    <h2 id="6-the-performance-ceiling-18a7">6. The performance ceiling (§18A.7)</h2>
+    <h2 id="6-what-the-wasm-path-costs">6. What the wasm path costs</h2>
 
     <p>
-      Honesty about cost is a contract, not a footnote. State it in front of every
-      wasm-vs-js decision.
+      Honesty about cost is a contract, not a footnote. State it in front of
+      every adoption decision.
     </p>
 
     <p>
-      <strong>The perf ceiling (SPEC §18A.7 Criterion 3).</strong> For the wasm path to be a
-      promotion candidate, the JS↔WASM marshal overhead must hold to:
-    </p>
-
-    <ul>
-      <li><strong>single commit ≤ 250 µs p95</strong> marshal overhead;</li>
-      <li><strong>batch / large mutation ≤ 5 ms p95</strong>.</li>
-    </ul>
-
-    <p>
-      These are the <em>marshal-overhead</em> bars the cross-backend benchmark gates against —
-      the cost of crossing the boundary, separate from the engine's own work.
+      <strong>The §18A.7 Criterion-3 ceiling, and why it is the wrong thing to
+      watch.</strong> Criterion 3 named a marshal-overhead bar: single commit
+      ≤ 250 µs p95, batch or large mutation ≤ 5 ms p95. That criterion is GO,
+      and it always would have been, because <strong>marshalling is not the
+      binding constraint</strong>. On the benchmark host a raw boundary crossing
+      measures <strong>1.6 ns</strong>, and value marshalling costs about
+      <strong>77 ns per read</strong>, roughly 4× the TypeScript engine's read.
+      Real, but third-order.
     </p>
 
     <p>
-      <strong>The standing wire tax.</strong> Before the engine does any work there is a documented
-      crossing cost: the <strong>78× wire tax</strong> — ~156.4 ms for 10k commits across the
-      boundary vs ~2.017 ms TS median. This is the floor that batching (epic #1493) can
-      amortise the <em>crossing</em> portion of (down toward the ≤50 ns/op floor at large
-      <code>afterN</code>), but it does <strong>not</strong> amortise the <em>engine-exec</em> cost. At current WASM
-      runtime maturity (no GC GA, limited JIT, no SIMD) the Rust-engine-in-WASM
-      per-commit execution cost is <strong>~85×</strong> the TS engine — a property of today's
-      runtime, not of the engine design, and one batching provably cannot remove.
+      <strong>Two claims this page used to make are refuted.</strong> The "78×
+      wire tax" and the "~85× per-commit execution cost" attributed to WASM
+      runtime immaturity do not survive measurement. The per-commit wire cost
+      the older text implied is several times larger than the
+      <em>entire</em> measured commit, and it was derived against a serde bridge
+      artefact that no longer ships. What actually dominates is engine-side and
+      client-side work: a residual per-commit clone that scales with the number
+      of live derived nodes, a per-recompute constant, and a per-commit
+      constant. I do not restate that analysis here.
+      <a href="../wasm-performance/">Wasm performance</a> carries the numbers,
+      the confidence caveats, and the open issues.
     </p>
 
     <p>
@@ -769,37 +834,43 @@ const transformed = useMemo(() =&gt; expensiveTransform(value), [version])</code
     </p>
 
     <ul>
-      <li><strong>The Rust engine is the production engine</strong> (§18A.3 lift landed,
-        <a href="https://github.com/causljs/causl-wasm/issues/170"><code>causl-wasm#170</code></a>; rust-ssot is the default). Engine orchestration runs
-        in Rust; the user's <code>derived()</code> compute lambdas run in JS over the bridge
-        callback. Adopting the wasm path is the rust-ssot default, not an opt-in tier.</li>
-      <li><strong>Perf is within RAIL, not a beats-TS claim.</strong> The standing JS↔WASM
-        marshal cost (the 78× wire tax above) and the current WASM-runtime per-commit
-        exec cost are named honestly; they sit inside the §14 responsiveness budget.
-        The wasm path is acceleration for specific graph shapes — very high derivation
-        depth, large node counts where JS GC and hidden-class pressure dominate — not a
-        universal wall-time win. Median parity was never the goal; complexity-elimination
-        (one engine, one codepath) is the driver per §18A.13.</li>
-      <li><strong>The fork keeps the dual-engine floor as its DEFAULT.</strong> The TS reference engine and
-        the §18A.1.1 differential oracle live in <code>causljs/causl-ts-wasm-engine</code>, which
-        keeps the TS floor as default (<code>DEFAULT_WASM_ENGINE_MODE = 'js-ssot'</code>)
-        and <em>adds</em> a real-Rust differential leg that proves byte-identity at the §12
-        boundary; it does not flip to rust-ssot. The
-        §18A.7 GO/NO-GO perf gate is bypassed by §18A.13 for <code>causl-client</code> (perf accepted as immaterial),
-        and that bypass is stated plainly.</li>
+      <li><strong>The Rust engine is the production engine</strong> (§18A.3 lift
+        landed,
+        <code>causl-core-rs#170</code>;
+        rust-ssot is the default). Engine orchestration runs in Rust; the user's
+        <code>derived()</code> compute lambdas run in JS over the bridge
+        callback. Adopting the wasm path is not an opt-in tier, it is the only
+        path this package has.</li>
+      <li><strong>Perf is within RAIL, and it is not a beats-TS claim.</strong>
+        Complexity-elimination (one engine, one codepath) was the driver per
+        §18A.13, and median parity was never the goal. Do not adopt this package
+        expecting a wall-time win; adopt it for the single-codepath Rust core.
+        Check <a href="../wasm-performance/">the measurements</a> against your
+        own graph shape before you commit.</li>
+      <li><strong>The dual-engine floor is a different repository.</strong> The
+        TypeScript reference engine and the §18A.1.1 differential oracle live in
+        <code>causl-core-ts</code>, which keeps the TypeScript floor as its
+        default (<code>DEFAULT_WASM_ENGINE_MODE = 'js-ssot'</code>) and adds a
+        real-Rust differential leg proving byte-identity at the §12 boundary. It
+        does not flip to rust-ssot. The §18A.7 perf gate is bypassed by §18A.13
+        for <code>causl-wasm-ts</code>, and that bypass is stated plainly rather
+        than buried.</li>
     </ul>
 
     <p>
-      <strong>Promotion was governance, not a CI flip — and it happened.</strong> The wasm engine becomes the
-      WASM-path default only when <strong>all</strong> five §18A.7 GO/NO-GO criteria pass — byte-identity
-      (1), full FFI surface (2), the perf ceiling above (3), the Node target + a
-      real-Rust production adopter (4), and the §18A.7 governance criterion (5) — recorded by a
-      <strong>dated amendment</strong>. That amendment landed on <strong>2026-06-21</strong>
-      (<a href="https://github.com/causljs/causl-wasm/issues/169"><code>causl-wasm#169</code></a>):
-      all five are GO, rust-ssot is the unconditional default, and the per-flush byte-compare
-      oracle + sticky-downgrade fail-safe were removed (§18A.8). The TS engine stays the
-      unconditional floor — retained in <code>causl-client</code> as the §12 reference and the
-      §18A.13.1 implicit-path capability fallback — but it is no longer the default.
+      <strong>Promotion was governance, not a CI flip, and it happened.</strong>
+      The wasm engine becomes the WASM-path default only when <strong>all</strong>
+      five §18A.7 GO/NO-GO criteria pass: byte-identity (1), the full FFI
+      surface (2), the marshal ceiling above (3), the Node target plus a
+      real-Rust production adopter (4), and the <strong>TS-engine floor
+      maintained</strong> (5). That last one is the same criterion the
+      <a href="../two-engine-architecture/#promotion">two-engine page</a> lists,
+      and it is satisfied today by <code>causl-core-ts</code> rather than by
+      anything inside this package. The dated amendment landed on
+      <strong>2026-06-21</strong>
+      (<code>causl-core-rs#169</code>):
+      all five GO, rust-ssot unconditional, and the per-flush byte-compare
+      oracle plus sticky-downgrade fail-safe removed (§18A.8).
     </p>
 
     <hr />
@@ -807,32 +878,29 @@ const transformed = useMemo(() =&gt; expensiveTransform(value), [version])</code
     <h2 id="see-also">See also</h2>
 
     <ul>
-      <li><a href="../../api/media/SPEC.md"><code>SPEC.md</code> §18A</a> — the two-engine contract (the governing source
-        for everything above): §18A.1 equivalence, §18A.2 Node target, §18A.4 thin TS
-        API, §18A.5 read-identity, §18A.6 FFI atomicity, §18A.7 GO/NO-GO criteria,
-        §18A.10 topology, §18A.11 Python tooling.</li>
-      <li><a href="https://github.com/causljs/causl-client/blob/main/SPEC.md" rel="noopener"><code>SPEC.md</code> §18A.12 / §18A.13 / §18A.13.1</a>
-        — the dated amendments this guide adds: <strong>§18A.12</strong> the
-        <code>preloadCauslWasm()</code> + <code>createCauslWasmSync()</code> synchronous-construction split
-        (§2.5) and the build-script asserts (§3.1); <strong>§18A.13</strong> the
-        <code>causl-client</code> wasm-default direction (§1); <strong>§18A.13.1 (2026-06-23)</strong>
-        the implicit-path loud TS capability fallback. These sections live in the
-        <code>causl-client</code> / <code>causl-ts-wasm-engine</code> distributions' <code>SPEC.md</code> and are
-        newer than the bundled local <code>SPEC.md</code> copy above, so linked to this repo's
-        canonical <code>SPEC.md</code>.</li>
-      <li><a href="https://github.com/causljs/causl-client/blob/main/packages/core/wasm/README.md"><code>packages/core/wasm/README.md</code></a> — the
-        <code>@causl/core/wasm</code> entry point: cost shape, host requirements, CSP, bundler
-        interop, the H1 callout, the <code>WasmBackendUnavailableError</code> codes.</li>
-      <li><a href="https://github.com/causljs/causl-client/blob/main/docs/wasm-adoption-guide.md"><code>docs/wasm-adoption-guide.md</code></a> — preload / SRI
-        posture, dynamic-import vendoring, the five structured fallback codes, and the
-        full H1 read-identity migration walkthrough.</li>
-      <li><code>causljs/causl-wasm</code> <a href="https://github.com/causljs/causl-wasm/blob/main/scripts/README.md" rel="noopener"><code>scripts/README.md</code></a>
-        — the producer-side <code>build_wasm.py</code> / <code>package_wasm.py</code> contract this guide
-        consumes.</li>
+      <li><a href="../two-engine-architecture/">Two-engine architecture</a>: the
+        §18A contract in prose, the byte-identity gate, the repository topology,
+        and the withdrawn TypeScript fallback in full.</li>
+      <li><a href="../wasm-performance/">Wasm performance</a>: what the wasm path
+        costs, measured, and which older claims the measurements refute.</li>
+      <li><a href="../">Enterprise overview</a>: the tier, the private Gitea
+        registry, and the <code>@causl/core</code> install hazard.</li>
+      <li><a href="../../api/media/SPEC.md"><code>SPEC.md</code> §18A</a>: the
+        two-engine contract, covering §18A.1 equivalence, §18A.2 Node target,
+        §18A.4 thin TS client, §18A.5 read-identity, §18A.6 FFI atomicity,
+        §18A.7 GO/NO-GO criteria, §18A.10 topology, §18A.11 Python tooling. This
+        bundled copy is a dated snapshot; the current copy lives in
+        <code>causl-wasm-ts</code>.</li>
+      <li><a href="../../api/media/wasm-adoption-guide.md"><code>wasm-adoption-guide.md</code></a>:
+        preload and SRI posture, dynamic-import vendoring, and the full
+        read-identity migration walkthrough. Also a bundled snapshot.</li>
+      <li><code>causl-core-rs</code>&nbsp;<code>scripts/README.md</code>:
+        the producer-side <code>build_wasm.py</code> / <code>package_wasm.py</code>
+        contract this guide consumes.</li>
     </ul>
   </main>
 
-    <!-- Footer host — js/footer.js replaces this with the canonical
+    <!-- Footer host. js/footer.js replaces this with the canonical
        <footer class="site-footer"> element. -->
   <div id="footer-host">
     <noscript>
