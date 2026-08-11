@@ -8,19 +8,19 @@
 //    charted, quoted in an issue, or pushed to `causl-org` from a run that is
 //    not archived here."
 //
-// Every gate that sentence needs exists on the causl-bench side — the
+// Every gate that sentence needs exists on the causl-bench side: the
 // aggregator refuses a dirty tree, refuses an unattested engine, computes four
 // integrity digests, and writes `RUN.md` and `index.json`. None of them are
 // reachable from here, because a `combined.json` handed to this script is just
 // a file. So this script re-checks the parts that are checkable from the
 // artefact itself and refuses the rest:
 //
-//   1. the run must be ARCHIVED — its four integrity digests must appear,
+//   1. the run must be ARCHIVED: its four integrity digests must appear,
 //      byte for byte, against a `runId` in the archive's `index.json`. A
 //      `combined.json` sitting in a working tree is not citable, and this is
 //      the check that makes the sentence above true rather than aspirational.
-//   2. the tree must have been CLEAN — `dirtyTree` on any cell is a refusal.
-//   3. the merge must not have been FORCED — `homogeneity.forced` means the
+//   2. the tree must have been CLEAN: `dirtyTree` on any cell is a refusal.
+//   3. the merge must not have been FORCED: `homogeneity.forced` means the
 //      documents disagreed about the machine, the commit or the reps, and a
 //      chart drawn across them is one line through two experiments.
 //   4. no cell may be `failed`, and
@@ -92,7 +92,7 @@ const indexPath = join(archiveDir, 'index.json');
 let archivedRun = null;
 if (!existsSync(indexPath)) {
   refuse(
-    `the archive has no index.json at ${indexPath} — this run is not citable, and ` +
+    `the archive has no index.json at ${indexPath}, so this run is not citable, and ` +
       'causl-bench/runners/archive/README.md forbids publishing from a run that is not archived',
   );
 } else if (!combined.integrity) {
@@ -104,7 +104,7 @@ if (!existsSync(indexPath)) {
   archivedRun = runs.find((r) => JSON.stringify(r.integrity) === want) ?? null;
   if (!archivedRun) {
     refuse(
-      `no run in ${indexPath} carries these integrity digests — the archive holds ` +
+      `no run in ${indexPath} carries these integrity digests: the archive holds ` +
         `${runs.length} run(s) and none of them is this one. A combined.json in a working ` +
         'tree is not a citable artefact; re-run the sweep with `--archive runners/archive`.',
     );
@@ -122,7 +122,7 @@ if (dirty.length > 0) {
 
 if (combined.homogeneity?.forced === true) {
   refuse(
-    'the merge was FORCED — the runner documents did not agree on the machine, the commit ' +
+    'the merge was FORCED: the runner documents did not agree on the machine, the commit ' +
       'or the reps, so a single chart line would run through more than one experiment ' +
       `(reason given: ${combined.homogeneity.reason ?? 'none'})`,
   );
@@ -142,7 +142,7 @@ if (failed.length > 0) {
 const okCells = cells.filter((c) => c.outcome === 'ok');
 if (okCells.length === 0) {
   refuse(
-    `the sweep published ${cells.length} cell(s) and none of them is \`ok\` — there is no ` +
+    `the sweep published ${cells.length} cell(s) and none of them is \`ok\`, so there is no ` +
       'measurement here to chart',
   );
 }
@@ -155,15 +155,15 @@ if (okCells.length === 0) {
 // fewer than two comparable entries and publishes no comparison at all.
 //
 // This is not hypothetical. The first full sweep taken for this page ranked
-// **1 of 79 groups** — 326 of its 364 ok cells were low-confidence, 273 of them
+// **1 of 79 groups**: 326 of its 364 ok cells were low-confidence, 273 of them
 // because `machineLoad.quiet` was false. Every gate above passed it. A page
 // built from that run would have shown a comparison the aggregate had refused
 // to make, which is the same shape of defect as the panel this page retracts.
 //
 // So the publish boundary asks the question none of the others do: did this run
 // produce a comparison? Groups the work-equivalence gate held out are NOT
-// counted against it — those are correct refusals about scenario semantics, not
-// evidence the run was noisy — and neither is a group withheld because a
+// counted against it (those are correct refusals about scenario semantics, not
+// evidence the run was noisy), and neither is a group withheld because a
 // suppressed cell beat the leader.
 const groups = Array.isArray(combined.ranking) ? combined.ranking : [];
 const comparable = groups.filter((g) => !g.exclusionReason && !g.withheld);
@@ -171,7 +171,7 @@ const ranked = comparable.filter((g) => (g.entries ?? []).length >= 2);
 
 if (groups.length > 0 && ranked.length === 0) {
   refuse(
-    `the run ranks 0 of ${comparable.length} comparable group(s) — it measured ` +
+    `the run ranks 0 of ${comparable.length} comparable group(s): it measured ` +
       `${okCells.length} cell(s) and compared none of them`,
   );
 }
@@ -183,7 +183,7 @@ if (groups.length > 0 && ranked.length === 0) {
 // the runner sampled the load average when it measured the cell and recorded
 // whether anything else was on the CPU. A run whose cells were mostly taken
 // while the machine was busy is contaminated whether or not the ranking
-// happened to survive it, and no number of repetitions fixes it — the
+// happened to survive it, and no number of repetitions fixes it: the
 // competing work is not part of the workload under test.
 //
 // A simple majority is the line: past that, the typical cell of the run was
@@ -195,25 +195,25 @@ if (withLoad.length > 0 && noisy.length > withLoad.length / 2) {
   const loads = noisy.map((c) => c.machineLoad.loadAvg1m).filter(Number.isFinite).sort((a, b) => a - b);
   const median = loads.length ? loads[Math.floor(loads.length / 2)] : null;
   refuse(
-    `${noisy.length} of ${withLoad.length} measured cells record \`machineLoad.quiet: false\` — the ` +
+    `${noisy.length} of ${withLoad.length} measured cells record \`machineLoad.quiet: false\`, so the ` +
       'typical cell of this run was measured while other work was on the CPU' +
       (median === null ? '' : ` (median load average ${median} across ${noisy.length} cells)`) +
       '. Re-measure on an idle machine; repetitions do not remove competing work.',
   );
 }
 
-// Not a refusal — a run may legitimately rank a minority of its groups — but
+// Not a refusal (a run may legitimately rank a minority of its groups), but
 // silence here is how "we published a sweep" comes to mean less than a reader
 // assumes.
 if (ranked.length > 0 && ranked.length < comparable.length / 2) {
   console.error(
-    `NOTE — this run ranks ${ranked.length} of ${comparable.length} comparable group(s). ` +
+    `NOTE: this run ranks ${ranked.length} of ${comparable.length} comparable group(s). ` +
       'The rest had fewer than two cells the aggregator was willing to compare.\n',
   );
 }
 
 if (refusals.length > 0) {
-  console.error('REFUSED — this run may not be published:\n');
+  console.error('REFUSED. This run may not be published:\n');
   for (const r of refusals) console.error(`  · ${r}`);
   console.error('');
   process.exit(EXIT.REFUSED);
@@ -221,7 +221,30 @@ if (refusals.length > 0) {
 
 // --- the entry ---------------------------------------------------------------
 
-/** p95 straight off the recorded per-rep samples — not a model, the 95th
+/** Runner directory name → dashboard series id.
+ *
+ *  These are two different names and conflating them is how the withdrawn data
+ *  got here in the first place. A runner id names a directory in `causl-bench`;
+ *  a series id names a line on the chart and a `library` value in
+ *  `history.json`. They agree for every comparator, so the map holds exactly
+ *  one entry.
+ *
+ *  `causl-wasm-ts` is the runner that measures the `@causl/causl-wasm-ts`
+ *  client on the Rust `causl-core-rs` engine. It publishes as `causl-wasm`,
+ *  because that is the one wasm series this page has: the earlier `causl-wasm`
+ *  and `causl-wasm-all` series were the TypeScript engine under a wasm label
+ *  and their rows are deleted from `history.json`. Without this map an import
+ *  would silently reintroduce `causl-wasm-ts` as a second, differently-named
+ *  line for the same engine, and the chart would split in two again.
+ *
+ *  Note this does NOT rename the package. `libraries[<series>].package` still
+ *  reads `@causl/causl-wasm-ts`, which is what npm installs. */
+const RUNNER_TO_SERIES = {
+  'causl-wasm-ts': 'causl-wasm',
+};
+const seriesId = (runner) => RUNNER_TO_SERIES[runner] ?? runner;
+
+/** p95 straight off the recorded per-rep samples: not a model, the 95th
  *  percentile of the numbers the runner actually kept. `null` when the cell
  *  recorded no samples (every non-`ok` outcome). */
 function p95(samples) {
@@ -254,7 +277,7 @@ for (const c of cells) {
 
   if (c.outcome === 'ok') {
     samples.push({
-      library: c.runner,
+      library: seriesId(c.runner),
       scenario: c.scenario,
       scale: c.scale,
       medianMs: c.medianMs,
@@ -283,17 +306,17 @@ for (const c of cells) {
     });
   } else {
     skipped.push({
-      library: c.runner,
+      library: seriesId(c.runner),
       scenario: c.scenario,
       scale: c.scale,
       status: 'SKIP',
       outcome: c.outcome,
       reason: c.reason ?? null,
       engine: c.engine ?? null,
-      // NOT `attested`. In this dataset `attested: false` is the withdrawal
-      // marker on the retracted causl-wasm series — it means "this number was
-      // produced by an engine other than the one it was labelled with". A cell
-      // that produced no number has no timed work to attest, which is a
+      // NOT `attested`. On a measured row `attested: false` means "this number
+      // was produced by an engine other than the one it was labelled with",
+      // which is the fact that got two whole series deleted from this feed. A
+      // cell that produced no number has no timed work to attest, which is a
       // different fact, and giving the two the same field value would let a
       // reader (or a future filter) count skipped cells as withdrawn ones.
       engineAttested: c.engineAttested ?? null,
@@ -303,6 +326,26 @@ for (const c of cells) {
 
 const runners = combined.runners ?? {};
 const anyRunner = Object.values(runners)[0] ?? {};
+
+/** Rewrites every `runner` field in a carried-verbatim block to its series id.
+ *
+ *  `ranking` and `engineFloor` are copied out of the aggregate unchanged in
+ *  every other respect, but their `runner` values have to agree with
+ *  `samples[].library` or the page joins them against nothing: the renderer
+ *  looks a cell up by `${library}/${scenario}@${scale}`, so a ranking that
+ *  still said `causl-wasm-ts` while the samples said `causl-wasm` would render
+ *  every causl-wasm cell as "no cell". This walks the whole subtree rather
+ *  than naming the six arrays that carry a runner today, because the
+ *  aggregator has added one before and a missed array fails silently. */
+function toSeriesIds(node) {
+  if (Array.isArray(node)) return node.map(toSeriesIds);
+  if (node === null || typeof node !== 'object') return node;
+  const out = {};
+  for (const [k, v] of Object.entries(node)) {
+    out[k] = k === 'runner' && typeof v === 'string' ? seriesId(v) : toSeriesIds(v);
+  }
+  return out;
+}
 
 const entry = {
   capturedAt: combined.combinedAt,
@@ -317,9 +360,11 @@ const entry = {
     cpuModel: anyRunner.cpuModel ?? null,
     node: anyRunner.node ?? null,
   },
+  // Keyed by series id; `package` keeps the real npm name, which for the
+  // causl-wasm series is `@causl/causl-wasm-ts` and is NOT the series id.
   libraries: Object.fromEntries(
     Object.entries(runners).map(([id, p]) => [
-      id,
+      seriesId(id),
       {
         package: p.library?.name ?? null,
         version: p.library?.version ?? null,
@@ -329,13 +374,13 @@ const entry = {
     ]),
   ),
   schedule: combined.schedule ?? null,
-  // The aggregator's own ranking, carried verbatim. The page renders the
-  // comparison from THIS rather than re-deriving "who was fastest" from the
-  // medians, because the aggregator applies the tie band, the work-equivalence
-  // exclusions and the engine-build hold-out, and a renderer that sorted
-  // medians itself would quietly disagree with all three.
-  ranking: combined.ranking ?? null,
-  engineFloor: combined.engineFloor ?? null,
+  // The aggregator's own ranking, carried verbatim apart from the runner→series
+  // rename. The page renders the comparison from THIS rather than re-deriving
+  // "who was fastest" from the medians, because the aggregator applies the tie
+  // band, the work-equivalence exclusions and the engine-build hold-out, and a
+  // renderer that sorted medians itself would quietly disagree with all three.
+  ranking: toSeriesIds(combined.ranking ?? null),
+  engineFloor: toSeriesIds(combined.engineFloor ?? null),
   samples,
   skipped,
 };
@@ -347,7 +392,7 @@ if (!Array.isArray(history)) {
 }
 
 // Re-importing the same archived run replaces its entry rather than appending a
-// second copy — the run id is derived from the run, so this is idempotent.
+// second copy: the run id is derived from the run, so this is idempotent.
 const before = history.length;
 const kept = history.filter((h) => h.runId !== entry.runId);
 kept.push(entry);

@@ -1,5 +1,5 @@
 /* ============================================================
-   causl.org/benchmarks — dashboard styles (#707, restructured by #1247).
+   causl.org/benchmarks: dashboard styles (#707, restructured by #1247).
 
    Page-specific rules for the live dashboard. Inherits the brand
    tokens from causl-org/site.css (--causal-cyan, --mist, etc.).
@@ -10,12 +10,12 @@
 
    #1247 reshaped the per-cell cards (one card per library × scenario
    × scale) into per-section cards (one card per scenario × scale,
-   with all four framework series stacked on a single chart). The
-   filter / verdict-legend / meta / status-callout chrome above and
-   below the grid is unchanged; only the card-level rules differ.
+   with every series stacked on a single chart). The filter /
+   verdict-legend / meta / status-callout chrome above and below the
+   grid is unchanged; only the card-level rules differ.
    ============================================================ */
 
-/* Dashboard status text — sits on --surface-base (page background). */
+/* Dashboard status text: sits on --surface-base (page background). */
 .dashboard-loading,
 .dashboard-empty,
 .dashboard-error {
@@ -56,7 +56,7 @@
   text-transform: uppercase;
   color: var(--causal-cyan);
   font-weight: 700;
-  /* 0.15rem — hairline gap under a meta label; sub-grid, keep literal. */
+  /* 0.15rem: hairline gap under a meta label; sub-grid, keep literal. */
   margin-bottom: 0.15rem;
 }
 
@@ -130,12 +130,12 @@
   gap: var(--space-1);
 }
 
-/* Filter chip — sits on --surface-elevated (filter-shell panel). */
+/* Filter chip: sits on --surface-elevated (filter-shell panel). */
 .filter-chip {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  /* 0.28rem / 0.65rem — chip-internal padding, kept literal to
+  /* 0.28rem / 0.65rem: chip-internal padding, kept literal to
      preserve the existing 999px-radius pill geometry. */
   padding: 0.28rem 0.65rem;
   border-radius: 999px;
@@ -185,7 +185,7 @@
   font-family: var(--mono);
   font-size: 0.74rem;
   letter-spacing: 0.04em;
-  /* 0.32rem / 0.7rem — small action-button padding kept literal. */
+  /* 0.32rem / 0.7rem: small action-button padding kept literal. */
   padding: 0.32rem 0.7rem;
   border-radius: 6px;
   border: 1px solid rgba(39, 211, 195, 0.32);
@@ -294,7 +294,7 @@
   }
 }
 
-/* Bench section card — paired with --surface-elevated. */
+/* Bench section card: paired with --surface-elevated. */
 .bench-section-card {
   position: relative;
   background: linear-gradient(180deg,
@@ -342,7 +342,7 @@
   font-size: 0.72rem;
   color: var(--text-on-elevated-subtle);
   letter-spacing: 0.04em;
-  /* 0.12rem / 0.5rem — small pill geometry, kept literal for the
+  /* 0.12rem / 0.5rem: small pill geometry, kept literal for the
      999px-radius badge shape. */
   padding: 0.12rem 0.5rem;
   border-radius: 999px;
@@ -355,7 +355,7 @@
 }
 
 .bench-section-chart {
-  /* 0.1rem — sub-pixel chart bleed, sub-grid; keep literal. */
+  /* 0.1rem: sub-pixel chart bleed, sub-grid; keep literal. */
   margin: 0.1rem -0.1rem 0;
   /* The chart is drag-pannable (vertical) and wheel-zoomable: the
      grab cursor advertises the pan affordance; touch-action /
@@ -367,7 +367,7 @@
   -webkit-user-select: none;
 }
 
-/* Active drag — keep the grabbing cursor even over the help-cursor
+/* Active drag: keep the grabbing cursor even over the help-cursor
    hit-rects so the gesture reads consistently while panning. */
 .bench-section-chart.is-panning,
 .bench-section-chart.is-panning svg rect[pointer-events="all"] {
@@ -387,7 +387,7 @@
   cursor: help;
 }
 
-/* Smoothed median lines — slight glow on hover for visual feedback. */
+/* Smoothed median lines: slight glow on hover for visual feedback. */
 .bench-section-chart svg path[stroke-width="1.8"] {
   transition: stroke-width 0.15s, opacity 0.15s;
 }
@@ -402,7 +402,7 @@
   }
 }
 
-/* -- #1304 — in-place skip boxes ------------------------------
+/* -- #1304: in-place skip boxes ------------------------------
    Per-section "skip strip" sitting inside `.bench-section-chart`
    below the SVG. One `<li class="skip-box">` per framework that
    has no measurement at this (scenario × scale). Each box spans
@@ -412,7 +412,7 @@
    any library colour and any verdict colour. Inside: an uppercase
    library tag + a short taxonomy label ("stack overflow", "API
    not expressible", "WASM-only", "library limit"). Full skip
-   reason exposed via `title` (mouse) + `aria-label` (AT) — the
+   reason exposed via `title` (mouse) + `aria-label` (AT). The
    element is keyboard-focusable (`tabindex="0"`) and styled with
    a `:focus-visible` outline that matches the rest of the page. */
 
@@ -431,14 +431,14 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  /* 28 px — fixed height per spec; never scaled to the y-axis. */
+  /* 28 px: fixed height per spec; never scaled to the y-axis. */
   min-height: 28px;
-  /* 0.18rem / 0.5rem — small internal padding kept literal so the
+  /* 0.18rem / 0.5rem: small internal padding kept literal so the
      box reads as a thin in-chart strip, not a card. */
   padding: 0.18rem 0.6rem;
   border-radius: 6px;
   border: 1px dashed rgba(169, 181, 201, 0.45);
-  /* Diagonal-stripe muted background — distinct from every
+  /* Diagonal-stripe muted background: distinct from every
      library color (Async Cyan / Copper / Violet / Ash) and every
      verdict color (mint / coral / blue / amber). The stripes are
      drawn with a repeating-linear-gradient so the rule stays
@@ -502,7 +502,7 @@
   text-transform: uppercase;
   font-size: 0.66rem;
   color: var(--lib-color, var(--fog));
-  /* 0.05rem — flush the tag past the 3px accent strip; literal. */
+  /* 0.05rem: flush the tag past the 3px accent strip; literal. */
   padding-left: 0.35rem;
 }
 
@@ -522,7 +522,7 @@
    palette reuses brand state colours at low alpha so we don't
    introduce new colours. */
 .skip-class-stack-overflow .skip-box-label {
-  /* conflict-coral, low alpha — "the library crashed reading this". */
+  /* conflict-coral, low alpha: "the library crashed reading this". */
   background: rgba(255, 100, 110, 0.14);
   border: 1px solid rgba(255, 100, 110, 0.32);
   border-radius: 4px;
@@ -530,7 +530,7 @@
 }
 
 .skip-class-api-gap .skip-box-label {
-  /* signal-blue, low alpha — "the library can't express this". */
+  /* signal-blue, low alpha: "the library can't express this". */
   background: rgba(79, 124, 255, 0.14);
   border: 1px solid rgba(79, 124, 255, 0.34);
   border-radius: 4px;
@@ -538,7 +538,7 @@
 }
 
 .skip-class-wasm-only .skip-box-label {
-  /* commit-amber, low alpha — "only-causl scenario, not measurable
+  /* commit-amber, low alpha: "only-causl scenario, not measurable
      elsewhere by design". */
   background: rgba(255, 179, 71, 0.14);
   border: 1px solid rgba(255, 179, 71, 0.36);
@@ -559,13 +559,13 @@
    `packages/bench/src/skip-row.ts`:
 
      artefact-missing     → wasm bridge artefact not built
-                            (muted warm gray — actionable rebuild).
+                            (muted warm gray, actionable rebuild).
      feature-not-wired    → setup path not routed through
-                            `makeCauslAsync` (muted cool cyan
-                            — TODO-style, future PR resumes).
+                            `makeCauslAsync` (muted cool cyan;
+                            TODO-style, future PR resumes).
      engine-incompatible  → sync-only LibraryHarness seam the
                             wasm engine can't honour (muted
-                            violet — semantic gap).
+                            violet, semantic gap).
      timeout              → wall-clock budget exceeded
                             (muted commit-amber).
      oom                  → V8 heap exhaustion / exit 134
@@ -573,7 +573,7 @@
 
    All five reuse the brand palette tokens (--causal-cyan,
    --signal-blue, --commit-amber, --conflict-coral, --fog) so
-   no new colours are introduced — only new bindings of existing
+   no new colours are introduced, only new bindings of existing
    ones. Each rule paints the .skip-box-label pill background +
    border at the same low-alpha ratio as the legacy `.skip-class-*`
    classes above (0.14 fill / 0.32-ish border) so the strip reads
@@ -587,7 +587,7 @@
 }
 
 .skip-class-feature-not-wired .skip-box-label {
-  /* causal-cyan, low alpha — TODO-style "wiring pending" cue. */
+  /* causal-cyan, low alpha: TODO-style "wiring pending" cue. */
   background: rgba(17, 217, 255, 0.13);
   border: 1px solid rgba(17, 217, 255, 0.36);
   border-radius: 4px;
@@ -595,7 +595,7 @@
 }
 
 .skip-class-engine-incompatible .skip-box-label {
-  /* signal-blue (= mutation-violet), low alpha — "semantic gap". */
+  /* signal-blue (= mutation-violet), low alpha: "semantic gap". */
   background: rgba(124, 77, 255, 0.14);
   border: 1px solid rgba(124, 77, 255, 0.36);
   border-radius: 4px;
@@ -603,7 +603,7 @@
 }
 
 .skip-class-timeout .skip-box-label {
-  /* commit-amber, low alpha — "ran past the wall-clock budget". */
+  /* commit-amber, low alpha: "ran past the wall-clock budget". */
   background: rgba(255, 179, 71, 0.14);
   border: 1px solid rgba(255, 179, 71, 0.38);
   border-radius: 4px;
@@ -611,7 +611,7 @@
 }
 
 .skip-class-oom .skip-box-label {
-  /* conflict-coral, low alpha — "ran out of memory". */
+  /* conflict-coral, low alpha: "ran out of memory". */
   background: rgba(255, 100, 110, 0.14);
   border: 1px solid rgba(255, 100, 110, 0.36);
   border-radius: 4px;
@@ -648,7 +648,7 @@
   grid-template-columns: auto 1fr auto auto auto;
   align-items: center;
   gap: var(--space-1) var(--space-2);
-  /* 0.28rem / 0.5rem — chip-internal padding kept literal. */
+  /* 0.28rem / 0.5rem: chip-internal padding kept literal. */
   padding: 0.28rem 0.5rem;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.02);
@@ -679,32 +679,14 @@
   white-space: nowrap;
 }
 
-/* Per-series annotation: rendered on legend chips whose underlying
-   library carries a LIBRARY_ANNOTATION entry (today: `causl-wasm-all`,
-   the exhaustive profile). The ⓘ glyph + dotted underline cue the
-   reader that hovering reveals the annotation tooltip — the
-   `title=` attribute carries the message itself. */
-.bench-legend-lib--annotated {
-  text-decoration: underline dotted color-mix(
-    in srgb,
-    var(--lib-color, var(--fog)) 70%,
-    transparent
-  );
-  text-underline-offset: 0.15em;
-  cursor: help;
-}
-
-.bench-legend-lib-note {
-  /* Inline glyph — sized small + dimmed so the chip's primary
-     reading axis stays the library name, not the marker. */
-  margin-left: 0.25em;
-  font-size: 0.85em;
-  color: color-mix(
-    in srgb,
-    var(--lib-color, var(--fog)) 70%,
-    var(--text-on-elevated-subtle)
-  );
-}
+/* `.bench-legend-lib--annotated` and `.bench-legend-lib-note` used to
+   live here. They styled the ⓘ marker on a legend chip whose series
+   carried a LIBRARY_ANNOTATION entry, and the only entries were the
+   withdrawal notices on the two wasm series that are now deleted from
+   history.json. LIBRARY_ANNOTATION is empty, so the renderer never
+   emits either class and the rules are removed with the data. The map
+   and the renderer branch stay; if a series ever needs a footnote
+   again, these two rules come back with it. */
 
 .bench-legend-stats {
   display: inline-flex;
@@ -758,7 +740,7 @@
 
 .bench-legend-verdict-label { line-height: 1; }
 
-/* #1293 — skipped-library legend chip: strikethrough on the framework
+/* #1293 skipped-library legend chip: strikethrough on the framework
    name, ✗ badge in the verdict slot, muted stats columns, and a
    subdued chip surface so the skipped row reads as "no measurement"
    rather than "regressed". Tooltip carries the runner's reason. */
@@ -793,7 +775,7 @@
   border-color: color-mix(in srgb, var(--fog) 50%, transparent);
 }
 
-/* causl-bench#37 — typed SKIP chip in the legend's verdict slot.
+/* causl-bench#37: typed SKIP chip in the legend's verdict slot.
    Mirrors the .skip-class-* taxonomy used by the in-chart skip
    strip so a (scenario × library) cell with a typed skip reads
    the same colour in BOTH places: the in-chart strip below the
@@ -897,7 +879,7 @@
   outline-offset: 2px;
 }
 
-/* -- Status callout (replaces the old "MVP — deferred" callout) -- */
+/* -- Status callout (replaces the old "MVP deferred" callout) -- */
 
 .status-callout {
   margin: var(--space-5) 0 var(--space-6);
@@ -925,7 +907,7 @@
   color: var(--text-on-base-muted);
 }
 
-/* The "decision log" callout is a <details> — give the summary a
+/* The "decision log" callout is a <details>, so give the summary a
    discreet caret affordance and the same uppercase-mono treatment
    as the strong-tag callouts. */
 details.status-callout > summary {
@@ -961,15 +943,20 @@ details.status-callout > summary:focus-visible {
   }
 }
 
-/* -- Honest #1133 / #1525 callout (#1536) ---------------------
+/* -- Honest callout -------------------------------------------
 
    Deliberately the loudest non-error element on the page: it sits
    directly above the median chart and must be impossible to miss,
-   because the chart itself plots causl-wasm at its real ~85–390×
-   slower values and a median chart structurally cannot show
-   causl-wasm's actual value axis (large-tree GC-survival, #1525).
+   because the chart plots causl-wasm at its real values and those
+   are several times causl-ts on most cells. A median chart cannot
+   explain why, so the callout has to.
+
    Coral (not the muted amber of .status-callout) + a solid 3px
-   left rule + elevated surface give it visual primacy on load. */
+   left rule + elevated surface give it visual primacy on load.
+
+   No element carries this class today; index.html uses
+   `.callout-enterprise` for that slot. The rules stay because the
+   callout is a page-authoring affordance, not dashboard.js output. */
 .bench-honest-callout {
   margin: var(--space-5) 0 var(--space-6);
   padding: var(--space-4) var(--space-5);
@@ -1025,7 +1012,7 @@ details.status-callout > summary:focus-visible {
    a `.card` (which sits in a `.grid-3` row) so the buckets stack
    vertically and read like a legend rather than a feature grid.
    Border + spacing reuse the same tokens as `.status-callout` but
-   without the warning palette — these are explanatory, not alerts. */
+   without the warning palette: these are explanatory, not alerts. */
 
 .skip-class {
   margin: var(--space-5) 0;
@@ -1093,284 +1080,28 @@ details.status-callout > summary:focus-visible {
 }
 
 /* ============================================================
-   Dual-engine comparison panel (causl-bench#21).
+   The dual-engine comparison panel lived here.
 
-   The renderer in pages/benchmarks/index.html populates
-   #dual-engine-table. Cells with class .dual-engine-faster
-   indicate causl-ts-wasm-engine is materially faster (≥5%) than
-   causl-ts on that scenario; .dual-engine-slower marks a regression
-   of the same magnitude; .dual-engine-same is within ±5%.
+   Its ~270 lines of table, pill, stack and staleness-warning
+   rules are gone because the panel they styled is gone from
+   index.html. The panel compared two series that turned out to be
+   the same TypeScript engine, its data file (dual-engine.json) was
+   deleted upstream and its fetch had been 404ing for months, and
+   the withdrawn rows behind it are now deleted from history.json
+   rather than retracted in place.
+
+   Two of those rules also hard-coded #5EE6A8 and #9FF0C8 as copies
+   of the LIBRARY_COLOR entries in dashboard.js. A colour defined in
+   two files drifts in one of them, so I am not carrying the copies
+   forward: dashboard.js owns the series palette.
    ============================================================ */
-
-#dual-engine-panel {
-  margin-top: var(--space-6);
-}
-
-#dual-engine-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: var(--mono);
-  font-size: 0.86rem;
-  margin-top: var(--space-4);
-}
-
-#dual-engine-table th,
-#dual-engine-table td {
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  text-align: left;
-  vertical-align: top;
-}
-
-#dual-engine-table thead th {
-  font-weight: 600;
-  color: var(--text-on-base-muted);
-  border-bottom: 1px solid rgba(39, 211, 195, 0.32);
-}
-
-#dual-engine-table tbody th[scope="row"] code {
-  white-space: nowrap;
-}
-
-.dual-engine-faster { color: var(--success-mint, #27d3a3); }
-.dual-engine-slower { color: var(--conflict-coral, #ff6b6b); }
-.dual-engine-same   { color: var(--text-on-base-subtle); }
-
-.dual-engine-meta {
-  margin-top: var(--space-3);
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--text-on-base-subtle);
-}
-
-.dual-engine-blurb {
-  font-size: 0.92rem;
-  color: var(--text-on-base-muted);
-  max-width: 720px;
-}
-
-#dual-engine-table td[data-perf-column="boundaryCrossings"] {
-  font-family: var(--mono);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  font-weight: 600;
-}
-.dual-engine-boundary-none { color: var(--text-on-base-subtle); }
-.dual-engine-boundary-low  { color: var(--commit-amber, #f5b942); }
-.dual-engine-boundary-high { color: var(--causal-cyan, #11D9FF); }
-
-/* ============================================================
-   causljs/causl-org#6 addition 2 — bytes-distribution triple.
-
-   The dual-engine table's boundaryCrossings column carries the
-   primary metric (crossings count) on a top line and the per-
-   crossing payload-bytes `min / median / max` triple on a
-   subdued second line. The triple sits SUBORDINATE to the
-   crossings value (smaller font, muted color) so it doesn't
-   crowd the row — adopters scan crossings first and drill into
-   bytes only when they want the cost-per-byte view.
-   ============================================================ */
-.dual-engine-th-sub {
-  display: inline-block;
-  margin-top: 2px;
-  color: var(--text-on-base-subtle);
-  font-weight: 400;
-  font-size: 0.78em;
-}
-.dual-engine-primary-metric {
-  font-weight: 600;
-}
-.dual-engine-bytes-triple {
-  font-family: var(--mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-on-base-subtle);
-  font-size: 0.78em;
-  margin-top: 2px;
-  font-weight: 400;
-  /* Reset font-weight from the parent's `font-weight: 600` (set on
-     the column for the crossings number). */
-}
-.dual-engine-bytes-min { color: var(--text-on-base-subtle); }
-.dual-engine-bytes-median { color: var(--text-on-base-muted); }
-.dual-engine-bytes-max { color: var(--text-on-base-muted); }
-
-/* ============================================================
-   causljs/causl-org#6 addition 3 — dual-stacked engine values.
-
-   Each metric cell starting at wall-ms renders TWO stacked
-   values: causl-ts (`engines[0]`, top, solid mint via Async
-   Cyan) and causl-ts-wasm-engine (`engines[1]`, bottom, paler
-   color + dashed underline). Color is the primary signal; the
-   small "selective" / "all" tag surfaces on hover via the
-   element's `title`.
-
-   When only one engine is present (the degenerate
-   `engines[1] === engines[0]` case, OR a scenario the second
-   engine doesn't carry), the renderer emits `dual-engine-stack
-   --solo-*` and the cell renders just that one value at its
-   own color — no em-dash stacked above a real number.
-
-   Layout: the cell grows vertically; column widths stay
-   unchanged so the table layout doesn't reflow.
-   ============================================================ */
-#dual-engine-table td .dual-engine-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  line-height: 1.3;
-}
-.dual-engine-stack-top {
-  /* `engines[0]` — the SELECTIVE causl engine row (causl-ts on the
-     production runs / causl-wasm on the wasm-engine profile axis).
-     Rendered in the solid commit-mint that dashboard.js's
-     LIBRARY_COLOR map reserves for `causl-wasm` so the row's
-     visual identity matches the chart-card legend. Solid weight
-     so the top reads as the primary entry. */
-  color: #5EE6A8; /* dashboard.js LIBRARY_COLOR['causl-wasm'] */
-  font-weight: 600;
-}
-.dual-engine-stack-bot {
-  /* `engines[1]` — the ALL / exhaustive causl engine row
-     (causl-ts-wasm-engine on the production runs, or
-     `causl-wasm-all` on the profile-split axis the prior PR
-     introduced). Rendered in the paler commit-mint that matches
-     dashboard.js's LIBRARY_COLOR['causl-wasm-all'] — washed-out
-     so the eye reads it as a sibling of the top row, not a
-     competing color. Dashed underline as the second axis of
-     distinction (so the row is still readable when monochrome /
-     under a high-contrast theme), matching the chart-line dash
-     pattern (LIBRARY_DASH['causl-wasm-all'] = '4 3'). */
-  color: #9FF0C8; /* dashboard.js LIBRARY_COLOR['causl-wasm-all'] */
-  font-weight: 500;
-  text-decoration: underline dashed currentColor;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-}
-/* Solo states — single engine present at this (scenario × engine
-   slot); render at the corresponding color WITHOUT the dashed
-   underline (the underline carries the "this is the all variant"
-   semantic, which only makes sense when both are shown). */
-.dual-engine-stack--solo-top {
-  color: #5EE6A8;
-  font-weight: 600;
-}
-.dual-engine-stack--solo-bot {
-  color: #9FF0C8;
-  font-weight: 500;
-}
-
-/* ============================================================
-   causljs/causl-org#12 — absent / skipped cells in the
-   side-by-side table.
-
-   The dual-engine.json envelope union-counts scenarios across
-   both engines; today the experimental `causl-ts-wasm-engine`
-   fork covers 13 of the 25 scenarios the upstream `causl-ts`
-   engine reports. For the remaining cells the renderer used to
-   concatenate ` ms` onto fmt()'s em-dash and emit a literal
-   "— ms" that read as broken data. The classes below give the
-   absent cell a deliberate visual identity:
-
-     .dual-engine-absent             — plain em-dash, subdued,
-                                       carrying the "not in
-                                       coverage today" tooltip.
-     .dual-engine-absent--skipped    — surface for the typed-skip
-                                       pill child below.
-
-   The skip pill colour palette mirrors the bench-legend's
-   typed-skip taxonomy (artefact-missing / feature-not-wired /
-   engine-incompatible / timeout / oom) so a reader scanning
-   either the legend OR the side-by-side table sees the same
-   colour for the same skip class. Geometry inherits the
-   999px-radius "pill" treatment that the legend uses.
-   ============================================================ */
-.dual-engine-absent {
-  color: var(--text-on-base-subtle);
-  font-style: italic;
-  text-align: center;
-}
-
-.dual-engine-skip-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 8px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--skip-pill-color, var(--fog)) 44%, transparent);
-  background: color-mix(in srgb, var(--skip-pill-color, var(--fog)) 14%, transparent);
-  color: var(--skip-pill-color, var(--fog));
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  font-weight: 600;
-  font-style: normal;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.dual-engine-skip-pill--legacy {
-  --skip-pill-color: var(--fog);
-}
-
-.dual-engine-skip-pill--artefact-missing {
-  --skip-pill-color: var(--fog);
-}
-
-.dual-engine-skip-pill--feature-not-wired {
-  --skip-pill-color: var(--causal-cyan);
-}
-
-.dual-engine-skip-pill--engine-incompatible {
-  --skip-pill-color: var(--signal-blue);
-}
-
-.dual-engine-skip-pill--timeout {
-  --skip-pill-color: var(--commit-amber);
-}
-
-.dual-engine-skip-pill--oom {
-  --skip-pill-color: var(--conflict-coral);
-}
-
-.dual-engine-coverage-note {
-  margin-top: var(--space-2);
-  font-size: 0.85rem;
-  color: var(--text-on-base-muted);
-}
-
-/* ============================================================
-   causljs/causl-org#15 — freshness watermark.
-
-   The dashboard fetches dual-engine.json from raw.github on
-   every page load (cross-origin, no cache contract). When the
-   file's `generatedAt` has slipped past the 7-day staleness
-   budget we surface a banner above the table so adopters
-   landing on the page from a stale search-result link don't
-   read stale numbers as current. Yellow (commit-amber) is the
-   "needs attention but not failing" signal the brand palette
-   reserves for this class of warning.
-   ============================================================ */
-.dual-engine-staleness-warn {
-  margin: var(--space-3) 0;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid color-mix(in srgb, var(--commit-amber) 60%, transparent);
-  border-left-width: 4px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--commit-amber) 12%, transparent);
-  color: var(--text-on-base);
-  font-size: 0.9rem;
-  line-height: 1.45;
-}
-
-.dual-engine-staleness-warn code {
-  font-family: var(--mono);
-  font-size: 0.85em;
-}
 
 /* ==============================================================
    Generated results tables (`render-latest.mjs`).
 
    These are static, checked-in HTML rather than anything this
    dashboard renders, so they get their own class rather than
-   reusing `table.compare` from site.css — that table centres
+   reusing `table.compare` from site.css: that table centres
    every cell and forces a 320px first column, which is right for
    a feature matrix and wrong for 81 rows of numbers.
 
@@ -1414,7 +1145,7 @@ details.status-callout > summary:focus-visible {
 
 /* The fastest cell in a ranked row. Cyan is the brand's own colour and
    is not a state semantic, so marking "best" with it does not read as
-   "pass" — which matters because a slower library here is not failing
+   "pass", which matters because a slower library here is not failing
    anything. */
 .results-table td.best {
   color: var(--causal-cyan);
@@ -1459,7 +1190,7 @@ details.status-callout > summary:focus-visible {
 }
 
 /* Measured, but not ranked. Struck through rather than hidden: the cell has a
-   real number and the reader is entitled to it — what it does not have is the
+   real number and the reader is entitled to it; what it does not have is the
    aggregator's permission to be compared. */
 .results-table td.unranked { color: var(--text-on-base-subtle); }
 .results-table td.unranked s { text-decoration-thickness: 1px; opacity: 0.85; }
