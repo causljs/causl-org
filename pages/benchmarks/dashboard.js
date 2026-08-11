@@ -1,65 +1,54 @@
 /* ============================================================
-   Series-id vocabulary (causl-org#13 / Audit K).
+   Series-id vocabulary.
    ------------------------------------------------------------
    Every chart element this renderer emits is tagged with the
-   library it represents. Historically that tag lived in one
-   attribute (`data-library`) here and a parallel attribute
-   (`data-engine`) in `index.html`'s dual-engine panel — same
-   concept, two undocumented spellings, no way for the dashboard
-   to reverse the mapping that turned an "engine id" into a
-   "library id" (see the prior `ENGINE_TO_LIBRARY` table in this
-   file and its mirror in `index.html`).
+   series it represents, and a series id is exactly the runner
+   directory name `causl-bench` published the cell under. There
+   is no derivation step and no profile or repo axis to collapse:
+   `history.json` carries the id, this file draws it.
 
-   After causl-org#13 every emission writes ONE canonical
-   attribute — `data-series` — carrying the dashboard SeriesId
-   defined by the centralised 3-axis vocabulary in
-   `causljs/causl-bench:packages/bench/src/series-id.ts`. The
-   three axes the SeriesId encodes are:
+   ONE causl-wasm series exists, and it took some deleting to get
+   there. Three wasm-labelled series were once charted here:
 
-     - harness  — what code ran inside the cell (causl-js,
-                  causl-wasm, jotai, redux-toolkit, mobx, plus the
-                  back-compat `causl` alias).
-     - profile  — selective (default) vs all (exhaustive). Only
-                  the causl-wasm harness is meaningfully
-                  profile-dimensioned today.
-     - repoSlug — which sibling-repo sourced the engine code:
-                  `causl-ts` (upstream) vs `causl-ts-wasm-engine`
-                  (the fork). Only the engine-tagged harnesses
-                  have a meaningful repoSlug.
+     causl-wasm      withdrawn, DELETED
+     causl-wasm-all  withdrawn, DELETED
+     causl-wasm-ts   attested, RENAMED to causl-wasm
 
-   The mapping rules:
+   The first two were the same TypeScript engine measured under a
+   wasm label. `causl-bench/docs/benchmark.md` records that their
+   engine label was asserted rather than observed, and their
+   generator was deleted in causl-bench#110. Deleting the
+   generator stops new numbers; it does not retract the ones this
+   feed already serves, so those rows were removed from
+   `history.json` outright. They were not relabelled: relabelling
+   them would have attached a Rust-engine claim to a
+   TypeScript-engine measurement, which is the original defect
+   with a fresh coat of paint.
 
-     causl-js  + (no repo slug)        → causl-js
-     causl-js  + repoSlug=causl-ts     → causl-ts
-     causl-wasm + profile=selective    → causl-wasm
-     causl-wasm + profile=all          → causl-wasm-all
-     causl-wasm + (no profile)         → causl-wasm
-     causl-wasm + repoSlug=causl-ts-wasm-engine → causl-wasm (collapses)
-     <competitor>                      → identity
+   The surviving series is the one whose every cell carries a
+   runtime attestation that the Rust engine executed the graph
+   that was timed. It measures the `@causl/causl-wasm-ts` client
+   on the `causl-core-rs` engine, and it is charted under the id
+   `causl-wasm` because that is what it always claimed to be.
+   Note the id is `causl-wasm` while the package is
+   `@causl/causl-wasm-ts`; the two are not interchangeable.
 
-   Compat shim (one release cycle): this renderer continues to
-   emit `data-library="<series-id>"` *alongside* the new
-   `data-series` attribute. The e2e Playwright contract pinned by
-   `causljs/causl-bench/e2e/playwright/dashboard.spec.ts` reads
-   `data-engine` selectors against `index.html`'s dual-engine
-   panel; this file's `data-library` was reachable but not pinned
-   by the spec. We mirror both attributes so any tooling that
-   pinned to either spelling keeps resolving while the
-   centralised `data-series` becomes the load-bearing seam in
-   the next release. A follow-up PR will drop the legacy
-   attribute once one full release cycle has shipped.
+   Each emission writes both `data-series` and `data-library`
+   with the same value. `data-series` is the load-bearing seam;
+   `data-library` is kept because external tooling pinned to it
+   before the rename and costs nothing to mirror.
    ============================================================ */
 
 /* ============================================================
-   causl.org/benchmarks — full dashboard renderer (#707, #769,
+   causl.org/benchmarks: full dashboard renderer (#707, #769,
    restructured by #1247).
 
-   Pure-vanilla JS, no dependencies. Reads a JSON file matching
-   the shape of `packages/bench/report/benchmark_history.json`
-   (HistoryEntry[] from packages/bench/src/report.ts) and renders
-   ONE inline-SVG chart per (scenario × scale) section, with each
-   of the four frameworks stacked as a separate line on the same
-   axes for direct visual comparison.
+   Pure-vanilla JS, no dependencies. Reads `./history.json` (an
+   array of HistoryEntry objects that `import-run.mjs` writes from
+   an archived `causl-bench` sweep) and renders ONE inline-SVG
+   chart per (scenario × scale) section, with each of the six
+   series stacked as a separate line on the same axes for direct
+   visual comparison.
 
    Each chart shows:
      - median (ms)  → solid library-coloured line per framework,
@@ -68,7 +57,7 @@
      - p95   (ms)   → translucent library-coloured band per
        framework (median ↔ p95) with the same smoothing applied
      - per-line verdict badges in the inline legend strip:
-       pass / regressed / improved / noisy — verdict computed per
+       pass / regressed / improved / noisy; verdict computed per
        framework by comparing the latest entry to the second-to-
        latest and by the CoV proxy on the latest entry
      - hover tooltips: a thin invisible SVG <rect> covers each
@@ -82,21 +71,21 @@
    Why one chart per section, not one per (library × scenario × scale)?
 
    #1247 reframed the dashboard from a "cell grid" (one card per
-   framework series) to a "section grid" (one card per scenario+
-   scale, all four framework series stacked). The cell grid made
-   it hard to spot e.g. "causl is 5x faster than redux-toolkit at
-   scale 10k on linear-chain" because the four panels lived next
-   to each other on different y-axes. Stacking the series on one
-   chart with a shared y-axis solves that immediately.
+   series) to a "section grid" (one card per scenario + scale,
+   every series stacked). The cell grid made it hard to spot e.g.
+   "causl is 5x faster than redux-toolkit at scale 10k on
+   linear-chain" because the panels lived next to each other on
+   different y-axes. Stacking the series on one chart with a
+   shared y-axis solves that immediately.
 
-   The original per-cell verdict logic is preserved per-series —
+   The original per-cell verdict logic is preserved per-series:
    each framework gets its own verdict, surfaced as a coloured
    chip in the section's legend strip. The per-cell border tint
    that used to advertise verdict has been retired (a single
    section can have mixed verdicts across its series, so it no
    longer makes sense to tint the whole card by one verdict).
 
-   D3 / Plotly decision (#769) still stands — STAY ON VANILLA SVG:
+   D3 / Plotly decision (#769) still stands. STAY ON VANILLA SVG:
 
      1. Lighthouse Performance budget. Lazy-loading any extra
         third-party JS is non-zero TBT (Total Blocking Time) and
@@ -106,12 +95,12 @@
         on Lighthouse.
      2. The features the issue wanted (cubic smoothing, "nice"
         axis ticks, hover tooltips, multi-series rendering) are
-        80–120 lines of vanilla code each, not a 70 KB dependency.
+        80 to 120 lines of vanilla code each, not a 70 KB dependency.
      3. No build step on causl.org/. The site is a flat directory
         served as static files. Adding a bundler just to import
         d3-shape + d3-scale + d3-axis would be a much larger
         architectural change than the issue scopes.
-     4. Plotly is not a serious option — 3.5 MB minified for a
+     4. Plotly is not a serious option: 3.5 MB minified for a
         per-section chart is two orders of magnitude over budget.
    --------------------------------------------------------------
 
@@ -134,56 +123,39 @@
   const HISTORY_URL = './history.json'
   const SAMPLE_URL = './history.sample.json'
 
-  /** Canonical library order — mirrors packages/bench/src/chart.ts.
-   *  `causl-ts` is the production TypeScript engine (the rich history
-   *  formerly labelled `causl`, renamed in #1538); `causl-wasm` is the
-   *  REAL serde-wasm Rust engine (#1536/#1538) — ~85–390× slower on
-   *  median by design (#1133 STANDS), kept adjacent so the honest
-   *  #1133/#1525 callout sits next to its bars.
+  /** Canonical series order. Six ids, one per runner directory the
+   *  `causl-bench` sweeps publish, with the two causl engines first so
+   *  the eye finds them before the comparators.
    *
-   *  `causl-wasm-all` is the same real engine measured under the
-   *  EXHAUSTIVE profile (no wall-clock kill, adaptive trial-count on
-   *  slow cells) — it sits next to `causl-wasm` so the eye sees the
-   *  pair "routine selective measurement / full exhaustive cross-cell
-   *  measurement" together. See the profile docblock in
-   *  packages/bench/scripts/cross-library-all-scenarios.ts. */
-  /** `causl-wasm-ts` and `redux-rtk` are the runner ids the current
-   *  `causl-bench` harness publishes, and they are deliberately NOT
-   *  folded into the `causl-wasm` / `redux-toolkit` series above.
+   *  `causl-ts` is the TypeScript engine (`@causlts/core`). `causl-wasm`
+   *  is the `@causl/causl-wasm-ts` client on the Rust `causl-core-rs`
+   *  engine, and every one of its cells carries a runtime attestation
+   *  that Rust executed the graph that was timed. It is the ONLY wasm
+   *  series: the earlier `causl-wasm` and `causl-wasm-all` series were
+   *  the TypeScript engine under a wasm label and their rows are deleted
+   *  from `history.json`, not relabelled.
    *
-   *  For `causl-wasm` the separation is load-bearing. Every point on
-   *  that series was produced by the TypeScript engine plus marshalling
-   *  overhead — the bench adapter called `loadWasmBackend()`, a path the
-   *  client's own docstring calls "NOT the authoritative Rust engine".
-   *  Those points are retained and stamped `attested: false` (see the
-   *  withdrawal notice on the page). `causl-wasm-ts` is the real Rust
-   *  engine, and each of its cells carries a runtime attestation that
-   *  Rust executed the graph that was timed. Drawing one line through
-   *  both would splice a withdrawn measurement onto a sound one.
-   *
-   *  `redux-rtk` is the same library under a new runner id; it gets its
-   *  own series for the narrower reason that the two harnesses measure a
-   *  different unit (fresh-world-per-step, subprocess-isolated), so the
-   *  series are not continuous either. */
+   *  `redux-rtk` and `redux-toolkit` are the same library under two
+   *  runner ids, and they stay separate because the two harnesses
+   *  measure a different unit (the current one times a world built fresh
+   *  per step, in its own process), so one line through both would not
+   *  be continuous. */
   const LIBRARY_ORDER = [
     'causl-ts',
     'causl-wasm',
-    'causl-wasm-all',
-    'causl-wasm-ts',
     'jotai',
     'redux-toolkit',
     'redux-rtk',
     'mobx',
   ]
 
-  /** Pretty legend labels — applied via getLibraryLabel(). Keeps the
-   *  underlying library id (`causl-wasm-all`) stable in the JSON shape
-   *  while the dashboard surfaces a human-friendlier "(all)" suffix
-   *  so the exhaustive-profile series reads as a related sibling of
-   *  `causl-wasm` rather than a standalone library. */
+  /** Pretty legend labels, applied via getLibraryLabel(). A series id
+   *  is what `history.json` carries and what `data-series` emits, so an
+   *  override here changes only what the legend prints. Most ids read
+   *  fine as-is; `redux-rtk` needs one because "redux-rtk" and
+   *  "redux-toolkit" are indistinguishable to a reader who does not
+   *  already know they are two runners over one library. */
   const LIBRARY_LABEL = {
-    'causl-wasm-all': 'causl-wasm (all)',
-    'causl-wasm-ts': 'causl-wasm-ts (attested)',
     'redux-rtk': 'redux-toolkit (rtk runner)',
   }
   function getLibraryLabel(lib) {
@@ -191,30 +163,20 @@
   }
 
   /** Per-series annotation surfaced as a tooltip on the legend chip.
-   *  The `causl-wasm-all` annotation flags that this series is the
-   *  EXHAUSTIVE profile — including slow scenarios that the
-   *  selective `causl-wasm` series intentionally drops via its
-   *  wall-clock-kill DNF gate. Only annotated series get the
-   *  tooltip note; everything else uses the plain library name. */
-  const LIBRARY_ANNOTATION = {
-    'causl-wasm': 'WITHDRAWN — these points were the TypeScript engine, not Rust',
-    'causl-wasm-all':
-      'WITHDRAWN — these points were the TypeScript engine, not Rust. ' +
-      'Exhaustive profile: includes slow scenarios that the selective ' +
-      'causl-wasm series DNFs',
-    'causl-wasm-ts':
-      'the real Rust engine, attested per cell. Held out of ranking: the ' +
-      'published build predates causl-core-rs#331 and measures a quadratic ' +
-      'drain clone, so its wall clocks are honest measurements of a known ' +
-      'defect rather than a comparison',
-  }
+   *  Empty today: the entries that lived here flagged the two withdrawn
+   *  wasm series, and those series are deleted rather than annotated. A
+   *  caveat that has to be attached to a series to keep it honest is a
+   *  reason to stop charting the series. The map stays because the
+   *  legend renderer reads it, and the next series that genuinely needs
+   *  a footnote goes here. */
+  const LIBRARY_ANNOTATION = {}
 
-  /** Library colours — competitor identity colours, NOT state
+  /** Library colours: competitor identity colours, NOT state
    *  semantics. The brand palette in css/site.css reserves Async
    *  Cyan / Commit Green / Conflict Amber / Rollback Red for
    *  state meaning (link / success / warning / error). If we
    *  paint a competitor with rollback-red, every chart silently
-   *  broadcasts "competitor = failure" — that confuses the
+   *  broadcasts "competitor = failure", which confuses the
    *  graph's literal message (which is a per-cell ratio of
    *  wall-times, not a verdict on the library). Per #1259 review
    *  T2.2, competitor swatches are pulled from the brand's
@@ -223,78 +185,43 @@
    *  the verdict pill, the regression badge, and the legend dots.
    *  Causl keeps Async Cyan since the brand owns the chip.
    *
-   *  Contrast against the dashboard surface (≈ #11182A): all four
-   *  pass WCAG 4.5:1 by inspection on `#070A0F` (the spec floor).
+   *  Contrast against the dashboard surface (≈ #11182A): every one
+   *  passes WCAG 4.5:1 by inspection on `#070A0F` (the spec floor).
    */
   const LIBRARY_COLOR = {
-    'causl-ts': '#11D9FF',     // Async Cyan — brand owner (TS engine).
-    'causl-wasm': '#5EE6A8',   // Commit-mint — the real Rust engine
-                               //   axis; distinct from causl-ts so the
-                               //   ~85–390× slower bars read as a
-                               //   separate series (#1133/#1525).
-    'causl-wasm-all': '#9FF0C8', // Paler commit-mint — the EXHAUSTIVE
-                               //   profile of the same Rust engine,
-                               //   washed-out so the eye reads it as
-                               //   a sibling of causl-wasm (not a
-                               //   competing colour). Also rendered
-                               //   with a dashed stroke (see
-                               //   LIBRARY_DASH below) for a second
-                               //   redundant axis of distinction in
-                               //   case the contrast washes out under
-                               //   a particular theme.
-    'causl-wasm-ts': '#5EE6A8', // Commit-mint — the attested Rust engine. It
-                               //   takes the colour the withdrawn `causl-wasm`
-                               //   series used to own, because it is the axis
-                               //   that series was always claiming to be; the
-                               //   withdrawn points are re-tinted below.
-    jotai: '#C8743D',          // Copper Wire — neutral identity.
-    'redux-toolkit': '#7C4DFF', // Mutation Violet — neutral identity.
+    'causl-ts': '#11D9FF',     // Async Cyan: brand owner (TS engine).
+    'causl-wasm': '#5EE6A8',   // Commit-mint: the attested Rust engine,
+                               //   distinct from causl-ts so the two
+                               //   causl axes read as separate series.
+    jotai: '#C8743D',          // Copper Wire: neutral identity.
+    'redux-toolkit': '#7C4DFF', // Mutation Violet: neutral identity.
     'redux-rtk': '#7C4DFF',    // Same library, same colour; the dashed stroke
                                //   below is what distinguishes the runner.
-    mobx: '#8FA2AA',           // Trace Ash — neutral identity.
+    mobx: '#8FA2AA',           // Trace Ash: neutral identity.
   }
-  // The withdrawn series are re-tinted to Trace-Ash-muted so a reader scanning
-  // the chart sees "retired data" before reading any label.
-  LIBRARY_COLOR['causl-wasm'] = '#6E7A82'
-  LIBRARY_COLOR['causl-wasm-all'] = '#59636A'
 
-  /** Per-library SVG `stroke-dasharray` — empty string = solid line.
-   *  Only `causl-wasm-all` uses a dashed stroke today; the dash
-   *  reinforces the "this is the exhaustive sibling of causl-wasm"
-   *  read without consuming a fresh palette slot. */
+  /** Per-library SVG `stroke-dasharray`: absent = solid line. Only
+   *  `redux-rtk` is dashed, so the two redux runners share a colour
+   *  without sharing a stroke. Both causl series draw solid. */
   const LIBRARY_DASH = {
-    'causl-wasm-all': '4 3',
-    // Withdrawn data is drawn dashed as well as muted, so the distinction
-    // survives a reader who cannot separate the two greys.
-    'causl-wasm': '2 4',
     'redux-rtk': '6 3',
   }
 
-  /** Default-view filter: the two causl engine axes plus the best
-   *  competitor (`mobx`) at the 10k scale, so both causl engines are
-   *  visible on the median chart on load. The rule that put them there
-   *  has not changed — the adjacent callout exists precisely because
-   *  the wasm engine's much slower bars would otherwise tell a
-   *  misleading-by-omission story, so the bars MUST be on screen for
-   *  the callout to do its job.
+  /** Default-view filter: both causl engines plus the best competitor
+   *  (`mobx`) at the 10k scale. The wasm engine's bars are much larger
+   *  than the rest and the adjacent callout exists to explain exactly
+   *  that, so the bars MUST be on screen for the callout to do its job.
    *
-   *  What changed is WHICH wasm series carries it. `causl-wasm` is
-   *  withdrawn (it was the TypeScript engine), so defaulting it on
-   *  would put retired data in front of every reader. `causl-wasm-ts`
-   *  is the attested Rust engine and takes its place; it is held out
-   *  of ranking and its numbers are large, which is exactly the shape
-   *  the callout is there to explain.
-   *
-   *  Users can still toggle any series, withdrawn ones included, via
-   *  the filter UI — nothing is hidden, only un-defaulted. */
+   *  Users can still toggle any series via the filter UI: nothing is
+   *  hidden, only un-defaulted. */
   const DEFAULT_LIBRARIES = new Set([
     'causl-ts',
-    'causl-wasm-ts',
+    'causl-wasm',
     'mobx',
   ])
   const DEFAULT_SCALES = new Set([10000])
 
-  /** Verdict thresholds — match the spec in #707. */
+  /** Verdict thresholds: match the spec in #707. */
   const REGRESSION_PCT = 0.10 // > 10% slower
   const IMPROVED_PCT = 0.10 // > 10% faster
   const PASS_PCT = 0.05 // within 5%
@@ -303,13 +230,13 @@
    *  For a roughly normal distribution `(p95 - μ) / μ ≈ 1.645 × CoV`,
    *  so a 5% true CoV would correspond to ≈ 8% on this proxy. To
    *  keep the badge from firing on every slightly-noisy cell, we
-   *  set the noisy gate at 50% (proxy) — which roughly maps to a
+   *  set the noisy gate at 50% (proxy), which roughly maps to a
    *  true CoV in the 30%+ range, the band where the cell really
    *  isn't trustable. The spec's 5%-CoV criterion can't be applied
    *  literally without per-iteration sample arrays in HistorySample. */
   const NOISY_PROXY = 0.50
 
-  /** Verdict palette — high-contrast against the card background. */
+  /** Verdict palette: high-contrast against the card background. */
   const VERDICT_COLOR = {
     pass: '#5EE6A8', // success-mint
     regressed: '#FF646E', // conflict-coral
@@ -319,7 +246,7 @@
   }
 
   /** ----------------------------------------------------------------
-   *  Skip-reason classification (#1304 — task 18).
+   *  Skip-reason classification (#1304, task 18).
    *
    *  Companion to the #1302 section-level "Library limitations" text
    *  block: the dashboard chart itself renders an in-place .skip-box
@@ -331,12 +258,13 @@
    *  string into a 1-3-word taxonomy label + a CSS class. The lookup
    *  is intentionally small (3 buckets + a catch-all) so the badge
    *  reads as a label, not a sentence. The matchers are case-
-   *  insensitive substrings keyed on the exact phrasing the runner
-   *  emits (see `packages/bench/src/libraries/_expansion-stub.ts` —
-   *  `ExpansionScenarioNotImplementedError`) plus the V8 stack-
-   *  overflow message produced by `_stack-overflow-stub.ts`. New
-   *  reasons fall through to the `library limit` catch-all so the
-   *  box still renders, just with the generic label.
+   *  insensitive substrings keyed on the phrasing the retired
+   *  expansion-stub harness emitted, plus the V8 stack-overflow
+   *  message. That harness is gone: the current sweeps go through the
+   *  typed pipeline below, and this classifier survives only for the
+   *  pre-2026-07 entries in `history.json` whose reasons are still
+   *  free-form. New reasons fall through to the `library limit`
+   *  catch-all so the box still renders, just with the generic label.
    *  ---------------------------------------------------------------- */
   const SKIP_TAXONOMY = [
     {
@@ -348,7 +276,7 @@
       // Match the exact phrase "wasm-only" (word-boundary) instead of
       // co-occurring substrings. The looser predicate
       // (`/wasm/i && /boundary|only/i`) false-positived on reasons
-      // like "floor-only … crosses the WASM boundary" — see #11 — and
+      // like "floor-only … crosses the WASM boundary" (see #11) and
       // mislabelled causl-ts skips as "WASM-only". The typed-skip
       // pipeline (`TYPED_SKIP_META`) is the preferred path; this
       // legacy classifier remains only for back-compat with
@@ -381,29 +309,29 @@
    *
    *  After causl-bench#37, every SKIP cell in `history.json`'s new
    *  `skipped[]` array carries a structured `reason` drawn from a
-   *  fixed enum (mirrors `packages/bench/src/skip-row.ts`'s
-   *  `SKIP_REASONS`) PLUS a `status: 'SKIP'` discriminator and a
+   *  fixed enum (the `SKIP_REASONS` set the `causl-bench` runners
+   *  share) PLUS a `status: 'SKIP'` discriminator and a
    *  free-form `detail` string. The dashboard renders these as typed
    *  chips with per-reason colour drawn from the existing brand
    *  palette (no new colours introduced):
    *
    *    artefact-missing     → fog          (muted warm gray)
-   *                           "wasm bridge artefact wasn't built"
-   *                           — rebuild + the cell resumes.
+   *                           "wasm bridge artefact wasn't built":
+   *                           rebuild + the cell resumes.
    *    feature-not-wired    → causal-cyan  (muted cool blue / TODO)
    *                           "scenario's setup path not routed
-   *                           through `makeCauslAsync`" — a future
+   *                           through `makeCauslAsync`": a future
    *                           wiring PR returns the cell to OK.
    *    engine-incompatible  → signal-blue  (muted violet, semantic)
    *                           "sync-only LibraryHarness seam the
-   *                           wasm engine can't honour today" — the
+   *                           wasm engine can't honour today". The
    *                           gap is structural; the chip surfaces it.
    *    timeout              → commit-amber (muted amber)
-   *                           "wall-clock budget exceeded" — same
+   *                           "wall-clock budget exceeded": same
    *                           class as the existing DNF row's
    *                           wall-clock kill but emitted up-front.
    *    oom                  → conflict-coral (muted red)
-   *                           "V8 heap exhaustion (exit 134)" —
+   *                           "V8 heap exhaustion (exit 134)":
    *                           distinct glyph from the wall-clock
    *                           bucket so the operator-facing chip
    *                           reads the right resource axis.
@@ -453,12 +381,12 @@
   }
 
   /** ----------------------------------------------------------------
-   *  Filter state — managed as a single mutable object that the
+   *  Filter state: managed as a single mutable object that the
    *  filter UI mutates and the renderer reads. Re-renders are
    *  triggered by `applyFilters()`.
    *  ---------------------------------------------------------------- */
   const filterState = {
-    libraries: null, // Set<string> — populated on first render
+    libraries: null, // Set<string>, populated on first render
     scenarios: null, // Set<string>
     scales: null, // Set<number>
   }
@@ -467,7 +395,7 @@
    *  Pure helpers
    *  ---------------------------------------------------------------- */
 
-  /** Format a number for tick labels — never depends on locale. */
+  /** Format a number for tick labels: never depends on locale. */
   function formatNumber(n) {
     if (!Number.isFinite(n)) return 'n/a'
     if (Math.abs(n) >= 100) return Math.round(n).toString()
@@ -481,25 +409,25 @@
   }
 
   /**
-   * #33 follow-up — render the boundary-crossings + boundary-bytes
+   * #33 follow-up: render the boundary-crossings + boundary-bytes
    * tooltip rows for a per-cell history point. The publisher preserves
    * three distinct states for these fields:
    *
-   *   1. number-on-both                — wasm sample with measurements.
+   *   1. number-on-both:                 wasm sample with measurements.
    *      Render both rows + a derived bytes-per-crossing average. The
-   *      bytes-per-crossing line is the load-bearing one — per-crossing
+   *      bytes-per-crossing line is the load-bearing one: per-crossing
    *      cost varies ~1000× by payload size, so the average bytes/event
    *      is the real cost proxy the dashboard is here to surface.
    *
-   *   2. crossings-only                — wasm sample captured before the
+   *   2. crossings-only:                 wasm sample captured before the
    *      `boundaryBytes` column was added (historical 39-cell sweep).
    *      Render just the crossings row to match the pre-#33 tooltip;
    *      no fabricated byte count, no fabricated average. Missing data
-   *      stays missing — honest absence over a made-up number.
+   *      stays missing: honest absence over a made-up number.
    *
-   *   3. neither (or boundaryBytes === null)  — non-wasm library
+   *   3. neither (or boundaryBytes === null):   non-wasm library
    *      (jotai/mobx/redux/causl-ts). The FFI boundary is structurally
-   *      absent. Render nothing — degrade to the pre-existing median/
+   *      absent. Render nothing: degrade to the pre-existing median/
    *      p95-only tooltip so non-wasm libraries' tooltips are
    *      unchanged.
    *
@@ -515,7 +443,7 @@
       typeof crossings === 'number' && Number.isFinite(crossings)
     const hasBytes =
       typeof bytes === 'number' && Number.isFinite(bytes) && bytes >= 0
-    // State 3 — neither applies, OR boundaryBytes is explicitly null
+    // State 3: neither applies, OR boundaryBytes is explicitly null
     // (non-wasm library) and there are no crossings to render either.
     // Crossings === 0 is still a real measurement (the JS-backed
     // causl-ts leg legitimately reports 0), but state 3 here means
@@ -528,7 +456,7 @@
     }
     if (hasBytes) {
       out += `\nboundary bytes: ${formatBytesCount(bytes)}`
-      // Average bytes-per-crossing — only meaningful when BOTH fields
+      // Average bytes-per-crossing: only meaningful when BOTH fields
       // are present AND crossings > 0 (else the divisor is zero / NaN).
       // This is the cost-per-byte view the dashboard is being extended
       // to surface; per-crossing cost varies ~1000× by payload size.
@@ -552,7 +480,7 @@
     return `${month} ${d.getUTCDate().toString().padStart(2, '0')}`
   }
 
-  /** Escape any text we splat into innerHTML — defence-in-depth even
+  /** Escape any text we splat into innerHTML: defence-in-depth even
    *  though the upstream JSON is checked-in / authored. */
   function escapeHtml(s) {
     return String(s)
@@ -576,15 +504,16 @@
    *  series so the x-axis can be shared. Per-series points are
    *  stored in run order; if a particular run didn't include a
    *  sample for some framework, that framework's series simply
-   *  has fewer points (and the missing slot is left empty — the
+   *  has fewer points (and the missing slot is left empty; the
    *  chart renderer interpolates a gap by skipping non-finite
    *  values, same as it did in the per-cell version).
    *
    *  In practice the bench harness emits a HistorySample for every
-   *  library on every run, so all four series stay aligned. The
+   *  library on every run, so the series stay aligned. The
    *  union-of-timestamps approach handles the edge case where a
-   *  library was added/removed mid-history without breaking the
-   *  shared-axis assumption.
+   *  library was added or removed mid-history without breaking the
+   *  shared-axis assumption, which is exactly what the deletion of the
+   *  two withdrawn wasm series did to the 2026-05 entries.
    *
    *  #1293: each HistoryEntry may also carry a `skipped` array of
    *  (library × scenario × scale) cells the runner attempted but
@@ -592,7 +521,7 @@
    *  We attach those to the matching section's `skipped` map keyed by
    *  library so the legend chip can render a strikethrough + ✗ +
    *  tooltip instead of silently dropping the framework from the
-   *  chart. The latest run's reason wins if multiple runs disagree —
+   *  chart. The latest run's reason wins if multiple runs disagree,
    *  consistent with how `series` values are appended chronologically
    *  and the legend reads the latest sample. */
   function groupSections(history) {
@@ -636,15 +565,15 @@
           version: entry.version,
           medianMs: sample.medianMs,
           p95Ms: sample.p95Ms,
-          // #33 follow-up — surface boundary crossings + bytes in the
+          // #33 follow-up: surface boundary crossings + bytes in the
           // per-point tooltip when both are present (wasm-backed
           // samples only). The publisher preserves `null` for non-wasm
           // libraries to mean "not applicable to this engine", and
           // historical samples captured before the field existed have
-          // it absent (undefined). The tooltip renderer treats both
-          // null and undefined the same — degrade to the crossing-only
+          // it absent (undefined). The tooltip renderer treats null
+          // and undefined the same, degrading to the crossing-only
           // tooltip (or, when crossings is also absent, the original
-          // median/p95-only tooltip). NO new chart series — bytes is
+          // median/p95-only tooltip). NO new chart series: bytes is
           // tooltip-only; a dedicated chart line is a separate PR.
           boundaryCrossings: sample.boundaryCrossings,
           boundaryBytes: sample.boundaryBytes,
@@ -653,7 +582,7 @@
       // Attach per-entry skipped cells to the matching section so the
       // legend can mark the framework's chip with a strikethrough + ✗
       // + tooltip carrying the reason (#1293). A skipped cell does NOT
-      // count as a run timestamp — the chart axis stays driven by the
+      // count as a run timestamp: the chart axis stays driven by the
       // succeeded-cell runs to preserve x-axis stability.
       const skipped = Array.isArray(entry.skipped) ? entry.skipped : []
       for (const cell of skipped) {
@@ -715,13 +644,13 @@
   /** ----------------------------------------------------------------
    *  Verdict computation (per series)
    *
-   *  We don't have per-iteration samples in HistoryEntry — each
+   *  We don't have per-iteration samples in HistoryEntry: each
    *  HistorySample is a pre-aggregated (medianMs, p95Ms). The CoV
    *  check therefore uses the gap between p95 and the median as a
    *  proxy for sample dispersion: `(p95 - median) / median`. This
    *  is a coarse approximation that runs strictly bigger than the
    *  true CoV (a p95-spread is wider than one stdev), so it errs
-   *  on the side of marking borderline cells noisy — the right
+   *  on the side of marking borderline cells noisy, the right
    *  failure mode for a regression dashboard.
    *  ---------------------------------------------------------------- */
   function computeVerdict(points) {
@@ -732,7 +661,7 @@
       return { kind: 'unknown', detail: 'last median is non-finite' }
     }
 
-    // Noisy check fires regardless of trend — a high-variance latest
+    // Noisy check fires regardless of trend: a high-variance latest
     // run isn't trustable as either pass or regression.
     if (Number.isFinite(last.p95Ms) && last.medianMs > 0) {
       const proxy = (last.p95Ms - last.medianMs) / last.medianMs
@@ -745,7 +674,7 @@
     }
 
     if (points.length < 2) {
-      return { kind: 'unknown', detail: 'only one run — no trend yet' }
+      return { kind: 'unknown', detail: 'only one run, no trend yet' }
     }
 
     const prev = points[points.length - 2]
@@ -759,8 +688,8 @@
     if (delta > REGRESSION_PCT) return { kind: 'regressed', detail }
     if (delta < -IMPROVED_PCT) return { kind: 'improved', detail }
     if (Math.abs(delta) <= PASS_PCT) return { kind: 'pass', detail }
-    // 5%–10% drift: not a regression but not strictly within-pass —
-    // we still call it pass because the spec only carves "regressed"
+    // 5% to 10% drift: not a regression but not strictly within-pass.
+    // We still call it pass because the spec only carves "regressed"
     // and "improved" out at the 10% line.
     return { kind: 'pass', detail }
   }
@@ -768,7 +697,7 @@
   /** Build the placeholder profile-artifact URL for a (library,
    *  scenario, scale) tuple. The path scheme matches the
    *  `profiles/${lib}-${scn}-${n}/` layout the perf-snapshot
-   *  workflow uploads (currently disabled — see
+   *  workflow uploads (currently disabled; see
    *  `.github/workflows-disabled/perf-snapshot.yml`). The `latest/`
    *  segment is the symlink the publish step will point at the
    *  most recent date+sha directory once CI is restored. */
@@ -784,7 +713,7 @@
    *  the same algorithm so we don't need d3-shape. Given a series
    *  of (x,y) points we emit an SVG path with cubic Bézier segments
    *  whose tangents come from the Catmull-Rom formula at α=0.5
-   *  (centripetal — handles non-uniformly-spaced x values without
+   *  (centripetal: handles non-uniformly-spaced x values without
    *  overshoot). For < 2 points we just render a moveTo.
    *  ---------------------------------------------------------------- */
   function catmullRomPath(points) {
@@ -836,7 +765,7 @@
     else step = base
     const start = Math.ceil(min / step) * step
     const ticks = []
-    // Guard against fp drift — limit to count+2 ticks max.
+    // Guard against fp drift: limit to count+2 ticks max.
     for (let i = 0; i < count + 2; i += 1) {
       const v = start + i * step
       if (v > max + step * 1e-9) break
@@ -848,15 +777,15 @@
   }
 
   /** ----------------------------------------------------------------
-   *  Section chart (SVG) — one chart, N stacked framework series.
+   *  Section chart (SVG): one chart, N stacked series.
    *
-   *  Mirrors the conventions in packages/bench/src/chart.ts:
+   *  Conventions:
    *    - viewBox + xmlns for clean inline embedding
    *    - <path> with cubic-Hermite smoothing for each median series
    *    - <path> with same smoothing for each p95 band envelope
    *    - "nice" axis ticks (1/2/5 × 10^k) on the y-axis (shared)
    *    - per-point invisible hit-rect with <title> for full hover
-   *      coverage (every run is hoverable, not just the latest) —
+   *      coverage (every run is hoverable, not just the latest),
    *      drawn per-series so hover messages name the library
    *
    *  Series share x-axis (run index ↔ section.runs index) and
@@ -867,7 +796,7 @@
   /** Per-section Y-axis fill fraction (zoom). `DEFAULT_FILL` places
    *  the highest plotted value at 80% of the chart's drawable height
    *  (20% headroom so the peak label is not jammed against the frame)
-   *  and stretches the rest of the series across the lower 80% —
+   *  and stretches the rest of the series across the lower 80%,
    *  instead of squishing everything into a sliver with empty
    *  whitespace above. Mouse-WHEEL over a chart mutates this per
    *  section (wheel up → larger fill / zoom in, wheel down → zoom
@@ -881,9 +810,9 @@
   const yFillFor = (s) => Y_FILL.get(sectionKey(s)) ?? DEFAULT_FILL
 
   /** Per-section vertical pan offset, in SVG pixels (+down / −up).
-   *  Pointer-DRAG on a chart mutates this so the whole plot — every
+   *  Pointer-DRAG on a chart mutates this so the whole plot (every
    *  series line AND the y-axis ticks/labels, since both go through
-   *  `yAt` — translates together. Its purpose: lift a line that hugs
+   *  `yAt`) translates together. Its purpose: lift a line that hugs
    *  the 0 baseline up off the chart floor for a closer look. Not
    *  clamped (drag as far as you like; the viewBox clips); double-
    *  click resets it. */
@@ -919,7 +848,7 @@
     const libsToPlot = LIBRARY_ORDER
       .filter((l) => section.series.has(l) && visibleLibraries.has(l))
       .concat(
-        // Any unknown libraries (defensive — for fixtures that ship
+        // Any unknown libraries (defensive, for fixtures that ship
         // a non-canonical library name) come after the known order.
         Array.from(section.series.keys())
           .filter((l) => !LIBRARY_ORDER.includes(l) && visibleLibraries.has(l))
@@ -935,7 +864,7 @@
       )
     }
 
-    // Y-domain is anchored at 0 — every chart shares the same floor.
+    // Y-domain is anchored at 0: every chart shares the same floor.
     // We deliberately do NOT auto-fit the bottom to the data minimum:
     // that glued the fastest library to the chart floor and made a
     // "12 ms" line on one chart look the same height as a "0.4 ms"
@@ -965,12 +894,12 @@
     // and then translated by `panY` (drag-pan). `t` is the fraction
     // of the 0→yMax domain; at the 0.8 default fill the peak sits at
     // 80% height (20% headroom) and 0 sits exactly on the chart
-    // floor. Neither term is clamped into the box — zooming/panning
+    // floor. Neither term is clamped into the box: zooming/panning
     // intentionally lets data run past the frame (the viewBox clips)
     // so a floor-hugging line can be lifted up for inspection.
     // `panY` is added last and unconditionally (even for the
-    // non-finite fallback) so the gridlines/labels — which also call
-    // yAt — pan in lockstep with the series.
+    // non-finite fallback) so the gridlines and labels, which also
+    // call yAt, pan in lockstep with the series.
     const fill = clampFill(yFillFor(section))
     const panY = yOffsetFor(section)
     const yAt = (v) => {
@@ -979,7 +908,7 @@
       return PAD_T + innerH * (1 - t * fill) + panY
     }
 
-    // Y-axis ticks — drawn first so series lines sit on top.
+    // Y-axis ticks: drawn first so series lines sit on top.
     let yTickValues = niceTicks(yMin, yMax, 4)
     if (yTickValues.length < 2) yTickValues = [yMin, yMax]
     const tick = (v) => {
@@ -1051,7 +980,7 @@
         const idx = runIndex.get(p.capturedAt)
         if (idx === undefined || !Number.isFinite(p.medianMs)) continue
         const tooltip =
-          `${escapeHtml(getLibraryLabel(lib))} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
+          `${escapeHtml(getLibraryLabel(lib))} · ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
           `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms` +
           formatBoundaryTooltipLines(p) +
           (LIBRARY_ANNOTATION[lib]
@@ -1065,7 +994,7 @@
           `</circle>`
       }
 
-      // Per-series invisible hit rects — narrow vertical strips
+      // Per-series invisible hit rects: narrow vertical strips
       // centred on each datapoint x. They overlap across series
       // (one rect per (lib, run)); SVG hit-testing prefers the
       // topmost element so the last-drawn library "wins" hover for
@@ -1073,7 +1002,7 @@
       // because the rects are stacked at different y-bands
       // (median ± a small radius). We keep them full-height so the
       // user can hover any column and read at least one library's
-      // values — for fine-grained per-series tooltips the dot
+      // values. For fine-grained per-series tooltips the dot
       // tooltips above remain authoritative.
       if (runs.length >= 2) {
         const colW = innerW / (runs.length - 1)
@@ -1084,7 +1013,7 @@
           const x0 = Math.max(PAD_L, cx - colW / 2)
           const x1 = Math.min(W - PAD_R, cx + colW / 2)
           // Stack rects by library so each one has a narrow
-          // vertical slice it owns — that way every series'
+          // vertical slice it owns, so that every series'
           // tooltip is reachable somewhere in the column. We give
           // each library a 1/N-of-innerH band, ordered top-down by
           // canonical library order.
@@ -1092,7 +1021,7 @@
           const bandH = innerH / libsToPlot.length
           const y0 = PAD_T + libIdx * bandH
           const tooltip =
-            `${escapeHtml(lib)} — ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
+            `${escapeHtml(lib)} · ${formatShortDate(p.capturedAt)} · ${escapeHtml(p.version)}\n` +
             `median ${formatNumber(p.medianMs)} ms · p95 ${formatNumber(p.p95Ms)} ms` +
             formatBoundaryTooltipLines(p)
           allHitRects +=
@@ -1105,7 +1034,7 @@
       }
     }
 
-    // X-axis baseline + first/middle/last labels — shared across
+    // X-axis baseline + first/middle/last labels: shared across
     // every series so the eye anchors to the same run column.
     const xAxisY = (PAD_T + innerH).toFixed(2)
     const xAxisLine =
@@ -1157,7 +1086,7 @@
   }
 
   /** ----------------------------------------------------------------
-   *  Section card DOM — one card per (scenario × scale) with the
+   *  Section card DOM: one card per (scenario × scale) with the
    *  stacked chart on top and a legend strip beneath, one chip per
    *  framework. Each chip shows: library colour swatch, library
    *  name, latest median + p95, and a per-series verdict badge
@@ -1208,8 +1137,8 @@
 
     // Pan (pointer-drag) + zoom (wheel) on the chart. Pan lives in
     // Y_OFFSET, zoom in Y_FILL, both keyed by section. A drag
-    // anywhere on the card — empty space OR directly on a series
-    // line — pans the whole plot (lines and y-axis ticks move
+    // anywhere on the card, whether on empty space or directly on a
+    // series line, pans the whole plot (lines and y-axis ticks move
     // together because both resolve through yAt). Listeners sit on
     // the stable chartWrap div (not the SVG, which the re-render
     // replaces) so a gesture survives every redraw. Redraw is
@@ -1235,7 +1164,7 @@
         try {
           chartWrap.setPointerCapture?.(e.pointerId)
         } catch {
-          /* synthetic/invalid pointerId — capture is best-effort */
+          /* synthetic/invalid pointerId: capture is best-effort */
         }
         e.preventDefault()
       })
@@ -1243,7 +1172,7 @@
         if (!dragging) return
         // 1:1 with the pointer: drag UP (clientY decreases) moves the
         // plot UP (negative SVG-y offset); DOWN moves it down. Not
-        // clamped — pan a floor-hugging line as far up as you want.
+        // clamped: pan a floor-hugging line as far up as you want.
         Y_OFFSET.set(
           sectionKey(section),
           startOffset + (e.clientY - startY),
@@ -1285,7 +1214,7 @@
       })
     }
 
-    // #1304 — in-place skip boxes. For every visible library that
+    // #1304: in-place skip boxes. For every visible library that
     // has no measured points in this section but DOES appear in
     // the section's skipped map, append a horizontal .skip-box
     // strip *inside the chart wrap* so the missing-data row is
@@ -1295,8 +1224,8 @@
     // there is no per-library "bar slot" on the x-axis. The boxes
     // therefore span the chart's full width (the run timeline) and
     // stack vertically, one per skipped library, in canonical order.
-    // Each box is fixed-height (28 px) — independent of the y-axis
-    // domain — so adding/removing skipped libraries does not
+    // Each box is fixed-height (28 px), independent of the y-axis
+    // domain, so adding/removing skipped libraries does not
     // re-scale the chart.
     //
     // Width matches the chart-area so the strip reads as "the cell
@@ -1319,7 +1248,7 @@
       // legend loop below. Previously this strip was rendered for
       // every skipped (lib × scenario × scale) cell regardless of
       // whether a more recent measured sample existed, which produced
-      // the contradiction reported in #10 — chart line + typed-skip
+      // the contradiction reported in #10: chart line + typed-skip
       // chip for the same engine in the same cell.
       const livePoints = section.series.get(lib) ?? []
       const lastLive = livePoints.length
@@ -1331,7 +1260,7 @@
       ) {
         continue
       }
-      const reason = skipInfo.reason || 'skipped — no reason recorded'
+      const reason = skipInfo.reason || 'skipped: no reason recorded'
       // Typed (causl-bench#37) reasons take precedence over the
       // legacy free-form classifier so the strip reads the chip
       // colour from the new taxonomy when the row carries one. The
@@ -1361,7 +1290,7 @@
       li.setAttribute('tabindex', '0')
       li.setAttribute(
         'aria-label',
-        `${lib} skipped at ${section.scenario} scale ${section.scale}: ${tooltip.replace(/\n/g, ' — ')}`,
+        `${lib} skipped at ${section.scenario} scale ${section.scale}: ${tooltip.replace(/\n/g, '; ')}`,
       )
       li.title = tooltip
       li.style.setProperty('--lib-color', color)
@@ -1375,7 +1304,7 @@
 
     card.appendChild(chartWrap)
 
-    // Legend strip — one chip per framework currently visible.
+    // Legend strip: one chip per framework currently visible.
     const legend = document.createElement('ul')
     legend.className = 'bench-section-legend'
     legend.setAttribute('aria-label', 'Framework series legend with per-line verdicts')
@@ -1391,7 +1320,7 @@
       item.dataset.library = lib
       item.style.setProperty('--lib-color', color)
 
-      // #1293 — if this library has no data point but IS in the
+      // #1293: if this library has no data point but IS in the
       // skipped payload for this (scenario × scale), render the chip
       // with a strikethrough on the library name, a small ✗ badge in
       // the verdict slot, and the runner's reason as a tooltip on
@@ -1403,8 +1332,8 @@
         item.dataset.skipped = 'true'
         item.dataset.verdict = 'skipped'
         item.style.setProperty('--verdict-color', VERDICT_COLOR.unknown)
-        const reason = skipInfo.reason || 'skipped — no reason recorded'
-        // causl-bench#37 — typed SKIP rows render the verdict slot as
+        const reason = skipInfo.reason || 'skipped: no reason recorded'
+        // causl-bench#37: typed SKIP rows render the verdict slot as
         // a per-reason chip (colour + label drawn from the typed
         // taxonomy) instead of the generic "skipped" pill. The
         // skipped state classes still set the dashed border + muted
@@ -1431,16 +1360,16 @@
           `<s>${escapeHtml(skippedLabel)}</s>` +
           `</span>` +
           `<span class="bench-legend-stats bench-legend-stats--muted">` +
-          `<span class="bench-legend-median">— ms</span>` +
-          `<span class="bench-legend-p95">p95 —</span>` +
+          `<span class="bench-legend-median">n/a ms</span>` +
+          `<span class="bench-legend-p95">p95 n/a</span>` +
           `</span>` +
           `<span class="${verdictChipClass}" ` +
-          `title="${tooltipAttr}" aria-label="skipped — ${tooltipAttr}">` +
+          `title="${tooltipAttr}" aria-label="skipped: ${tooltipAttr}">` +
           `<span class="bench-legend-verdict-badge" aria-hidden="true">${verdictBadgeGlyph}</span>` +
           `<span class="bench-legend-verdict-label">${escapeHtml(verdictLabel)}</span>` +
           `</span>` +
           `<a class="bench-legend-profile-link" href="${profileUrl}" rel="noopener" ` +
-          `aria-label="Profile artifacts for ${escapeHtml(lib)} ${escapeHtml(section.scenario)} at scale ${section.scale} (skipped — see legend tooltip)" ` +
+          `aria-label="Profile artifacts for ${escapeHtml(lib)} ${escapeHtml(section.scenario)} at scale ${section.scale} (skipped, see legend tooltip)" ` +
           `title="${tooltipAttr}">⌕</a>`
         legend.appendChild(item)
         continue
@@ -1481,7 +1410,7 @@
         `<span class="bench-legend-verdict-label">${verdict.kind}</span>` +
         `</span>` +
         `<a class="bench-legend-profile-link" href="${profileUrl}" rel="noopener" ` +
-        `aria-label="Profile artifacts for ${escapeHtml(label)} ${escapeHtml(section.scenario)} at scale ${section.scale} (placeholder — populated by #709 once CI is restored)" ` +
+        `aria-label="Profile artifacts for ${escapeHtml(label)} ${escapeHtml(section.scenario)} at scale ${section.scale} (placeholder, populated by #709 once CI is restored)" ` +
         `title="profile snapshot → ${profileUrl} (placeholder until #709 nightly publish lands)">⌕</a>`
       legend.appendChild(item)
     }
@@ -1490,7 +1419,7 @@
     return card
   }
 
-  /** Group sections by scenario for visual grouping in the page —
+  /** Group sections by scenario for visual grouping in the page:
    *  every (scenario × scale) belongs to its scenario's group. */
   function groupByScenario(sections) {
     const groups = new Map()
@@ -1519,7 +1448,7 @@
       allScenarios.add(s.scenario)
       allScales.add(s.scale)
       for (const lib of s.series.keys()) allLibs.add(lib)
-      // #1293 — skipped libraries also count toward the universe so
+      // #1293: skipped libraries also count toward the universe so
       // the filter UI offers a checkbox for them (a framework that's
       // ONLY ever skipped at the visible scales would otherwise be
       // unreachable from the filter strip).
@@ -1535,8 +1464,8 @@
       [...DEFAULT_LIBRARIES].filter((l) => allLibs.has(l)),
     )
     if (defaultLibs.size === 0) {
-      // Nothing in the default set survived — open the gate so the
-      // user sees something rather than an empty grid.
+      // Nothing in the default set survived, so open the gate and let
+      // the user see something rather than an empty grid.
       for (const l of allLibs) defaultLibs.add(l)
     }
 
@@ -1648,7 +1577,7 @@
     host.appendChild(scnFs)
     host.appendChild(scaleFs)
 
-    // "Reset" / "All on" affordances — small text buttons so power
+    // "Reset" / "All on" affordances: small text buttons so power
     // users can flip the gate without clicking through every chip.
     const actions = document.createElement('div')
     actions.className = 'filter-actions'
@@ -1730,13 +1659,19 @@
   function renderDashboard(host, history, sourceLabel) {
     host.innerHTML = ''
 
-    // Top-line meta strip — number of runs, last-run timestamp, source.
+    // Top-line meta strip: number of runs, last-run timestamp, source.
     const meta = document.createElement('div')
     meta.className = 'dashboard-meta'
-    const runCount = history.length
+    // Runs that put something on a chart, not entries in the file. Deleting the
+    // two withdrawn wasm series emptied three 2026-05 entries whose only
+    // content was those series, and counting them here would claim more data
+    // than the grid below can show.
+    const runCount = history.filter(
+      (e) => (e.samples ?? []).length > 0 || (e.skipped ?? []).length > 0,
+    ).length
     const last = history[history.length - 1]
-    const lastWhen = last ? formatShortDate(last.capturedAt) : '—'
-    const lastVersion = last ? last.version : '—'
+    const lastWhen = last ? formatShortDate(last.capturedAt) : 'n/a'
+    const lastVersion = last ? last.version : 'n/a'
     meta.innerHTML =
       `<div><strong>Runs</strong> ${runCount}</div>` +
       `<div><strong>Latest</strong> ${escapeHtml(lastWhen)}</div>` +
