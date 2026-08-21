@@ -1,0 +1,682 @@
+<!DOCTYPE html><html class="default" lang="en" data-base=".."><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>@causl/causl-wasm-ts | Causl API Reference - v0.2.0</title><meta name="description" content="Documentation for Causl API Reference"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><link rel="stylesheet" href="../assets/custom.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search"><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"><a href="../../">Home</a><a href="../">Documentation</a><a href="https://github.com/iasbuilt/causl">GitHub</a></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="../index.html" class="title">Causl API Reference - v0.2.0</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><ul class="tsd-breadcrumb"><li><a href="../index.html">Causl API Reference</a></li><li><a href="_causl_causl-wasm-ts.html">@causl/causl-wasm-ts</a></li></ul><h1>Module @causl/causl-wasm-ts</h1></div><section class="tsd-panel tsd-typography"><a id="causlcausl-wasm-ts" class="tsd-anchor"></a><h1 class="tsd-anchor-link">@causl/causl-wasm-ts<a href="#causlcausl-wasm-ts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h1><p><strong>Build &amp; distribution:</strong> this is the <strong>causl-client</strong> build of <code>@causl/causl-wasm-ts</code>:
+the thin TypeScript API over the Rust→WASM <strong>causl-wasm</strong> engine (wasm is the
+only engine it ships: as of 0.5.0 there is no TypeScript fallback and no
+degradation path). It is distributed privately via the Gitea npm registry at
+<code>https://git.opsite.ca/api/packages/causl/npm/</code> (org <code>causl</code>; a <code>read:package</code>
+token is required), and ONLY there: <code>@causl/causl-wasm-ts</code> has no versions on
+public npmjs (an unscoped install fails with E404). The name it renamed from,
+the retired <code>@causl/core</code>, is still live on npmjs at 0.3.x as the deleted
+reference TypeScript engine, so a stale pin on the old name installs
+successfully and silently delivers the wrong engine.</p>
+<blockquote>
+<p>The semantic core of
+<a href="https://git.opsite.ca/causl/causl-wasm-ts">Causl</a>: two primitives, one
+commit, the canonical seven-method API plus the second-tier extensions
+justified individually in SPEC §12.2.</p>
+</blockquote>
+<a id="install" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Point the <code>@causl</code> scope at the Gitea registry first: it is the one registry
+that serves this package. Create a token with the <code>read:package</code> scope
+(<a href="http://git.opsite.ca">git.opsite.ca</a>, Settings, Applications) and add to your <code>~/.npmrc</code> (or a
+repo-root <code>.npmrc</code>):</p>
+<pre><code class="ini">@causl:registry=https://git.opsite.ca/api/packages/causl/npm/
+//git.opsite.ca/api/packages/causl/npm/:_authToken=${GITEA_PACKAGES_TOKEN}
+</code><button type="button">Copy</button></pre>
+
+<p>Then:</p>
+<pre><code class="bash"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">add</span><span class="hl-1"> </span><span class="hl-2">@causl/causl-wasm-ts</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Skipping the <code>.npmrc</code> step makes the command resolve the default registry,
+public npmjs, where this name has no versions: the install fails with E404
+rather than delivering this package.</p>
+<a id="quick-start-the-smallest-example-that-proves-the-engine-is-real" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Quick start: the smallest example that proves the engine is real<a href="#quick-start-the-smallest-example-that-proves-the-engine-is-real" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Before any cell, any formula, any resource, the engine must support this
+shape. The four invariants: atomic commit, dependency tracking,
+dynamic-dep cleanup, glitch-free diamond: all fall out of getting it
+right; everything downstream depends on it.</p>
+<p><code>createCausl()</code> is <strong>construct-or-throw</strong> as of 0.5.0
+(<a href="https://git.opsite.ca/causl/causl-wasm-ts/issues/280"><code>causl/causl-wasm-ts#280</code></a>):
+the Rust→WASM engine is the only engine this package ships, so the one-time
+<code>await preloadCauslWasm()</code> is <strong>required</strong>, not an optimisation. Skip it and
+the first line that builds a graph throws: see <a href="#errors">Errors</a>.</p>
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">preloadCauslWasm</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@causl/causl-wasm-ts/wasm&#39;</span><br/><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">createCausl</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@causl/causl-wasm-ts&#39;</span><br/><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">preloadCauslWasm</span><span class="hl-1">()   </span><span class="hl-5">// ONCE, at app init — the only await in the API</span><br/><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-7">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()</span><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-7">a</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-2">&#39;a&#39;</span><span class="hl-1">, </span><span class="hl-8">1</span><span class="hl-1">)</span><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-7">b</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-2">&#39;b&#39;</span><span class="hl-1">, </span><span class="hl-8">2</span><span class="hl-1">)</span><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-7">sum</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">derived</span><span class="hl-1">(</span><span class="hl-2">&#39;sum&#39;</span><span class="hl-1">, (</span><span class="hl-4">get</span><span class="hl-1">) </span><span class="hl-6">=&gt;</span><span class="hl-1"> </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">a</span><span class="hl-1">) + </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">b</span><span class="hl-1">))</span><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-7">sumPlusOne</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">derived</span><span class="hl-1">(</span><span class="hl-2">&#39;sumPlusOne&#39;</span><span class="hl-1">, (</span><span class="hl-4">get</span><span class="hl-1">) </span><span class="hl-6">=&gt;</span><span class="hl-1"> </span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">sum</span><span class="hl-1">) + </span><span class="hl-8">1</span><span class="hl-1">)</span><br/><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">subscribe</span><span class="hl-1">(</span><span class="hl-4">sumPlusOne</span><span class="hl-1">, (</span><span class="hl-4">v</span><span class="hl-1">) </span><span class="hl-6">=&gt;</span><span class="hl-1"> </span><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-4">v</span><span class="hl-1">)) </span><span class="hl-5">// 4</span><br/><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">commit</span><span class="hl-1">(</span><span class="hl-2">&#39;bump-a&#39;</span><span class="hl-1">, (</span><span class="hl-4">tx</span><span class="hl-1">) </span><span class="hl-6">=&gt;</span><span class="hl-1"> </span><span class="hl-4">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">a</span><span class="hl-1">, </span><span class="hl-8">10</span><span class="hl-1">))      </span><span class="hl-5">// 13</span><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">commit</span><span class="hl-1">(</span><span class="hl-2">&#39;bump-both&#39;</span><span class="hl-1">, (</span><span class="hl-4">tx</span><span class="hl-1">) </span><span class="hl-6">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-4">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">a</span><span class="hl-1">, </span><span class="hl-8">100</span><span class="hl-1">)</span><br/><span class="hl-1">  </span><span class="hl-4">tx</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">b</span><span class="hl-1">, </span><span class="hl-8">200</span><span class="hl-1">)</span><br/><span class="hl-1">})                                                 </span><span class="hl-5">// 301 — exactly one fire</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="api" class="tsd-anchor"></a><h2 class="tsd-anchor-link">API<a href="#api" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>A constructed <code>Graph</code> exposes <strong>twenty-two</strong> members. Six of them:
+<code>input</code>, <code>derived</code>, <code>commit</code>, <code>read</code>, <code>subscribe</code>, <code>explain</code>: are, with
+the <code>createCausl</code> factory, SPEC §12.1's canonical seven: the
+load-bearing surface the engine cannot exist without one of. The other
+<strong>sixteen</strong> are SPEC §12.2 second-tier extensions, each justified
+individually and reviewed quarterly. That is <strong>twenty-three</strong> callable
+entry points in total; the size of that surface is itself a row in the
+engine's eight-commitment table, so a twenty-third <code>Graph</code> member
+demands the same justification as a twenty-second.</p>
+<a id="canonical-seven-spec-§121" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Canonical seven (SPEC §12.1)<a href="#canonical-seven-spec-§121" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>createCausl(options?)</code></td>
+<td>Construct a graph. Options: <code>name</code> (validated at construction; a malformed name throws <code>InvalidGraphNameError</code>), <code>commitHistoryCap</code>, <code>snapshotRetentionCap</code>, <code>onObserverError</code>. Passing an option this release removed; <code>engine</code>, <code>backend</code>, <code>fallbackToTs</code>, <code>fallbackToJs</code>; throws <code>RemovedEngineOptionError</code>.</td>
+</tr>
+<tr>
+<td><code>graph.input&lt;T&gt;(id, initial)</code></td>
+<td>Register a writable Behavior. Throws <code>DuplicateNodeError</code> on a clashing <code>id</code>.</td>
+</tr>
+<tr>
+<td><code>graph.derived&lt;T&gt;(id, compute)</code></td>
+<td>Register a derived Behavior; deps captured by <code>get()</code> calls in <code>compute</code>, so a derivation that switches branches on an <code>if</code> rewires its dependency set on the next evaluation.</td>
+</tr>
+<tr>
+<td><code>graph.commit(intent, tx =&gt; …)</code></td>
+<td>Discrete event: advances GraphTime by exactly 1. The only mutation entry; nested commits throw <code>CommitInProgressError</code>.</td>
+</tr>
+<tr>
+<td><code>graph.read(node)</code></td>
+<td>Read at the current committed time. Per the SPEC §15.1 amendment shipped via PR #1129, the JavaScript <em>reference</em> returned across calls is <strong>not</strong> contractually guaranteed; the contractual identity surface is <strong>value identity</strong> at a fixed <code>GraphTime</code>. Because the reference is not contractual, code that memoises on it (e.g. <code>React.memo</code>, <code>useMemo([value])</code>) should key on <code>commit.time</code> or <code>graph.stats().nodeVersion(node)</code> instead of on the returned object. What the shipping engine actually hands back is described in <a href="#reads-are-live-and-unfrozen">Reads are live and unfrozen</a>: read that before you treat a read return as a private copy.</td>
+</tr>
+<tr>
+<td><code>graph.subscribe(node, observer)</code></td>
+<td>Observe value changes; one notification per commit per affected subscriber. Returns <code>Unsubscribe</code>.</td>
+</tr>
+<tr>
+<td><code>graph.explain(node)</code></td>
+<td>Returns a <code>DerivedNode&lt;Explanation&gt;</code> of the lineage. Itself subscribable, so devtools render on top of the engine's own primitives instead of a parallel system.</td>
+</tr>
+</tbody>
+</table>
+<a id="second-tier-extensions-spec-§122" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Second-tier extensions (SPEC §12.2)<a href="#second-tier-extensions-spec-§122" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>graph.subscribeCommits(observer)</code></td>
+<td>Observe every commit. Narrow per-fire notification capability: one <code>Commit</code> per fire, no log read; for devtools, persistence, and SSR-hydrate listeners that want &quot;wake me on any change&quot; without access to the full log.</td>
+</tr>
+<tr>
+<td><code>graph.commitLog</code> (getter)</td>
+<td>The transaction log surfaced as a <code>DerivedNode&lt;readonly Commit[]&gt;</code>: <code>read</code>able, <code>subscribe</code>able, and visible in <code>explain(node)</code> lineage views. Bounded by <code>commitHistoryCap</code>, <strong>which defaults to <code>0</code>, so the log is empty until you opt in</strong> with <code>createCausl({ commitHistoryCap: 1000 })</code>; failed commits never append. There is no separate &quot;log API&quot; because the log is just another node.</td>
+</tr>
+<tr>
+<td><code>graph.exportModel(options?)</code></td>
+<td>CauslModel IR for <code>causl-check</code>, the bounded model checker. The IR is a public contract; this method is its only producer.</td>
+</tr>
+<tr>
+<td><code>graph.snapshot()</code></td>
+<td>Capture the current input set + GraphTime as a serialisable <code>GraphSnapshot</code> (SSR transfer, persistence, time-travel). Derived nodes are intentionally omitted: they are pure functions of inputs and recompute on first read.</td>
+</tr>
+<tr>
+<td><code>graph.hydrate(snap)</code></td>
+<td>Bulk-apply a <code>GraphSnapshot</code>: writes the snapshotted inputs, advances <code>now</code> to <code>snap.time</code>, fires per-node subscribers whose values changed, and emits a single <code>Commit</code> with <code>intent: 'hydrate'</code>. Throws <code>HydrationSchemaError</code> on a <code>schemaHash</code> mismatch; the structural defence against the hydration-mismatch race class.</td>
+</tr>
+<tr>
+<td><code>graph.readAt&lt;T&gt;(node, t)</code></td>
+<td>Read <code>node</code> at a past committed time <code>t ≤ now</code>. Returns a <code>RetentionResult&lt;T&gt;</code> discriminated <code>Retained | Evicted</code> per SPEC §9; bounded by <code>snapshotRetentionCap</code>, <strong>which defaults to <code>0</code>, as does the <code>commitHistoryCap</code> gating it, so a graph built with no retention options answers <code>Evicted</code> at every <code>t</code>.</strong> Retention is opt-in: pass <strong>both</strong> caps, <code>createCausl({ commitHistoryCap: 1000, snapshotRetentionCap: 1000 })</code>. The <code>Evicted</code> arm is the engine's honesty about bounded retention: a tag check at the call site rather than <code>undefined</code> or a throw.</td>
+</tr>
+<tr>
+<td><code>graph.snapshotAt(t)</code></td>
+<td>Project a whole-graph <code>GraphSnapshot</code> at a historical GraphTime <code>t</code>, sourced from the bounded retention buffer. Returns a <code>RetentionResult&lt;GraphSnapshot&gt;</code>. The bridge consumes this on JUMP / IMPORT_STATE / ROLLBACK so time travel is observed <em>as a read</em> on a <code>Behavior</code>, not as a mutation: preserving the contract that the only way time advances is through <code>commit</code>.</td>
+</tr>
+<tr>
+<td><code>graph.simulate(intent, run)</code></td>
+<td>The §5 dry-run API: predict what <code>commit(intent, run)</code> would do <em>without</em> committing. Returns a discriminated <code>SimulateResult</code> carrying the would-be <code>Commit</code> and the staged-input / derived-recompute diffs on the <code>'clean'</code> arm, or the typed engine error on the <code>'failed'</code> arm. After the call returns, engine state is byte-identical to the pre-call moment; <code>now</code> unchanged, no commit-log append, no subscriber fires. The only throw is <code>CommitInProgressError</code> on re-entry.</td>
+</tr>
+<tr>
+<td><code>graph.dependencies&lt;T&gt;(node)</code></td>
+<td>Realises the §11 third-bullet liveness primitive: direct (depth-1) dependency ids of <code>node</code> at the current committed time, projected as a frozen <code>readonly NodeId[]</code> and lex-sorted for stable iteration. Inputs return <code>[]</code>; derivations return the dep-set captured by the most recent compute. Same <code>getEntry</code> gate as <code>read</code>/<code>subscribe</code>/<code>explain</code>; throws <code>UnknownNodeError</code> for fabricated ids and <code>NodeDisposedError</code> for released ones. Ships as a one-shot snapshot rather than a <code>DerivedNode</code>-valued handle: the commit pipeline cannot host derived nodes whose value is metadata about the commit pipeline itself without breaking the §5 single-tick invariant (#383).</td>
+</tr>
+<tr>
+<td><code>graph.dependents&lt;T&gt;(node)</code></td>
+<td>Sister primitive: direct (depth-1) reverse-dep ids of <code>node</code> at the current committed time, sourced from the same adjacency map the commit pipeline already maintains for invalidation. Same snapshot semantics, same error surface. The spreadsheet question, <em>what depends on this cell?</em>; is answerable through engine primitives instead of by walking every other node's <code>explain</code>.</td>
+</tr>
+<tr>
+<td><code>graph.stats()</code></td>
+<td>The <code>EngineTelemetry</code> snapshot: commit counters, retained-commit count, and <code>nodeVersion(node)</code>, a per-node integer that advances by exactly 1 on each commit in which that node's value changed under the §15.1 <code>!Object.is</code> cutoff and is unchanged on every other commit. It is the supported memoisation key for adopters who must not depend on read-reference identity. Engine authority, so it is deliberately <strong>absent</strong> from the narrowed <code>ReadOnlyGraph</code> a <code>@causl/react</code> selector receives; call it on the <code>Graph</code> itself.</td>
+</tr>
+<tr>
+<td><code>graph.subscribeMany(nodes, observer, options?)</code></td>
+<td>Register one observer across a group of nodes in a single call. Fires once per commit no matter how many nodes in the group changed (a per-commit dedupe marker), and is never visited at all by commits that touch none of them. Cheaper than N separate <code>subscribe</code> calls because the per-node index is built once at registration. Returns one <code>Unsubscribe</code> that drops the whole group.</td>
+</tr>
+<tr>
+<td><code>graph.subscribeReads(observer, projection)</code></td>
+<td>Subscribe to a <em>projection</em> rather than to a node: the read-set is captured by running <code>projection</code> under the engine's tracking accessor, and re-captured on every fire, so a conditional read follows the live branch with no hand-managed dep array. This is &quot;subscribe to a derived view without registering a <code>derived</code> node&quot;; the dispatch shape per-node adapter hooks build on instead of routing through <code>subscribeCommits</code>'s every-commit fan-in.</td>
+</tr>
+<tr>
+<td><code>graph.dispose()</code></td>
+<td>Release the wasm engine behind this <code>Graph</code>: drops the per-<code>engineId</code> handler registrations and frees the Rust slot (#111). Idempotent, and also published as <code>graph[Symbol.dispose]</code>, so <code>using graph = createCausl()</code> frees it at scope exit. A <code>FinalizationRegistry</code> is the backstop, not the contract; long-lived processes that build graphs per request should call it. Non-enumerable, so it does not show up in <code>Object.keys(graph)</code>.</td>
+</tr>
+<tr>
+<td><code>graph.commitMetadataDerived&lt;T&gt;(id, compute)</code></td>
+<td>Register a derived Behavior whose compute reads commit metadata: <code>graph.commitLog</code>, the just-completed commit's stamp, or values produced by other commit-metadata-tagged deriveds; and whose value reflects the <em>just-completed</em> commit, not the previous one. Internally a <code>DerivedNode</code> like any other; it participates in <code>read</code> / <code>subscribe</code> / <code>explain</code> / <code>readAt</code> uniformly with <code>derived(...)</code>. The seam this factory adds is scheduling: tagged nodes recompute in Phase F.5 (post-<code>commitLog</code> refresh, pre-Phase-G subscriber dispatch), so subscribers see the post-commit value on the same commit that produced it. Ordinary <code>derived(...)</code> is unaffected; its Phase D atomicity is the §3 invariant. Closes #452 and unblocks #383's <code>whyUpdated</code> / <code>whyNotUpdated</code> / <code>commitLog</code> derived rewrites.</td>
+</tr>
+<tr>
+<td><code>graph.now</code> (getter)</td>
+<td>Current <code>GraphTime</code>. A getter, not a method: the §3 vocabulary needs an external observer to ask &quot;what time is it?&quot; without firing a commit.</td>
+</tr>
+</tbody>
+</table>
+<a id="retentionresult-the-discriminated-read" class="tsd-anchor"></a><h3 class="tsd-anchor-link"><code>RetentionResult&lt;T&gt;</code>: the discriminated read<a href="#retentionresult-the-discriminated-read" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p><code>graph.readAt</code> and <code>graph.snapshotAt</code> both return a <code>RetentionResult&lt;T&gt;</code>:</p>
+<pre><code class="ts"><span class="hl-6">type</span><span class="hl-1"> </span><span class="hl-9">RetentionResult</span><span class="hl-1">&lt;</span><span class="hl-9">T</span><span class="hl-1">&gt; =</span><br/><span class="hl-1">  | { </span><span class="hl-6">readonly</span><span class="hl-1"> </span><span class="hl-4">status</span><span class="hl-1">: </span><span class="hl-2">&#39;retained&#39;</span><span class="hl-1">; </span><span class="hl-6">readonly</span><span class="hl-1"> </span><span class="hl-4">value</span><span class="hl-1">: </span><span class="hl-9">T</span><span class="hl-1">; </span><span class="hl-6">readonly</span><span class="hl-1"> </span><span class="hl-4">time</span><span class="hl-1">: </span><span class="hl-9">GraphTime</span><span class="hl-1"> }</span><br/><span class="hl-1">  | { </span><span class="hl-6">readonly</span><span class="hl-1"> </span><span class="hl-4">status</span><span class="hl-1">: </span><span class="hl-2">&#39;evicted&#39;</span><span class="hl-1">; </span><span class="hl-6">readonly</span><span class="hl-1"> </span><span class="hl-4">oldestRetainedTime</span><span class="hl-1">: </span><span class="hl-9">GraphTime</span><span class="hl-1"> }</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The <code>evicted</code> arm carries the oldest still-retained time so callers can
+clamp future requests into the bounded window. The tag check is the
+SPEC §9 &quot;make impossible states impossible&quot; pattern: a read for a time
+outside the retention window cannot silently return <code>undefined</code>.</p>
+<blockquote>
+<p><strong>The clamp terminates only when retention is on.</strong> Both caps default
+to <code>0</code>, and at cap 0 there is no window, so <code>oldestRetainedTime</code> is
+<strong>not</strong> its lower edge: it reports <code>graph.now</code> as a placeholder, and
+reading at that time evicts as well. Measured on a default-cap graph
+after two commits, <code>readAt(a, now)</code> answers
+<code>evicted { oldestRetainedTime: 2 }</code>, and clamping to <code>2</code> and re-reading
+answers <code>evicted { oldestRetainedTime: 2 }</code> again, without end. So a
+&quot;retry until retained&quot; loop does not terminate on a graph that opted
+into nothing. Treat <code>evicted</code> as terminal, or retry at most once and
+only when you know the graph was built with
+<code>{ commitHistoryCap: &gt; 0, snapshotRetentionCap: &gt; 0 }</code>.</p>
+</blockquote>
+<a id="reads-are-live-and-unfrozen" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Reads are live and unfrozen<a href="#reads-are-live-and-unfrozen" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The <strong>contract</strong> is the one stated on <code>graph.read</code> above: reference
+identity across calls is not guaranteed, so do not build on it. What
+<code>rust-ssot</code> (the engine this package ships) <strong>does</strong> today is the
+other thing, and it is the hazard worth writing down:</p>
+<p><strong><code>read(node)</code> hands back the very object you put in, not a copy.</strong></p>
+<pre><code class="ts"><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">preloadCauslWasm</span><span class="hl-1">()</span><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-7">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()</span><br/><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-7">passed</span><span class="hl-1"> = { </span><span class="hl-4">a:</span><span class="hl-1"> </span><span class="hl-8">1</span><span class="hl-1"> }</span><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-7">n</span><span class="hl-1"> = </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-2">&#39;obj&#39;</span><span class="hl-1">, </span><span class="hl-4">passed</span><span class="hl-1">)</span><br/><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-4">n</span><span class="hl-1">) === </span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-4">n</span><span class="hl-1">)   </span><span class="hl-5">// true  — same reference, same tick</span><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-4">n</span><span class="hl-1">) === </span><span class="hl-4">passed</span><span class="hl-1">          </span><span class="hl-5">// true  — your own object, back again</span><br/><span class="hl-4">Object</span><span class="hl-1">.</span><span class="hl-0">isFrozen</span><span class="hl-1">(</span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-4">n</span><span class="hl-1">))    </span><span class="hl-5">// false — nothing defends it</span><br/><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-4">n</span><span class="hl-1">).</span><span class="hl-4">a</span><span class="hl-1"> = </span><span class="hl-8">999</span><span class="hl-1">             </span><span class="hl-5">// no throw, no commit, no fire…</span><br/><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-4">n</span><span class="hl-1">).</span><span class="hl-4">a</span><span class="hl-1">                   </span><span class="hl-5">// 999   — committed state just changed</span><br/><span class="hl-4">passed</span><span class="hl-1">.</span><span class="hl-4">a</span><span class="hl-1">                          </span><span class="hl-5">// 999   — and so did your object</span>
+</code><button type="button">Copy</button></pre>
+
+<p>That write went around <code>commit</code>. <code>now</code> did not advance, no <code>Commit</code> was
+appended, no subscriber fired, and <code>explain</code> shows nothing: but every
+later read observes it. It is the one way to move committed state
+without a commit, and the engine cannot see it happen.</p>
+<p><strong>Treat every value you hand to <code>input</code> / <code>tx.set</code>, and every value
+<code>read</code> gives you, as read-only.</strong> If you need a mutable working copy,
+clone it (<code>structuredClone</code>, a spread, an immutable library) and commit
+the clone. Deep-freezing values before you commit them turns the silent
+corruption into a <code>TypeError</code> at the mutation site, which is usually
+what you want in development.</p>
+<p>None of this is contractual in the other direction either: do <strong>not</strong>
+start relying on <code>read</code> returning a stable reference. Key memoisation
+on <code>commit.time</code> or <code>graph.stats().nodeVersion(node)</code>, both of which
+are value-typed and survive any future change to how values cross the
+FFI boundary.</p>
+<a id="guarantees" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Guarantees<a href="#guarantees" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li><strong>Atomicity</strong>: <code>graph.commit</code> is the only mutation entry, and it
+produces exactly one new <code>GraphTime</code>. Outside a commit the graph is
+read-only; there is no fractional time and no &quot;concurrent mutation&quot;
+question because there is no concurrent mutation API. Observers wake
+at most once per commit per observed value change.</li>
+<li><strong>Glitch-freedom</strong>: a derived value at time <code>t</code> is a pure function
+of its inputs at the same time <code>t</code>: <code>derived(t) = f(b₁(t), …, bₙ(t))</code>.
+There is no intermediate &quot;B updated but C did not&quot; state because
+there is no intermediate time. Diamond observations never see
+interleaved deps regardless of what the scheduler does.</li>
+<li><strong>Determinism</strong>: <code>derived(t) = f(b₁(t), …, bₙ(t))</code> is a function, so
+two implementations either agree or one of them is wrong. A recorded
+commit sequence replayed on a fresh graph produces a byte-identical
+state.</li>
+<li><strong>O(|affected|) recomputation</strong>: a commit producing N derived
+recomputations runs in O(N) time, not O(graph size). Dirty marking
+and dependency walking are bounded by the affected subgraph. This is
+a correctness criterion phrased as performance, not a benchmark.</li>
+</ul>
+<a id="errors" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Errors<a href="#errors" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Every public throw is a typed subclass of <code>CauslError</code>, and every one
+carries a literal <code>kind</code> discriminant, so a <code>switch (e.kind)</code> over the
+catalogue narrows exhaustively rather than parsing a message string. A
+single <code>e instanceof CauslError</code> captures any engine-emitted failure.</p>
+<p>The catalogue is twenty classes plus the <code>CauslError</code> root. This table is
+the whole of it: the class column and the <code>kind</code> column are both held to
+<code>packages/core/src/errors.ts</code> by <code>error-catalogue-inventory-511.test.ts</code>
+in the shipped suite, so a class added to the engine and not added here
+fails the build. Nothing gated this section before #511 and it had
+drifted to thirteen of the twenty, which left an adopter branching on the
+documented set with a third of the taxonomy unhandled.</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th><code>kind</code></th>
+<th>Fires when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CommitInProgressError</code></td>
+<td><code>CommitInProgress</code></td>
+<td><code>commit</code>, <code>simulate</code> or <code>hydrate</code> is re-entered while a commit is running on the same graph. Commits do not nest.</td>
+</tr>
+<tr>
+<td><code>CycleError</code></td>
+<td><code>Cycle</code></td>
+<td>A commit closes a derivation cycle. Carries the ordered <code>path</code> of participating ids.</td>
+</tr>
+<tr>
+<td><code>DerivedComputeError</code></td>
+<td><code>DerivedCompute</code></td>
+<td>A user <code>compute(get)</code> body itself throws. Carries the original thrown value as <code>cause</code>, so <code>e.cause instanceof MyValidationError</code> branches on your own error modes.</td>
+</tr>
+<tr>
+<td><code>DerivedRegistrationStackOverflowError</code></td>
+<td><code>DerivedRegistrationStackOverflow</code></td>
+<td>A registration walker exhausts the call stack. Defence in depth: the registration path is iterative, so this is a residual guard rather than the steady-state outcome.</td>
+</tr>
+<tr>
+<td><code>DisposalDuringCommitError</code></td>
+<td><code>DisposalDuringCommit</code></td>
+<td>Adapter code disposes a node while a commit is in flight. Disposal waits for the engine to return to Idle.</td>
+</tr>
+<tr>
+<td><code>DuplicateNodeError</code></td>
+<td><code>DuplicateNode</code></td>
+<td>An id is registered twice on one graph.</td>
+</tr>
+<tr>
+<td><code>HydrationSchemaError</code></td>
+<td><code>HydrationSchema</code></td>
+<td><code>hydrate</code> receives an unsupported <code>schema</code> version, or a <code>schemaHash</code> that diverges from the live node id-set.</td>
+</tr>
+<tr>
+<td><code>InvalidGraphNameError</code></td>
+<td><code>InvalidGraphName</code></td>
+<td><code>createCausl({ name })</code> receives a name outside <code>/^[A-Za-z0-9_.:-]{1,256}$/</code>. Thrown at construction, so there is no half-built graph.</td>
+</tr>
+<tr>
+<td><code>InvalidNodeHandleError</code></td>
+<td><code>InvalidNodeHandle</code></td>
+<td>A compute calls <code>get</code> with something that is not a live node handle (<code>undefined</code>, <code>null</code>, a primitive, an object with no string <code>id</code>). The usual cause is a self-referential registration reading <code>undefined</code> from its own closure.</td>
+</tr>
+<tr>
+<td><code>InvariantViolationError</code></td>
+<td><code>InvariantViolation</code></td>
+<td>A value staged by <code>tx.set</code> fails the <code>invariant</code> registered on that input. The whole commit rolls back: <code>now</code> does not advance and no subscriber fires. Carries the invariant's throw as <code>cause</code>.</td>
+</tr>
+<tr>
+<td><code>NodeDisposedError</code></td>
+<td><code>NodeDisposed</code></td>
+<td><code>read</code>, <code>subscribe</code> or <code>tx.set</code> targets a node released through the adapter disposal hook. Distinct from <code>UnknownNodeError</code> so &quot;registered then released&quot; is tellable from &quot;never registered&quot;.</td>
+</tr>
+<tr>
+<td><code>NodeHasDependentsError</code></td>
+<td><code>NodeHasDependents</code></td>
+<td>Adapter code disposes a node that still has live dependents. Names every offending dependent.</td>
+</tr>
+<tr>
+<td><code>NonDeterministicComputeError</code></td>
+<td><code>NonDeterministicCompute</code></td>
+<td>The opt-in <code>assertDeterministicCompute</code> gate catches a compute returning a different value on a second call against the same dependency snapshot. Off by default; the gate doubles <code>compute()</code> work.</td>
+</tr>
+<tr>
+<td><code>NotAnInputNodeError</code></td>
+<td><code>NotAnInputNode</code></td>
+<td><code>tx.set</code> targets a derived node. A derived value is a pure function of its dependencies, so writing one would tear that equation.</td>
+</tr>
+<tr>
+<td><code>RemovedEngineOptionError</code></td>
+<td><code>RemovedEngineOption</code></td>
+<td>An options bag still carries <code>engine</code>, <code>backend</code>, <code>fallbackToTs</code> or <code>fallbackToJs</code>, all removed in 0.5.0. Branch on <code>code === 'CAUSL_REMOVED_ENGINE_OPTION'</code>; the fix is always to delete the key.</td>
+</tr>
+<tr>
+<td><code>RetainedValueUnavailableError</code></td>
+<td><code>RetainedValueUnavailable</code></td>
+<td><code>readAt</code> / <code>snapshotAt</code> asks for a historical CONTAINER input whose value the Rust engine kept only as a content-hash and whose live reference has since changed. The honest &quot;not retained&quot; arm rather than a corrupt value.</td>
+</tr>
+<tr>
+<td><code>StaleTxError</code></td>
+<td><code>StaleTx</code></td>
+<td>A <code>Tx</code> captured from a <code>commit</code> callback is used after that callback returned.</td>
+</tr>
+<tr>
+<td><code>UndeclaredDependencyError</code></td>
+<td><code>UndeclaredDependency</code></td>
+<td>A compute dynamically reads a <code>NodeId</code> that was never registered. Rewiring a dependency set across recomputes is legal (SPEC §10.3); reading an id the graph has never seen is not.</td>
+</tr>
+<tr>
+<td><code>UnknownNodeError</code></td>
+<td><code>UnknownNode</code></td>
+<td>Any read-side primitive names an unregistered id.</td>
+</tr>
+<tr>
+<td><code>WasmInstancePoisonedError</code></td>
+<td><code>WasmInstancePoisoned</code></td>
+<td>A Rust trap aborted mid-mutation. wasm32 has no unwinding, so engine state is undefined and this is NOT an atomic rollback: the shared instance is marked dead and every engine on it fails loud. Rebuild the graph on a fresh instance.</td>
+</tr>
+</tbody>
+</table>
+<p><code>InvalidNodeHandleError</code> (<code>kind: 'InvalidNodeHandle'</code>) is new in 0.6.0.
+It fires when a derived's <code>compute(get)</code> hands <code>get</code> a value that is not
+a live node handle. The commonest producer is a self-referential
+registration: the handle for the node being registered does not exist
+until <code>derived()</code> returns, so a compute closing over its own binding
+reads <code>undefined</code>. Before 0.6.0 that escaped as a raw <code>TypeError</code>
+wrapped in <code>DerivedComputeError</code>, and other non-node arguments were
+misreported as <code>UnknownNodeError</code>; see the 0.6.0 changelog entry for
+the migration note.</p>
+<p><code>RemovedEngineOptionError</code> (<code>code: 'CAUSL_REMOVED_ENGINE_OPTION'</code>) is new
+in 0.5.0 and was the only throw that release added. It fires from
+<code>createCausl()</code>: and from <code>loadAuthoritativeWasm()</code> / <code>loadWasmBackend()</code>
+— when the options bag still carries one of the four keys the release
+removed: <code>engine</code>, <code>backend</code>, <code>fallbackToTs</code>, <code>fallbackToJs</code>. The message
+names every offending key. Deleting the key is always the fix; see
+<a href="#construction-failure-050">Construction failure</a>.</p>
+<p>Observer exceptions are reported via <code>options.onObserverError</code>
+(default: <code>console.error</code>). They never tear down the engine.</p>
+<a id="construction-failure-050" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Construction failure (0.5.0)<a href="#construction-failure-050" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p><code>createCausl()</code> is <strong>synchronous</strong> and throws <strong>during construction, before
+any <code>Graph</code> is returned</strong>: there is no partially-built graph and no async
+window. Four cases:</p>
+<table>
+<thead>
+<tr>
+<th>condition</th>
+<th>class</th>
+<th><code>code</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@causl/causl-wasm-ts/wasm</code> never imported in this process</td>
+<td><code>WasmEngineUnavailableError</code> (main-bundle twin)</td>
+<td><code>CAUSL_WASM_ENGINE_UNAVAILABLE</code></td>
+</tr>
+<tr>
+<td>subpath imported, <code>preloadCauslWasm()</code> never resolved</td>
+<td><code>CauslWasmNotPreloadedError</code></td>
+<td><code>CAUSL_WASM_NOT_PRELOADED</code></td>
+</tr>
+<tr>
+<td>subpath imported and preloaded, WasmGC cannot instantiate</td>
+<td><code>WasmEngineUnavailableError</code> (<code>/wasm</code> subpath)</td>
+<td><code>CAUSL_WASM_ENGINE_UNAVAILABLE</code></td>
+</tr>
+<tr>
+<td>the options bag still carries <code>engine</code>, <code>backend</code>, <code>fallbackToTs</code> or <code>fallbackToJs</code></td>
+<td><code>RemovedEngineOptionError</code></td>
+<td><code>CAUSL_REMOVED_ENGINE_OPTION</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Branch on <code>error.code</code>, never on <code>instanceof</code>.</strong> Rows 1 and 3 deliberately
+share a <code>code</code>, and row 1 is thrown by a leak-free twin class in the main
+bundle that <em>cannot</em> extend the <code>/wasm</code> class (the bundle-no-wasm-leak gate),
+so <code>err instanceof WasmEngineUnavailableError</code> imported from <code>/wasm</code> is
+<strong>false</strong> for row 1. One <code>switch (err.code)</code> covers all four; the remedy
+difference is carried in the message. <code>isCauslEngineUnavailable(err)</code>: a
+type guard exported from both the main barrel and <code>/wasm</code>: narrows rows 1–3
+without a cast under <code>useUnknownInCatchVariables</code>.</p>
+<p>Row 4 is the one an upgrade meets first, and it is <strong>not</strong> a host problem: it
+means a <code>0.4.x</code> options bag survived the upgrade. It fires on the <em>key</em>, not
+the value, so <code>{ engine: undefined }</code>: what spreading an old config
+produces: throws too. Deleting the key is the whole fix:</p>
+<pre><code class="ts"><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">preloadCauslWasm</span><span class="hl-1">()</span><br/><br/><span class="hl-0">createCausl</span><span class="hl-1">()                        </span><span class="hl-5">// OK</span><br/><span class="hl-0">createCausl</span><span class="hl-1">({ </span><span class="hl-4">fallbackToTs:</span><span class="hl-1"> </span><span class="hl-6">true</span><span class="hl-1"> })  </span><span class="hl-5">// throws RemovedEngineOptionError</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Note the asymmetry, because it is the opposite of &quot;the option is inert&quot;:
+<strong>without</strong> the key the construction <em>succeeds</em>. Leaving it in place is the
+only thing that fails.</p>
+<a id="testing" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Testing<a href="#testing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><pre><code class="bash"><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">test:run</span><span class="hl-1">    </span><span class="hl-5"># full suite (incl. ≥1000 fast-check trials)</span><br/><span class="hl-4">CAUSL_FUZZ_SEED</span><span class="hl-1">=</span><span class="hl-2">42</span><span class="hl-1"> </span><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">test:run</span><span class="hl-1">   </span><span class="hl-5"># reproduce a failure</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The 1000-trial floor is the SPEC §15.2 default tier. Routing through the
+tier resolver shipped by PR #1097 (issue #1073) lets PR and nightly CI
+widen the budget without code changes:</p>
+<pre><code class="bash"><span class="hl-4">CAUSL_FUZZ_TIER</span><span class="hl-1">=</span><span class="hl-2">pr</span><span class="hl-1">      </span><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">test:run</span><span class="hl-1">   </span><span class="hl-5">#   5 000 trials</span><br/><span class="hl-4">CAUSL_FUZZ_TIER</span><span class="hl-1">=</span><span class="hl-2">nightly</span><span class="hl-1"> </span><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">test:run</span><span class="hl-1">   </span><span class="hl-5"># 100 000 trials</span><br/><span class="hl-4">CAUSL_FUZZ_TRIALS</span><span class="hl-1">=</span><span class="hl-2">20000</span><span class="hl-1"> </span><span class="hl-0">pnpm</span><span class="hl-1"> </span><span class="hl-2">test:run</span><span class="hl-1">   </span><span class="hl-5"># numeric override</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Property suites that opt into the tier system go through
+<code>tieredPropertyTrials</code> (published from <code>@causl/causl-wasm-ts/testing</code>) or
+<code>tieredPropertyOptions</code> (internal to <code>packages/core/test/properties/</code>);
+the post-#1153 sweep routed every callsite through one of those wrappers
+so the env vars actually fire end-to-end.</p>
+<a id="engines-the-wasm-production-engine--the-causlcausl-wasm-tswasm-surface" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Engines: the wasm production engine + the <code>@causl/causl-wasm-ts/wasm</code> surface<a href="#engines-the-wasm-production-engine--the-causlcausl-wasm-tswasm-surface" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p><code>@causl/causl-wasm-ts</code> is <strong>one §12 <code>Graph</code> surface</strong> (SPEC §18A.1) over
+<strong>exactly one engine</strong>. As of 0.5.0
+(<a href="https://git.opsite.ca/causl/causl-wasm-ts/issues/280"><code>causl/causl-wasm-ts#280</code></a>)
+there is no second engine and no degradation path: the §18A.13.1 capability
+fallback is withdrawn, and the two options that used to pin the
+pure-TypeScript floor (<code>engine: 'js-ssot'</code> and <code>backend: 'js'</code>) no longer
+exist. App code programs against the surface, never against an engine.</p>
+<table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>What it is</th>
+<th>Reached via</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>causl-wasm</strong></td>
+<td>The Rust → WebAssembly engine core (<code>engine-rs-core</code>), bound through <code>causl-client</code>'s surface. Every adopter op resolves from Rust (§18A.3 lift landed, <a href="https://git.opsite.ca/causl/causl-core-rs/issues/170">causl-wasm#170</a>); the user's <code>derived()</code> compute lambdas run in JS over the bridge callback by design.</td>
+<td><code>createCausl()</code> (after <code>preloadCauslWasm()</code>) / <code>@causl/causl-wasm-ts/wasm</code></td>
+<td><strong>The only engine</strong> (<code>rust-ssot</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>There is no second engine in the source tree either. The pure-TypeScript
+closure used to stay <em>declared</em> in <code>packages/core/src/graph.ts</code> as the
+structural closure every graph this package built sat inside, <code>rust-ssot</code>
+included, while being absent from the barrel and from all four declared
+subpaths (<code>.</code>, <code>./internal</code>, <code>./testing</code>, <code>./wasm</code>). It is gone, deleted by
+EPIC
+<a href="https://git.opsite.ca/causl/causl-wasm-ts/issues/275"><code>causl/causl-wasm-ts#275</code></a>.
+<code>CHANGELOG.md</code>'s <code>0.5.0</code> <strong>Breaking changes</strong> section names every removed
+export and the replacement for each; the dated architectural record is
+SPEC §18A.13.1 and the §19 amendment trail.
+The two-engine topology: a TypeScript value-of-record floor, the differential
+byte-identity oracle and the benchmarks: lives only in
+<a href="https://git.opsite.ca/causl/causl-core-ts"><code>causl/causl-core-ts</code></a>.</p>
+<p>The bare <code>@causl/causl-wasm-ts</code> import never pulls the wasm chunk into the main
+bundle (<code>sideEffects:false</code>); the wasm factories live behind the explicit
+<code>@causl/causl-wasm-ts/wasm</code> subpath. Since 0.5.0 importing that subpath is also
+<strong>required</strong>: a <code>createCausl()</code> that runs after <code>preloadCauslWasm()</code> has primed
+the default bridge routes synchronously to the real WASM engine, and a
+<code>createCausl()</code> with no preload <strong>throws during construction</strong>.</p>
+<a id="the-factory-surface" class="tsd-anchor"></a><h3 class="tsd-anchor-link">The factory surface<a href="#the-factory-surface" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>Factory</th>
+<th>Engine</th>
+<th>Shape</th>
+<th>Reached via</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>createCausl(options?)</code></td>
+<td>The wasm engine, or a throw</td>
+<td><strong>sync</strong></td>
+<td><code>@causl/causl-wasm-ts</code> (the <strong>default</strong>)</td>
+</tr>
+<tr>
+<td><code>createCauslWasm(options?)</code> / <code>createCauslWasmSync(handle?, create?)</code></td>
+<td>The wasm engine</td>
+<td><strong>async</strong> / <strong>sync</strong></td>
+<td><code>@causl/causl-wasm-ts/wasm</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>createCausl()</code> is the default public factory: once <code>@causl/causl-wasm-ts/wasm</code>
+has been preloaded for the default bridge (via <code>preloadCauslWasm()</code>) it routes
+to the <strong>real wasm engine</strong>, synchronously, forever after. With no preload it
+is construct-or-throw: there is no partially-built graph and no async window;
+see <a href="#errors">Errors</a> for the three cases and their <code>code</code> values.
+The pure-TypeScript engine stopped being a public choice in <code>causl-client</code> at
+epic #31 / #34 and no longer exists in this package at all. The §18A.3 FFI lift
+has <strong>landed</strong>
+(<a href="https://git.opsite.ca/causl/causl-core-rs/issues/170"><code>causl/causl-core-rs#170</code></a>),
+so every adopter op resolves from Rust.
+<a href="https://git.opsite.ca/causl/causl-core-ts"><code>causl/causl-core-ts</code></a>: the repo
+formerly called <code>causl-ts-wasm-engine</code>, a name no longer in use: keeps that
+engine's factory public as its dual-engine floor.</p>
+<a id="synchronous-wasm-construction-preloadcauslwasm--createcauslwasmsync-spec-§18a12" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Synchronous wasm construction: <code>preloadCauslWasm</code> / <code>createCauslWasmSync</code> (SPEC §18A.12)<a href="#synchronous-wasm-construction-preloadcauslwasm--createcauslwasmsync-spec-§18a12" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3><p>From a consumer's perspective the wasm engine is now <strong>synchronous</strong>. The
+one unavoidable async (the <code>WebAssembly</code> compile) is split out of
+construction so the single <code>await</code> lives at app init, not at every call
+site. This lets a <strong>sync</strong> consumer (a React hook or render pass,
+<code>xldatagrid</code>) build a wasm-backed <code>Graph</code> with no <code>await</code> where the graph
+is needed:</p>
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">preloadCauslWasm</span><span class="hl-1">, </span><span class="hl-4">createCauslWasmSync</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@causl/causl-wasm-ts/wasm&#39;</span><br/><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">preloadCauslWasm</span><span class="hl-1">()          </span><span class="hl-5">// once, at app/init — the only await</span><br/><span class="hl-5">// …later, on any render / hook / event, with zero await:</span><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-7">graph</span><span class="hl-1"> = </span><span class="hl-0">createCauslWasmSync</span><span class="hl-1">()</span>
+</code><button type="button">Copy</button></pre>
+
+<ul>
+<li><strong><code>await preloadCauslWasm(opts?)</code></strong>: async, called <strong>once</strong>. Compiles
+and caches the <code>WebAssembly.Module</code> (plus its <code>_bg.js</code> glue sidecar and
+the compute-imports snippet), <strong>keyed by bridge</strong>. Idempotent:
+concurrent calls share one compile, and a transient failure drops the
+cache so the next call retries. Companions are the sync peeks
+<code>isCauslWasmPreloaded(bridge?)</code> and <code>getPreloadedCauslWasm(bridge?)</code>
+(both read the resolved slot, never await), and the opaque
+<code>CauslWasmModule</code> handle it resolves.</li>
+<li><strong><code>createCauslWasmSync(handle?, create?): Graph</code></strong>: <strong>fully
+synchronous</strong> (a fresh <code>new WebAssembly.Instance</code> from the cached
+<code>Module</code>, zero <code>await</code>). Not preloaded → throws
+<code>CauslWasmNotPreloadedError</code> (<code>code: 'CAUSL_WASM_NOT_PRELOADED'</code>). The
+<code>{ fallbackToTs: true }</code> / <code>{ fallbackToJs: true }</code> opt-out of that throw
+was <strong>removed</strong> in 0.5.0: <code>catch</code> the error and decide what your
+application should do on a host that cannot run the engine.</li>
+<li><strong><code>createCauslWasm(opts?): Promise&lt;Graph&gt;</code></strong>: retained, now
+re-expressed as <code>preload ∘ createCauslWasmSync</code> over a single
+construct codepath (provably equal, zero drift). It pays the one-time
+preload then constructs. It is the only factory with <strong>two</strong> options
+bags, a loader bag at the top level and <code>create: CreateCauslOptions</code>
+inside it, and the options both bags declare (<code>commitHistoryCap</code>,
+<code>snapshotRetentionCap</code>, <code>batchedFlush</code>) are read from <strong>either</strong>, with
+<code>create</code> winning per field. Passing a retention cap in <code>create</code> alone
+used to build a graph with no retention and no error
+(<code>causl/causl-wasm-ts#411</code>).</li>
+</ul>
+<p>Node's <code>--target nodejs</code> glue is already synchronous end-to-end, so the
+<strong>server needs no preload</strong>; only the browser bundler target needs the
+one-time <code>preloadCauslWasm()</code>. These factories construct the real wasm
+engine: <code>preloadCauslWasm()</code> compiles the <code>WebAssembly.Module</code> and
+<code>createCauslWasmSync()</code> does a <code>new WebAssembly.Instance</code> from the cached
+module (zero <code>await</code>), constructing a wasm-authoritative <code>Graph</code> whose
+every adopter op resolves from Rust (see the <strong>&quot;The engine is real
+Rust&quot;</strong> note below). The authoritative loader source is mirrored in
+<code>causl/causl-core-ts</code>.</p>
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">preloadCauslWasm</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@causl/causl-wasm-ts/wasm&#39;</span><br/><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">createCausl</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@causl/causl-wasm-ts&#39;</span><br/><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">preloadCauslWasm</span><span class="hl-1">()          </span><span class="hl-5">// ONCE, at app init</span><br/><br/><span class="hl-3">try</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-7">graph</span><span class="hl-1"> = </span><span class="hl-0">createCausl</span><span class="hl-1">()     </span><span class="hl-5">// synchronous forever after</span><br/><span class="hl-1">  </span><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(</span><span class="hl-4">graph</span><span class="hl-1">.</span><span class="hl-0">input</span><span class="hl-1">(</span><span class="hl-2">&#39;ready&#39;</span><span class="hl-1">, </span><span class="hl-6">true</span><span class="hl-1">)))</span><br/><span class="hl-1">} </span><span class="hl-3">catch</span><span class="hl-1"> (</span><span class="hl-4">err</span><span class="hl-1">) {</span><br/><span class="hl-1">  </span><span class="hl-3">switch</span><span class="hl-1"> ((</span><span class="hl-4">err</span><span class="hl-1"> </span><span class="hl-3">as</span><span class="hl-1"> { </span><span class="hl-4">code</span><span class="hl-1">?: </span><span class="hl-9">string</span><span class="hl-1"> }).</span><span class="hl-4">code</span><span class="hl-1">) {</span><br/><span class="hl-1">    </span><span class="hl-3">case</span><span class="hl-1"> </span><span class="hl-2">&#39;CAUSL_WASM_NOT_PRELOADED&#39;</span><span class="hl-1">:      </span><span class="hl-5">// fix the boot ordering</span><br/><span class="hl-1">    </span><span class="hl-3">case</span><span class="hl-1"> </span><span class="hl-2">&#39;CAUSL_WASM_ENGINE_UNAVAILABLE&#39;</span><span class="hl-1">: </span><span class="hl-5">// import the subpath, or the host cannot run it</span><br/><span class="hl-1">      </span><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-0">error</span><span class="hl-1">(</span><span class="hl-4">err</span><span class="hl-1">)</span><br/><span class="hl-1">      </span><span class="hl-3">break</span><br/><span class="hl-1">    </span><span class="hl-3">default</span><span class="hl-1">:</span><br/><span class="hl-1">      </span><span class="hl-3">throw</span><span class="hl-1"> </span><span class="hl-4">err</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>preloadCauslWasm(options?)</code> is the entry point of
+<code>@causl/causl-wasm-ts/wasm</code> an application actually calls: it is the one
+async seam, and everything downstream of it is synchronous. Honoured options
+are <code>wasmBaseUrl</code> (CDN/CSP override), <code>computeImportsUrl</code>, <code>fetch</code>,
+<code>graphName</code> and <code>bridge</code>. The <code>engine</code> option was <strong>removed</strong> in 0.5.0:
+every construct is <code>rust-ssot</code>.</p>
+<p><strong><code>bridge</code> has one value: <code>'wasmgc-classic'</code>.</strong> The <code>BridgeId</code> union still
+declares <code>'wasmgc-builtins'</code> so the id can be named and refused, and refused is
+what it is: <code>preloadCauslWasm({ bridge: 'wasmgc-builtins' })</code> throws
+<code>WasmEngineUnavailableError</code> on the source checkout and the packed tarball
+alike, before it resolves anything. Vendoring the tree yourself does not help.
+causl/causl-core-rs#210 measured that artefact's <code>wasm:js-string</code> imports as
+i32-typed where the W3C builtins are externref-typed, so
+<code>WebAssembly.compile(bytes, { builtins: ['js-string'] })</code> refuses it on every
+host; causl/causl-core-rs#355 deleted the tree and the build row.
+causl/causl-core-rs#358 is the ABI retype that would bring the tier back, and
+nothing in this package can do it. Leave <code>bridge</code> unset.</p>
+<p><code>batchedFlush</code> is <strong>accepted and inert</strong> at the preload level: a graph built
+after <code>preloadCauslWasm({ batchedFlush: 1 })</code> and one built after
+<code>batchedFlush: 1000</code> produce identical subscriber-fire sequences. Pass it
+per-graph (<code>createCauslWasm({ create: { batchedFlush } })</code>) if you want it
+honoured.</p>
+<p><code>loadWasmBackend(options?)</code> is also exported, but it is a <strong>determinism-gate /
+test shim, not an adopter entry point</strong>: the <code>backend</code> option that used to
+consume its return value was removed in 0.5.0, so nothing an adopter writes
+should call it. The <code>WasmBackend</code> it returns is backed by the wasm engine. It
+wrapped a plain TypeScript graph from Phase 1 until
+<a href="https://git.opsite.ca/causl/causl-wasm-ts/issues/279"><code>causl/causl-wasm-ts#279</code></a>
+compiled and instantiated the bridge here and deleted the wrapped graph, so any
+older note describing this loader as a TS wrap is stale.</p>
+<p><strong>The engine is real Rust.</strong> The <code>Graph</code> that <code>preloadCauslWasm()</code> +
+<code>createCausl()</code> build is <code>engine-rs-core</code> compiled to WebAssembly: the
+production engine: and <strong>every adopter op resolves from Rust</strong>: <code>commit</code> / <code>read</code> /
+<code>subscribe</code> / <code>derived</code> plus the second-tier <code>dependencies</code> /
+<code>dependents</code> / <code>stats</code> / <code>commitLog</code> / <code>explain</code> (incl. per-node
+timestamps via <code>node_meta</code>) / <code>exportModel</code> / <code>readAt</code> / <code>snapshotAt</code> /
+<code>subscribeCommits</code> (the §18A.3 FFI structural lift landed,
+<a href="https://git.opsite.ca/causl/causl-core-rs/issues/170">causl-wasm#170</a>). The
+substrate that landed this seam is EPIC #680. Orchestration runs in Rust;
+the user's <code>derived()</code> compute lambdas run in JS over the bridge callback
+<strong>by design</strong>: the only JS in the hot path. Per-commit wall-time stays
+inside the §14 RAIL responsiveness budget; perf is <strong>not</strong> the driver
+(<code>causl-client</code> made wasm its default engine for complexity-elimination).
+<code>read()</code> has no contractual reference identity (SPEC §18A.5 / §15.1), so
+memoise on <code>commit.time</code> or <code>stats().nodeVersion(node)</code>, never on the read
+reference. What the engine returns today is a <strong>live, unfrozen reference to
+your own value</strong>: mutating it edits committed state behind the commit
+pipeline's back; see <a href="#reads-are-live-and-unfrozen">Reads are live and
+unfrozen</a>.</p>
+<p><strong>Enterprise framing.</strong> <strong>causl-wasm via <code>@causl/causl-wasm-ts/wasm</code> is the
+Enterprise-tier path</strong>: and the production engine. An Enterprise CI/CD
+pipeline builds and vendors a pinned, checksummed <code>.wasm</code> with
+<code>causl-wasm</code>'s stdlib-only Python tooling (CPython stdlib + a checksum to
+vendor: never a Rust toolchain in the consuming app), and the app
+reaches it through the seam.</p>
+<p>The <code>causl-wasm</code> producer scripts: <code>build_wasm.py</code> / <code>package_wasm.py</code>
+— place the compute-imports snippet next to the <code>.wasm</code>/<code>_bg.js</code> and
+<strong>fail loud</strong> if any of three invariants break: the §18A.12 synchronous
+seam (the node glue must instantiate via <code>new WebAssembly.Instance</code>, no
+<code>Promise</code>), the presence of every snippet the glue references, and
+node-loadability. The <code>gc-classic</code> bridge loads as <code>--target nodejs</code>. The
+<code>gc-builtins</code> bridge emitted <code>require(&quot;wasm:js-string&quot;)</code>, which stock Node
+cannot resolve, so it was bundler-target only and was rejected as a node-target
+artefact at packaging time rather than detonating on the consumer's
+<code>require()</code>; causl/causl-core-rs#355 has since retired it everywhere.</p>
+<p><strong>Wasm-only core (SPEC §18A.13 + §18A.13.1's withdrawal: SHIPPED at 0.5.0).</strong>
+<code>causl-client</code> ships a <strong>wasm-only core</strong>: <code>createCausl</code> <strong>routes to the wasm
+engine or throws</strong>, and the pure-TS engine is not on the public
+surface. Executed wire-before-cut (epic #31: #32 WIRE → #33 FLIP → #34 CUT).
+<strong>SPEC §18A.13.1 (2026-06-23)</strong> then briefly <strong>retained that engine</strong> as
+the implicit <code>createCausl()</code> path's WasmGC-unavailable capability fallback:
+loud, never silent. That reversal is <strong>withdrawn</strong> at 0.5.0
+(<a href="https://git.opsite.ca/causl/causl-wasm-ts/issues/280"><code>causl/causl-wasm-ts#280</code></a>):
+the fallback engine and the primary <strong>disagree</strong> on a §18A.1.1
+MUST-be-identical surface
+(<a href="https://git.opsite.ca/causl/causl-wasm-ts/issues/272"><code>causl/causl-wasm-ts#272</code></a>,
+in-place mutation of a committed value), and a fallback that answers
+differently from the engine it stands in for is worse than no fallback.
+<code>onCauslCapabilityFallback</code> and the <code>'js-ssot'</code> / <code>'wasm-fallback'</code> union
+members stay exported, <code>@deprecated</code> and <strong>never firing</strong> until 0.6.0. The
+<strong>§18A.3 FFI structural lift has landed</strong>
+(<a href="https://git.opsite.ca/causl/causl-core-rs/issues/170"><code>causl/causl-core-rs#170</code></a>):
+every adopter op resolves from Rust under rust-ssot, and the user's
+<code>derived()</code> compute lambdas run in JS over the bridge callback by design.
+The literal <strong>zero-TS core</strong> has landed: EPIC
+<a href="https://git.opsite.ca/causl/causl-wasm-ts/issues/275"><code>causl/causl-wasm-ts#275</code></a>,
+sub-task
+<a href="https://git.opsite.ca/causl/causl-wasm-ts/issues/279"><code>causl/causl-wasm-ts#279</code></a>,
+deleted the engine declaration outright, along with the shared commit
+pipeline, the structural facade and the <code>injectedBackend</code> seam. The driver is <strong>complexity-elimination</strong>
+(shedding the dual-engine maintenance and conformance surface); perf is
+<strong>explicitly accepted as immaterial</strong>, not a gate. The direction is
+<strong>scoped to <code>causl-client</code> only</strong>:
+<a href="https://git.opsite.ca/causl/causl-core-ts"><code>causl/causl-core-ts</code></a>
+<strong>keeps</strong> the dual-engine TS floor: it is the differential-test oracle
+and the benchmark repo, and is now the organisation's only owner of that
+floor: so do not read this direction as removing <code>causl-ts</code> from the org.</p>
+<p><strong>The accepted cost.</strong> Hosts below the declared engine floor now hard-fail
+at <code>createCausl()</code>, with no flag that restores the old behaviour. The floor
+is declared once, on <code>WASM_HOST_FLOOR</code> in
+<code>packages/core/src/wasm-registry.ts</code> (causl/causl-wasm-ts#426), together with its measured
+basis (the shipped artefact needs typed function references, which engines
+enabled in the same release as WasmGC); the
+<a href="../media/README.md#host-requirements">Host requirements table</a> in the wasm
+entry-point reference mirrors it under test, so this paragraph deliberately
+repeats no version numbers. The <code>## [0.5.0]</code> section of
+<a href="https://git.opsite.ca/causl/causl-wasm-ts/src/branch/main/CHANGELOG.md"><code>CHANGELOG.md</code></a>
+is the authoritative statement: the removed-surface inventory, the failure
+contract and a numbered migration. It is <strong>not</strong> in the installed package:
+the link above is absolute for that reason: but everything the upgrade
+strictly requires is inlined here, under <a href="#errors">Errors</a>.</p>
+<p>See the consumer-side
+<a href="https://git.opsite.ca/causl/causl-wasm-ts/src/branch/main/docs/integrating-causl-client.md"><strong>Integrating causl-client into a TypeScript / Node.js app</strong></a>
+guide for the full producer/consumer split, the <code>node:fs</code> loader hook and
+the host-tier matrix (also repo-only, hence absolute); the
+<a href="../media/README.md"><code>@causl/causl-wasm-ts/wasm</code> entry-point reference</a> ships
+in this tarball and documents the loader options and the landed Rust engine
+in detail.</p>
+</section><details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Modules"><h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg> Modules</h2></summary><dl class="tsd-member-summaries"><dt class="tsd-member-summary"><a id="src" class="tsd-anchor"></a><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Module"><use href="../assets/icons.svg#icon-2"></use></svg><a href="_causl_causl-wasm-ts.src.html">src</a><a href="#src" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd><dt class="tsd-member-summary"><a id="wasm" class="tsd-anchor"></a><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Module"><use href="../assets/icons.svg#icon-2"></use></svg><a href="_causl_causl-wasm-ts.wasm.html">wasm</a><a href="#wasm" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd></dl></details></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#causlcausl-wasm-ts"><span>@causl/causl-<wbr/>wasm-<wbr/>ts</span></a><ul><li><a href="#install"><span>Install</span></a></li><li><a href="#quick-start-the-smallest-example-that-proves-the-engine-is-real"><span>Quick start: the smallest example that proves the engine is real</span></a></li><li><a href="#api"><span>API</span></a></li><li><ul><li><a href="#canonical-seven-spec-§121"><span>Canonical seven (SPEC §12.1)</span></a></li><li><a href="#second-tier-extensions-spec-§122"><span>Second-<wbr/>tier extensions (SPEC §12.2)</span></a></li><li><a href="#retentionresult-the-discriminated-read"><span>Retention<wbr/>Result&lt;<wbr/>T&gt;: the discriminated read</span></a></li><li><a href="#reads-are-live-and-unfrozen"><span>Reads are live and unfrozen</span></a></li></ul></li><li><a href="#guarantees"><span>Guarantees</span></a></li><li><a href="#errors"><span>Errors</span></a></li><li><ul><li><a href="#construction-failure-050"><span>Construction failure (0.5.0)</span></a></li></ul></li><li><a href="#testing"><span>Testing</span></a></li><li><a href="#engines-the-wasm-production-engine--the-causlcausl-wasm-tswasm-surface"><span>Engines: the wasm production engine + the @causl/causl-<wbr/>wasm-<wbr/>ts/wasm surface</span></a></li><li><ul><li><a href="#the-factory-surface"><span>The factory surface</span></a></li><li><a href="#synchronous-wasm-construction-preloadcauslwasm--createcauslwasmsync-spec-§18a12"><span>Synchronous wasm construction: preload<wbr/>Causl<wbr/>Wasm / create<wbr/>Causl<wbr/>Wasm<wbr/>Sync (SPEC §18<wbr/>A.12)</span></a></li></ul></li></ul><details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Modules"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Modules</summary><div><a href="#src" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Module"><use href="../assets/icons.svg#icon-2"></use></svg><span>src</span></a><a href="#wasm" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Module"><use href="../assets/icons.svg#icon-2"></use></svg><span>wasm</span></a></div></details></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../../" class="tsd-nav-link">Home</a><a href="../" class="tsd-nav-link">Documentation</a><a href="https://github.com/iasbuilt/causl" class="tsd-nav-link">GitHub</a></nav><nav class="tsd-navigation"><a href="../index.html">Causl API Reference - v0.2.0</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>

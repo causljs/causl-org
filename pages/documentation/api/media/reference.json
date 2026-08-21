@@ -1,0 +1,58 @@
+{
+  "role": "reference",
+  "capturedAt": "2026-08-08T20:09:56.071Z",
+  "commit": "674d438831c0e622d488f0cf7b6787501a2e248a",
+  "commitSubject": "fix(#419): date the registry capture against the pin, and ask the registry itself",
+  "treeClean": true,
+  "dirtyPaths": [],
+  "node": "v26.5.1",
+  "pnpm": "10.33.2",
+  "platform": "darwin/arm64",
+  "buildCommand": "pnpm install --frozen-lockfile && pnpm build",
+  "sizeCommand": "pnpm exec size-limit --json",
+  "cells": [
+    {
+      "name": "@causl/causl-wasm-ts (full import)",
+      "control": false,
+      "measuredBytes": 5040,
+      "limitString": "30 KB",
+      "limitBytes": 30000,
+      "passed": true,
+      "overByBytes": 0
+    },
+    {
+      "name": "@causl/causl-wasm-ts (createCausl-only)",
+      "control": false,
+      "measuredBytes": 1832,
+      "limitString": "26 KB",
+      "limitBytes": 26000,
+      "passed": true,
+      "overByBytes": 0
+    },
+    {
+      "name": "@causl/causl-wasm-ts/wasm (Phase-1 loader + WasmBackend wrapper)",
+      "control": false,
+      "measuredBytes": 23110,
+      "limitString": "32 KB",
+      "limitBytes": 32000,
+      "passed": true,
+      "overByBytes": 0
+    },
+    {
+      "name": "@causl/causl-wasm-ts wasm bridge — gc-classic (raw)",
+      "control": true,
+      "measuredBytes": 738279,
+      "limitString": "756 KiB",
+      "limitBytes": 774144,
+      "passed": true,
+      "overByBytes": 0
+    }
+  ],
+  "wasmArtefacts": [
+    {
+      "path": "packages/core/wasm-pkg/gc-classic-bundler/causl_engine_bridge_bg.wasm",
+      "bytes": 738279,
+      "sha256": "777031fd36d77e71de16735a03b6728d7e5f0b49d0e82764a64476848aac9519"
+    }
+  ]
+}
