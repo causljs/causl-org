@@ -1,0 +1,342 @@
+name: main-fast
+# This file declares a lane. Whether the lane fired is its run history on the
+# forge and not a sentence in this header: a forge setting copied into a
+# comment is a mutable fact recorded once, and it goes stale in silence
+# (causl/causl-wasm-ts#468). The "INERT, Actions is disabled" header that stood
+# here was exactly that copy. It recorded a real outage, 2026-08-04 through
+# 2026-08-07, when the Actions unit was switched off on causl/causl-wasm-ts and
+# on causl/causl-core-rs; that was repo-scoped rather than a runner or a forge
+# failure, the rest of the instance ran green throughout, and the header
+# outlived it. causl/causl-wasm-ts#409 moved every workflow here out of the
+# legacy forge root Gitea ignores, into the root it reads. See
+# `ci/parked/README.md`.
+
+# Fast lane for the `main` branch (and PRs targeting main).
+#
+# Per the CI contract introduced alongside this file, as amended by causl/causl-wasm-ts#425:
+#
+#   - `main` push + PRs targeting `main`  -> typecheck + build + lint
+#     and the source gates
+#   - `release` push -> FULL verification, and that is where the
+#     FUNCTIONAL SUITE runs (`pnpm test:run`, wired into
+#     `release-publish.yml` by causl/causl-wasm-ts#425), alongside e2e,
+#     bundle-budget, the wasm matrix and four-way-classifier (each lives
+#     in its own workflow).
+#
+# WHERE THE FUNCTIONAL SUITE RUNS, AND WHAT THE PLACEMENT COSTS
+# --------------------------------------------------------------
+# causl/causl-wasm-ts#425 measured what the original "ONLY build + lint"
+# contract actually bought: the 384-file unit, property and conformance
+# suite ran in NO lane at all, so the meta-gates below were the only test
+# suite CI enforced, and a functional regression merged green.
+#
+# The suite is wired now, and the owner's recorded decision is that it
+# runs on the `release` push rather than on every pull request: measured
+# at roughly one to two minutes of wall-clock on a warm developer host
+# and several minutes of CPU on a hosted runner, it is too slow to spend
+# on every commit to every branch. `release-publish.yml` runs it BEFORE
+# the publish loop and nothing ships if it is red.
+#
+# The cost of that placement, stated rather than left for a future reader
+# to discover: a pull request to `main` can merge with a red functional
+# suite, and the red surfaces at release time, when stopping is most
+# expensive. The local half (`.husky/pre-commit` runs `pnpm test:run`) is
+# a convention, not a gate: `--no-verify` and `SKIP_PRECOMMIT=1` are both
+# used legitimately here. What the wiring buys is still large — the 13
+# failures causl/causl-wasm-ts#425 surfaced were invisible for as long as
+# the suite ran nowhere, and release-only wiring shortens that window
+# from indefinite to one release cycle.
+#
+# `packages/core/test/functional-suite-lane-425.test.ts` holds the
+# release lane to that contract, including the ordering: suite before
+# publish, no `continue-on-error`, no `if:` that could let the publish
+# proceed over a red verdict.
+#
+# What runs here:
+#   1. TypeScript typecheck across the workspace (`pnpm typecheck`)
+#   2. TypeScript build across the workspace (`pnpm build`)
+#   3. ESLint across the workspace (`pnpm lint`)
+#   4. Source gates (`pnpm test:gates`) — see the carve-out below
+#
+# The `test:gates` carve-out (#300)
+# ---------------------------------
+# A source gate is a vitest file that reads the repository's own bytes and
+# answers a question about them: the implicit-`createCausl()` manifest, the
+# §17.3 package-layering lint, the race-class anchors, the deopt audit, the
+# tsup `node:` prefix gate. They construct no graph, need no wasm sidecar,
+# and the whole set runs in under a second.
+#
+# They were landing with nothing to run them. `main-fast` was typecheck /
+# build / lint and `.husky/pre-push` said so in as many words ("Tests are
+# NOT mirrored here"), so a lexical gate could only ever be enforced by
+# whoever happened to run vitest locally — and a gate over the whole suite
+# is exactly the kind that goes red on a MERGE, when two branches that were
+# each green alone meet. That is not a hypothetical: #300's gate and #295's
+# engine-identity tests did it to each other.
+#
+# The full suite does not run here, and the reason is COST, not
+# capability. The paragraph this one replaces hung the omission on wasm
+# artefacts it claimed git ignored, and that premise is dead: the
+# vendored engine under `packages/core/wasm-pkg/` is committed, so the
+# suite needs no Rust, no wasm-pack and no `pnpm wasm:build` on this
+# runner. Measured on a worktree created hours earlier, with
+# `pnpm wasm:build` never run and no toolchain invoked:
+# `pnpm vitest run test/create-causl-real-path-363.test.ts` reported
+# 10 passed in 382ms (2026-08-09). It CAN run here. The owner's decision
+# (causl/causl-wasm-ts#425) is that it runs on the `release` push
+# instead, so this lane keeps its sub-five-minute feedback; the
+# placement note at the top of this file states what that buys and what
+# it costs.
+# The source gates stay a separate, earlier step because their sub-second
+# verdict is cheap, and between releases they are the only test content
+# this lane carries.
+#
+# Adding a gate: put it in `packages/core`'s `test:gates` script. If it
+# needs a built `dist/`, it already has one — the step runs after `build`.
+#
+# One documented exception, and it is a cost rather than a preference.
+# `packages/core/package.json` is inside `bench/measured-sources.ts`'s
+# hashed closure (reached from the bench roots through `src/index.ts`'s
+# version import), so adding a filename to THAT script invalidates
+# causl/causl-wasm-ts#307's captured runtime baseline and demands
+# `tsx packages/core/bench/capture-baseline.ts` on a quiet host. A gate
+# whose subject has nothing to do with recompute timings can instead be
+# appended to the ROOT `test:gates` script, which is outside that closure
+# and which this step already invokes — see the `//test:gates` note in the
+# root package.json, which is the register of what is entered there and
+# why. Among them: the TS-engine surface gate (causl/causl-wasm-ts#282);
+# the workspace runner-reachability gate (causl/causl-wasm-ts#383,
+# `tools/audit/check-workspace-scripts.ts`), whose subject is the
+# workspace manifests themselves and whose own fixture is the root
+# `scripts` map it parses; and the functional-suite lane gate
+# (causl/causl-wasm-ts#425), which has to run HERE because the suite it
+# pins runs only on the release and nightly lanes, so a gate living
+# solely inside that suite would vanish with the step it protects.
+#
+# That second one closes the class this step's own comments record twice
+# below. `pnpm -r --filter '<path>' run <name>` dispatches by script
+# NAME, and a MATCHED package that does not define the name is skipped in
+# silence with a zero exit. `packages/sync-testing-internal` defined
+# `test` and not `test:run`, so `pnpm test:run` reported nine packages
+# green while the tenth held 23 failing cells, and nine read as complete.
+# The gate makes a package inside a workspace filter that defines `test`
+# without `test:run` a FAILURE rather than a skip.
+#
+# Since causl/causl-wasm-ts#466 the gate reads the filters and the member
+# list out of `pnpm-workspace.yaml` rather than carrying `'./packages/*'`
+# as a literal. That literal is one of the TWO globs this workspace
+# declares, and for as long as it was the whole story the auditor could
+# not see `packages/core/testing` — the one member no recursive command
+# reached. It reported PASS over ten manifests while eleven were declared.
+#
+# The root `test:gates` and `build` runs now DO pass `--if-present`, which
+# reverses what this comment used to say, and the reason it used to say it
+# is preserved rather than dropped. Without the flag pnpm raises
+# ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT when NOBODY defines the name, so a
+# workspace that lost the script everywhere went red instead of reporting
+# green having run nothing (#317's failure mode). With it, a member that
+# does not define the name is skipped in silence, which is the whole class
+# this lane exists to refuse, so the choice is not free either way: nine of
+# the eleven members deliberately have no `test:gates` and two have no
+# `build`, and causl/causl-wasm-ts#466's cells require that a deliberate
+# absence be DECLARED
+# rather than skipped quietly. Rule 3 of `check-workspace-scripts.ts` takes
+# the lost guard back, by name and with the offending script printed, and
+# extends it to the `test:types` dispatch that never had it.
+#   5. The bare-`#N` reference gate (`pnpm refs`) and its own tests
+#      (`pnpm refs:test`). Offline, ~100 ms, no install beyond the one
+#      already done — it reads a committed snapshot of this repository's
+#      allocated numbers rather than calling the API. It belongs on the
+#      FAST lane rather than the release lane because a dangling or
+#      colliding citation is cheapest to fix in review, and worthless to
+#      catch after the text has shipped.
+#   6. The commitment audit (`pnpm audit:test && pnpm audit:commitments`),
+#      per causl/causl-wasm-ts#467. Offline, committed bytes only, about
+#      two seconds. The step's own comment records why it is here rather
+#      than release-side, and what had to be decided per gate before it
+#      could be here at all.
+#
+# What deliberately does NOT run here:
+#   - The functional suite (`pnpm test:run`)  -> release-side
+#     (see `release-publish.yml`, where it runs before the publish loop;
+#     the placement note at the top of this file records the trade)
+#   - E2E (Playwright, formula 60fps gate)  -> release-side
+#   - size-limit / bundle-budget            -> release-side
+#     (see bundle-budget.yml — also documents the #19 carve-out)
+#   - wasm-pack matrix + bundler-interop    -> release-side
+#   - four-way classifier + apalache-diff    -> release-side / nightly
+#   - test-d / tsd gates                     -> release-side
+#
+# The commitment audit used to be listed here as release-side. It was not
+# running there either — no job in any workflow invoked it — and
+# causl/causl-wasm-ts#467 measured that the claim had been false for as
+# long as it had been written. It runs HERE now, as step 6 above.
+#
+# A new Rust crate landing in this repo (none today — the wasm.yml
+# crates are defensive-future) should add a sibling `cargo-fast` job
+# here that runs `cargo check` only; `cargo test` + `clippy -D warnings`
+# stay on the release lane.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: main-fast-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ts-fast:
+    name: TypeScript — typecheck + build + lint
+    runs-on: ubuntu-latest
+    steps:
+      # FULL history, not the depth-1 default (causl/causl-wasm-ts#419).
+      #
+      # `pnpm size:budget:test` runs `w7-capture.test.mjs`'s "each half of the
+      # pair still describes the tree at the commit it names", which resolves
+      # `before.json` / `after.json`'s recorded commits and re-hashes the
+      # artefact blob at each. A depth-1 clone has neither commit, and that cell
+      # deliberately FAILS rather than skipping: "a cell that silently asserts
+      # nothing is worse than a red one". Its remedy names this fix in as many
+      # words ("in a shallow clone, `git fetch --unshallow` restores them").
+      #
+      # So this step is what lets that gate be a gate here rather than a
+      # standing red. It was red on `main` for exactly this reason, in every run
+      # since Actions was enabled, which is the cost of a checkout default
+      # quietly disagreeing with a gate nobody could run to find out.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: 'pnpm'
+
+      - name: Install workspace deps
+        run: pnpm install --frozen-lockfile
+
+      # CI parity (causl/causl-wasm-ts#497). Reads this directory and the
+      # table in `.husky/pre-commit`'s header, and fails on a name in one and
+      # not the other. First because it is the cheapest step on the lane
+      # (nine files and two hooks, no network, no build, about 60ms) and
+      # because a contributor reads that table INSTEAD of reading these nine
+      # files, so a table that has drifted is worse than no table.
+      #
+      # It runs in the hook as well, and that is the point rather than a
+      # duplication: the hook is where the table is edited, so a drift should
+      # stop the commit that causes it, and this step is what survives a
+      # bypassed hook.
+      #
+      # Since causl/causl-wasm-ts#496 it also checks the level below the
+      # names: for every lane that fires on push or pull request to `main`,
+      # including this one, every command a developer's machine can run either
+      # runs in the hook the row names or carries a recorded reason it does
+      # not. So adding a step here without a local counterpart turns THIS step
+      # red, in the same pull request, rather than widening a gap nothing
+      # measures. The rule reads one way only: it never asks whether the
+      # hook's commands run here, so it cannot be used as an argument for
+      # putting the functional suite back on this lane.
+      - name: CI parity — its own tests, then the table vs this directory
+        run: pnpm ci:parity:test && pnpm ci:parity
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Lint
+        run: pnpm lint
+
+      # Source gates — the vitest files that read the repo's own bytes.
+      # After `build`, because one of them reads `packages/core/dist`.
+      # See the `test:gates` carve-out at the top of this file for why
+      # these run on the fast lane and the rest of the suite does not.
+      - name: Source gates
+        run: pnpm test:gates
+      # A bare `#N` in this repository's shipped text means this
+      # repository's tracker. Three moves left citations that dangle or,
+      # worse, resolve to an unrelated number here — see
+      # tools/reference-gate/check-issue-references.mjs for the chain and
+      # for what this gate deliberately does NOT catch.
+      - name: Reference gate — its own tests, then the sweep
+        run: pnpm refs:test && pnpm refs
+
+      # Bundle-budget gates. `pnpm size` (the ceiling enforcement itself)
+      # runs on the release lane per bundle-budget.yml's carve-out, but the
+      # three gates that keep the ceilings HONEST were only ever runnable by
+      # hand: `size:budget:test` existed as a package script that no workflow
+      # and no hook invoked. That is how README came to print 17.7 / 15.69 /
+      # 19.85 KB for cells measuring 19.58 / 17.56 / 20.54 kB, and how
+      # `documented-ceilings.test.mjs` came to assert "`pnpm size` exits 0"
+      # months after it stopped doing so. These tests read committed bytes
+      # only (config, README, the #282 capture manifest, the vendored
+      # `.wasm`), so they are deterministic and need no build.
+      - name: Bundle-budget gates — js-budget SSOT, documented ceilings, #282 capture
+        run: pnpm size:budget:test
+
+      # The commitment audit (causl/causl-wasm-ts#467). Its own unit suites
+      # first, then the real-repo sweep — the shape `refs:test && refs`
+      # above already uses.
+      #
+      # `tools/audit/run-all.ts` orchestrates nineteen predicate scripts,
+      # each of which prints a `PASS — …` line. Until this step existed,
+      # NOTHING invoked it: not a workflow, not a hook, and not another
+      # package script. Neither was `audit:test`, which holds those gates'
+      # own floors. So every one of those PASS lines was coverage nobody
+      # had collected, and `pnpm audit:commitments` was in fact RED on
+      # `main` — seven of the twenty-four failing, three of them on
+      # uncaught ENOENT stacks over a `tools/checker/` this repository does
+      # not vendor. That issue decided it per gate: six retired, the rest
+      # floored. See the `//audit` note in the root package.json for the
+      # decision, and `docs/commitment-audit.md` for the per-row ledger.
+      #
+      # It belongs on the FAST lane and not the release lane. Every script
+      # reads committed bytes — manifests, workflow files, markdown tables,
+      # test sources — with no build, no wasm sidecar and no network, and
+      # the whole sweep is about two seconds. A commitment that has drifted
+      # is cheapest to fix in the pull request that drifts it and worthless
+      # to catch after the release has shipped.
+      - name: Commitment audit — its own tests, then the orchestrator
+        run: pnpm audit:test && pnpm audit:commitments
+
+      # Build-provenance gates (#296/#299) and the engine-registry capture
+      # they are compared against (#367). Same story as `size:budget:test`
+      # directly above, and it had the same ending: `wasm:build:test` was a
+      # package script no workflow and no hook invoked, so
+      # `wasm-build-provenance-296.test.mjs` sat RED on `main` while the
+      # committed artefact gained the very stamp the cell asserted it did not
+      # have. Nothing reported it, because nothing ran it.
+      #
+      # These read committed bytes only — the vendored `.wasm`, the capture
+      # manifest, synthetic modules built in the test — so they need no wasm
+      # toolchain and no build. The engine-registry cells are offline too: the
+      # capture itself reaches the registry and is run BY HAND, in the change
+      # that repoints the pin.
+      - name: Build-provenance gates — #296 emitter, engine-registry capture
+        run: pnpm wasm:build:test && pnpm engine-registry:test
+
+      # Regression gate for #31: dist/testing.d.ts must not contain a
+      # bare `export * from '@causl/core-testing-internal'`, because that
+      # specifier does not resolve in any downstream node_modules (the
+      # internal workspace package is `private: true` and unpublished).
+      # The script packs @causl/core, installs the tarball into a
+      # throwaway dir outside the workspace, and runs `tsc --noEmit` on
+      # a tiny consumer file that imports from `@causl/causl-wasm-ts/testing`.
+      - name: '#31 regression — consumer typecheck against packed tarball'
+        run: bash scripts/check-core-testing-types.sh
+
+      # NO `pnpm test:run` STEP HERE, AND THAT IS A DECISION RATHER THAN AN
+      # OVERSIGHT (causl/causl-wasm-ts#425). The functional suite runs on
+      # the `release` push, in `release-publish.yml`, immediately after
+      # `Build all packages` and before the publish loop. Do not re-add it
+      # here without re-reading the placement note at the top of this file:
+      # `packages/core/test/functional-suite-lane-425.test.ts` pins the
+      # release lane as the one that runs it, so moving the step means
+      # moving that gate in the same change.

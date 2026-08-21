@@ -1,33 +1,72 @@
 name: wasm
+# This file declares a lane. Whether the lane fired is its run history on the
+# forge and not a sentence in this header: a forge setting copied into a
+# comment is a mutable fact recorded once, and it goes stale in silence
+# (causl/causl-wasm-ts#468). The "INERT, Actions is disabled" header that stood
+# here was exactly that copy. It recorded a real outage, 2026-08-04 through
+# 2026-08-07, when the Actions unit was switched off on causl/causl-wasm-ts and
+# on causl/causl-core-rs; that was repo-scoped rather than a runner or a forge
+# failure, the rest of the instance ran green throughout, and the header
+# outlived it. causl/causl-wasm-ts#409 moved every workflow here out of the
+# legacy forge root Gitea ignores, into the root it reads. See
+# `ci/parked/README.md`.
 
-# Issue #683 — wasm-pack build pipeline.
+# wasm-pack build pipeline — `iasbuilt/causl#683`.
 #
-# Sub-task of EPIC #680. Validates the three Rust bridge crates from
-# #682 compile to wasm32-unknown-unknown and that wasm-pack produces
-# the four artefacts the runtime loader (#684) selects between at
-# startup. Sequencing note: this workflow lands before #682, #693, and
-# #1006; it is defensively structured to skip cleanly when the bridge
-# crates do not yet exist on the branch under test.
+# ISSUE NUMBERS IN THIS FILE. A bare `#N` means `causl/causl-wasm-ts#N`.
+# This workflow was written in the predecessor monorepo and its numbers
+# came with it, so each of those is written `iasbuilt/causl#N`: that
+# tracker did not move here and none of its numbers resolves from this
+# repository. See the *Status* note in README.md.
+#
+# Sub-task of EPIC `iasbuilt/causl#680`. Validates that the three Rust
+# bridge crates compile to wasm32-unknown-unknown and that wasm-pack
+# produces the four artefacts the runtime loader selects between at
+# startup. Sequencing note: this workflow landed before the crates
+# themselves — `iasbuilt/causl#682`, `iasbuilt/causl#693`,
+# `iasbuilt/causl#1006`; it is
+# defensively structured to skip cleanly when the bridge crates do not
+# yet exist on the branch under test.
 #
 # Job layout:
-#
-#   - cargo-check: workspace-wide `cargo check`. Fast guard against the
-#     enumerator pulling wasm-bindgen into its native dep tree (the
-#     architectural failure mode #682 calls out). Skipped if no root
-#     Cargo.toml exists yet.
 #
 #   - wasm-pack: matrix on (crate × features) for the three artefacts.
 #     Defensively skips per-target when the crate dir is absent. Each
 #     job runs `pnpm wasm:build:check` first to surface any wasm-pack
 #     install issue with a clean message before the heavyweight build.
 #
-# Triggers: push to main + pull_request. Pre-EPIC-#680 we run on every
-# PR — once #682 lands and the three crates fill in, we may want to
-# add a paths filter (`tools/engine-rs-*/**`, `.github/workflows/wasm.yml`)
+# THE `cargo-check` JOB IS GONE (causl/causl-wasm-ts#471). It was named
+# `cargo check (workspace, defensive)`, and a `Detect workspace` step set
+# a flag from `[ -f Cargo.toml ] && grep -q '[workspace]' Cargo.toml`
+# that all four of its working steps hung their `if:` on. The predicate
+# reads THIS repository, which carries zero Rust and no root Cargo.toml,
+# so the flag was permanently false and the job published a green status
+# having run one condition. Measured on the release head `d8c5f97`
+# (`GET /repos/causl/causl-wasm-ts/commits/d8c5f97…/statuses`,
+# 2026-08-09): `wasm / cargo check (workspace, defensive) (push)` is
+# `success` on a commit where `wasm-pack build`, all three
+# `bundler-interop` legs and `bundle-budget` are `failure`. The one green
+# cell on that board is the job that executed nothing.
+#
+# Its wasm-shim leak check went with it, and not for want of caring about
+# the invariant (`iasbuilt/causl#682`: the native enumerator must not
+# pull wasm-bindgen / js-sys / serde-wasm-bindgen transitively). The
+# crate it read is in neither repository this workflow can reach. This
+# repo has no `tools/enumerator`, and the sibling `causl/causl-core-rs`
+# workspace at `tools/Cargo.toml` lists exactly `engine-rs-core` and
+# `engine-rs-bridge` as members, its own header recording that `checker`
+# and `enumerator` moved to the sibling `causl-check` / `causl-bench`
+# repositories. That check belongs beside the crate it reads; re-land it
+# there, or here on the day a `[workspace]` root and that crate arrive
+# together.
+#
+# Triggers: push to main + pull_request. Before the bridge crates
+# existed we ran on every PR — now that they fill in, we may want to
+# add a paths filter (`tools/engine-rs-*/**`, `.gitea/workflows/wasm.yml`)
 # to skip on PRs that don't touch the wasm side; deferred until the
 # pipeline is doing real work.
 
-# Triggers (CI split — see .github/workflows/main-fast.yml header):
+# Triggers (CI split — see .gitea/workflows/main-fast.yml header):
 #   - PRs targeting `release` (merge-gate verification)
 #   - push to `release` (post-merge re-verification)
 #   - workflow_dispatch (ad-hoc / re-run)
@@ -46,69 +85,19 @@ on:
 # Cancel superseded runs on the same branch — the Rust toolchain
 # install is the slow step and there is no reason to keep stale runs
 # alive once a newer commit lands. Mirrors the convention in
-# .github/workflows-disabled/ci.yml.
+# ci/parked/ci.yml.
 concurrency:
   group: wasm-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  cargo-check:
-    name: cargo check (workspace, defensive)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      # Defensive — #682 lands the workspace Cargo.toml. Until then the
-      # only Rust crates are tools/checker and tools/enumerator (each
-      # with its own Cargo.toml, no workspace root). Skip cleanly so
-      # the workflow runs on every PR without false-failing.
-      - name: Detect workspace
-        id: detect
-        run: |
-          if [ -f Cargo.toml ] && grep -q '\[workspace\]' Cargo.toml; then
-            echo "has_workspace=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_workspace=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No root Cargo.toml workspace found yet — lands in #682. Skipping cargo check."
-          fi
-
-      - uses: dtolnay/rust-toolchain@stable
-        if: steps.detect.outputs.has_workspace == 'true'
-        with:
-          targets: wasm32-unknown-unknown
-
-      - uses: Swatinem/rust-cache@v2
-        if: steps.detect.outputs.has_workspace == 'true'
-
-      - name: cargo check --workspace
-        if: steps.detect.outputs.has_workspace == 'true'
-        run: cargo check --workspace --all-targets
-
-      # The architectural invariant from #682: the native enumerator
-      # MUST NOT pull wasm-bindgen / js-sys / serde-wasm-bindgen
-      # transitively. Verified via cargo tree once the crate exists.
-      - name: enumerator cleanliness gate (no wasm-bindgen leak)
-        if: steps.detect.outputs.has_workspace == 'true'
-        run: |
-          if [ -d tools/enumerator ]; then
-            tree=$(cargo tree -p causl-enumerator --no-default-features --edges normal 2>/dev/null || true)
-            if echo "$tree" | grep -E '(^|[^a-z-])(wasm-bindgen|js-sys|serde-wasm-bindgen)([^a-z-]|$)' >/dev/null; then
-              echo "::error::wasm-bindgen / js-sys / serde-wasm-bindgen leaked into causl-enumerator dep tree (per #682 invariant)"
-              echo "$tree"
-              exit 1
-            fi
-            echo "OK: enumerator dep tree is wasm-shim-free"
-          else
-            echo "::notice::tools/enumerator absent in current tree — skipping cleanliness gate"
-          fi
-
   wasm-pack:
     # Issue #10 — build the CONSOLIDATED `causl-engine-bridge` artefact
-    # from the sibling `causljs/causl-wasm` checkout. THIS repo carries
+    # from the sibling `causl/causl-core-rs` checkout. THIS repo carries
     # ZERO Rust source: the crate lives in causl-wasm at
-    # `tools/engine-rs-bridge`. `pnpm wasm:build` iterates the two
-    # string-strategy feature variants (gc-builtins js-string-builtins /
-    # gc-classic classic-strings) internally and ENFORCES the size gate
+    # `tools/engine-rs-bridge`. `pnpm wasm:build` builds the one
+    # string-strategy feature variant (gc-classic classic-strings) and
+    # ENFORCES the size gate
     # (700 KB raw / 200 KB Brotli) per artefact — see
     # `tools/wasm-build/build.mjs`. This replaces the retired split-crate
     # `engine_rs` lineage (`tools/engine-rs-bridge-serde` /
@@ -127,14 +116,13 @@ jobs:
       # Sibling engine source. `build.mjs` resolves the crate at
       # `${CAUSL_WASM_PATH}/tools/engine-rs-bridge`; check out causl-wasm
       # INSIDE the workspace and point CAUSL_WASM_PATH at it (actions/
-      # checkout cannot write outside the workspace, so the `../causl-wasm`
+      # checkout cannot write outside the workspace, so the `../causl-core-rs`
       # default is overridden via the env var on the build step below).
       - name: Check out causl-wasm (consolidated bridge crate)
         id: engine_src
-        continue-on-error: true
         uses: actions/checkout@v4
         with:
-          repository: causljs/causl-wasm
+          repository: causl/causl-core-rs
           path: causl-wasm
           token: ${{ secrets.CAUSL_WASM_TOKEN || secrets.GITHUB_TOKEN }}
 
@@ -148,17 +136,6 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Sanity-check the driver before we install the Rust toolchain.
-      # If wasm-pack is missing or the script is broken, fail loud
-      # with the install incantation.
-      - name: pnpm wasm:build --check (driver sanity)
-        run: |
-          # `--check` is permitted to fail with the explicit
-          # "wasm-pack not installed" message — that is the
-          # validation criterion in #683. We expect success here
-          # because the next step installs wasm-pack.
-          pnpm wasm:build:check || echo "::warning::driver check failed pre-toolchain — expected if wasm-pack not yet installed"
-
       - name: Detect consolidated bridge crate
         id: detect
         run: |
@@ -166,11 +143,14 @@ jobs:
           if [ -d "$CRATE_DIR" ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
             # Export the absolute crate root for `build.mjs` (it reads
-            # CAUSL_WASM_PATH, falling back to ../causl-wasm otherwise).
+            # CAUSL_WASM_PATH, falling back to ../causl-core-rs otherwise).
             echo "CAUSL_WASM_PATH=${{ github.workspace }}/causl-wasm" >> "$GITHUB_ENV"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::sibling causljs/causl-wasm not checked out (no CAUSL_WASM_TOKEN read access?) — skipping in-repo rebuild. The committed artefact is still gated by 'pnpm size'."
+            echo "::error::sibling causl/causl-core-rs bridge crate not checked out — the wasm rebuild would silently no-op."
+            echo "::error::A skipped rebuild reports GREEN while testing an engine that was never built (see #265, split into #305)."
+            echo "::error::Check the causl/causl-core-rs path and CAUSL_WASM_TOKEN read access."
+            exit 1
           fi
 
       - uses: dtolnay/rust-toolchain@stable
@@ -189,14 +169,42 @@ jobs:
           fi
           wasm-pack --version
 
-      # Issue #1085 — bundle-size enforcement gate. The driver in
+      # Driver sanity, ahead of the two heavy installs below (binaryen 119
+      # is a tarball fetch, `pnpm wasm:build` is the wasm-pack compile).
+      # `--check` resolves the crate, names the engine revision, verifies
+      # wasm-pack, prints the wasm-pack invocation it WOULD run, and
+      # asserts the committed bridge tree is one the loader can boot. It
+      # writes nothing.
+      #
+      # POSITION IS LOAD-BEARING (causl/causl-wasm-ts#471). This step used to sit between
+      # `pnpm install` and `Detect consolidated bridge crate`, and it ended
+      # in `|| echo "::warning::…"`, which replaces the exit status with 0
+      # and makes a step unable to fail. The tail was hiding a step that
+      # could never have passed where it stood: `--check` resolves the
+      # crate through CAUSL_WASM_PATH, which `Detect` had not exported yet,
+      # and calls `ensureWasmPack()`, which `Install wasm-pack` had not
+      # satisfied yet. Both preconditions are met here, so the check is a
+      # real question with a real answer and it fails loud on a bad one.
+      # Verified locally against the sibling checkout:
+      # `CAUSL_WASM_PATH=… pnpm wasm:build:check` exits 0 and reports
+      # `built: gc-classic-bundler`.
+      - name: pnpm wasm:build --check (driver sanity)
+        run: |
+          if ! pnpm wasm:build:check; then
+            echo "::error::the wasm build driver refused before the build ran."
+            echo "::error::wasm-pack: install with \`curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh\`."
+            echo "::error::crate: build.mjs reads CAUSL_WASM_PATH (exported by the Detect step above) and falls back to ../causl-core-rs."
+            exit 1
+          fi
+
+      # Bundle-size enforcement gate (`iasbuilt/causl#1085`). The driver in
       # `tools/wasm-build/build.mjs` shells out to an external
       # `wasm-opt` (binaryen) with `--enable-reference-types
       # --enable-gc --enable-nontrapping-float-to-int` because
       # wasm-pack 0.14.0's bundled wasm-opt is from a pre-WasmGC
       # binaryen release and rejects those flags. Pin binaryen 119
       # (December 2024 — first release with stable WasmGC support).
-      - name: Install binaryen (wasm-opt) for #1085 size gate
+      - name: Install binaryen (wasm-opt) for the artefact size gate
         if: steps.detect.outputs.present == 'true'
         run: |
           BINARYEN_VERSION=119
@@ -207,43 +215,83 @@ jobs:
           sudo cp -r /tmp/binaryen-version_${BINARYEN_VERSION}/lib/* /usr/local/lib/ 2>/dev/null || true
           wasm-opt --version
 
-      - name: pnpm wasm:build (real build + #1085 size gate)
+      - name: pnpm wasm:build (real build + artefact size gate)
         if: steps.detect.outputs.present == 'true'
         # `pnpm wasm:build` now runs wasm-pack → wasm-opt -Oz → raw +
-        # Brotli q11 budget check per artefact (issue #1085). A bridge
+        # Brotli q11 budget check per artefact. A bridge
         # that crosses its SPEC §17.6 cap fails the step with the
         # `BUDGET EXCEEDED` line in the driver log.
         run: pnpm wasm:build
 
+      # @v3, not @v4: this forge refuses v4+ outright. Measured on the
+      # 0.5.0 cut (#424): `::error::upload-artifact@v4+ are not
+      # currently supported on GHES.` The step failed on every run of
+      # this job that reached it.
       - name: Upload artefact
         if: steps.detect.outputs.present == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
-          # The consolidated build emits both feature variants under
-          # `packages/core/wasm-pkg/{gc-builtins,gc-classic}-bundler/`;
-          # upload the whole tree as one artefact.
+          # The consolidated build emits one feature variant, under
+          # `packages/core/wasm-pkg/gc-classic-bundler/` (the gc-builtins
+          # variant was retired by causl/causl-core-rs#355); upload the
+          # whole tree as one artefact.
           name: wasm-pkg-consolidated
           path: packages/core/wasm-pkg/
           if-no-files-found: warn
           retention-days: 7
 
-      # Issue #1085 — second-layer raw-byte gate via `size-limit`. The
+      # Eight of the nine size-limit cells measure `packages/*/dist/*`,
+      # and nothing in this job built them (#453). The job ran checkout ->
+      # `pnpm install` -> `pnpm wasm:build` -> `pnpm size`, so every
+      # `dist/` was absent and the glob behind each cell path matched
+      # nothing. A cell that also declares `import` is then keyed on
+      # `files[0]` (size-limit's `get-config.js`), which for an empty
+      # match is `undefined`, and esbuild reported the result:
+      #
+      #     Could not resolve "/workspace/causl/causl-wasm-ts/undefined"
+      #     import { createCausl } from ".../undefined"
+      #
+      # The throw lands inside the plugin loop, BEFORE `calc.js` marks a
+      # cell `missed`, so the accurate line size-limit already knows how
+      # to print for this exact condition (`Size Limit can't find files
+      # at packages/core/dist/index.js`) never got a turn. The gate had
+      # never once passed. `.husky/pre-commit` builds before its own size
+      # step and its comment says why; this job was the one place that
+      # ran the gate without a build.
+      #
+      # A PATH filter via the root `build` script, not a name filter:
+      # `--filter @causl/core` matched nothing after the rename and pnpm
+      # answers an unmatched filter with exit code 0 (#424), which is how
+      # a build step comes to build nothing and pass.
+      - name: Build packages (the JS cells' subject)
+        if: steps.detect.outputs.present == 'true'
+        run: pnpm build
+
+      # Second-layer raw-byte gate via `size-limit`. The
       # `pnpm wasm:build` step above already failed the build on cap
-      # violation; running `pnpm size` against the `size-limit` cells
-      # in root `package.json` re-verifies the raw caps with an
+      # violation; running `pnpm size` re-verifies the raw caps with an
       # independent tool, catches drift between the driver's hardcoded
-      # table and the package.json cells, and produces the canonical
+      # table and the declared cells, and produces the canonical
       # `size — bundle-size gate` summary the repo conventions expect.
-      - name: Size-limit cells (raw bytes) — #1085 second gate
+      #
+      # WHERE THE CELLS ARE DECLARED. This comment named root
+      # `package.json` until #453, and had done since the cells left it.
+      # The authority is `.size-limit.cjs` at the repo root: size-limit
+      # walks `searchPlaces` with the manifest FIRST, so a sibling config
+      # is ignored for as long as the manifest carries a `size-limit`
+      # key, and that key was dropped when the file was added. The rest
+      # of the rationale is in that file's header (one cell needs a
+      # `modifyEsbuildConfig` FUNCTION, which JSON cannot hold).
+      - name: Size-limit cells (raw bytes) — second artefact gate
         if: steps.detect.outputs.present == 'true'
         run: pnpm size
 
   bundler-interop:
     name: bundler-interop (${{ matrix.fixture }})
     runs-on: ubuntu-latest
-    # Issue #689 — three minimal fixture apps under e2e/bundler-interop/
+    # Three minimal fixture apps under e2e/bundler-interop/
     # that import `@causl/core` (main barrel) and dynamically import
-    # `@causl/core/wasm` (lazy-load entry). Each fixture's `verify.mjs`
+    # `@causl/causl-wasm-ts/wasm` (lazy-load entry). Each fixture's `verify.mjs`
     # enforces the bundle-no-wasm-leak invariant: the main chunk must
     # not contain the `loadWasmBackend` / `WasmBackendUnavailableError`
     # sentinels, and some other chunk MUST contain them (proves the
@@ -252,11 +300,12 @@ jobs:
     #
     # Failures attributable to a specific bundler are labelled by the
     # matrix-leg name, satisfying the "labelled per bundler" piece of
-    # #689's exit criterion.
+    # the gate's exit criterion (`iasbuilt/causl#689`, whose tracker did
+    # not move here — these three fixtures are the specification now).
     #
     # Per-fixture install runs with `npm install --no-save` rather than
     # via pnpm: the fixtures live OUTSIDE the workspace by design
-    # (#689 — fixtures must mirror how an external adopter consumes
+    # (fixtures must mirror how an external adopter consumes
     # `@causl/core`, not a workspace member that can resolve devDeps
     # the wild adopter wouldn't have access to). The `file:` specifier
     # in each fixture's package.json resolves into the freshly-built
@@ -285,8 +334,15 @@ jobs:
       # The fixtures consume `@causl/core` via a `file:` specifier that
       # points at `packages/core/`. The bundler reads `packages/core/dist/`
       # via the package's `exports` map, so a build must happen first.
-      - name: Build @causl/core
-        run: pnpm --filter @causl/core run build
+      #
+      # A PATH filter, not a name filter: see the note on the same step
+      # in differential-pr.yml. `--filter @causl/core` has not matched
+      # anything since the rename (#288, #291), and pnpm answers an
+      # unmatched filter with `No projects matched the filters` and
+      # EXIT CODE 0, so this step built nothing and passed (#424). A
+      # directory cannot go stale from a package rename.
+      - name: Build the core package
+        run: pnpm --filter './packages/core' run build
 
       # Stub the wasm-pkg artifact tree so bundlers that statically
       # analyse `new URL('./pkg/...', import.meta.url)` (notably
@@ -296,7 +352,7 @@ jobs:
       # throws before reaching the fetch path. See
       # `e2e/bundler-interop/stub-wasm-pkg.mjs` for the rationale.
       #
-      # Once the real wasm-pack pipeline (#683 / #682) produces
+      # Once the real wasm-pack pipeline produces
       # artifacts and they land on disk before this job, the stubs
       # become a no-op overwrite — drop this step then.
       - name: Stub wasm-pkg artifacts (bundler resolver bait)

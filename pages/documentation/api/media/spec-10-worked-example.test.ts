@@ -28,8 +28,19 @@
  * but §8 is a claim about the engine itself).
  */
 
-import { describe, expect, it } from 'vitest'
-import { createCausl, type Graph } from '../src/index.js'
+import { beforeAll, describe, expect, it } from 'vitest'
+import type { Graph } from '../src/index.js'
+import { createCauslWasmSync, preloadCauslWasm } from '../wasm/index.js'
+
+// #279 (W4) — ported off the deleted `createCauslTs` onto the engine that
+// ships. This file is SPEC §10's acceptance gate: "if this works, the engine
+// is real". It was never a claim about the TS floor, it is a claim about
+// whatever engine Causl ships, so after #279 the only honest place to run it
+// is rust-ssot. The preload resolves the bridge ONCE for the file and
+// `createCauslWasmSync()` is then synchronous, so no cell becomes async.
+beforeAll(async () => {
+  await preloadCauslWasm({ bridge: 'wasmgc-classic' })
+})
 
 /**
  * Acceptance suite for the smallest worked example. Each test pins
@@ -47,7 +58,7 @@ describe('SPEC §10 worked example', () => {
     // Arrange: assemble the worked-example graph and record observed values.
     const log: number[] = []
 
-    const graph = createCausl()
+    const graph = createCauslWasmSync()
     const a = graph.input('a', 1)
     const b = graph.input('b', 2)
     const sum = graph.derived('sum', (get) => get(a) + get(b))
@@ -78,7 +89,7 @@ describe('SPEC §10 worked example', () => {
    * propagation.
    */
   it('demonstrates the four invariants the example calls out', () => {
-    const graph = createCausl()
+    const graph = createCauslWasmSync()
 
     // (1) atomic commit — two writes in one tx must produce one consistent emission.
     const a = graph.input('a', 1)
@@ -112,10 +123,59 @@ describe('SPEC §10 worked example', () => {
     const baseline = chosenComputes
     // Negative half: touching `a` afterwards must not wake `chosen`, since it
     // no longer reads `a`. The stale `a → chosen` edge must have been dropped.
+    //
+    // DIVERGENCE, PINNED — NOT WEAKENED (#279 W4). SPEC §10.3 spells this
+    // half `expect(chosenComputes).toBe(baseline)` and `createCauslTs()`
+    // delivered exactly that. `createCauslWasmSync()` recomputes `chosen`
+    // exactly ONCE more here. Cause, read off the source rather than guessed:
+    // the interim causl-client#103 rewire lift re-registers the rewired dep
+    // set after the commit window closes (`wasm/authoritative.ts`, the
+    // `#pendingRewires` drain), and `causl-core-rs`'s `RegisterDerived` apply
+    // arm (`tools/engine-rs-bridge/src/apply_commands.rs`, step 2) REPLACES
+    // `cell.deps` and then calls `register_dep` for the new deps without ever
+    // calling `unregister_dep` for the ones the prior registration owned. So
+    // `State.dependents[a]` still names `chosen` while the forward adjacency
+    // no longer does — `graph.dependents(a)` is already `[]` at this point,
+    // which is why nothing that reads the structural facade can see it — and
+    // the Kahn drain walks the stale reverse edge one last time. Owner:
+    // `causl/causl-core-rs#217`, whose Problem statement is this symptom
+    // ("keeps all stale edges forever, causing spurious recomputes on every
+    // future change to `a`") and whose fix swept only the sibling site in
+    // `compute_bridge.rs`. Two-directional ratchet: the day the apply arm
+    // unregisters, this line goes RED and the commit that restores
+    // `toBe(baseline)` is the commit that strikes the divergence record in
+    // `fixtures/cross-engine/dispositions/spec-10-worked-example.disposition.ts`.
+    // RATCHET FIRED (causl/causl-core-rs#217, PR #348, `ccacc049`). The block
+    // above named the condition exactly: "the day the apply arm unregisters,
+    // this line goes RED and the commit that restores `toBe(baseline)` is the
+    // commit that strikes the divergence record". The apply arm now
+    // unregisters. This assertion read `toBe(baseline + 1)`; SPEC §10.3 spells
+    // it `toBe(baseline)`, and both engines now deliver that.
     graph.commit('bump-a-not-read', (tx) => tx.set(a, 999))
+    expect(
+      chosenComputes,
+      'a write to the input `chosen` no longer reads recomputed it. §10.3 ' +
+        'requires the abandoned edge to be retired at the recompute that ' +
+        'abandoned it; a count of baseline + 1 here is a REGRESSION of ' +
+        'causl/causl-core-rs#217.',
+    ).toBe(baseline)
+    // …and it is LATE by exactly one commit, not ABSENT. The recompute the
+    // line above pins re-captures the read set through the FIXED
+    // compute-bridge path, which drops the stale edge — so a SECOND mutation
+    // of the dropped input is silent and §10.3's negative half holds from
+    // here on. This cell is load-bearing: without it the pin above could not
+    // distinguish a one-commit lag from an engine with no two-sided cleanup
+    // at all, and "rust recomputes more" would be an unfalsifiable note.
+    // …and it is ABSENT, not merely late. This cell was load-bearing when the
+    // line above pinned a one-commit lag — it is what distinguished a lag from
+    // an engine with no two-sided cleanup at all. It stays, now asserting that
+    // the second mutation is silent for the same reason the first is.
+    graph.commit('bump-a-still-not-read', (tx) => tx.set(a, 1000))
     expect(chosenComputes).toBe(baseline)
     // Positive half: touching `b` must wake `chosen` exactly once and the
-    // observed value must follow `b`. The fresh `b → chosen` edge must be live.
+    // observed value must follow `b`. The fresh `b → chosen` edge must be
+    // live. Green on rust-ssot unedited — the widened half of §10.3 is
+    // honoured, so the divergence above is one-sided.
     graph.commit('bump-b-now-read', (tx) => tx.set(b, 42))
     expect(chosenComputes).toBe(baseline + 1)
     expect(graph.read(chosen)).toBe(42)
@@ -170,7 +230,7 @@ describe('SPEC §10 worked example', () => {
     // Assemble the worked-example graph. The structure is identical
     // to the verbatim test; only the *write path* changes.
     const log: number[] = []
-    const graph = createCausl()
+    const graph = createCauslWasmSync()
     const a = graph.input('a', 1)
     const b = graph.input('b', 2)
     const sum = graph.derived('sum', (get) => get(a) + get(b))
