@@ -385,10 +385,71 @@
    *  filter UI mutates and the renderer reads. Re-renders are
    *  triggered by `applyFilters()`.
    *  ---------------------------------------------------------------- */
+  /** capturedAt of the first run in the comparable era, or null when
+   *  the whole history is one era. Read by the chart renderer to draw
+   *  the boundary rule when the earlier runs are switched on. */
+  let eraBoundaryCapturedAt = null
+
   const filterState = {
     libraries: null, // Set<string>, populated on first render
     scenarios: null, // Set<string>
     scales: null, // Set<number>
+    /** Show history from before the current library set existed.
+     *  Off by default: see comparableEraStart(). */
+    fullHistory: false,
+  }
+
+  /** ----------------------------------------------------------------
+   *  The comparable era.
+   *
+   *  `history.json` reaches back to 2026-05, and the wasm engine was
+   *  not measured until 2026-07-29. Every entry before that carries
+   *  causl-ts, jotai, mobx and redux-toolkit and NO causl-wasm, because
+   *  there was no attested Rust-engine measurement to carry: the two
+   *  wasm-labelled series that once sat there were deleted outright
+   *  (see the series-id note at the top of this file) rather than
+   *  relabelled, and back-filling them now would re-commit the defect
+   *  that deletion fixed.
+   *
+   *  Charted across the whole range, that reads as a defect in the
+   *  suite rather than a fact about when the engine started being
+   *  measured: causl-ts draws a line across 32 runs and causl-wasm a
+   *  stub across the last 4. The same is true of redux, which is
+   *  `redux-toolkit` for the old era and `redux-rtk` for the new.
+   *
+   *  So the default window is the longest SUFFIX of history over which
+   *  the measured library set does not change, which is the range over
+   *  which the series are actually comparable. Nothing is hidden: the
+   *  earlier runs are one checkbox away, and turning them on marks the
+   *  boundary on every chart rather than blending the two eras.
+   *
+   *  Derived from the data, never hard-coded to a date, so it stays
+   *  correct the next time a library is added or retired.
+   *
+   *  @param {Array} history
+   *  @returns {number} index of the first entry in the comparable era
+   *  ---------------------------------------------------------------- */
+  function comparableEraStart(history) {
+    if (!Array.isArray(history) || history.length === 0) return 0
+    const libsOf = (e) => {
+      const set = new Set()
+      for (const smp of e.samples ?? []) if (smp.library) set.add(smp.library)
+      return set
+    }
+    const sameLibs = (a, b) => a.size === b.size && [...a].every((l) => b.has(l))
+    // Walk back from the newest run while the library set is unchanged.
+    const latest = libsOf(history[history.length - 1])
+    if (latest.size === 0) return 0
+    let start = history.length - 1
+    while (start > 0) {
+      const prev = history[start - 1]
+      // Entries with no samples at all carry no library claim; step
+      // over them rather than letting one end the era.
+      const prevLibs = libsOf(prev)
+      if (prevLibs.size > 0 && !sameLibs(prevLibs, latest)) break
+      start -= 1
+    }
+    return start
   }
 
   /** ----------------------------------------------------------------
@@ -926,6 +987,28 @@
     }
     const yTicks = yTickValues.map(tick).join('')
 
+    // Era boundary. Only drawn when the pre-boundary runs are switched
+    // on: to the left of this rule the library set is different, so a
+    // line that begins AT the rule began being measured there and is
+    // not a series that dropped out earlier. Marking it beats blending
+    // the two eras silently, which is what made the older runs read as
+    // a gap in the newer series.
+    let eraRule = ''
+    if (filterState.fullHistory && eraBoundaryCapturedAt) {
+      const bIdx = runIndex.get(eraBoundaryCapturedAt)
+      if (Number.isFinite(bIdx) && bIdx > 0) {
+        const bx = xAt(bIdx - 0.5)
+        eraRule =
+          `<g class="era-boundary" data-captured-at="${escapeHtml(eraBoundaryCapturedAt)}">` +
+          `<line x1="${bx.toFixed(2)}" y1="${PAD_T}" x2="${bx.toFixed(2)}" ` +
+          `y2="${(PAD_T + innerH).toFixed(2)}" stroke="rgba(169,181,201,0.55)" ` +
+          `stroke-width="1" stroke-dasharray="3 3" />` +
+          `<text x="${(bx + 4).toFixed(2)}" y="${(PAD_T + 10).toFixed(2)}" ` +
+          `font-size="9" fill="#A9B5C9">library set changes</text>` +
+          `</g>`
+      }
+    }
+
     // Per-series bands + lines + dots. Order matters: bands first
     // (so lines draw on top of all bands and aren't visually
     // covered by a later band), then median lines, then dots.
@@ -1074,6 +1157,7 @@
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" ` +
       `role="img" aria-label="${escapeHtml(ariaLabel)}">` +
       yTicks +
+      eraRule +
       allBands +
       allLines +
       xAxisLine +
@@ -1577,6 +1661,42 @@
     host.appendChild(scnFs)
     host.appendChild(scaleFs)
 
+    // The era switch. A single checkbox rather than a fieldset: it is
+    // one boolean about the x-axis, not a set membership question.
+    if (eraBoundaryCapturedAt) {
+      const eraFs = document.createElement('fieldset')
+      eraFs.className = 'filter-group'
+      eraFs.setAttribute('aria-label', 'Show runs from before the current library set')
+      const eraLegend = document.createElement('legend')
+      eraLegend.className = 'filter-legend'
+      eraLegend.textContent = 'History'
+      eraFs.appendChild(eraLegend)
+      const eraList = document.createElement('div')
+      eraList.className = 'filter-list'
+      const eraLabel = document.createElement('label')
+      eraLabel.className = 'filter-chip'
+      const eraCb = document.createElement('input')
+      eraCb.type = 'checkbox'
+      eraCb.checked = filterState.fullHistory
+      eraCb.addEventListener('change', () => {
+        filterState.fullHistory = eraCb.checked
+        onChange()
+      })
+      const eraText = document.createElement('span')
+      eraText.textContent = `include runs before ${formatShortDate(eraBoundaryCapturedAt)}`
+      eraLabel.title =
+        'Runs before this date measured a different set of libraries: the wasm ' +
+        'engine was not measured until then, and redux was published under a ' +
+        'different runner id. Their series are real, they are just not ' +
+        'comparable across the boundary, so the charts leave them out by ' +
+        'default and mark the boundary when you switch them on.'
+      eraLabel.appendChild(eraCb)
+      eraLabel.appendChild(eraText)
+      eraList.appendChild(eraLabel)
+      eraFs.appendChild(eraList)
+      host.appendChild(eraFs)
+    }
+
     // "Reset" / "All on" affordances: small text buttons so power
     // users can flip the gate without clicking through every chip.
     const actions = document.createElement('div')
@@ -1679,7 +1799,15 @@
       `<div><strong>Source</strong> ${escapeHtml(sourceLabel)}</div>`
     host.appendChild(meta)
 
-    const allSections = sortSections(groupSections(history))
+    // The comparable era. Sections are rebuilt whenever this changes,
+    // because the window decides which runs share the x-axis.
+    const eraStart = comparableEraStart(history)
+    const eraBoundaryAt = eraStart > 0 ? history[eraStart].capturedAt : null
+    eraBoundaryCapturedAt = eraBoundaryAt
+    const windowed = () =>
+      filterState.fullHistory || eraStart === 0 ? history : history.slice(eraStart)
+
+    const allSections = sortSections(groupSections(windowed()))
     if (allSections.length === 0) {
       const empty = document.createElement('p')
       empty.className = 'dashboard-empty'
@@ -1729,9 +1857,21 @@
     gridHost.className = 'dashboard-grid'
     host.appendChild(gridHost)
 
-    const onChange = () => renderGrid(gridHost, allSections)
+    // Toggling the era changes which runs share the x-axis, so the
+    // sections are rebuilt rather than re-filtered. Every other filter
+    // only decides what is drawn from sections already built.
+    let sections = allSections
+    let lastFullHistory = filterState.fullHistory
+    const onChange = () => {
+      if (filterState.fullHistory !== lastFullHistory) {
+        lastFullHistory = filterState.fullHistory
+        sections = sortSections(groupSections(windowed()))
+        seedFilterState(sections)
+      }
+      renderGrid(gridHost, sections)
+    }
     renderFilterUI(filterHost, onChange)
-    renderGrid(gridHost, allSections)
+    renderGrid(gridHost, sections)
   }
 
   /** Try the live URL, fall back to the sample stub. */
