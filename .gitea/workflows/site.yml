@@ -1,0 +1,60 @@
+# The check this repository runs on its own forge.
+#
+# WHY THIS FILE IS HERE AND NOT IN `.github/workflows/`
+# ----------------------------------------------------
+# This repository lives on two forges at once, and they want different things.
+#
+# The forge this file runs on is where the source lives and where review
+# happens. It has no Pages product at all.
+#
+# The public mirror is where causl.org is actually served from, by
+# `.github/workflows/static.yml`, which is a stock Pages deploy: it calls
+# `actions/configure-pages`, that action asks the host's Pages API to describe
+# the site, and the host answers. Leave that file exactly where it is. It is
+# the only thing publishing the site.
+#
+# The problem it caused here is that both forges read `.github/workflows/`, and
+# only one of them has a Pages API to answer with. On this one
+# `actions/configure-pages` got a flat `404 page not found`, the step failed,
+# the upload and deploy steps skipped, and the run went red. That happened on
+# every single push to `main` from the first run onwards: eleven runs, eleven
+# failures, all of them the same step, while the site itself published fine
+# from the mirror the whole time. A permanently red `main` that nobody can act
+# on is worse than no signal, because it trains people to stop reading the
+# colour.
+#
+# The fix is that each forge now runs the workflow it can actually finish. This
+# forge reads `.gitea/workflows/` exclusively once the directory exists and
+# ignores `.github/` entirely, so creating this file is what routes the Pages
+# deploy to the mirror that can do it. The other causl repositories already
+# work this way; `causl/causl-core-rs#345` found the rule the hard way, with
+# two workflows sitting in the ignored root and never running.
+#
+# That left this forge with nothing to say about a commit, so it says something
+# useful instead: whether the site would still publish correctly. See
+# `scripts/check-site.mjs` for what it reads and why each check is there.
+
+name: site
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Recorded rather than assumed: the gate is a plain node script with no
+      # dependencies and no install step, so the runtime the image happens to
+      # ship is the whole toolchain.
+      - name: Record the node version
+        run: node --version
+
+      - name: Check the site would still publish
+        run: node scripts/check-site.mjs

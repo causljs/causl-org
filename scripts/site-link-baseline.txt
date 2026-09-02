@@ -1,0 +1,70 @@
+# Dead internal links this gate inherited.
+#
+# Every line here is a link on the live site that goes nowhere. I did not
+# introduce them and I have not fixed them, because most sit inside
+# TypeDoc-generated pages: patching the generated HTML would look fixed until
+# the next regeneration put it straight back. The real repair belongs upstream,
+# in the source repository's README and docs, and it needs somebody to decide
+# where several of these links were meant to point in the first place.
+#
+# So this file freezes the damage instead of hiding it. `scripts/check-site.mjs`
+# fails on any broken link that is NOT listed here, which is what stops the
+# number growing, and it fails just as loudly on a line here that has started
+# resolving, which is what stops the list outliving the debt. The only edit this
+# file accepts is a deletion.
+#
+# Format: one `<page> -> <link target>` per line, exactly as the gate prints it.
+
+pages/benchmarks/v0.9.0/article-v0.9.0/index.html -> ../../../../../docs/bench-fairness.md (escapes the site root)
+pages/benchmarks/v0.9.0/article-v0.9.0/index.html -> ../../../../../docs/benchmark.md (escapes the site root)
+pages/benchmarks/v0.9.0/article-v0.9.0/index.html -> ../../../../../packages/bench/report/comparison_table.md (escapes the site root)
+pages/benchmarks/v0.9.0/article-v0.9.0/index.html -> ../../../../../packages/bench/report/crossover-curve.md (escapes the site root)
+pages/benchmarks/v0.9.0/article-v0.9.0/index.html -> ../../../../../packages/bench/report/derived-create-audit/ (escapes the site root)
+pages/benchmarks/v0.9.0/article-v0.9.0/index.html -> ../../../../../packages/bench/report/engine-status.md (escapes the site root)
+pages/benchmarks/v0.9.0/article-v0.9.0/index.html -> ../../../../../packages/bench/report/hypothesis_report.md (escapes the site root)
+pages/benchmarks/v0.9.0/article-v0.9.0/index.html -> ../../../../../packages/bench/report/long-run-summary.md (escapes the site root)
+pages/benchmarks/v0.9.0/article-v0.9.0/index.html -> ../../../../../packages/bench/report/microbench_table.md (escapes the site root)
+pages/benchmarks/v0.9.0/article-v0.9.0/index.html -> ../../../../../packages/bench/report/SUMMARY.md (escapes the site root)
+pages/documentation/api/hierarchy.html -> ../../
+pages/documentation/api/index.html -> ../../
+pages/documentation/api/modules/_causl_devtools-bridge.html -> ./tools/
+pages/documentation/api/modules/_causl_devtools-bridge.html -> ./tools/apalache-diff/
+pages/documentation/api/modules/_causl_devtools-bridge.html -> ./tools/audit/
+pages/documentation/api/modules/_causl_devtools-bridge.html -> ./tools/docs-postprocess/
+pages/documentation/api/modules/_causl_devtools-bridge.html -> ./tools/drift/
+pages/documentation/api/modules/_causl_devtools-bridge.html -> ./tools/eslint-plugin-causl/
+pages/documentation/api/modules/_causl_devtools-bridge.html -> ./tools/lint-fixtures/
+pages/documentation/api/modules/_causl_devtools-bridge.html -> ./tools/lint/
+pages/documentation/api/modules/_causl_devtools-bridge.html -> ./tools/release/
+pages/documentation/api/modules/_causl_formula.html -> ../core/
+pages/documentation/api/modules/_causl_hypothesis.html -> ./tools/
+pages/documentation/api/modules/_causl_hypothesis.html -> ./tools/apalache-diff/
+pages/documentation/api/modules/_causl_hypothesis.html -> ./tools/audit/
+pages/documentation/api/modules/_causl_hypothesis.html -> ./tools/docs-postprocess/
+pages/documentation/api/modules/_causl_hypothesis.html -> ./tools/drift/
+pages/documentation/api/modules/_causl_hypothesis.html -> ./tools/eslint-plugin-causl/
+pages/documentation/api/modules/_causl_hypothesis.html -> ./tools/lint-fixtures/
+pages/documentation/api/modules/_causl_hypothesis.html -> ./tools/lint/
+pages/documentation/api/modules/_causl_hypothesis.html -> ./tools/release/
+pages/documentation/api/modules/_causl_sync.html -> ../core/
+pages/documentation/best-practices/index.html -> ../../#tools
+pages/documentation/best-practices/organization/index.html -> ../../../#tools
+pages/documentation/best-practices/patterns/index.html -> ../../../#where-causl-fits
+pages/documentation/best-practices/patterns/index.html -> ../../api/modules/_causl_checker.html
+pages/documentation/best-practices/patterns/index.html -> ../../api/modules/_causl_core.html
+pages/documentation/faq/comparing/index.html -> ../../benchmarks/
+pages/documentation/faq/general/index.html -> ../../../
+pages/documentation/faq/general/index.html -> ../../api/modules/_causl_core.html
+pages/documentation/getting-started/core-concepts/index.html -> ../../api/modules/_causl_core.html
+pages/documentation/getting-started/index.html -> ../../
+pages/documentation/getting-started/why-causl/index.html -> ../../api/modules/_causl_core.html
+pages/documentation/index.html -> ./api/modules/_causl_core.html
+pages/documentation/index.html -> ./api/modules/_causl_core.wasm.html
+pages/documentation/tutorial/index.html -> ../../#right-tool
+pages/documentation/tutorial/part-1-setup/index.html -> ../../api/causl-checker/
+pages/documentation/tutorial/part-1-setup/index.html -> ../../api/causl-core/
+pages/documentation/tutorial/part-3-derived-nodes/index.html -> ../../../../SPEC.md
+pages/documentation/usage/derived-nodes/index.html -> ../../../#where-causl-is-the-right-tool
+pages/documentation/usage/persistence/index.html -> ../../../#spec
+pages/documentation/usage/react/index.html -> ../../api/react/
+pages/documentation/usage/testing/index.html -> ../../../
